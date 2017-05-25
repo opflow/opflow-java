@@ -3,22 +3,20 @@ package net.acegik.examples;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import com.rabbitmq.client.*;
 
 public class JsonObjectFlow implements Runnable {
     
     private static final String EXCHANGE_NAME = "sample-exchange";
-    private static final String QUEUE_NAME = "sample-queue";
+    private static final String ROUTING_KEY = "sample";
 
     ConnectionFactory factory;
-    String host = "192.168.56.56";
-    String virtualHost = "/";
-    String username = "master";
-    String password = "zaq123edcx";
-
     Connection connection;
     Channel channel;
     Consumer consumer;
+    String queueName;
 
     private List<FlowChangeListener> listeners = new ArrayList<FlowChangeListener>();
 
@@ -36,19 +34,45 @@ public class JsonObjectFlow implements Runnable {
         }
     }
 
-    public JsonObjectFlow() throws Exception {
+    public JsonObjectFlow(Map<String, Object> params) throws Exception {
+        String host = (String) params.get("host");
+        if (host == null) host = "localhost";
+
+        String virtualHost = (String) params.get("virtualHost");
+        String username = (String) params.get("username");
+        String password = (String) params.get("password");
+
         factory = new ConnectionFactory();
         factory.setHost(host);
-        factory.setVirtualHost(virtualHost);
-        factory.setUsername(username);
-        factory.setPassword(password);
+
+        if (virtualHost != null) {
+            factory.setVirtualHost(virtualHost);
+        }
+        if (username != null) {
+            factory.setUsername(username);
+        }
+        if (password != null) {
+            factory.setPassword(password);
+        }
+
+        String exchangeName = (String) params.get("exchangeName");
+        if (exchangeName == null) exchangeName = EXCHANGE_NAME;
+
+        String exchangeType = (String) params.get("exchangeType");
+        if (exchangeType == null) exchangeType = "direct";
+
+        String routingKey = (String) params.get("routingKey");
+        if (routingKey == null) routingKey = ROUTING_KEY;
+
+        String queueName = (String) params.get("queueName");
+        if (queueName == null) queueName = channel.queueDeclare().getQueue();
+        this.queueName = queueName;
 
         connection = factory.newConnection();
         channel = connection.createChannel();
 
-        channel.exchangeDeclare(EXCHANGE_NAME, "direct", true);
-        //String queueName = QUEUE_NAME; // channel.queueDeclare().getQueue();
-        channel.queueBind(QUEUE_NAME, EXCHANGE_NAME, "sample");
+        channel.exchangeDeclare(exchangeName, exchangeType, true);
+        channel.queueBind(this.queueName, exchangeName, routingKey);
 
         System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
@@ -65,7 +89,7 @@ public class JsonObjectFlow implements Runnable {
 
     public void run() {
         try {
-            channel.basicConsume(QUEUE_NAME, true, consumer);
+            channel.basicConsume(this.queueName, true, consumer);
         } catch (Exception exception) {
             throw new RuntimeException(exception);
         }
