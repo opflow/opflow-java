@@ -3,7 +3,6 @@ package net.acegik.examples;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
 import com.rabbitmq.client.*;
 
@@ -12,11 +11,11 @@ public class JsonObjectFlow implements Runnable {
     private static final String EXCHANGE_NAME = "sample-exchange";
     private static final String ROUTING_KEY = "sample";
 
-    ConnectionFactory factory;
-    Connection connection;
-    Channel channel;
-    Consumer consumer;
-    String queueName;
+    private ConnectionFactory factory;
+    private Connection connection;
+    private Channel channel;
+    private Consumer consumer;
+    private String queueName;
 
     private List<FlowChangeListener> listeners = new ArrayList<FlowChangeListener>();
 
@@ -35,22 +34,23 @@ public class JsonObjectFlow implements Runnable {
     }
 
     public JsonObjectFlow(Map<String, Object> params) throws Exception {
+        factory = new ConnectionFactory();
+
         String host = (String) params.get("host");
         if (host == null) host = "localhost";
-
-        String virtualHost = (String) params.get("virtualHost");
-        String username = (String) params.get("username");
-        String password = (String) params.get("password");
-
-        factory = new ConnectionFactory();
         factory.setHost(host);
 
+        String virtualHost = (String) params.get("virtualHost");
         if (virtualHost != null) {
             factory.setVirtualHost(virtualHost);
         }
+
+        String username = (String) params.get("username");
         if (username != null) {
             factory.setUsername(username);
         }
+
+        String password = (String) params.get("password");
         if (password != null) {
             factory.setPassword(password);
         }
@@ -91,12 +91,16 @@ public class JsonObjectFlow implements Runnable {
         try {
             channel.basicConsume(this.queueName, true, consumer);
         } catch (Exception exception) {
-            throw new RuntimeException(exception);
+            throw new GeneralException(exception);
         }
     }
 
-    public void close() throws Exception {
-        channel.close();
-        connection.close();
+    public void close() {
+        try {
+            channel.close();
+            connection.close();
+        } catch (Exception exception) {
+            throw new GeneralException(exception);
+        }
     }
 }
