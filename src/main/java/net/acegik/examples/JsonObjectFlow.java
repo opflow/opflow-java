@@ -4,10 +4,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import com.rabbitmq.client.*;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JsonObjectFlow implements Runnable {
     
+    final Logger logger = LoggerFactory.getLogger(JsonObjectFlow.class);
+
     private static final String EXCHANGE_NAME = "sample-exchange";
     private static final String ROUTING_KEY = "sample";
 
@@ -27,10 +37,17 @@ public class JsonObjectFlow implements Runnable {
         listeners.remove(listener);
     }
 
-    private void fireListener(FlowChangeEvent event) {
+    private void fireEvent(FlowChangeEvent event) {
         for(FlowChangeListener listener: listeners) {
             listener.objectReceived(event);
         }
+    }
+    
+    private String getRequestID(Map<String, Object> headers, String defaultID) {
+        if (headers == null) return defaultID;
+        Object requestID = headers.get("X-Request-ID");
+        if (requestID == null) return defaultID;
+        return requestID.toString();
     }
 
     public JsonObjectFlow(Map<String, Object> params) throws Exception {
@@ -80,17 +97,22 @@ public class JsonObjectFlow implements Runnable {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope,
                     AMQP.BasicProperties properties, byte[] body) throws IOException {
+                String requestID = getRequestID(properties.getHeaders(), "");
+                if (logger.isDebugEnabled()) logger.debug("RequestID[" + requestID + "] consumes new message");
                 String message = new String(body, "UTF-8");
                 FlowChangeEvent event = new FlowChangeEvent("received", message);
-                fireListener(event);
+                if (logger.isDebugEnabled()) logger.debug("RequestID[" + requestID + "] fire an event");
+                fireEvent(event);
             }
         };
     }
 
+    @Override
     public void run() {
         try {
             channel.basicConsume(this.queueName, true, consumer);
         } catch (Exception exception) {
+            if (logger.isErrorEnabled()) logger.error("run() has been failed, exception: " + exception.getMessage());
             throw new GeneralException(exception);
         }
     }
@@ -100,6 +122,7 @@ public class JsonObjectFlow implements Runnable {
             channel.close();
             connection.close();
         } catch (Exception exception) {
+            if (logger.isErrorEnabled()) logger.error("close() has been failed, exception: " + exception.getMessage());
             throw new GeneralException(exception);
         }
     }
