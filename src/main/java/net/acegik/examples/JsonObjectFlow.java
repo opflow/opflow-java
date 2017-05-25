@@ -9,7 +9,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class JsonObjectFlow extends Thread {
+public class JsonObjectFlow implements Runnable {
     
     private static final String EXCHANGE_NAME = "sample-exchange";
     private static final String QUEUE_NAME = "sample-queue";
