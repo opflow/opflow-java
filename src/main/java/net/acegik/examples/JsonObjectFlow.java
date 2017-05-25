@@ -23,51 +23,56 @@ public class JsonObjectFlow implements Runnable {
     private List<FlowChangeListener> listeners = new ArrayList<FlowChangeListener>();
 
     public void addListener(FlowChangeListener listener) {
-    	listeners.add(listener);
+        listeners.add(listener);
     }
 
     public void removeListener(FlowChangeListener listener) {
-    	listeners.remove(listener);
+        listeners.remove(listener);
     }
 
     private void fireListener(FlowChangeEvent event) {
-    	for(FlowChangeListener listener: listeners) {
-    		listener.objectReceived(event);
-    	}
+        for(FlowChangeListener listener: listeners) {
+            listener.objectReceived(event);
+        }
     }
 
     public JsonObjectFlow() throws Exception {
-    	factory = new ConnectionFactory();
-    	factory.setHost(host);
-	    factory.setVirtualHost(virtualHost);
-	    factory.setUsername(username);
-	    factory.setPassword(password);
+        factory = new ConnectionFactory();
+        factory.setHost(host);
+        factory.setVirtualHost(virtualHost);
+        factory.setUsername(username);
+        factory.setPassword(password);
 
-	    connection = factory.newConnection();
-	    channel = connection.createChannel();
+        connection = factory.newConnection();
+        channel = connection.createChannel();
 
-	    channel.exchangeDeclare(EXCHANGE_NAME, "direct", true);
-	    //String queueName = QUEUE_NAME; // channel.queueDeclare().getQueue();
-	    channel.queueBind(QUEUE_NAME, EXCHANGE_NAME, "sample");
+        channel.exchangeDeclare(EXCHANGE_NAME, "direct", true);
+        //String queueName = QUEUE_NAME; // channel.queueDeclare().getQueue();
+        channel.queueBind(QUEUE_NAME, EXCHANGE_NAME, "sample");
 
-	    System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
-	    consumer = new DefaultConsumer(channel) {
-	        @Override
-	        public void handleDelivery(String consumerTag, Envelope envelope,
-	                AMQP.BasicProperties properties, byte[] body) throws IOException {
-	            String message = new String(body, "UTF-8");
-	            FlowChangeEvent event = new FlowChangeEvent("received", message);
-	            fireListener(event);
-	        }
-	    };
+        consumer = new DefaultConsumer(channel) {
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope,
+                    AMQP.BasicProperties properties, byte[] body) throws IOException {
+                String message = new String(body, "UTF-8");
+                FlowChangeEvent event = new FlowChangeEvent("received", message);
+                fireListener(event);
+            }
+        };
     }
 
     public void run() {
-    	try {
-    		channel.basicConsume(QUEUE_NAME, true, consumer);
-    	} catch (Exception exception) {
-    		throw new RuntimeException(exception);
-    	}
+        try {
+            channel.basicConsume(QUEUE_NAME, true, consumer);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    public void close() throws Exception {
+        channel.close();
+        connection.close();
     }
 }
