@@ -1,13 +1,9 @@
 package net.acegik.examples;
 
 import java.io.IOException;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 import com.rabbitmq.client.*;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 public class JsonObjectFlow implements Runnable {
     
@@ -23,6 +19,22 @@ public class JsonObjectFlow implements Runnable {
     Connection connection;
     Channel channel;
     Consumer consumer;
+
+    private List<FlowChangeListener> listeners = new ArrayList<FlowChangeListener>();
+
+    public void addListener(FlowChangeListener listener) {
+    	listeners.add(listener);
+    }
+
+    public void removeListener(FlowChangeListener listener) {
+    	listeners.remove(listener);
+    }
+
+    private void fireListener(FlowChangeEvent event) {
+    	for(FlowChangeListener listener: listeners) {
+    		listener.objectReceived(event);
+    	}
+    }
 
     public JsonObjectFlow() throws Exception {
     	factory = new ConnectionFactory();
@@ -45,10 +57,8 @@ public class JsonObjectFlow implements Runnable {
 	        public void handleDelivery(String consumerTag, Envelope envelope,
 	                AMQP.BasicProperties properties, byte[] body) throws IOException {
 	            String message = new String(body, "UTF-8");
-	            JsonParser jsonParser = new JsonParser();
-	            JsonObject jsonObject = (JsonObject)jsonParser.parse(message);
-
-	            System.out.println(" [x] Received '" + jsonObject.toString() + "'");
+	            FlowChangeEvent event = new FlowChangeEvent("received", message);
+	            fireListener(event);
 	        }
 	    };
     }
