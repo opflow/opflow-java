@@ -1,4 +1,4 @@
-# RabbitMQ Client example in Java
+# JSON Data flow based on rabbitmq-client-java
 
 ## Usage
 
