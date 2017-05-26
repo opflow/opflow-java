@@ -1,4 +1,4 @@
-package net.acegik.examples;
+package net.acegik.jsondataflow;
 
 public class GeneralException extends RuntimeException {
     public GeneralException() {

@@ -1,6 +1,9 @@
 package net.acegik.examples;
 
 import java.util.HashMap;
+import net.acegik.jsondataflow.FlowChangeEvent;
+import net.acegik.jsondataflow.JsonObjectFlow;
+import net.acegik.jsondataflow.FlowChangeListener;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 

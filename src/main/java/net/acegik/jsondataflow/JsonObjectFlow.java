@@ -1,4 +1,4 @@
-package net.acegik.examples;
+package net.acegik.jsondataflow;
 
 import java.io.IOException;
 import java.util.ArrayList;
