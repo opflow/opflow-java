@@ -3,6 +3,7 @@ package net.acegik.examples;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -81,14 +82,20 @@ public class JsonObjectFlow implements Runnable {
         String routingKey = (String) params.get("routingKey");
         if (routingKey == null) routingKey = ROUTING_KEY;
 
-        String queueName = (String) params.get("queueName");
-        if (queueName == null) queueName = channel.queueDeclare().getQueue();
-        this.queueName = queueName;
-
+        HashMap<String, Object> queueOpts = new HashMap<String, Object>();
+        
         connection = factory.newConnection();
         channel = connection.createChannel();
 
         channel.exchangeDeclare(exchangeName, exchangeType, true);
+
+        String queueName = (String) params.get("queueName");
+        if (queueName != null) {
+            this.queueName = channel.queueDeclare(queueName, true, false, false, queueOpts).getQueue();
+        } else {
+            this.queueName = channel.queueDeclare().getQueue();
+        }
+        
         channel.queueBind(this.queueName, exchangeName, routingKey);
 
         System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
