@@ -2,8 +2,8 @@ package net.acegik.jsondataflow;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JsonObjectFlow implements Runnable {
-    
+
     final Logger logger = LoggerFactory.getLogger(JsonObjectFlow.class);
 
     private static final String EXCHANGE_NAME = "sample-exchange";
@@ -43,7 +43,7 @@ public class JsonObjectFlow implements Runnable {
             listener.objectReceived(event);
         }
     }
-    
+
     private String getRequestID(Map<String, Object> headers, String defaultID) {
         if (headers == null) return defaultID;
         Object requestID = headers.get("X-Request-ID");
@@ -82,8 +82,11 @@ public class JsonObjectFlow implements Runnable {
         String routingKey = (String) params.get("routingKey");
         if (routingKey == null) routingKey = ROUTING_KEY;
 
+        Map<String, Object> bindingArgs = (Map<String, Object>) params.get("bindingArgs");
+        if (bindingArgs == null) bindingArgs = new HashMap<String, Object>();
+
         HashMap<String, Object> queueOpts = new HashMap<String, Object>();
-        
+
         connection = factory.newConnection();
         channel = connection.createChannel();
 
@@ -95,8 +98,9 @@ public class JsonObjectFlow implements Runnable {
         } else {
             this.queueName = channel.queueDeclare().getQueue();
         }
-        
-        channel.queueBind(this.queueName, exchangeName, routingKey);
+        System.out.println(" [*] queueName: " + this.queueName);
+
+        channel.queueBind(this.queueName, exchangeName, routingKey, bindingArgs);
 
         System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
 
@@ -117,6 +121,7 @@ public class JsonObjectFlow implements Runnable {
     @Override
     public void run() {
         try {
+            System.out.println(" [*] Invoke basicConsume()");
             channel.basicConsume(this.queueName, true, consumer);
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("run() has been failed, exception: " + exception.getMessage());
@@ -126,6 +131,7 @@ public class JsonObjectFlow implements Runnable {
 
     public void close() {
         try {
+            System.out.println(" [*] Close....");
             channel.close();
             connection.close();
         } catch (Exception exception) {
