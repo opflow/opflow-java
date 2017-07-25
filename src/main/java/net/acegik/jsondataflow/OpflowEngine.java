@@ -1,10 +1,5 @@
 package net.acegik.jsondataflow;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -12,12 +7,21 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JsonObjectFlow implements Runnable {
+/**
+ *
+ * @author drupalex
+ */
+public class OpflowEngine {
 
-    final Logger logger = LoggerFactory.getLogger(JsonObjectFlow.class);
+    final Logger logger = LoggerFactory.getLogger(OpflowEngine.class);
 
     private static final String EXCHANGE_NAME = "sample-exchange";
     private static final String ROUTING_KEY = "sample";
@@ -26,32 +30,37 @@ public class JsonObjectFlow implements Runnable {
     private Connection connection;
     private Channel channel;
     private Consumer consumer;
+
+    private String exchangeName;
+    private String routingKey;
     private String queueName;
+    
+    private String feedback_queueName;
+    
+    private final List<OpflowChangeListener> listeners = new ArrayList<OpflowChangeListener>();
 
-    private List<FlowChangeListener> listeners = new ArrayList<FlowChangeListener>();
-
-    public void addListener(FlowChangeListener listener) {
+    public void addListener(OpflowChangeListener listener) {
         listeners.add(listener);
     }
 
-    public void removeListener(FlowChangeListener listener) {
+    public void removeListener(OpflowChangeListener listener) {
         listeners.remove(listener);
     }
 
-    private void fireEvent(FlowChangeEvent event) {
-        for(FlowChangeListener listener: listeners) {
-            listener.objectReceived(event);
+    private void fireEvent(OpflowChangeEvent event) {
+        for(OpflowChangeListener listener: listeners) {
+            listener.objectReceived(event, null);
         }
     }
 
     private String getRequestID(Map<String, Object> headers, String defaultID) {
         if (headers == null) return defaultID;
-        Object requestID = headers.get("X-Request-ID");
+        Object requestID = headers.get("requestId");
         if (requestID == null) return defaultID;
         return requestID.toString();
     }
 
-    public JsonObjectFlow(Map<String, Object> params) throws Exception {
+    public OpflowEngine(Map<String, Object> params) throws Exception {
         factory = new ConnectionFactory();
 
         String host = (String) params.get("host");
@@ -73,13 +82,13 @@ public class JsonObjectFlow implements Runnable {
             factory.setPassword(password);
         }
 
-        String exchangeName = (String) params.get("exchangeName");
+        exchangeName = (String) params.get("exchangeName");
         if (exchangeName == null) exchangeName = EXCHANGE_NAME;
 
         String exchangeType = (String) params.get("exchangeType");
         if (exchangeType == null) exchangeType = "direct";
 
-        String routingKey = (String) params.get("routingKey");
+        routingKey = (String) params.get("routingKey");
         if (routingKey == null) routingKey = ROUTING_KEY;
 
         Map<String, Object> bindingArgs = (Map<String, Object>) params.get("bindingArgs");
@@ -90,8 +99,18 @@ public class JsonObjectFlow implements Runnable {
         connection = factory.newConnection();
         channel = connection.createChannel();
 
+        channel.basicQos(1);
+        
         channel.exchangeDeclare(exchangeName, exchangeType, true);
 
+        // declare Feedback queue
+        String feedback_queueName = (String) params.get("feedback.queueName");
+        if (feedback_queueName != null) {
+            this.feedback_queueName = channel.queueDeclare(feedback_queueName, true, false, false, queueOpts).getQueue();
+        }
+        System.out.println(" [*] feedback.queueName: " + this.feedback_queueName);
+        
+        // declare Operator queue
         String queueName = (String) params.get("queueName");
         if (queueName != null) {
             this.queueName = channel.queueDeclare(queueName, true, false, false, queueOpts).getQueue();
@@ -100,32 +119,39 @@ public class JsonObjectFlow implements Runnable {
         }
         System.out.println(" [*] queueName: " + this.queueName);
 
+        // bind Operator queue to Exchange
         channel.queueBind(this.queueName, exchangeName, routingKey, bindingArgs);
 
         System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
+    }
 
+    public void consume(final OpflowChangeListener listener) {
         consumer = new DefaultConsumer(channel) {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope,
-                    AMQP.BasicProperties properties, byte[] body) throws IOException {
+                                       AMQP.BasicProperties properties, byte[] body) throws IOException {
                 String requestID = getRequestID(properties.getHeaders(), "");
-                if (logger.isDebugEnabled()) logger.debug("RequestID[" + requestID + "] consumes new message");
                 String message = new String(body, "UTF-8");
-                FlowChangeEvent event = new FlowChangeEvent("received", message);
-                if (logger.isDebugEnabled()) logger.debug("RequestID[" + requestID + "] fire an event");
-                fireEvent(event);
+
+                if (logger.isDebugEnabled()) logger.debug("Request[" + requestID + "] consumes new message");
+                OpflowChangeEvent event = new OpflowChangeEvent("received", message);
+                
+                if (logger.isDebugEnabled()) logger.debug("Request[" + requestID + "] fire an event");
+                listener.objectReceived(event, new OpflowChangeFeedback(channel, properties, feedback_queueName));
+
+                channel.basicAck(envelope.getDeliveryTag(), false);
             }
         };
-    }
-
-    @Override
-    public void run() {
+        
         try {
-            System.out.println(" [*] Invoke basicConsume()");
-            channel.basicConsume(this.queueName, true, consumer);
+            String consumerTag = channel.basicConsume(this.queueName, false, consumer);
+            System.out.println(" [*] Invoke basicConsume(" + this.queueName + ") -> " + consumerTag);
+            System.out.println(" [*] Send test to exchange[" + this.exchangeName + "] with routingKey " + this.routingKey);
+            //channel.basicPublish(this.exchangeName, this.routingKey, null, "test".getBytes());
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("run() has been failed, exception: " + exception.getMessage());
-            throw new GeneralException(exception);
+             System.out.println("run() has been failed, exception: " + exception.getMessage());
+            throw new OpflowGeneralException(exception);
         }
     }
 
@@ -136,7 +162,7 @@ public class JsonObjectFlow implements Runnable {
             connection.close();
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("close() has been failed, exception: " + exception.getMessage());
-            throw new GeneralException(exception);
+            throw new OpflowGeneralException(exception);
         }
     }
 }

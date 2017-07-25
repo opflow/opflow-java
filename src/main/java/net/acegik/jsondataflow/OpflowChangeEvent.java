@@ -2,17 +2,17 @@ package net.acegik.jsondataflow;
 
 import java.io.Serializable;
 
-public class FlowChangeEvent implements Serializable {
+public class OpflowChangeEvent implements Serializable {
 	private String action;
 	private Object data;
 
-	public FlowChangeEvent() {
+	public OpflowChangeEvent() {
 		super();
 		this.action = null;
 		this.data = null;
 	}
 
-	public FlowChangeEvent(String action, Object data) {
+	public OpflowChangeEvent(String action, Object data) {
 		super();
 		this.action = action;
 		this.data = data;
@@ -22,7 +22,7 @@ public class FlowChangeEvent implements Serializable {
 		return action;
 	}
 
-	public FlowChangeEvent setAction(String action) {
+	public OpflowChangeEvent setAction(String action) {
 		this.action = action;
 		return this;
 	}
@@ -31,7 +31,7 @@ public class FlowChangeEvent implements Serializable {
 		return data;
 	}
 
-	public FlowChangeEvent setData(Object data) {
+	public OpflowChangeEvent setData(Object data) {
 		this.data = data;
 		return this;
 	}
