@@ -20,14 +20,10 @@ public class OpflowPubsubExample {
         final JsonParser jsonParser = new JsonParser();
         final HashMap<String, Object> flowParams = new HashMap<String, Object>();
         flowParams.put("uri", "amqp://master:zaq123edcx@192.168.56.56?frameMax=0x1000");
-        flowParams.put("host", "192.168.56.56");
-        flowParams.put("username", "master");
-        flowParams.put("password", "zaq123edcx");
-        flowParams.put("virtualHost", "/");
-        flowParams.put("exchangeType", "direct");
         flowParams.put("exchangeName", "tdd-opflow-publisher");
+        flowParams.put("exchangeType", "direct");
         flowParams.put("routingKey", "tdd-opflow-pubsub-public");
-        flowParams.put("queueName", "tdd-opflow-subscriber#5");
+        flowParams.put("consumer.queueName", "tdd-opflow-subscriber#5");
 
         final OpflowPubsubHandler pubsub = new OpflowPubsubHandler(flowParams);
         pubsub.subscribe(new OpflowPubsubListener() {

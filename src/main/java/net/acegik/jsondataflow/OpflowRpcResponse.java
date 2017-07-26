@@ -22,14 +22,6 @@ public class OpflowRpcResponse {
         this.queueName = queueName;
     }
     
-    private void basicPublish(String data, AMQP.BasicProperties replyProps) {
-        try {
-            channel.basicPublish("", queueName, replyProps, data.getBytes("UTF-8"));
-        } catch (IOException exception) {
-            throw new OpflowGeneralException(exception);
-        }
-    }
-    
     public void emitStarted() {
         Map<String, Object> headers = new HashMap<String, Object>();
         headers.put("status", "started");
@@ -38,7 +30,7 @@ public class OpflowRpcResponse {
             .correlationId(properties.getCorrelationId())
             .headers(headers)
             .build();
-        basicPublish("{}", replyProps);
+        basicPublish(OpflowUtil.getBytes("{}"), replyProps);
     }
     
     public void emitProgress(int completed, int total, String extra) {
@@ -55,14 +47,29 @@ public class OpflowRpcResponse {
         }
         if (extra == null) extra = "\"\"";
         String result = "{ \"percent\": " + percent + ", \"data\": " + extra + "}";
-        basicPublish(result, replyProps);
+        basicPublish(OpflowUtil.getBytes(result), replyProps);
     }
     
-    public void emitFailed() {
-        
+    public void emitFailed(String error) {
+        emitFailed(OpflowUtil.getBytes(error));
+    }
+    
+    public void emitFailed(byte[] error) {
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put("status", "failed");
+        AMQP.BasicProperties replyProps = new AMQP.BasicProperties
+            .Builder()
+            .correlationId(properties.getCorrelationId())
+            .headers(headers)
+            .build();
+        basicPublish(error, replyProps);
     }
     
     public void emitCompleted(String result) {
+        emitCompleted(OpflowUtil.getBytes(result));
+    }
+
+    public void emitCompleted(byte[] result) {
         Map<String, Object> headers = new HashMap<String, Object>();
         headers.put("status", "completed");
         AMQP.BasicProperties replyProps = new AMQP.BasicProperties
@@ -71,5 +78,13 @@ public class OpflowRpcResponse {
             .headers(headers)
             .build();
         basicPublish(result, replyProps);
+    }
+    
+    private void basicPublish(byte[] data, AMQP.BasicProperties replyProps) {
+        try {
+            channel.basicPublish("", queueName, replyProps, data);
+        } catch (IOException exception) {
+            throw new OpflowGeneralException(exception);
+        }
     }
 }

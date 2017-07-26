@@ -5,10 +5,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.IOException;
+import java.util.Map;
 import net.acegik.jsondataflow.OpflowMessage;
 import net.acegik.jsondataflow.OpflowRpcHandler;
 import net.acegik.jsondataflow.OpflowRpcListener;
 import net.acegik.jsondataflow.OpflowRpcResponse;
+import net.acegik.jsondataflow.OpflowRpcResult;
 
 public class OpflowRpcExample {
 
@@ -16,15 +18,12 @@ public class OpflowRpcExample {
         final Gson gson = new Gson();
         final JsonParser jsonParser = new JsonParser();
         final HashMap<String, Object> flowParams = new HashMap<String, Object>();
-        flowParams.put("host", "192.168.56.56");
-        flowParams.put("username", "master");
-        flowParams.put("password", "zaq123edcx");
-        flowParams.put("virtualHost", "/");
-        flowParams.put("exchangeType", "direct");
+        flowParams.put("uri", "amqp://master:zaq123edcx@192.168.56.56?frameMax=0x1000");
         flowParams.put("exchangeName", "tdd-opflow-exchange");
+        flowParams.put("exchangeType", "direct");
         flowParams.put("routingKey", "sample");
-        flowParams.put("queueName", "tdd-opflow-queue");
-        flowParams.put("feedback.queueName", "tdd-opflow-feedback");
+        flowParams.put("operatorName", "tdd-opflow-queue");
+        flowParams.put("responseName", "tdd-opflow-feedback");
 
         final OpflowRpcHandler rpc = new OpflowRpcHandler(flowParams);
         rpc.process(new OpflowRpcListener() {
@@ -49,5 +48,14 @@ public class OpflowRpcExample {
                 response.emitCompleted(result);
             }
         });
+        
+        Map<String, Object> input = new HashMap<String, Object>();
+        input.put("number", 20);
+        OpflowRpcResult result = rpc.request(gson.toJson(input), flowParams);
+        
+        while(result.hasNext()) {
+            OpflowMessage msg = result.next();
+            System.out.println(" message: " + msg.getContentAsString());
+        }
     }
 }
