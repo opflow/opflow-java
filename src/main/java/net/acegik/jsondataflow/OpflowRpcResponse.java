@@ -10,13 +10,13 @@ import java.util.Map;
  *
  * @author drupalex
  */
-public class OpflowChangeFeedback {
+public class OpflowRpcResponse {
 
     private final Channel channel;
     private final AMQP.BasicProperties properties;
     private final String queueName;
     
-    public OpflowChangeFeedback(Channel channel, AMQP.BasicProperties properties, String queueName) {
+    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String queueName) {
         this.channel = channel;
         this.properties = properties;
         this.queueName = queueName;
@@ -42,7 +42,20 @@ public class OpflowChangeFeedback {
     }
     
     public void emitProgress(int completed, int total, String extra) {
-        
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put("status", "progress");
+        AMQP.BasicProperties replyProps = new AMQP.BasicProperties
+            .Builder()
+            .correlationId(properties.getCorrelationId())
+            .headers(headers)
+            .build();
+        int percent = -1;
+        if (total > 0 && completed >= 0 && completed <= total) {
+            percent = (total == 100) ? completed : Math.round((completed * 100) / total);
+        }
+        if (extra == null) extra = "\"\"";
+        String result = "{ \"percent\": " + percent + ", \"data\": " + extra + "}";
+        basicPublish(result, replyProps);
     }
     
     public void emitFailed() {

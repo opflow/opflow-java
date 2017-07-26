@@ -8,9 +8,7 @@ import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,22 +35,14 @@ public class OpflowEngine {
     
     private String feedback_queueName;
     
-    private final List<OpflowChangeListener> listeners = new ArrayList<OpflowChangeListener>();
-
-    public void addListener(OpflowChangeListener listener) {
-        listeners.add(listener);
+    public Channel getChannel() {
+        return channel;
     }
-
-    public void removeListener(OpflowChangeListener listener) {
-        listeners.remove(listener);
+    
+    public String getFeedbackQueueName() {
+        return feedback_queueName;
     }
-
-    private void fireEvent(OpflowChangeEvent event) {
-        for(OpflowChangeListener listener: listeners) {
-            listener.objectReceived(event, null);
-        }
-    }
-
+    
     private String getRequestID(Map<String, Object> headers, String defaultID) {
         if (headers == null) return defaultID;
         Object requestID = headers.get("requestId");
@@ -125,7 +115,8 @@ public class OpflowEngine {
         System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
     }
 
-    public void consume(final OpflowChangeListener listener) {
+    public void consume(final OpflowListener listener) {
+        final OpflowEngine self = this;
         consumer = new DefaultConsumer(channel) {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope,
@@ -133,11 +124,12 @@ public class OpflowEngine {
                 String requestID = getRequestID(properties.getHeaders(), "");
                 String message = new String(body, "UTF-8");
 
-                if (logger.isDebugEnabled()) logger.debug("Request[" + requestID + "] consumes new message");
-                OpflowChangeEvent event = new OpflowChangeEvent("received", message);
+                System.out.println(" [+] Message: " + message);
                 
+                if (logger.isDebugEnabled()) logger.debug("Request[" + requestID + "] consumes new message");
                 if (logger.isDebugEnabled()) logger.debug("Request[" + requestID + "] fire an event");
-                listener.objectReceived(event, new OpflowChangeFeedback(channel, properties, feedback_queueName));
+
+                listener.processMessage(body, properties, self);
 
                 channel.basicAck(envelope.getDeliveryTag(), false);
             }

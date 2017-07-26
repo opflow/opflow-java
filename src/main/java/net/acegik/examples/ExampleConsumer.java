@@ -1,12 +1,14 @@
 package net.acegik.examples;
 
 import java.util.HashMap;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.acegik.jsondataflow.OpflowChangeEvent;
-import net.acegik.jsondataflow.OpflowChangeFeedback;
-import net.acegik.jsondataflow.OpflowChangeListener;
-import net.acegik.jsondataflow.OpflowRPC;
+import java.io.IOException;
+import java.util.Map;
+import net.acegik.jsondataflow.OpflowRpcHandler;
+import net.acegik.jsondataflow.OpflowRpcListener;
+import net.acegik.jsondataflow.OpflowRpcResponse;
 
 public class ExampleConsumer {
 
@@ -17,6 +19,7 @@ public class ExampleConsumer {
     }
 
     public static void main(String[] argv) throws Exception {
+        final Gson gson = new Gson();
         final JsonParser jsonParser = new JsonParser();
         final HashMap<String, Object> flowParams = new HashMap<String, Object>();
         flowParams.put("host", "192.168.56.56");
@@ -29,21 +32,28 @@ public class ExampleConsumer {
         flowParams.put("queueName", "tdd-opflow-queue");
         flowParams.put("feedback.queueName", "tdd-opflow-feedback");
 
-        final OpflowRPC flow = new OpflowRPC(flowParams);
-        flow.process(new OpflowChangeListener() {
+        final OpflowRpcHandler rpc = new OpflowRpcHandler(flowParams);
+        rpc.process(new OpflowRpcListener() {
             @Override
-            public void objectReceived(OpflowChangeEvent event, OpflowChangeFeedback feedback) {
-                String message = event.getData().toString();
+            public void processMessage(byte[] content, Map<String, Object> info, OpflowRpcResponse response) throws IOException {
+                String message = new String(content, "UTF-8");
                 JsonObject jsonObject = (JsonObject)jsonParser.parse(message);
-                System.out.println(" [x] Received '" + jsonObject.toString() + "'");
-                
-                feedback.emitStarted();
-                
+                System.out.println(" [+] Received '" + jsonObject.toString() + "'");
+
+                response.emitStarted();
+
                 int number = Integer.parseInt(jsonObject.get("number").toString());
-                String result = (""+fib(number));
-                System.out.println(" [x] Result '" + result + "'");
-                
-                feedback.emitCompleted(result);
+                FibonacciGenerator fibonacci = new FibonacciGenerator(number);
+
+                while(fibonacci.next()) {
+                    FibonacciGenerator.Result r = fibonacci.result();
+                    response.emitProgress(r.getStep(), r.getNumber(), null);
+                };
+
+                String result = gson.toJson(fibonacci.result());
+                System.out.println(" [-] Result '" + result + "'");
+
+                response.emitCompleted(result);
             }
         });
     }
