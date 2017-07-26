@@ -25,7 +25,7 @@ public class OpflowRpcHandler {
     }
     
     public void process(final OpflowRpcListener listener) {
-         engine.consume(new OpflowListener() {
+        engine.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, OpflowEngine engine) throws IOException {
                 System.out.println(" [*] OpflowRpcListener: " + engine.getFeedbackQueueName());

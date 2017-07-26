@@ -10,13 +10,7 @@ import net.acegik.jsondataflow.OpflowRpcHandler;
 import net.acegik.jsondataflow.OpflowRpcListener;
 import net.acegik.jsondataflow.OpflowRpcResponse;
 
-public class ExampleConsumer {
-
-    private static int fib(int n) {
-        if (n == 0) return 0;
-        if (n == 1) return 1;
-        return fib(n-1) + fib(n-2);
-    }
+public class OpflowRpcExample {
 
     public static void main(String[] argv) throws Exception {
         final Gson gson = new Gson();
