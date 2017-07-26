@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.IOException;
-import java.util.Map;
+import net.acegik.jsondataflow.OpflowMessage;
 import net.acegik.jsondataflow.OpflowRpcHandler;
 import net.acegik.jsondataflow.OpflowRpcListener;
 import net.acegik.jsondataflow.OpflowRpcResponse;
@@ -35,9 +35,8 @@ public class ExampleConsumer {
         final OpflowRpcHandler rpc = new OpflowRpcHandler(flowParams);
         rpc.process(new OpflowRpcListener() {
             @Override
-            public void processMessage(byte[] content, Map<String, Object> info, OpflowRpcResponse response) throws IOException {
-                String message = new String(content, "UTF-8");
-                JsonObject jsonObject = (JsonObject)jsonParser.parse(message);
+            public void processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+                JsonObject jsonObject = (JsonObject)jsonParser.parse(new String(message.getContent(), "UTF-8"));
                 System.out.println(" [+] Received '" + jsonObject.toString() + "'");
 
                 response.emitStarted();
@@ -48,7 +47,7 @@ public class ExampleConsumer {
                 while(fibonacci.next()) {
                     FibonacciGenerator.Result r = fibonacci.result();
                     response.emitProgress(r.getStep(), r.getNumber(), null);
-                };
+                }
 
                 String result = gson.toJson(fibonacci.result());
                 System.out.println(" [-] Result '" + result + "'");

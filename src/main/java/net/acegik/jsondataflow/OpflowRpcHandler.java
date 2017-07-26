@@ -30,7 +30,7 @@ public class OpflowRpcHandler {
             public void processMessage(byte[] content, AMQP.BasicProperties properties, OpflowEngine engine) throws IOException {
                 System.out.println(" [*] OpflowRpcListener: " + engine.getFeedbackQueueName());
                 OpflowRpcResponse response = new OpflowRpcResponse(engine.getChannel(), properties, engine.getFeedbackQueueName());
-                listener.processMessage(content, properties.getHeaders(), response);
+                listener.processMessage(new OpflowMessage(content, properties.getHeaders()), response);
             }
         });
     }
