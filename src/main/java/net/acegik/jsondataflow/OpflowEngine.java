@@ -77,7 +77,7 @@ public class OpflowEngine {
         channel = connection.createChannel();
 
         String mode = (String) params.get("mode");
-        if ("rpc.worker".equals(mode)) {
+        if ("rpc.master".equals(mode)) {
             channel.basicQos(1);
         }
 

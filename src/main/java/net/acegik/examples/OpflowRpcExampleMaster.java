@@ -24,8 +24,15 @@ public class OpflowRpcExampleMaster {
         input.put("number", 20);
         String inputStr = gson.toJson(input);
         
-        System.out.println("[+] ExampleMaster request: '" + inputStr);
-        OpflowRpcResult result = rpc.request(inputStr, flowParams);
+        System.out.println("[+] ExampleMaster request: " + inputStr);
+        Map<String, Object> opts = new HashMap<String, Object>();
+        opts.put("routineId", "fibonacci");
+        opts.put("timeout", 5);
+        OpflowRpcResult result = rpc.request(inputStr, opts);
+        
+        input.put("number", 30);
+        opts.put("timeout", 30);
+        OpflowRpcResult result2 = rpc.request(gson.toJson(input), opts);
         
         while(result.hasNext()) {
             OpflowMessage msg = result.next();

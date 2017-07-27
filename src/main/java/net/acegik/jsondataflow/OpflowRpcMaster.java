@@ -5,6 +5,7 @@ import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,10 +47,7 @@ public class OpflowRpcMaster {
                 }
                 OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                 task.push(message);
-                if (task.isCompleted(message)) {
-                    tasks.remove(taskId);
-                }
-                if (logger.isDebugEnabled()) logger.debug("tasks.size(): " + tasks.size());
+                if (logger.isDebugEnabled()) logger.debug("Message has been pushed to task[" + taskId + "]");
             }
         });
     }
@@ -68,9 +66,17 @@ public class OpflowRpcMaster {
             responseConsumed = true;
         }
         
-        if (null == opts) opts = new HashMap<String, Object>();
-        OpflowRpcResult task = new OpflowRpcResult((String)opts.get("routineId"), (String)opts.get("requestId")); 
-        tasks.put(task.getId(), task);
+        final String taskId = UUID.randomUUID().toString();
+        OpflowTimeout.Listener listener = new OpflowTimeout.Listener() {
+            @Override
+            public void handleEvent() {
+                tasks.remove(taskId);
+                if (logger.isDebugEnabled()) logger.debug("tasks.size(): " + tasks.size());
+            }
+        };
+        
+        OpflowRpcResult task = new OpflowRpcResult(opts, listener);
+        tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<String, Object>();
         headers.put("requestId", task.getRequestId());
@@ -78,7 +84,7 @@ public class OpflowRpcMaster {
         
         AMQP.BasicProperties props = new AMQP.BasicProperties
                 .Builder()
-                .correlationId(task.getId())
+                .correlationId(taskId)
                 .headers(headers)
                 .build();
 
