@@ -12,14 +12,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowRpcHandler {
+public class OpflowRpcMaster {
 
-    final Logger logger = LoggerFactory.getLogger(OpflowRpcHandler.class);
+    final Logger logger = LoggerFactory.getLogger(OpflowRpcMaster.class);
 
     private final OpflowEngine master;
-    private final OpflowEngine worker;
 
-    public OpflowRpcHandler(Map<String, Object> params) throws Exception {
+    public OpflowRpcMaster(Map<String, Object> params) throws Exception {
         Map<String, Object> masterParams = new HashMap<String, Object>();
         masterParams.put("uri", params.get("uri"));
         masterParams.put("exchangeName", params.get("exchangeName"));
@@ -28,12 +27,6 @@ public class OpflowRpcHandler {
         masterParams.put("consumer.binding", Boolean.FALSE);
         masterParams.put("consumer.queueName", params.get("responseName"));
         master = new OpflowEngine(masterParams);
-        
-        Map<String, Object> workerParams = new HashMap<String, Object>();
-        workerParams.put("uri", params.get("uri"));
-        workerParams.put("consumer.queueName", params.get("operatorName"));
-        workerParams.put("feedback.queueName", params.get("responseName"));
-        worker = new OpflowEngine(workerParams);
     }
 
     private boolean responseConsumed = false;
@@ -79,18 +72,8 @@ public class OpflowRpcHandler {
         
         return task;
     }
-    
-    public void process(final OpflowRpcListener listener) {
-        worker.consume(new OpflowListener() {
-            @Override
-            public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
-                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, queueName);
-                listener.processMessage(new OpflowMessage(content, properties.getHeaders()), response);
-            }
-        });
-    }
 
     public void close() {
-        if (worker != null) worker.close();
+        if (master != null) master.close();
     }
 }

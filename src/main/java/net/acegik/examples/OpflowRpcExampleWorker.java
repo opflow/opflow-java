@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.IOException;
 import net.acegik.jsondataflow.OpflowMessage;
-import net.acegik.jsondataflow.OpflowRpcHandler;
+import net.acegik.jsondataflow.OpflowRpcWorker;
 import net.acegik.jsondataflow.OpflowRpcListener;
 import net.acegik.jsondataflow.OpflowRpcResponse;
 
@@ -20,7 +20,7 @@ public class OpflowRpcExampleWorker {
         flowParams.put("operatorName", "tdd-opflow-queue");
         flowParams.put("responseName", "tdd-opflow-feedback");
 
-        final OpflowRpcHandler rpc = new OpflowRpcHandler(flowParams);
+        final OpflowRpcWorker rpc = new OpflowRpcWorker(flowParams);
         rpc.process(new OpflowRpcListener() {
             @Override
             public void processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {

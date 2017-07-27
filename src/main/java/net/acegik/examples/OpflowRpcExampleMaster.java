@@ -4,7 +4,7 @@ import java.util.HashMap;
 import com.google.gson.Gson;
 import java.util.Map;
 import net.acegik.jsondataflow.OpflowMessage;
-import net.acegik.jsondataflow.OpflowRpcHandler;
+import net.acegik.jsondataflow.OpflowRpcMaster;
 import net.acegik.jsondataflow.OpflowRpcResult;
 
 public class OpflowRpcExampleMaster {
@@ -18,7 +18,7 @@ public class OpflowRpcExampleMaster {
         flowParams.put("operatorName", "tdd-opflow-queue");
         flowParams.put("responseName", "tdd-opflow-feedback");
 
-        final OpflowRpcHandler rpc = new OpflowRpcHandler(flowParams);
+        final OpflowRpcMaster rpc = new OpflowRpcMaster(flowParams);
         
         Map<String, Object> input = new HashMap<String, Object>();
         input.put("number", 20);
