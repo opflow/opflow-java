@@ -20,8 +20,9 @@ public class OpflowRpcWorker {
 
     public OpflowRpcWorker(Map<String, Object> params) throws Exception {
         Map<String, Object> workerParams = new HashMap<String, Object>();
+        workerParams.put("mode", "rpc.worker");
         workerParams.put("uri", params.get("uri"));
-        workerParams.put("consumer.queueName", params.get("operatorName"));
+        workerParams.put("operator.queueName", params.get("operatorName"));
         workerParams.put("feedback.queueName", params.get("responseName"));
         worker = new OpflowEngine(workerParams);
     }

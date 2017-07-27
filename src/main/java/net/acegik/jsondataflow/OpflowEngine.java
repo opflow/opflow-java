@@ -28,23 +28,18 @@ public class OpflowEngine {
     private ConnectionFactory factory;
     private Connection connection;
     private Channel channel;
-    private Consumer consumer;
-    private String consumerTag;
 
     private String exchangeName;
     private String routingKey;
 
-    private String consumer_queueName;
-    private String feedback_queueName;
+    private Consumer operator;
+    private String operatorTag;
+    private String operatorName;
     
-    public Channel getChannel() {
-        return channel;
-    }
-    
-    public String getFeedbackQueueName() {
-        return feedback_queueName;
-    }
-    
+    private Consumer feedback;
+    private String feedbackTag;
+    private String feedbackName;
+
     private String getRequestID(Map<String, Object> headers) {
         if (headers == null) return UUID.randomUUID().toString();
         Object requestID = headers.get("requestId");
@@ -78,6 +73,14 @@ public class OpflowEngine {
                 factory.setPassword(password);
             }
         }
+        
+        connection = factory.newConnection();
+        channel = connection.createChannel();
+
+        String mode = (String) params.get("mode");
+        if ("rpc.worker".equals(mode)) {
+            channel.basicQos(1);
+        }
 
         String exchangeName = (String) params.get("exchangeName");
         if (exchangeName != null) this.exchangeName = exchangeName;
@@ -85,48 +88,39 @@ public class OpflowEngine {
         String exchangeType = (String) params.get("exchangeType");
         if (exchangeType == null) exchangeType = "direct";
 
-        routingKey = (String) params.get("routingKey");
-        if (routingKey == null) routingKey = ROUTING_KEY;
-
-        connection = factory.newConnection();
-        channel = connection.createChannel();
-
-        channel.basicQos(1);
-        
         if (this.exchangeName != null) {
             channel.exchangeDeclare(this.exchangeName, exchangeType, true);
         }
-
-        HashMap<String, Object> queueOpts = new HashMap<String, Object>();
         
-        // declare Feedback queue
-        String queueName = (String) params.get("feedback.queueName");
-        if (queueName != null) {
-            this.feedback_queueName = channel.queueDeclare(queueName, true, false, false, queueOpts).getQueue();
-        }
-        if (logger.isTraceEnabled()) logger.trace("feedback_queueName: " + this.feedback_queueName);
+        String queueName;
         
         // declare Operator queue
-        queueName = (String) params.get("consumer.queueName");
+        queueName = (String) params.get("operator.queueName");
         if (queueName != null) {
-            this.consumer_queueName = channel.queueDeclare(queueName, true, false, false, queueOpts).getQueue();
+            this.operatorName = channel.queueDeclare(queueName, true, false, false, null).getQueue();
         } else {
-            this.consumer_queueName = channel.queueDeclare().getQueue();
+            this.operatorName = channel.queueDeclare().getQueue();
         }
-        if (logger.isTraceEnabled()) logger.trace("consumer_queueName: " + this.consumer_queueName);
+        if (logger.isTraceEnabled()) logger.trace("operatorName: " + this.operatorName);
+
+        // declare Feedback queue
+        queueName = (String) params.get("feedback.queueName");
+        if (queueName != null) {
+            this.feedbackName = channel.queueDeclare(queueName, true, false, false, null).getQueue();
+        }
+        if (logger.isTraceEnabled()) logger.trace("feedbackName: " + this.feedbackName);
 
         // bind Operator queue to Exchange
-        Boolean binding = (Boolean) params.get("consumer.binding");
-        if (!Boolean.FALSE.equals(binding) && 
-                this.exchangeName != null && 
-                this.consumer_queueName != null && 
-                this.routingKey != null) {
+        routingKey = (String) params.get("routingKey");
+        Boolean binding = (Boolean) params.get("operator.binding");
+        if (!Boolean.FALSE.equals(binding) && this.routingKey != null && 
+                this.exchangeName != null && this.operatorName != null) {
             Map<String, Object> bindingArgs = (Map<String, Object>) params.get("bindingArgs");
             if (bindingArgs == null) bindingArgs = new HashMap<String, Object>();
-            channel.queueBind(this.consumer_queueName, this.exchangeName, routingKey, bindingArgs);
+            channel.queueBind(this.operatorName, this.exchangeName, this.routingKey, bindingArgs);
             if (logger.isTraceEnabled()) {
                 logger.trace(MessageFormat.format("Exchange[{0}] binded to Queue[{1}] with routingKey[{2}]", new Object[] {
-                    this.exchangeName, this.consumer_queueName, this.routingKey
+                    this.exchangeName, this.operatorName, this.routingKey
                 }));
             }
         }
@@ -146,8 +140,8 @@ public class OpflowEngine {
     
     public void consume(final OpflowListener listener) {
         final Channel _channel = this.channel;
-        final String _queueName = this.feedback_queueName;
-        consumer = new DefaultConsumer(channel) {
+        final String _queueName = this.feedbackName;
+        operator = new DefaultConsumer(channel) {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope,
                                        AMQP.BasicProperties properties, byte[] body) throws IOException {
@@ -184,9 +178,49 @@ public class OpflowEngine {
         };
         
         try {
-            consumerTag = channel.basicConsume(this.consumer_queueName, false, consumer);
+            operatorTag = channel.basicConsume(this.operatorName, false, operator);
             if (logger.isInfoEnabled()) {
-                logger.info("[*] Consume queue[" + this.consumer_queueName + "] -> consumerTag: " + consumerTag);
+                logger.info("[*] Consume queue[" + this.operatorName + "] -> consumerTag: " + operatorTag);
+            }
+        } catch (IOException exception) {
+            if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
+            throw new OpflowGeneralException(exception);
+        }
+    }
+    
+    public void pullout(final OpflowListener listener) {
+        feedback = new DefaultConsumer(channel) {
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope,
+                                       AMQP.BasicProperties properties, byte[] body) throws IOException {
+                String requestID = getRequestID(properties.getHeaders());
+                
+                if (logger.isInfoEnabled()) {
+                    logger.info("Request["+requestID+"] / DeliveryTag["+envelope.getDeliveryTag()+"] / ConsumerTag["+consumerTag+"]");
+                }
+                
+                if (logger.isTraceEnabled()) {
+                    if (body.length < 4*1024) {
+                        logger.trace("Request[" + requestID + "] - Message: " + new String(body, "UTF-8"));
+                    } else {
+                        logger.trace("Request[" + requestID + "] - Message size too large: " + body.length);
+                    }
+                }
+                
+                listener.processMessage(body, properties, null, null);
+
+                channel.basicAck(envelope.getDeliveryTag(), false);
+                
+                if (logger.isInfoEnabled()) {
+                    logger.info("Request[" + requestID + "] has finished successfully");
+                }
+            }
+        };
+        
+        try {
+            feedbackTag = channel.basicConsume(this.feedbackName, false, feedback);
+            if (logger.isInfoEnabled()) {
+                logger.info("[*] Consume queue[" + this.feedbackName + "] -> consumerTag: " + feedbackTag);
             }
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
@@ -197,8 +231,11 @@ public class OpflowEngine {
     public void close() {
         try {
             if (logger.isInfoEnabled()) logger.info("[*] Cancel consumer; close channel, connection.");
-            if (consumerTag != null) {
-                channel.basicCancel(consumerTag);
+            if (operatorTag != null) {
+                channel.basicCancel(operatorTag);
+            }
+            if (feedbackTag != null) {
+                channel.basicCancel(feedbackTag);
             }
             channel.close();
             connection.close();

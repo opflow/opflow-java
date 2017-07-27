@@ -20,19 +20,20 @@ public class OpflowRpcMaster {
 
     public OpflowRpcMaster(Map<String, Object> params) throws Exception {
         Map<String, Object> masterParams = new HashMap<String, Object>();
+        masterParams.put("mode", "rpc.master");
         masterParams.put("uri", params.get("uri"));
         masterParams.put("exchangeName", params.get("exchangeName"));
         masterParams.put("exchangeType", "direct");
         masterParams.put("routingKey", params.get("routingKey"));
-        masterParams.put("consumer.binding", Boolean.FALSE);
-        masterParams.put("consumer.queueName", params.get("responseName"));
+        masterParams.put("operator.queueName", params.get("operatorName"));
+        masterParams.put("feedback.queueName", params.get("responseName"));
         master = new OpflowEngine(masterParams);
     }
 
     private boolean responseConsumed = false;
 
-    public final void extractResult() {
-        master.consume(new OpflowListener() {
+    public final void consumeResponse() {
+        master.pullout(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 String taskId = properties.getCorrelationId();
@@ -51,8 +52,8 @@ public class OpflowRpcMaster {
     
     public OpflowRpcResult request(byte[] content, Map<String, Object> opts) {
         if (!responseConsumed) {
+            consumeResponse();
             responseConsumed = true;
-            extractResult();
         }
         
         OpflowRpcResult task = new OpflowRpcResult(); 
@@ -64,7 +65,6 @@ public class OpflowRpcMaster {
         AMQP.BasicProperties props = new AMQP.BasicProperties
                 .Builder()
                 .correlationId(task.getId())
-                //.replyTo(this.feedback_queueName)
                 .headers(headers)
                 .build();
 
