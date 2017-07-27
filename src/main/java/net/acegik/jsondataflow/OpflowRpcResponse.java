@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.acegik.jsondataflow.exception.OpflowOperationException;
 
 /**
  *
@@ -132,7 +133,7 @@ public class OpflowRpcResponse {
         try {
             channel.basicPublish("", queueName, replyProps, data);
         } catch (IOException exception) {
-            throw new OpflowGeneralException(exception);
+            throw new OpflowOperationException(exception);
         }
     }
 }

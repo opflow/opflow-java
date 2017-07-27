@@ -39,7 +39,11 @@ public class OpflowRpcMaster {
                 String taskId = properties.getCorrelationId();
                 OpflowRpcResult task = tasks.get(taskId);
                 if (taskId == null || task == null) return;
-                task.push(new OpflowMessage(content, properties.getHeaders()));
+                OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
+                task.push(message);
+                if (task.isCompleted(message)) {
+                    tasks.remove(taskId);
+                }
             }
         });
     }

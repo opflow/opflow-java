@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.acegik.jsondataflow.exception.OpflowOperationException;
 
 /**
  *
@@ -22,8 +23,6 @@ import org.slf4j.LoggerFactory;
 public class OpflowEngine {
 
     final Logger logger = LoggerFactory.getLogger(OpflowEngine.class);
-
-    private static final String ROUTING_KEY = "sample";
 
     private ConnectionFactory factory;
     private Connection connection;
@@ -134,7 +133,7 @@ public class OpflowEngine {
             }
             channel.basicPublish(this.exchangeName, customKey, props, content);
         } catch (IOException exception) {
-            throw new OpflowGeneralException(exception);
+            throw new OpflowOperationException(exception);
         }
     }
     
@@ -184,7 +183,7 @@ public class OpflowEngine {
             }
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
-            throw new OpflowGeneralException(exception);
+            throw new OpflowOperationException(exception);
         }
     }
     
@@ -224,7 +223,7 @@ public class OpflowEngine {
             }
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
-            throw new OpflowGeneralException(exception);
+            throw new OpflowOperationException(exception);
         }
     }
 
@@ -241,7 +240,7 @@ public class OpflowEngine {
             connection.close();
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("close() has been failed, exception: " + exception.getMessage());
-            throw new OpflowGeneralException(exception);
+            throw new OpflowOperationException(exception);
         }
     }
 }

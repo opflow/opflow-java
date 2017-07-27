@@ -3,6 +3,7 @@ package net.acegik.jsondataflow;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
+import net.acegik.jsondataflow.exception.OpflowOperationException;
 
 /**
  *
@@ -14,7 +15,7 @@ public class OpflowUtil {
         try {
             return data.getBytes("UTF-8");
         } catch (UnsupportedEncodingException exception) {
-            throw new OpflowGeneralException(exception);
+            throw new OpflowOperationException(exception);
         }
     }
     
@@ -23,7 +24,7 @@ public class OpflowUtil {
         try {
             return new String(data, "UTF-8");
         } catch (UnsupportedEncodingException exception) {
-            throw new OpflowGeneralException(exception);
+            throw new OpflowOperationException(exception);
         }
     }
     

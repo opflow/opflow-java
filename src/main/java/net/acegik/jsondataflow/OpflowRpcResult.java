@@ -62,9 +62,9 @@ public class OpflowRpcResult implements Iterator {
         list.add(message);
     }
     
-    private final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
+    private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
     
-    private boolean isCompleted(OpflowMessage message) {
+    public static boolean isCompleted(OpflowMessage message) {
         Map<String, Object> info = message.getInfo();
         if (info == null) return false;
         return STATUS.indexOf(info.get("status")) >= 0;
