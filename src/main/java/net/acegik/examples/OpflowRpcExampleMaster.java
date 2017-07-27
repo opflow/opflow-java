@@ -14,19 +14,24 @@ public class OpflowRpcExampleMaster {
         final HashMap<String, Object> flowParams = new HashMap<String, Object>();
         flowParams.put("uri", "amqp://master:zaq123edcx@192.168.56.56?frameMax=0x1000");
         flowParams.put("exchangeName", "tdd-opflow-exchange");
-        flowParams.put("exchangeType", "direct");
         flowParams.put("routingKey", "sample");
         flowParams.put("operatorName", "tdd-opflow-queue");
         flowParams.put("responseName", "tdd-opflow-feedback");
 
         final OpflowRpcHandler rpc = new OpflowRpcHandler(flowParams);
+        
         Map<String, Object> input = new HashMap<String, Object>();
         input.put("number", 20);
-        OpflowRpcResult result = rpc.request(gson.toJson(input), flowParams);
+        String inputStr = gson.toJson(input);
+        
+        System.out.println("[+] ExampleMaster request: '" + inputStr);
+        OpflowRpcResult result = rpc.request(inputStr, flowParams);
         
         while(result.hasNext()) {
             OpflowMessage msg = result.next();
-            System.out.println(" message: " + msg.getContentAsString());
+            System.out.println("[-] message received: " + msg.getContentAsString());
         }
+        
+        System.out.println("[-] ExampleMaster has finished");
     }
 }

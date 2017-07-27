@@ -17,9 +17,6 @@ public class OpflowRpcExampleWorker {
         final JsonParser jsonParser = new JsonParser();
         final HashMap<String, Object> flowParams = new HashMap<String, Object>();
         flowParams.put("uri", "amqp://master:zaq123edcx@192.168.56.56?frameMax=0x1000");
-        flowParams.put("exchangeName", "tdd-opflow-exchange");
-        flowParams.put("exchangeType", "direct");
-        flowParams.put("routingKey", "sample");
         flowParams.put("operatorName", "tdd-opflow-queue");
         flowParams.put("responseName", "tdd-opflow-feedback");
 
@@ -28,7 +25,7 @@ public class OpflowRpcExampleWorker {
             @Override
             public void processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 JsonObject jsonObject = (JsonObject)jsonParser.parse(message.getContentAsString());
-                System.out.println(" [+] Received '" + jsonObject.toString() + "'");
+                System.out.println("[+] ExampleWorker received: '" + jsonObject.toString() + "'");
 
                 response.emitStarted();
 
@@ -41,7 +38,7 @@ public class OpflowRpcExampleWorker {
                 }
 
                 String result = gson.toJson(fibonacci.result());
-                System.out.println(" [-] Result '" + result + "'");
+                System.out.println("[-] ExampleWorker finished with: '" + result + "'");
 
                 response.emitCompleted(result);
             }

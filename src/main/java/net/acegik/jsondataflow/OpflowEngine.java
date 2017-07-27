@@ -154,9 +154,7 @@ public class OpflowEngine {
                 String requestID = getRequestID(properties.getHeaders());
                 
                 if (logger.isInfoEnabled()) {
-                    logger.info(MessageFormat.format("Request[{0}] / DeliveryTag[{1}] handled in consumerTag[{2}]", new Object[] {
-                        requestID, envelope.getDeliveryTag(), consumerTag
-                    }));
+                    logger.info("Request["+requestID+"] / DeliveryTag["+envelope.getDeliveryTag()+"] / ConsumerTag["+consumerTag+"]");
                 }
                 
                 if (logger.isTraceEnabled()) {
@@ -172,12 +170,16 @@ public class OpflowEngine {
                 }));
                 listener.processMessage(body, properties, _queueName, _channel);
 
-                if (logger.isInfoEnabled()) {
-                    logger.info(MessageFormat.format("Request[{0}] invoke Ack({1}, false))", new Object[] {
-                        requestID, envelope.getDeliveryTag()
+                if (logger.isTraceEnabled()) {
+                    logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
+                        requestID, envelope.getDeliveryTag(), consumerTag
                     }));
                 }
                 channel.basicAck(envelope.getDeliveryTag(), false);
+                
+                if (logger.isInfoEnabled()) {
+                    logger.info("Request[" + requestID + "] has finished successfully");
+                }
             }
         };
         
@@ -185,7 +187,6 @@ public class OpflowEngine {
             consumerTag = channel.basicConsume(this.consumer_queueName, false, consumer);
             if (logger.isInfoEnabled()) {
                 logger.info("[*] Consume queue[" + this.consumer_queueName + "] -> consumerTag: " + consumerTag);
-                logger.info("[*] Waiting for messages. To exit press CTRL+C");
             }
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
