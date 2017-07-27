@@ -5,14 +5,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.IOException;
-import java.util.Map;
 import net.acegik.jsondataflow.OpflowMessage;
 import net.acegik.jsondataflow.OpflowRpcHandler;
 import net.acegik.jsondataflow.OpflowRpcListener;
 import net.acegik.jsondataflow.OpflowRpcResponse;
-import net.acegik.jsondataflow.OpflowRpcResult;
 
-public class OpflowRpcExample {
+public class OpflowRpcExampleWorker {
 
     public static void main(String[] argv) throws Exception {
         final Gson gson = new Gson();
@@ -29,7 +27,7 @@ public class OpflowRpcExample {
         rpc.process(new OpflowRpcListener() {
             @Override
             public void processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
-                JsonObject jsonObject = (JsonObject)jsonParser.parse(new String(message.getContent(), "UTF-8"));
+                JsonObject jsonObject = (JsonObject)jsonParser.parse(message.getContentAsString());
                 System.out.println(" [+] Received '" + jsonObject.toString() + "'");
 
                 response.emitStarted();
@@ -48,14 +46,5 @@ public class OpflowRpcExample {
                 response.emitCompleted(result);
             }
         });
-        
-        Map<String, Object> input = new HashMap<String, Object>();
-        input.put("number", 20);
-        OpflowRpcResult result = rpc.request(gson.toJson(input), flowParams);
-        
-        while(result.hasNext()) {
-            OpflowMessage msg = result.next();
-            System.out.println(" message: " + msg.getContentAsString());
-        }
     }
 }

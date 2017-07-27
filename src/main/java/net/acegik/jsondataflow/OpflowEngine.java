@@ -8,8 +8,10 @@ import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,13 +23,13 @@ public class OpflowEngine {
 
     final Logger logger = LoggerFactory.getLogger(OpflowEngine.class);
 
-    private static final String EXCHANGE_NAME = "sample-exchange";
     private static final String ROUTING_KEY = "sample";
 
     private ConnectionFactory factory;
     private Connection connection;
     private Channel channel;
     private Consumer consumer;
+    private String consumerTag;
 
     private String exchangeName;
     private String routingKey;
@@ -43,10 +45,10 @@ public class OpflowEngine {
         return feedback_queueName;
     }
     
-    private String getRequestID(Map<String, Object> headers, String defaultID) {
-        if (headers == null) return defaultID;
+    private String getRequestID(Map<String, Object> headers) {
+        if (headers == null) return UUID.randomUUID().toString();
         Object requestID = headers.get("requestId");
-        if (requestID == null) return defaultID;
+        if (requestID == null) return UUID.randomUUID().toString();
         return requestID.toString();
     }
 
@@ -102,7 +104,7 @@ public class OpflowEngine {
         if (queueName != null) {
             this.feedback_queueName = channel.queueDeclare(queueName, true, false, false, queueOpts).getQueue();
         }
-        System.out.println(" [*] feedback_queueName: " + this.feedback_queueName);
+        if (logger.isTraceEnabled()) logger.trace("feedback_queueName: " + this.feedback_queueName);
         
         // declare Operator queue
         queueName = (String) params.get("consumer.queueName");
@@ -111,7 +113,7 @@ public class OpflowEngine {
         } else {
             this.consumer_queueName = channel.queueDeclare().getQueue();
         }
-        System.out.println(" [*] consumer_queueName: " + this.consumer_queueName);
+        if (logger.isTraceEnabled()) logger.trace("consumer_queueName: " + this.consumer_queueName);
 
         // bind Operator queue to Exchange
         Boolean binding = (Boolean) params.get("consumer.binding");
@@ -122,9 +124,12 @@ public class OpflowEngine {
             Map<String, Object> bindingArgs = (Map<String, Object>) params.get("bindingArgs");
             if (bindingArgs == null) bindingArgs = new HashMap<String, Object>();
             channel.queueBind(this.consumer_queueName, this.exchangeName, routingKey, bindingArgs);
+            if (logger.isTraceEnabled()) {
+                logger.trace(MessageFormat.format("Exchange[{0}] binded to Queue[{1}] with routingKey[{2}]", new Object[] {
+                    this.exchangeName, this.consumer_queueName, this.routingKey
+                }));
+            }
         }
-
-        System.out.println(" [*] Waiting for messages. To exit press CTRL+C");
     }
 
     public void produce(final byte[] content, final AMQP.BasicProperties props, final Map<String, Object> override) {
@@ -146,33 +151,54 @@ public class OpflowEngine {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope,
                                        AMQP.BasicProperties properties, byte[] body) throws IOException {
-                String requestID = getRequestID(properties.getHeaders(), "");
-                String message = new String(body, "UTF-8");
-
-                System.out.println(" [+] Message: " + message);
+                String requestID = getRequestID(properties.getHeaders());
                 
-                if (logger.isDebugEnabled()) logger.debug("Request[" + requestID + "] consumes new message");
-                if (logger.isDebugEnabled()) logger.debug("Request[" + requestID + "] fire an event");
-
+                if (logger.isInfoEnabled()) {
+                    logger.info(MessageFormat.format("Request[{0}] / DeliveryTag[{1}] handled in consumerTag[{2}]", new Object[] {
+                        requestID, envelope.getDeliveryTag(), consumerTag
+                    }));
+                }
+                
+                if (logger.isTraceEnabled()) {
+                    if (body.length < 4*1024) {
+                        logger.trace("Request[" + requestID + "] - Message: " + new String(body, "UTF-8"));
+                    } else {
+                        logger.trace("Request[" + requestID + "] - Message size too large: " + body.length);
+                    }
+                }
+                
+                if (logger.isTraceEnabled()) logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
+                    requestID
+                }));
                 listener.processMessage(body, properties, _queueName, _channel);
 
+                if (logger.isInfoEnabled()) {
+                    logger.info(MessageFormat.format("Request[{0}] invoke Ack({1}, false))", new Object[] {
+                        requestID, envelope.getDeliveryTag()
+                    }));
+                }
                 channel.basicAck(envelope.getDeliveryTag(), false);
             }
         };
         
         try {
-            String consumerTag = channel.basicConsume(this.consumer_queueName, false, consumer);
-            System.out.println(" [*] Invoke basicConsume(" + this.consumer_queueName + ") -> " + consumerTag);
-        } catch (Exception exception) {
-            if (logger.isErrorEnabled()) logger.error("run() has been failed, exception: " + exception.getMessage());
-             System.out.println("run() has been failed, exception: " + exception.getMessage());
+            consumerTag = channel.basicConsume(this.consumer_queueName, false, consumer);
+            if (logger.isInfoEnabled()) {
+                logger.info("[*] Consume queue[" + this.consumer_queueName + "] -> consumerTag: " + consumerTag);
+                logger.info("[*] Waiting for messages. To exit press CTRL+C");
+            }
+        } catch (IOException exception) {
+            if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
             throw new OpflowGeneralException(exception);
         }
     }
 
     public void close() {
         try {
-            System.out.println(" [*] Close....");
+            if (logger.isInfoEnabled()) logger.info("[*] Cancel consumer; close channel, connection.");
+            if (consumerTag != null) {
+                channel.basicCancel(consumerTag);
+            }
             channel.close();
             connection.close();
         } catch (Exception exception) {

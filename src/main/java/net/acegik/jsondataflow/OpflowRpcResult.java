@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -13,7 +14,28 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class OpflowRpcResult implements Iterator {
 
+    private final String id;
+    private final String requestId;
+    
     public OpflowRpcResult() {
+        this(UUID.randomUUID().toString());
+    }
+    
+    public OpflowRpcResult(String requestId) {
+        this(requestId, UUID.randomUUID().toString());
+    }
+    
+    public OpflowRpcResult(String requestId, String id) {
+        this.id = id;
+        this.requestId = requestId;
+    }
+    
+    public String getId() {
+        return id;
+    }
+
+    public String getRequestId() {
+        return requestId;
     }
     
     private final BlockingQueue<OpflowMessage> list = new LinkedBlockingQueue<OpflowMessage>();
@@ -23,11 +45,7 @@ public class OpflowRpcResult implements Iterator {
     public boolean hasNext() {
         try {
             this.current = list.take();
-            if (isCompleted(this.current)) {
-                return false;
-            } else {
-                return true;
-            }
+            return !isCompleted(this.current);
         } catch (InterruptedException ie) {
             return false;
         }

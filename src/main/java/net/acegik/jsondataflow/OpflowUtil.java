@@ -10,6 +10,7 @@ import java.util.Map;
  */
 public class OpflowUtil {
     public static byte[] getBytes(String data) {
+        if (data == null) return null;
         try {
             return data.getBytes("UTF-8");
         } catch (UnsupportedEncodingException exception) {
@@ -18,6 +19,7 @@ public class OpflowUtil {
     }
     
     public static String getString(byte[] data) {
+        if (data == null) return null;
         try {
             return new String(data, "UTF-8");
         } catch (UnsupportedEncodingException exception) {

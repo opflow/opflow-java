@@ -5,7 +5,6 @@ import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +28,6 @@ public class OpflowRpcHandler {
         masterParams.put("consumer.binding", Boolean.FALSE);
         masterParams.put("consumer.queueName", params.get("responseName"));
         master = new OpflowEngine(masterParams);
-        extractResult();
         
         Map<String, Object> workerParams = new HashMap<String, Object>();
         workerParams.put("uri", params.get("uri"));
@@ -37,6 +35,8 @@ public class OpflowRpcHandler {
         workerParams.put("feedback.queueName", params.get("responseName"));
         worker = new OpflowEngine(workerParams);
     }
+
+    private boolean responseConsumed = false;
 
     public final void extractResult() {
         master.consume(new OpflowListener() {
@@ -52,25 +52,32 @@ public class OpflowRpcHandler {
     
     private final Map<String, OpflowRpcResult> tasks = new HashMap<String, OpflowRpcResult>();
     
-    public OpflowRpcResult request(String data, Map<String, Object> opts) {
-        return request(OpflowUtil.getBytes(data), opts);
+    public OpflowRpcResult request(String content, Map<String, Object> opts) {
+        return request(OpflowUtil.getBytes(content), opts);
     }
     
-    public OpflowRpcResult request(byte[] data, Map<String, Object> opts) {
-        String taskId = UUID.randomUUID().toString();
-
-        tasks.put(taskId, new OpflowRpcResult());
+    public OpflowRpcResult request(byte[] content, Map<String, Object> opts) {
+        if (!responseConsumed) {
+            responseConsumed = true;
+            extractResult();
+        }
+        
+        OpflowRpcResult task = new OpflowRpcResult(); 
+        tasks.put(task.getId(), task);
+        
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put("requestId", task.getRequestId());
         
         AMQP.BasicProperties props = new AMQP.BasicProperties
                 .Builder()
-                .correlationId(taskId)
+                .correlationId(task.getId())
                 //.replyTo(this.feedback_queueName)
-                .headers(opts)
+                .headers(headers)
                 .build();
 
-        master.produce(data, props, null);
+        master.produce(content, props, null);
         
-        return tasks.get(taskId);
+        return task;
     }
     
     public void process(final OpflowRpcListener listener) {
