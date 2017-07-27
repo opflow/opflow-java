@@ -1,5 +1,6 @@
 package net.acegik.jsondataflow;
 
+import com.google.gson.Gson;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +11,8 @@ import net.acegik.jsondataflow.exception.OpflowOperationException;
  * @author drupalex
  */
 public class OpflowUtil {
+    private static final Gson gson = new Gson();
+    
     public static byte[] getBytes(String data) {
         if (data == null) return null;
         try {
@@ -35,5 +38,17 @@ public class OpflowUtil {
             clonedParams.put(i, value);
         }
         return clonedParams;
+    }
+    
+    public interface JsonListener {
+        public void handleData(Map<String, Object> opts);
+    }
+    
+    public static String buildJson(JsonListener listener) {
+        Map<String, Object> jsonMap = new HashMap<String, Object>();
+        if (listener != null) {
+            listener.handleData(jsonMap);
+        }
+        return gson.toJson(jsonMap);
     }
 }
