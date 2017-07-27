@@ -16,18 +16,20 @@ public class OpflowRpcResult implements Iterator {
 
     private final String id;
     private final String requestId;
+    private final String routineId;
     
     public OpflowRpcResult() {
-        this(UUID.randomUUID().toString());
+        this(null, null);
     }
     
-    public OpflowRpcResult(String requestId) {
-        this(requestId, UUID.randomUUID().toString());
+    public OpflowRpcResult(String routineId) {
+        this(routineId, null);
     }
     
-    public OpflowRpcResult(String requestId, String id) {
-        this.id = id;
-        this.requestId = requestId;
+    public OpflowRpcResult(String routineId, String requestId) {
+        this.id = UUID.randomUUID().toString();
+        this.requestId = requestId != null ? requestId : UUID.randomUUID().toString();
+        this.routineId = routineId != null ? routineId : UUID.randomUUID().toString();
     }
     
     public String getId() {
@@ -36,6 +38,10 @@ public class OpflowRpcResult implements Iterator {
 
     public String getRequestId() {
         return requestId;
+    }
+    
+    public String getRoutineId() {
+        return routineId;
     }
     
     private final BlockingQueue<OpflowMessage> list = new LinkedBlockingQueue<OpflowMessage>();
@@ -67,6 +73,7 @@ public class OpflowRpcResult implements Iterator {
     public static boolean isCompleted(OpflowMessage message) {
         Map<String, Object> info = message.getInfo();
         if (info == null) return false;
-        return STATUS.indexOf(info.get("status")) >= 0;
+        String status = info.get("status").toString();
+        return STATUS.indexOf(status) >= 0;
     }
 }

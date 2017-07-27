@@ -33,17 +33,23 @@ public class OpflowRpcMaster {
     private boolean responseConsumed = false;
 
     public final void consumeResponse() {
+        if (logger.isTraceEnabled()) logger.trace("invoke consumeResponse()");
         master.pullout(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 String taskId = properties.getCorrelationId();
+                if (logger.isDebugEnabled()) logger.debug("received taskId: " + taskId);
                 OpflowRpcResult task = tasks.get(taskId);
-                if (taskId == null || task == null) return;
+                if (taskId == null || task == null) {
+                    if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] not found. Skipped");
+                    return;
+                }
                 OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                 task.push(message);
                 if (task.isCompleted(message)) {
                     tasks.remove(taskId);
                 }
+                if (logger.isDebugEnabled()) logger.debug("tasks.size(): " + tasks.size());
             }
         });
     }
@@ -55,16 +61,20 @@ public class OpflowRpcMaster {
     }
     
     public OpflowRpcResult request(byte[] content, Map<String, Object> opts) {
+        opts = opts != null ? opts : new HashMap<String, Object>();
+        
         if (!responseConsumed) {
             consumeResponse();
             responseConsumed = true;
         }
         
-        OpflowRpcResult task = new OpflowRpcResult(); 
+        if (null == opts) opts = new HashMap<String, Object>();
+        OpflowRpcResult task = new OpflowRpcResult((String)opts.get("routineId"), (String)opts.get("requestId")); 
         tasks.put(task.getId(), task);
         
         Map<String, Object> headers = new HashMap<String, Object>();
         headers.put("requestId", task.getRequestId());
+        headers.put("routineId", task.getRoutineId());
         
         AMQP.BasicProperties props = new AMQP.BasicProperties
                 .Builder()
