@@ -14,8 +14,10 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.acegik.jsondataflow.exception.OpflowConstructorException;
 import net.acegik.jsondataflow.exception.OpflowOperationException;
 
 /**
@@ -33,14 +35,6 @@ public class OpflowEngine {
     private String exchangeName;
     private String exchangeType;
     private String routingKey;
-
-    private Consumer operator;
-    private String operatorTag;
-    private String operatorName;
-    
-    private Consumer feedback;
-    private String feedbackTag;
-    private String feedbackName;
 
     public OpflowEngine(Map<String, Object> params) throws Exception {
         factory = new ConnectionFactory();
@@ -70,7 +64,6 @@ public class OpflowEngine {
         }
         
         connection = factory.newConnection();
-        channel = connection.createChannel();
 
         exchangeName = (String) params.get("exchangeName");
         exchangeType = (String) params.get("exchangeType");
@@ -79,7 +72,7 @@ public class OpflowEngine {
         if (exchangeType == null) exchangeType = "direct";
 
         if (exchangeName != null && exchangeType != null) {
-            channel.exchangeDeclare(exchangeName, exchangeType, true);
+            getChannel().exchangeDeclare(exchangeName, exchangeType, true);
         }
     }
 
@@ -89,7 +82,7 @@ public class OpflowEngine {
             if (override != null && override.get("routingKey") != null) {
                 customKey = (String) override.get("routingKey");
             }
-            channel.basicPublish(this.exchangeName, customKey, props, content);
+            getChannel().basicPublish(this.exchangeName, customKey, props, content);
         } catch (IOException exception) {
             throw new OpflowOperationException(exception);
         }
@@ -100,11 +93,11 @@ public class OpflowEngine {
         try {
             final Channel _channel;
             
-            Boolean _forceNewChannel = (Boolean) opts.get("forceNewChannel");
+            final Boolean _forceNewChannel = (Boolean) opts.get("forceNewChannel");
             if (!Boolean.FALSE.equals(_forceNewChannel)) {
                 _channel = this.connection.createChannel();
             } else {
-                _channel = channel;
+                _channel = getChannel();
             }
             
             Integer _prefetch = null;
@@ -112,7 +105,7 @@ public class OpflowEngine {
                 _prefetch = (Integer) opts.get("prefetch");
             }
             if (_prefetch != null && _prefetch > 0) {
-                channel.basicQos(_prefetch);
+                _channel.basicQos(_prefetch);
             }
             
             final String _queueName;
@@ -180,6 +173,19 @@ public class OpflowEngine {
                 }
                 
                 @Override
+                public void handleCancelOk(String consumerTag) {
+                    if (!Boolean.FALSE.equals(_forceNewChannel)) {
+                        try {
+                            _channel.close();
+                        } catch (IOException ex) {
+                            
+                        } catch (TimeoutException ex) {
+                            
+                        }
+                    }
+                }
+                
+                @Override
                 public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
                     if (logger.isInfoEnabled()) {
                         logger.info(MessageFormat.format("ConsumerTag[{1}] handle shutdown signal", new Object[] {
@@ -195,15 +201,15 @@ public class OpflowEngine {
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
                     if (logger.isInfoEnabled()) {
-                        logger.info(MessageFormat.format("Channel contains Queue[{0}]/ConsumerTag[{1}] has been shutdown", new Object[] {
-                            _queueName, _consumerTag
+                        logger.info(MessageFormat.format("Channel[{0}] contains Queue[{1}]/ConsumerTag[{2}] has been shutdown", new Object[] {
+                            _channel.getChannelNumber(), _queueName, _consumerTag
                         }));
                     }
                 }
             });
             
             if (logger.isInfoEnabled()) {
-                logger.info("[*] Consume queue[" + _queueName + "] -> consumerTag: " + _consumerTag);
+                logger.info("[*] Consume Channel[" + _channel.getChannelNumber() + "]/Queue[" + _queueName + "] -> consumerTag: " + _consumerTag);
             }
             return new ConsumerInfo(_channel, _queueName, _consumer, _consumerTag);
         } catch(IOException exception) {
@@ -244,13 +250,33 @@ public class OpflowEngine {
     
     public void close() {
         try {
-            if (logger.isInfoEnabled()) logger.info("[*] Cancel consumer; close channel, connection.");
-            channel.close();
-            connection.close();
+            if (logger.isInfoEnabled()) logger.info("[*] Cancel consumers, close channels, close connection.");
+            if (channel != null) channel.close();
+            if (connection != null) connection.close();
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("close() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
         }
+    }
+    
+    private Channel getChannel() {
+        if (channel == null) {
+            try {
+                channel = connection.createChannel();
+                channel.addShutdownListener(new ShutdownListener() {
+                    @Override
+                    public void shutdownCompleted(ShutdownSignalException sse) {
+                        if (logger.isInfoEnabled()) {
+                            logger.info("Main channel[" + channel.getChannelNumber() + "] has been shutdown");
+                        }
+                    }
+                });
+            } catch (IOException exception) {
+                if (logger.isErrorEnabled()) logger.error("getChannel() has been failed, exception: " + exception.getMessage());
+                throw new OpflowConstructorException(exception);
+            }
+        }
+        return channel;
     }
     
     private String getRequestID(Map<String, Object> headers) {

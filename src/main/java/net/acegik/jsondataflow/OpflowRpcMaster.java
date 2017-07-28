@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +20,9 @@ public class OpflowRpcMaster {
 
     final Logger logger = LoggerFactory.getLogger(OpflowRpcMaster.class);
 
+    final Lock lock = new ReentrantLock();
+    final Condition idle = lock.newCondition();
+    
     private final OpflowEngine broker;
     private final String responseName;
     
@@ -61,19 +67,15 @@ public class OpflowRpcMaster {
     
     private final Map<String, OpflowRpcResult> tasks = new HashMap<String, OpflowRpcResult>();
     
-    public OpflowRpcResult request(String content, Map<String, Object> opts) {
-        return request(OpflowUtil.getBytes(content), opts);
+    public OpflowRpcResult request(String routineId, String content, Map<String, Object> opts) {
+        return request(routineId, OpflowUtil.getBytes(content), opts);
     }
     
-    public OpflowRpcResult request(byte[] content, Map<String, Object> opts) {
+    public OpflowRpcResult request(String routineId, byte[] content, Map<String, Object> opts) {
         opts = opts != null ? opts : new HashMap<String, Object>();
         final boolean isStandalone = "standalone".equals((String)opts.get("mode"));
         
-        if (responseConsumer == null) {
-            responseConsumer = consumeResponse();
-        }
-        
-        OpflowEngine.ConsumerInfo consumerInfo;
+        final OpflowEngine.ConsumerInfo consumerInfo;
         
         if (isStandalone) {
             consumerInfo = broker.consume(new OpflowListener() {
@@ -97,6 +99,9 @@ public class OpflowRpcMaster {
                 }
             }));
         } else {
+            if (responseConsumer == null) {
+                responseConsumer = consumeResponse();
+            }
             consumerInfo = responseConsumer;
         }
         
@@ -105,9 +110,24 @@ public class OpflowRpcMaster {
             @Override
             public void handleEvent() {
                 tasks.remove(taskId);
+                if (isStandalone) {
+                    cancelConsumer(consumerInfo);
+                }
+                if (tasks.size() == 0) {
+                    lock.lock();
+                    try {
+                        idle.signal();
+                    } finally {
+                        lock.unlock();
+                    }
+                }
                 if (logger.isDebugEnabled()) logger.debug("tasks.size(): " + tasks.size());
             }
         };
+        
+        if (routineId != null) {
+            opts.put("routineId", routineId);
+        }
         
         OpflowRpcResult task = new OpflowRpcResult(opts, listener);
         tasks.put(taskId, task);
@@ -121,6 +141,10 @@ public class OpflowRpcMaster {
                 .headers(headers)
                 .correlationId(taskId);
         
+        if (isStandalone) {
+            builder.replyTo(consumerInfo.getQueueName());
+        }
+        
         AMQP.BasicProperties props = builder.build();
 
         broker.produce(content, props, null);
@@ -129,6 +153,25 @@ public class OpflowRpcMaster {
     }
 
     public void close() {
-        if (broker != null) broker.close();
+        lock.lock();
+        try {
+            while(tasks.size() > 0) idle.await();
+            if (responseConsumer != null) cancelConsumer(responseConsumer);
+            if (broker != null) broker.close();
+        } catch(Exception ex) {
+        } finally {
+            lock.unlock();
+        }
+    }
+    
+    private void cancelConsumer(OpflowEngine.ConsumerInfo consumerInfo) {
+        try {
+            consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] is cancelled");
+            }
+        } catch (IOException ex) {
+            if (logger.isDebugEnabled()) logger.debug("cancel consumer failed, IOException: " + ex.getMessage());
+        }
     }
 }
