@@ -51,4 +51,16 @@ public class OpflowUtil {
         }
         return gson.toJson(jsonMap);
     }
+    
+    public static Map<String, Object> buildOptions(JsonListener listener) {
+        Map<String, Object> jsonMap = new HashMap<String, Object>();
+        if (listener != null) {
+            listener.handleData(jsonMap);
+        }
+        return jsonMap;
+    }
+    
+    public static Map<String, Object> assertNotNull(Map<String, Object> opts) {
+        return (opts == null) ? new HashMap<String, Object>() : opts;
+    }
 }

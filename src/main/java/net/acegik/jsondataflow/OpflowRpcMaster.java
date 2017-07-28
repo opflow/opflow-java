@@ -18,7 +18,8 @@ public class OpflowRpcMaster {
     final Logger logger = LoggerFactory.getLogger(OpflowRpcMaster.class);
 
     private final OpflowEngine master;
-
+    private final String responseName;
+    
     public OpflowRpcMaster(Map<String, Object> params) throws Exception {
         Map<String, Object> masterParams = new HashMap<String, Object>();
         masterParams.put("mode", "rpc.master");
@@ -28,14 +29,15 @@ public class OpflowRpcMaster {
         masterParams.put("routingKey", params.get("routingKey"));
         masterParams.put("operator.queueName", params.get("operatorName"));
         masterParams.put("feedback.queueName", params.get("responseName"));
+        responseName = (String) params.get("responseName");
         master = new OpflowEngine(masterParams);
     }
 
-    private boolean responseConsumed = false;
+    private OpflowEngine.ConsumerInfo responseConsumer;
 
-    public final void consumeResponse() {
+    public final OpflowEngine.ConsumerInfo consumeResponse() {
         if (logger.isTraceEnabled()) logger.trace("invoke consumeResponse()");
-        master.pullout(new OpflowListener() {
+        return master.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 String taskId = properties.getCorrelationId();
@@ -49,7 +51,12 @@ public class OpflowRpcMaster {
                 task.push(message);
                 if (logger.isDebugEnabled()) logger.debug("Message has been pushed to task[" + taskId + "]");
             }
-        });
+        }, OpflowUtil.buildOptions(new OpflowUtil.JsonListener() {
+            @Override
+            public void handleData(Map<String, Object> opts) {
+                opts.put("queueName", responseName);
+            }
+        }));
     }
     
     private final Map<String, OpflowRpcResult> tasks = new HashMap<String, OpflowRpcResult>();
@@ -60,10 +67,35 @@ public class OpflowRpcMaster {
     
     public OpflowRpcResult request(byte[] content, Map<String, Object> opts) {
         opts = opts != null ? opts : new HashMap<String, Object>();
+        final boolean isStandalone = "standalone".equals((String)opts.get("mode"));
         
-        if (!responseConsumed) {
-            consumeResponse();
-            responseConsumed = true;
+        if (responseConsumer == null) {
+            responseConsumer = consumeResponse();
+        }
+        
+        OpflowEngine.ConsumerInfo consumerInfo;
+        
+        if (isStandalone) {
+            consumerInfo = master.consume(new OpflowListener() {
+                @Override
+                public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
+                    String taskId = properties.getCorrelationId();
+                    if (logger.isDebugEnabled()) logger.debug("received taskId: " + taskId);
+                    OpflowRpcResult task = tasks.get(taskId);
+                    if (taskId == null || task == null) {
+                        if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] not found. Skipped");
+                        return;
+                    }
+                    OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
+                    task.push(message);
+                    if (logger.isDebugEnabled()) logger.debug("Message has been pushed to task[" + taskId + "]");
+                }
+            }, OpflowUtil.buildOptions(new OpflowUtil.JsonListener() {
+                @Override
+                public void handleData(Map<String, Object> opts) {}
+            }));
+        } else {
+            consumerInfo = responseConsumer;
         }
         
         final String taskId = UUID.randomUUID().toString();
@@ -82,11 +114,12 @@ public class OpflowRpcMaster {
         headers.put("requestId", task.getRequestId());
         headers.put("routineId", task.getRoutineId());
         
-        AMQP.BasicProperties props = new AMQP.BasicProperties
+        AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties
                 .Builder()
-                .correlationId(taskId)
                 .headers(headers)
-                .build();
+                .correlationId(taskId);
+        
+        AMQP.BasicProperties props = builder.build();
 
         master.produce(content, props, null);
         
