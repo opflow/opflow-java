@@ -16,23 +16,24 @@ public class OpflowRpcWorker {
 
     final Logger logger = LoggerFactory.getLogger(OpflowRpcWorker.class);
 
-    private final OpflowEngine worker;
+    private final OpflowEngine broker;
     private final String operatorName;
     private final String responseName;
     
     public OpflowRpcWorker(Map<String, Object> params) throws Exception {
-        Map<String, Object> workerParams = new HashMap<String, Object>();
-        workerParams.put("mode", "rpc.worker");
-        workerParams.put("uri", params.get("uri"));
-        workerParams.put("operator.queueName", params.get("operatorName"));
+        Map<String, Object> brokerParams = new HashMap<String, Object>();
+        brokerParams.put("mode", "rpc.worker");
+        brokerParams.put("uri", params.get("uri"));
+        brokerParams.put("exchangeName", params.get("exchangeName"));
+        brokerParams.put("exchangeType", "direct");
+        brokerParams.put("routingKey", params.get("routingKey"));
+        broker = new OpflowEngine(brokerParams);
         operatorName = (String) params.get("operatorName");
-        workerParams.put("feedback.queueName", params.get("responseName"));
         responseName = (String) params.get("responseName");
-        worker = new OpflowEngine(workerParams);
     }
 
     public OpflowEngine.ConsumerInfo process(final OpflowRpcListener listener) {
-        return worker.consume(new OpflowListener() {
+        return broker.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, queueName);
@@ -43,11 +44,12 @@ public class OpflowRpcWorker {
             public void handleData(Map<String, Object> opts) {
                 opts.put("queueName", operatorName);
                 opts.put("replyTo", responseName);
+                opts.put("binding", Boolean.TRUE);
             }
         }));
     }
 
     public void close() {
-        if (worker != null) worker.close();
+        if (broker != null) broker.close();
     }
 }

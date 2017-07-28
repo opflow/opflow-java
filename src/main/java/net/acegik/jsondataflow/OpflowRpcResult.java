@@ -105,7 +105,10 @@ public class OpflowRpcResult implements Iterator {
     private boolean isCompleted(OpflowMessage message) {
         Map<String, Object> info = message.getInfo();
         if (info == null) return false;
-        String status = info.get("status").toString();
+        String status = null;
+        if (info.get("status") != null) {
+            status = info.get("status").toString();
+        }
         return STATUS.indexOf(status) >= 0;
     }
 }

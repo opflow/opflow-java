@@ -17,27 +17,25 @@ public class OpflowRpcMaster {
 
     final Logger logger = LoggerFactory.getLogger(OpflowRpcMaster.class);
 
-    private final OpflowEngine master;
+    private final OpflowEngine broker;
     private final String responseName;
     
     public OpflowRpcMaster(Map<String, Object> params) throws Exception {
-        Map<String, Object> masterParams = new HashMap<String, Object>();
-        masterParams.put("mode", "rpc.master");
-        masterParams.put("uri", params.get("uri"));
-        masterParams.put("exchangeName", params.get("exchangeName"));
-        masterParams.put("exchangeType", "direct");
-        masterParams.put("routingKey", params.get("routingKey"));
-        masterParams.put("operator.queueName", params.get("operatorName"));
-        masterParams.put("feedback.queueName", params.get("responseName"));
+        Map<String, Object> brokerParams = new HashMap<String, Object>();
+        brokerParams.put("mode", "rpc.master");
+        brokerParams.put("uri", params.get("uri"));
+        brokerParams.put("exchangeName", params.get("exchangeName"));
+        brokerParams.put("exchangeType", "direct");
+        brokerParams.put("routingKey", params.get("routingKey"));
+        broker = new OpflowEngine(brokerParams);
         responseName = (String) params.get("responseName");
-        master = new OpflowEngine(masterParams);
     }
 
     private OpflowEngine.ConsumerInfo responseConsumer;
 
     public final OpflowEngine.ConsumerInfo consumeResponse() {
         if (logger.isTraceEnabled()) logger.trace("invoke consumeResponse()");
-        return master.consume(new OpflowListener() {
+        return broker.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 String taskId = properties.getCorrelationId();
@@ -55,6 +53,8 @@ public class OpflowRpcMaster {
             @Override
             public void handleData(Map<String, Object> opts) {
                 opts.put("queueName", responseName);
+                opts.put("prefetch", 1);
+                opts.put("forceNewChannel", Boolean.FALSE);
             }
         }));
     }
@@ -76,7 +76,7 @@ public class OpflowRpcMaster {
         OpflowEngine.ConsumerInfo consumerInfo;
         
         if (isStandalone) {
-            consumerInfo = master.consume(new OpflowListener() {
+            consumerInfo = broker.consume(new OpflowListener() {
                 @Override
                 public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                     String taskId = properties.getCorrelationId();
@@ -92,7 +92,9 @@ public class OpflowRpcMaster {
                 }
             }, OpflowUtil.buildOptions(new OpflowUtil.JsonListener() {
                 @Override
-                public void handleData(Map<String, Object> opts) {}
+                public void handleData(Map<String, Object> opts) {
+                    opts.put("prefetch", 1);
+                }
             }));
         } else {
             consumerInfo = responseConsumer;
@@ -121,12 +123,12 @@ public class OpflowRpcMaster {
         
         AMQP.BasicProperties props = builder.build();
 
-        master.produce(content, props, null);
+        broker.produce(content, props, null);
         
         return task;
     }
 
     public void close() {
-        if (master != null) master.close();
+        if (broker != null) broker.close();
     }
 }

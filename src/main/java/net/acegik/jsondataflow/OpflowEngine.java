@@ -29,6 +29,7 @@ public class OpflowEngine {
     private Channel channel;
 
     private String exchangeName;
+    private String exchangeType;
     private String routingKey;
 
     private Consumer operator;
@@ -38,13 +39,6 @@ public class OpflowEngine {
     private Consumer feedback;
     private String feedbackTag;
     private String feedbackName;
-
-    private String getRequestID(Map<String, Object> headers) {
-        if (headers == null) return UUID.randomUUID().toString();
-        Object requestID = headers.get("requestId");
-        if (requestID == null) return UUID.randomUUID().toString();
-        return requestID.toString();
-    }
 
     public OpflowEngine(Map<String, Object> params) throws Exception {
         factory = new ConnectionFactory();
@@ -81,47 +75,14 @@ public class OpflowEngine {
             channel.basicQos(1);
         }
 
-        String exchangeName = (String) params.get("exchangeName");
-        if (exchangeName != null) this.exchangeName = exchangeName;
-
-        String exchangeType = (String) params.get("exchangeType");
+        exchangeName = (String) params.get("exchangeName");
+        exchangeType = (String) params.get("exchangeType");
+        routingKey = (String) params.get("routingKey");
+        
         if (exchangeType == null) exchangeType = "direct";
 
-        if (this.exchangeName != null) {
-            channel.exchangeDeclare(this.exchangeName, exchangeType, true);
-        }
-        
-        String queueName;
-        
-        // declare Operator queue
-        queueName = (String) params.get("operator.queueName");
-        if (queueName != null) {
-            this.operatorName = channel.queueDeclare(queueName, true, false, false, null).getQueue();
-        } else {
-            this.operatorName = channel.queueDeclare().getQueue();
-        }
-        if (logger.isTraceEnabled()) logger.trace("operatorName: " + this.operatorName);
-
-        // declare Feedback queue
-        queueName = (String) params.get("feedback.queueName");
-        if (queueName != null) {
-            this.feedbackName = channel.queueDeclare(queueName, true, false, false, null).getQueue();
-        }
-        if (logger.isTraceEnabled()) logger.trace("feedbackName: " + this.feedbackName);
-
-        // bind Operator queue to Exchange
-        routingKey = (String) params.get("routingKey");
-        Boolean binding = (Boolean) params.get("operator.binding");
-        if (!Boolean.FALSE.equals(binding) && this.routingKey != null && 
-                this.exchangeName != null && this.operatorName != null) {
-            Map<String, Object> bindingArgs = (Map<String, Object>) params.get("bindingArgs");
-            if (bindingArgs == null) bindingArgs = new HashMap<String, Object>();
-            channel.queueBind(this.operatorName, this.exchangeName, this.routingKey, bindingArgs);
-            if (logger.isTraceEnabled()) {
-                logger.trace(MessageFormat.format("Exchange[{0}] binded to Queue[{1}] with routingKey[{2}]", new Object[] {
-                    this.exchangeName, this.operatorName, this.routingKey
-                }));
-            }
+        if (exchangeName != null && exchangeType != null) {
+            channel.exchangeDeclare(exchangeName, exchangeType, true);
         }
     }
 
@@ -140,7 +101,25 @@ public class OpflowEngine {
     public ConsumerInfo consume(final OpflowListener listener, final Map<String, Object> options) {
         Map<String, Object> opts = OpflowUtil.assertNotNull(options);
         try {
-            final Channel _channel = this.connection.createChannel();
+            final Channel _channel;
+            
+            Boolean _forceNewChannel = null;
+            if (opts.get("forceNewChannel") instanceof Boolean) {
+                _forceNewChannel = (Boolean) opts.get("forceNewChannel");
+            }
+            if (!Boolean.FALSE.equals(_forceNewChannel)) {
+                _channel = this.connection.createChannel();
+            } else {
+                _channel = channel;
+            }
+            
+            Integer _prefetch = null;
+            if (opts.get("prefetch") instanceof Integer) {
+                _prefetch = (Integer) opts.get("prefetch");
+            }
+            if (_prefetch != null && _prefetch > 0) {
+                channel.basicQos(_prefetch);
+            }
             
             final String _queueName;
             String opts_queueName = (String) opts.get("queueName");
@@ -148,6 +127,19 @@ public class OpflowEngine {
                 _queueName = _channel.queueDeclare(opts_queueName, true, false, false, null).getQueue();
             } else {
                 _queueName = _channel.queueDeclare().getQueue();
+            }
+            
+            final Boolean _binding = (Boolean) opts.get("binding");
+            if (!Boolean.FALSE.equals(_binding) && exchangeName != null && routingKey != null) {
+                _channel.exchangeDeclarePassive(exchangeName);
+                Map<String, Object> _bindingArgs = (Map<String, Object>) opts.get("bindingArgs");
+                if (_bindingArgs == null) _bindingArgs = new HashMap<String, Object>();
+                _channel.queueBind(_queueName, exchangeName, routingKey, _bindingArgs);
+                if (logger.isTraceEnabled()) {
+                    logger.trace(MessageFormat.format("Exchange[{0}] binded to Queue[{1}] with routingKey[{2}]", new Object[] {
+                        exchangeName, _queueName, routingKey
+                    }));
+                }
             }
             
             final String _replyToName;
@@ -249,5 +241,12 @@ public class OpflowEngine {
             if (logger.isErrorEnabled()) logger.error("close() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
         }
+    }
+    
+    private String getRequestID(Map<String, Object> headers) {
+        if (headers == null) return UUID.randomUUID().toString();
+        Object requestID = headers.get("requestId");
+        if (requestID == null) return UUID.randomUUID().toString();
+        return requestID.toString();
     }
 }
