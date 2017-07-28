@@ -46,7 +46,7 @@ public class OpflowPubsubHandler {
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 listener.processMessage(new OpflowMessage(content, properties.getHeaders()));
             }
-        }, OpflowUtil.buildOptions(new OpflowUtil.JsonListener() {
+        }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
             public void handleData(Map<String, Object> opts) {
                 opts.put("queueName", subscriberName);

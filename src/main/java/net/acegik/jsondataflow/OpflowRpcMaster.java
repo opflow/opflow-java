@@ -49,7 +49,7 @@ public class OpflowRpcMaster {
                 task.push(message);
                 if (logger.isDebugEnabled()) logger.debug("Message has been pushed to task[" + taskId + "]");
             }
-        }, OpflowUtil.buildOptions(new OpflowUtil.JsonListener() {
+        }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
             public void handleData(Map<String, Object> opts) {
                 opts.put("queueName", responseName);
@@ -90,7 +90,7 @@ public class OpflowRpcMaster {
                     task.push(message);
                     if (logger.isDebugEnabled()) logger.debug("Message has been pushed to task[" + taskId + "]");
                 }
-            }, OpflowUtil.buildOptions(new OpflowUtil.JsonListener() {
+            }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
                 @Override
                 public void handleData(Map<String, Object> opts) {
                     opts.put("prefetch", 1);

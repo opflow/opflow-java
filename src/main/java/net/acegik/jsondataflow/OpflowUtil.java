@@ -40,11 +40,11 @@ public class OpflowUtil {
         return clonedParams;
     }
     
-    public interface JsonListener {
+    public interface MapListener {
         public void handleData(Map<String, Object> opts);
     }
     
-    public static String buildJson(JsonListener listener) {
+    public static String buildJson(MapListener listener) {
         Map<String, Object> jsonMap = new HashMap<String, Object>();
         if (listener != null) {
             listener.handleData(jsonMap);
@@ -52,7 +52,11 @@ public class OpflowUtil {
         return gson.toJson(jsonMap);
     }
     
-    public static Map<String, Object> buildOptions(JsonListener listener) {
+    public static Map<String, Object> buildOptions(MapListener listener) {
+        return buildOptions(listener, null);
+    }
+    
+    public static Map<String, Object> buildOptions(MapListener listener, Map<String, Object> defaultOpts) {
         Map<String, Object> jsonMap = new HashMap<String, Object>();
         if (listener != null) {
             listener.handleData(jsonMap);
@@ -60,7 +64,7 @@ public class OpflowUtil {
         return jsonMap;
     }
     
-    public static Map<String, Object> assertNotNull(Map<String, Object> opts) {
+    public static Map<String, Object> ensureNotNull(Map<String, Object> opts) {
         return (opts == null) ? new HashMap<String, Object>() : opts;
     }
 }

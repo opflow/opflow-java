@@ -25,24 +25,20 @@ public class OpflowRpcResponse {
     public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String queueName) {
         this.channel = channel;
         this.properties = properties;
-        this.queueName = queueName;
-        if (properties != null && 
-                properties.getHeaders() != null && 
-                properties.getHeaders().get("requestId") != null) {
-            this.requestId = properties.getHeaders().get("requestId").toString();
+
+        if (properties.getReplyTo() != null) {
+            this.queueName = properties.getReplyTo();
+        } else {
+            this.queueName = queueName;
+        }
+        
+        Map<String, Object> headers = getHeaders(properties);
+        if (headers.get("requestId") != null) {
+            this.requestId = headers.get("requestId").toString();
             if (logger.isTraceEnabled()) logger.trace("requestId: " + this.requestId);
         } else {
             if (logger.isTraceEnabled()) logger.trace("requestId is empty");
         }
-    }
-    
-    private Map<String, Object> createHeaders(String status) {
-        Map<String, Object> headers = new HashMap<String, Object>();
-        headers.put("status", status);
-        if (this.requestId != null) {
-            headers.put("requestId", this.requestId);
-        }
-        return headers;
     }
     
     public void emitStarted() {
@@ -127,6 +123,23 @@ public class OpflowRpcResponse {
         if (logger.isTraceEnabled()) {
             logger.trace("Request[" + this.requestId + "] emitCompleted() - byte[].length: " + result.length);
         }
+    }
+
+    private Map<String, Object> getHeaders(AMQP.BasicProperties properties) {
+        if (properties != null && properties.getHeaders() != null) {
+            return properties.getHeaders();
+        } else {
+            return new HashMap<String, Object>();
+        }
+    }
+    
+    private Map<String, Object> createHeaders(String status) {
+        Map<String, Object> headers = new HashMap<String, Object>();
+        headers.put("status", status);
+        if (this.requestId != null) {
+            headers.put("requestId", this.requestId);
+        }
+        return headers;
     }
     
     private void basicPublish(byte[] data, AMQP.BasicProperties replyProps) {

@@ -7,6 +7,8 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Consumer;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.ShutdownListener;
+import com.rabbitmq.client.ShutdownSignalException;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -70,11 +72,6 @@ public class OpflowEngine {
         connection = factory.newConnection();
         channel = connection.createChannel();
 
-        String mode = (String) params.get("mode");
-        if ("rpc.master".equals(mode)) {
-            channel.basicQos(1);
-        }
-
         exchangeName = (String) params.get("exchangeName");
         exchangeType = (String) params.get("exchangeType");
         routingKey = (String) params.get("routingKey");
@@ -99,14 +96,11 @@ public class OpflowEngine {
     }
     
     public ConsumerInfo consume(final OpflowListener listener, final Map<String, Object> options) {
-        Map<String, Object> opts = OpflowUtil.assertNotNull(options);
+        Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         try {
             final Channel _channel;
             
-            Boolean _forceNewChannel = null;
-            if (opts.get("forceNewChannel") instanceof Boolean) {
-                _forceNewChannel = (Boolean) opts.get("forceNewChannel");
-            }
+            Boolean _forceNewChannel = (Boolean) opts.get("forceNewChannel");
             if (!Boolean.FALSE.equals(_forceNewChannel)) {
                 _channel = this.connection.createChannel();
             } else {
@@ -184,8 +178,30 @@ public class OpflowEngine {
                         logger.info("Request[" + requestID + "] has finished successfully");
                     }
                 }
+                
+                @Override
+                public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
+                    if (logger.isInfoEnabled()) {
+                        logger.info(MessageFormat.format("ConsumerTag[{1}] handle shutdown signal", new Object[] {
+                            consumerTag
+                        }));
+                    }
+                }
             };
-            String _consumerTag = _channel.basicConsume(_queueName, false, _consumer);
+            
+            final String _consumerTag = _channel.basicConsume(_queueName, false, _consumer);
+                        
+            _channel.addShutdownListener(new ShutdownListener() {
+                @Override
+                public void shutdownCompleted(ShutdownSignalException sse) {
+                    if (logger.isInfoEnabled()) {
+                        logger.info(MessageFormat.format("Channel contains Queue[{0}]/ConsumerTag[{1}] has been shutdown", new Object[] {
+                            _queueName, _consumerTag
+                        }));
+                    }
+                }
+            });
+            
             if (logger.isInfoEnabled()) {
                 logger.info("[*] Consume queue[" + _queueName + "] -> consumerTag: " + _consumerTag);
             }
@@ -229,12 +245,6 @@ public class OpflowEngine {
     public void close() {
         try {
             if (logger.isInfoEnabled()) logger.info("[*] Cancel consumer; close channel, connection.");
-            if (operatorTag != null) {
-                channel.basicCancel(operatorTag);
-            }
-            if (feedbackTag != null) {
-                channel.basicCancel(feedbackTag);
-            }
             channel.close();
             connection.close();
         } catch (Exception exception) {

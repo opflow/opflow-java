@@ -39,7 +39,7 @@ public class OpflowRpcWorker {
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, queueName);
                 listener.processMessage(new OpflowMessage(content, properties.getHeaders()), response);
             }
-        }, OpflowUtil.buildOptions(new OpflowUtil.JsonListener() {
+        }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
             public void handleData(Map<String, Object> opts) {
                 opts.put("queueName", operatorName);
