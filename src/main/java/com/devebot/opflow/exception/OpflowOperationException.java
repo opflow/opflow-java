@@ -1,4 +1,4 @@
-package net.acegik.jsondataflow.exception;
+package com.devebot.opflow.exception;
 
 public class OpflowOperationException extends OpflowAbstractException {
     public OpflowOperationException() {

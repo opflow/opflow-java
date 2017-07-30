@@ -1,4 +1,4 @@
-package net.acegik.jsondataflow;
+package com.devebot.opflow;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -24,7 +24,7 @@ public class OpflowRpcMaster {
     final Lock lock = new ReentrantLock();
     final Condition idle = lock.newCondition();
     
-    private final OpflowEngine broker;
+    private final OpflowBroker broker;
     private final String responseName;
     
     public OpflowRpcMaster(Map<String, Object> params) throws Exception {
@@ -34,13 +34,13 @@ public class OpflowRpcMaster {
         brokerParams.put("exchangeName", params.get("exchangeName"));
         brokerParams.put("exchangeType", "direct");
         brokerParams.put("routingKey", params.get("routingKey"));
-        broker = new OpflowEngine(brokerParams);
+        broker = new OpflowBroker(brokerParams);
         responseName = (String) params.get("responseName");
     }
 
-    private OpflowEngine.ConsumerInfo responseConsumer;
+    private OpflowBroker.ConsumerInfo responseConsumer;
 
-    public final OpflowEngine.ConsumerInfo consumeResponse() {
+    public final OpflowBroker.ConsumerInfo consumeResponse() {
         if (logger.isTraceEnabled()) logger.trace("invoke consumeResponse()");
         return broker.consume(new OpflowListener() {
             @Override
@@ -76,7 +76,7 @@ public class OpflowRpcMaster {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         final boolean isStandalone = "standalone".equals((String)opts.get("mode"));
         
-        final OpflowEngine.ConsumerInfo consumerInfo;
+        final OpflowBroker.ConsumerInfo consumerInfo;
         
         if (isStandalone) {
             consumerInfo = broker.consume(new OpflowListener() {
@@ -165,7 +165,7 @@ public class OpflowRpcMaster {
         }
     }
     
-    private void cancelConsumer(OpflowEngine.ConsumerInfo consumerInfo) {
+    private void cancelConsumer(OpflowBroker.ConsumerInfo consumerInfo) {
         try {
             consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
             if (logger.isDebugEnabled()) {

@@ -1,12 +1,12 @@
-package net.acegik.examples;
+package com.devebot.opflow.examples;
 
 import java.util.HashMap;
 import com.google.gson.Gson;
 import java.util.Map;
-import net.acegik.jsondataflow.OpflowMessage;
-import net.acegik.jsondataflow.OpflowRpcMaster;
-import net.acegik.jsondataflow.OpflowRpcResult;
-import net.acegik.jsondataflow.OpflowUtil;
+import com.devebot.opflow.OpflowMessage;
+import com.devebot.opflow.OpflowRpcMaster;
+import com.devebot.opflow.OpflowRpcResult;
+import com.devebot.opflow.OpflowUtil;
 
 public class OpflowRpcExampleMaster {
 
@@ -58,11 +58,6 @@ public class OpflowRpcExampleMaster {
             OpflowMessage msg = result2.next();
             System.out.println("[-] message2 received: " + msg.getContentAsString());
         }
-        
-//        try {
-//            System.out.println("[-] sleep...");
-//            Thread.sleep(2000);
-//        } catch(InterruptedException e) {}
         
         System.out.println("[-] closing");
         rpc.close();

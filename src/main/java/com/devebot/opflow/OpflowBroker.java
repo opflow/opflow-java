@@ -1,4 +1,4 @@
-package net.acegik.jsondataflow;
+package com.devebot.opflow;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -17,16 +17,16 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.acegik.jsondataflow.exception.OpflowConstructorException;
-import net.acegik.jsondataflow.exception.OpflowOperationException;
+import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
  *
  * @author drupalex
  */
-public class OpflowEngine {
+public class OpflowBroker {
 
-    final Logger logger = LoggerFactory.getLogger(OpflowEngine.class);
+    final Logger logger = LoggerFactory.getLogger(OpflowBroker.class);
 
     private ConnectionFactory factory;
     private Connection connection;
@@ -36,7 +36,7 @@ public class OpflowEngine {
     private String exchangeType;
     private String routingKey;
 
-    public OpflowEngine(Map<String, Object> params) throws Exception {
+    public OpflowBroker(Map<String, Object> params) throws Exception {
         factory = new ConnectionFactory();
 
         String uri = (String) params.get("uri");

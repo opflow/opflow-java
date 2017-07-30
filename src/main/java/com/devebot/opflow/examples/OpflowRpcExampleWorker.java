@@ -1,14 +1,14 @@
-package net.acegik.examples;
+package com.devebot.opflow.examples;
 
 import java.util.HashMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.io.IOException;
-import net.acegik.jsondataflow.OpflowMessage;
-import net.acegik.jsondataflow.OpflowRpcWorker;
-import net.acegik.jsondataflow.OpflowRpcListener;
-import net.acegik.jsondataflow.OpflowRpcResponse;
+import com.devebot.opflow.OpflowMessage;
+import com.devebot.opflow.OpflowRpcWorker;
+import com.devebot.opflow.OpflowRpcListener;
+import com.devebot.opflow.OpflowRpcResponse;
 
 public class OpflowRpcExampleWorker {
 

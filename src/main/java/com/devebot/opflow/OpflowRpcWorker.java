@@ -1,4 +1,4 @@
-package net.acegik.jsondataflow;
+package com.devebot.opflow;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -18,7 +18,7 @@ public class OpflowRpcWorker {
 
     final Logger logger = LoggerFactory.getLogger(OpflowRpcWorker.class);
 
-    private final OpflowEngine broker;
+    private final OpflowBroker broker;
     private final String operatorName;
     private final String responseName;
     
@@ -29,19 +29,19 @@ public class OpflowRpcWorker {
         brokerParams.put("exchangeName", params.get("exchangeName"));
         brokerParams.put("exchangeType", "direct");
         brokerParams.put("routingKey", params.get("routingKey"));
-        broker = new OpflowEngine(brokerParams);
+        broker = new OpflowBroker(brokerParams);
         operatorName = (String) params.get("operatorName");
         responseName = (String) params.get("responseName");
     }
 
-    private OpflowEngine.ConsumerInfo consumerInfo;
+    private OpflowBroker.ConsumerInfo consumerInfo;
     private List<Middleware> middlewares = new LinkedList<Middleware>();
     
-    public OpflowEngine.ConsumerInfo process(final OpflowRpcListener listener) {
+    public OpflowBroker.ConsumerInfo process(final OpflowRpcListener listener) {
         return process(TRUE, listener);
     }
 
-    public OpflowEngine.ConsumerInfo process(final String routineId, final OpflowRpcListener listener) {
+    public OpflowBroker.ConsumerInfo process(final String routineId, final OpflowRpcListener listener) {
         return process(new Checker() {
             @Override
             public boolean match(String originRoutineId) {
@@ -50,7 +50,7 @@ public class OpflowRpcWorker {
         }, listener);
     };
     
-    public OpflowEngine.ConsumerInfo process(final String[] routineIds, final OpflowRpcListener listener) {
+    public OpflowBroker.ConsumerInfo process(final String[] routineIds, final OpflowRpcListener listener) {
         return process(new Checker() {
             @Override
             public boolean match(String originRoutineId) {
@@ -59,7 +59,7 @@ public class OpflowRpcWorker {
         }, listener);
     };
     
-    public OpflowEngine.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
+    public OpflowBroker.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
         if (checker != null && listener != null) {
             middlewares.add(new Middleware(checker, listener));
         }

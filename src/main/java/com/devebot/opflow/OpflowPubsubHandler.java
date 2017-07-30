@@ -1,4 +1,4 @@
-package net.acegik.jsondataflow;
+package com.devebot.opflow;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -16,11 +16,11 @@ public class OpflowPubsubHandler {
     
     final Logger logger = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
-    private final OpflowEngine engine;
+    private final OpflowBroker engine;
     private final String subscriberName;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws Exception {
-        engine = new OpflowEngine(params);
+        engine = new OpflowBroker(params);
         subscriberName = (String) params.get("consumer.queueName");
     }
 
@@ -40,7 +40,7 @@ public class OpflowPubsubHandler {
         engine.produce(data, props, override);
     }
     
-    public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener listener) {
+    public OpflowBroker.ConsumerInfo subscribe(final OpflowPubsubListener listener) {
         return engine.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {

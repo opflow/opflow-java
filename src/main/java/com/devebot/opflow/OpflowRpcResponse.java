@@ -1,4 +1,4 @@
-package net.acegik.jsondataflow;
+package com.devebot.opflow;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import net.acegik.jsondataflow.exception.OpflowOperationException;
+import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
  *

@@ -1,11 +1,11 @@
-package net.acegik.jsondataflow;
+package com.devebot.opflow;
 
 import com.google.gson.Gson;
 import com.rabbitmq.client.AMQP;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
-import net.acegik.jsondataflow.exception.OpflowOperationException;
+import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
  *
