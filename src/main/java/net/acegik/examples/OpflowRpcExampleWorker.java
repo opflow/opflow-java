@@ -25,7 +25,7 @@ public class OpflowRpcExampleWorker {
             @Override
             public void processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 JsonObject jsonObject = (JsonObject)jsonParser.parse(message.getContentAsString());
-                System.out.println("[+] ExampleWorker received: '" + jsonObject.toString() + "'");
+                System.out.println("[+] ExampleWorker1 received: '" + jsonObject.toString() + "'");
 
                 response.emitStarted();
 
@@ -38,7 +38,30 @@ public class OpflowRpcExampleWorker {
                 }
 
                 String result = gson.toJson(fibonacci.result());
-                System.out.println("[-] ExampleWorker finished with: '" + result + "'");
+                System.out.println("[-] ExampleWorker1 finished with: '" + result + "'");
+
+                response.emitCompleted(result);
+            }
+        });
+        
+        rpc.process(new OpflowRpcListener() {
+            @Override
+            public void processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+                JsonObject jsonObject = (JsonObject)jsonParser.parse(message.getContentAsString());
+                System.out.println("[+] ExampleWorker2 received: '" + jsonObject.toString() + "'");
+
+                response.emitStarted();
+
+                int number = Integer.parseInt(jsonObject.get("number").toString());
+                FibonacciGenerator fibonacci = new FibonacciGenerator(number);
+
+                while(fibonacci.next()) {
+                    FibonacciGenerator.Result r = fibonacci.result();
+                    response.emitProgress(r.getStep(), r.getNumber(), null);
+                }
+
+                String result = gson.toJson(fibonacci.result());
+                System.out.println("[-] ExampleWorker2 finished with: '" + result + "'");
 
                 response.emitCompleted(result);
             }

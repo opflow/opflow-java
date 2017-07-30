@@ -57,7 +57,7 @@ public class OpflowRpcMaster {
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
-            public void handleData(Map<String, Object> opts) {
+            public void transform(Map<String, Object> opts) {
                 opts.put("queueName", responseName);
                 opts.put("prefetch", 1);
                 opts.put("forceNewChannel", Boolean.FALSE);
@@ -71,8 +71,8 @@ public class OpflowRpcMaster {
         return request(routineId, OpflowUtil.getBytes(content), opts);
     }
     
-    public OpflowRpcResult request(String routineId, byte[] content, Map<String, Object> opts) {
-        opts = opts != null ? opts : new HashMap<String, Object>();
+    public OpflowRpcResult request(String routineId, byte[] content, Map<String, Object> options) {
+        Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         final boolean isStandalone = "standalone".equals((String)opts.get("mode"));
         
         final OpflowEngine.ConsumerInfo consumerInfo;
@@ -94,7 +94,7 @@ public class OpflowRpcMaster {
                 }
             }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
                 @Override
-                public void handleData(Map<String, Object> opts) {
+                public void transform(Map<String, Object> opts) {
                     opts.put("prefetch", 1);
                 }
             }));

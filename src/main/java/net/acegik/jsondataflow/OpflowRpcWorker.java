@@ -41,14 +41,14 @@ public class OpflowRpcWorker {
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
-            public void handleData(Map<String, Object> opts) {
+            public void transform(Map<String, Object> opts) {
                 opts.put("queueName", operatorName);
                 opts.put("replyTo", responseName);
                 opts.put("binding", Boolean.TRUE);
             }
         }));
     }
-
+    
     public void close() {
         if (broker != null) broker.close();
     }

@@ -1,6 +1,7 @@
 package net.acegik.jsondataflow;
 
 import com.google.gson.Gson;
+import com.rabbitmq.client.AMQP;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,13 +42,13 @@ public class OpflowUtil {
     }
     
     public interface MapListener {
-        public void handleData(Map<String, Object> opts);
+        public void transform(Map<String, Object> opts);
     }
     
     public static String buildJson(MapListener listener) {
         Map<String, Object> jsonMap = new HashMap<String, Object>();
         if (listener != null) {
-            listener.handleData(jsonMap);
+            listener.transform(jsonMap);
         }
         return gson.toJson(jsonMap);
     }
@@ -59,12 +60,20 @@ public class OpflowUtil {
     public static Map<String, Object> buildOptions(MapListener listener, Map<String, Object> defaultOpts) {
         Map<String, Object> jsonMap = new HashMap<String, Object>();
         if (listener != null) {
-            listener.handleData(jsonMap);
+            listener.transform(jsonMap);
         }
         return jsonMap;
     }
     
     public static Map<String, Object> ensureNotNull(Map<String, Object> opts) {
         return (opts == null) ? new HashMap<String, Object>() : opts;
+    }
+    
+    public static Map<String, Object> getHeaders(AMQP.BasicProperties properties) {
+        if (properties != null && properties.getHeaders() != null) {
+            return properties.getHeaders();
+        } else {
+            return new HashMap<String, Object>();
+        }
     }
 }

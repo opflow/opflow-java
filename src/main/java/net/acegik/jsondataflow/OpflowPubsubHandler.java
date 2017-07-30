@@ -48,7 +48,7 @@ public class OpflowPubsubHandler {
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
-            public void handleData(Map<String, Object> opts) {
+            public void transform(Map<String, Object> opts) {
                 opts.put("queueName", subscriberName);
             }
         }));
