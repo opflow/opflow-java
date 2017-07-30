@@ -23,7 +23,7 @@ public class OpflowRpcExampleWorker {
         final OpflowRpcWorker rpc = new OpflowRpcWorker(flowParams);
         rpc.process(new OpflowRpcListener() {
             @Override
-            public void processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+            public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 JsonObject jsonObject = (JsonObject)jsonParser.parse(message.getContentAsString());
                 System.out.println("[+] ExampleWorker1 received: '" + jsonObject.toString() + "'");
 
@@ -41,12 +41,14 @@ public class OpflowRpcExampleWorker {
                 System.out.println("[-] ExampleWorker1 finished with: '" + result + "'");
 
                 response.emitCompleted(result);
+                
+                return null;
             }
         });
         
         rpc.process(new OpflowRpcListener() {
             @Override
-            public void processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+            public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 JsonObject jsonObject = (JsonObject)jsonParser.parse(message.getContentAsString());
                 System.out.println("[+] ExampleWorker2 received: '" + jsonObject.toString() + "'");
 
@@ -64,6 +66,8 @@ public class OpflowRpcExampleWorker {
                 System.out.println("[-] ExampleWorker2 finished with: '" + result + "'");
 
                 response.emitCompleted(result);
+                
+                return null;
             }
         });
     }

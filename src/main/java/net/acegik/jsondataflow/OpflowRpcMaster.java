@@ -19,7 +19,8 @@ import org.slf4j.LoggerFactory;
 public class OpflowRpcMaster {
 
     final Logger logger = LoggerFactory.getLogger(OpflowRpcMaster.class);
-
+    final int PREFETCH_NUM = 1;
+    
     final Lock lock = new ReentrantLock();
     final Condition idle = lock.newCondition();
     
@@ -59,7 +60,7 @@ public class OpflowRpcMaster {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("queueName", responseName);
-                opts.put("prefetch", 1);
+                opts.put("prefetch", PREFETCH_NUM);
                 opts.put("forceNewChannel", Boolean.FALSE);
             }
         }));
@@ -95,7 +96,7 @@ public class OpflowRpcMaster {
             }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
                 @Override
                 public void transform(Map<String, Object> opts) {
-                    opts.put("prefetch", 1);
+                    opts.put("prefetch", PREFETCH_NUM);
                 }
             }));
         } else {
@@ -113,7 +114,7 @@ public class OpflowRpcMaster {
                 if (isStandalone) {
                     cancelConsumer(consumerInfo);
                 }
-                if (tasks.size() == 0) {
+                if (tasks.isEmpty()) {
                     lock.lock();
                     try {
                         idle.signal();

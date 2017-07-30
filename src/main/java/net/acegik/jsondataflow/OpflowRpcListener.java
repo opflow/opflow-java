@@ -3,5 +3,7 @@ package net.acegik.jsondataflow;
 import java.io.IOException;
 
 public interface OpflowRpcListener {
-    public void processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException;
+    public static final Boolean DONE = Boolean.FALSE;
+    public static final Boolean NEXT = Boolean.TRUE;
+    public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException;
 }

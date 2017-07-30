@@ -4,6 +4,8 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,12 +34,51 @@ public class OpflowRpcWorker {
         responseName = (String) params.get("responseName");
     }
 
+    private OpflowEngine.ConsumerInfo consumerInfo;
+    private List<Middleware> middlewares = new LinkedList<Middleware>();
+    
     public OpflowEngine.ConsumerInfo process(final OpflowRpcListener listener) {
-        return broker.consume(new OpflowListener() {
+        return process(TRUE, listener);
+    }
+
+    public OpflowEngine.ConsumerInfo process(final String routineId, final OpflowRpcListener listener) {
+        return process(new Checker() {
+            @Override
+            public boolean match(String originRoutineId) {
+                return routineId != null && routineId.equals(originRoutineId);
+            }
+        }, listener);
+    };
+    
+    public OpflowEngine.ConsumerInfo process(final String[] routineIds, final OpflowRpcListener listener) {
+        return process(new Checker() {
+            @Override
+            public boolean match(String originRoutineId) {
+                return routineIds != null && OpflowUtil.arrayContains(routineIds, originRoutineId);
+            }
+        }, listener);
+    };
+    
+    public OpflowEngine.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
+        if (checker != null && listener != null) {
+            middlewares.add(new Middleware(checker, listener));
+        }
+        if (consumerInfo != null) return consumerInfo;
+        return consumerInfo = broker.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, queueName);
-                listener.processMessage(new OpflowMessage(content, properties.getHeaders()), response);
+                Map<String, Object> headers = OpflowUtil.getHeaders(properties);
+                String routineId = null;
+                if (headers.get("routineId") != null) {
+                    routineId = headers.get("routineId").toString();
+                }
+                for(Middleware middleware : middlewares) {
+                    if (middleware.getChecker().match(routineId)) {
+                        Boolean nextAction = middleware.getListener().processMessage(new OpflowMessage(content, properties.getHeaders()), response);
+                        if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
+                    }
+                }
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
@@ -52,4 +93,33 @@ public class OpflowRpcWorker {
     public void close() {
         if (broker != null) broker.close();
     }
+    
+    public class Middleware {
+        private Checker checker;
+        private OpflowRpcListener listener;
+
+        public Middleware(Checker checker, OpflowRpcListener listener) {
+            this.checker = checker;
+            this.listener = listener;
+        }
+
+        public Checker getChecker() {
+            return checker;
+        }
+
+        public OpflowRpcListener getListener() {
+            return listener;
+        }
+    }
+    
+    public interface Checker {
+        public boolean match(String routineId);
+    }
+    
+    private final Checker TRUE = new Checker() {
+        @Override
+        public boolean match(String routineId) {
+            return true;
+        }
+    };
 }
