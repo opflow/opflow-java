@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowConstructorException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -19,7 +20,7 @@ public class OpflowPubsubHandler {
     private final OpflowBroker broker;
     private final String subscriberName;
 
-    public OpflowPubsubHandler(Map<String, Object> params) throws Exception {
+    public OpflowPubsubHandler(Map<String, Object> params) throws OpflowConstructorException {
         broker = new OpflowBroker(params);
         subscriberName = (String) params.get("consumer.queueName");
     }

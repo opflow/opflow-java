@@ -1,6 +1,6 @@
 package com.devebot.opflow.exception;
 
-public class OpflowOperationException extends OpflowAbstractException {
+public class OpflowOperationException extends RuntimeException {
     public OpflowOperationException() {
         super();
     }

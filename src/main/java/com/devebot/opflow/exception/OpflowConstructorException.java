@@ -4,7 +4,7 @@ package com.devebot.opflow.exception;
  *
  * @author drupalex
  */
-public class OpflowConstructorException extends OpflowAbstractException {
+public class OpflowConstructorException extends Exception {
 
     public OpflowConstructorException() {
     }

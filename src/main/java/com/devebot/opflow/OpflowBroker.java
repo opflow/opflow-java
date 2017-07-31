@@ -35,43 +35,48 @@ public class OpflowBroker {
     private String exchangeType;
     private String routingKey;
 
-    public OpflowBroker(Map<String, Object> params) throws Exception {
-        factory = new ConnectionFactory();
+    public OpflowBroker(Map<String, Object> params) throws OpflowConstructorException {
+        try {
+            factory = new ConnectionFactory();
 
-        String uri = (String) params.get("uri");
-        if (uri != null) {
-            factory.setUri(uri);
-        } else {
-            String host = (String) params.get("host");
-            if (host == null) host = "localhost";
-            factory.setHost(host);
+            String uri = (String) params.get("uri");
+            if (uri != null) {
+                factory.setUri(uri);
+            } else {
+                String host = (String) params.get("host");
+                if (host == null) host = "localhost";
+                factory.setHost(host);
 
-            String virtualHost = (String) params.get("virtualHost");
-            if (virtualHost != null) {
-                factory.setVirtualHost(virtualHost);
+                String virtualHost = (String) params.get("virtualHost");
+                if (virtualHost != null) {
+                    factory.setVirtualHost(virtualHost);
+                }
+
+                String username = (String) params.get("username");
+                if (username != null) {
+                    factory.setUsername(username);
+                }
+
+                String password = (String) params.get("password");
+                if (password != null) {
+                    factory.setPassword(password);
+                }
             }
 
-            String username = (String) params.get("username");
-            if (username != null) {
-                factory.setUsername(username);
+            connection = factory.newConnection();
+
+            exchangeName = (String) params.get("exchangeName");
+            exchangeType = (String) params.get("exchangeType");
+            routingKey = (String) params.get("routingKey");
+
+            if (exchangeType == null) exchangeType = "direct";
+
+            if (exchangeName != null && exchangeType != null) {
+                getChannel().exchangeDeclare(exchangeName, exchangeType, true);
             }
-
-            String password = (String) params.get("password");
-            if (password != null) {
-                factory.setPassword(password);
-            }
-        }
-        
-        connection = factory.newConnection();
-
-        exchangeName = (String) params.get("exchangeName");
-        exchangeType = (String) params.get("exchangeType");
-        routingKey = (String) params.get("routingKey");
-        
-        if (exchangeType == null) exchangeType = "direct";
-
-        if (exchangeName != null && exchangeType != null) {
-            getChannel().exchangeDeclare(exchangeName, exchangeType, true);
+        } catch (Exception exception) {
+            if (logger.isErrorEnabled()) logger.error("new OpflowBroker has been failed, exception: " + exception.getMessage());
+            throw new OpflowConstructorException(exception);
         }
     }
 
@@ -83,6 +88,7 @@ public class OpflowBroker {
             }
             getChannel().basicPublish(this.exchangeName, customKey, props, content);
         } catch (IOException exception) {
+            if (logger.isErrorEnabled()) logger.error("produce() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
         }
     }

@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowConstructorException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -22,7 +23,7 @@ public class OpflowRpcWorker {
     private final String operatorName;
     private final String responseName;
     
-    public OpflowRpcWorker(Map<String, Object> params) throws Exception {
+    public OpflowRpcWorker(Map<String, Object> params) throws OpflowConstructorException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         brokerParams.put("mode", "rpc.worker");
         brokerParams.put("uri", params.get("uri"));
@@ -95,8 +96,8 @@ public class OpflowRpcWorker {
     }
     
     public class Middleware {
-        private Checker checker;
-        private OpflowRpcListener listener;
+        private final Checker checker;
+        private final OpflowRpcListener listener;
 
         public Middleware(Checker checker, OpflowRpcListener listener) {
             this.checker = checker;

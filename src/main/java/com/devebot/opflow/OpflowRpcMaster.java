@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowConstructorException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -27,7 +28,7 @@ public class OpflowRpcMaster {
     private final OpflowBroker broker;
     private final String responseName;
     
-    public OpflowRpcMaster(Map<String, Object> params) throws Exception {
+    public OpflowRpcMaster(Map<String, Object> params) throws OpflowConstructorException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         brokerParams.put("mode", "rpc.master");
         brokerParams.put("uri", params.get("uri"));
