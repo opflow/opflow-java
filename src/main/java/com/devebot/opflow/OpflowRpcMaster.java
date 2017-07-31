@@ -107,7 +107,7 @@ public class OpflowRpcMaster {
         }
         
         final String taskId = UUID.randomUUID().toString();
-        OpflowTimeout.Listener listener = new OpflowTimeout.Listener() {
+        OpflowTask.Listener listener = new OpflowTask.Listener() {
             @Override
             public void handleEvent() {
                 tasks.remove(taskId);

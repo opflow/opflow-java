@@ -5,6 +5,7 @@ import com.rabbitmq.client.AMQP;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
@@ -84,5 +85,12 @@ public class OpflowUtil {
         } else {
             return new HashMap<String, Object>();
         }
+    }
+
+    public static String getRequestID(Map<String, Object> headers) {
+        if (headers == null) return UUID.randomUUID().toString();
+        Object requestID = headers.get("requestId");
+        if (requestID == null) return UUID.randomUUID().toString();
+        return requestID.toString();
     }
 }

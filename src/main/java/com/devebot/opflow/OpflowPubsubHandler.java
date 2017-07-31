@@ -16,11 +16,11 @@ public class OpflowPubsubHandler {
     
     final Logger logger = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
-    private final OpflowBroker engine;
+    private final OpflowBroker broker;
     private final String subscriberName;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws Exception {
-        engine = new OpflowBroker(params);
+        broker = new OpflowBroker(params);
         subscriberName = (String) params.get("consumer.queueName");
     }
 
@@ -37,11 +37,11 @@ public class OpflowPubsubHandler {
         if (routingKey != null) {
             override.put("routingKey", routingKey);
         }
-        engine.produce(data, props, override);
+        broker.produce(data, props, override);
     }
     
     public OpflowBroker.ConsumerInfo subscribe(final OpflowPubsubListener listener) {
-        return engine.consume(new OpflowListener() {
+        return broker.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 listener.processMessage(new OpflowMessage(content, properties.getHeaders()));

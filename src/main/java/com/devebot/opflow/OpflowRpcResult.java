@@ -20,10 +20,10 @@ public class OpflowRpcResult implements Iterator {
     private final String requestId;
     private final String routineId;
     private final Integer timeout;
-    private OpflowTimeout timeoutWatcher;
-    private OpflowTimeout.Listener completeListener;
+    private OpflowTask.Timeout timeoutWatcher;
+    private OpflowTask.Listener completeListener;
     
-    public OpflowRpcResult(Map<String, Object> opts, final OpflowTimeout.Listener completeListener) {
+    public OpflowRpcResult(Map<String, Object> opts, final OpflowTask.Listener completeListener) {
         this.requestId = (opts != null && opts.get("requestId") != null) ? 
                 (String)opts.get("requestId") : UUID.randomUUID().toString();
         this.routineId = (opts != null && opts.get("routineId") != null) ? 
@@ -31,7 +31,7 @@ public class OpflowRpcResult implements Iterator {
         this.timeout = (opts != null) ? (Integer)opts.get("timeout") : null;
         this.completeListener = completeListener;
         if (this.timeout > 0 && completeListener != null) {
-            timeoutWatcher = new OpflowTimeout(this.timeout, new OpflowTimeout.Listener() {
+            timeoutWatcher = new OpflowTask.Timeout(this.timeout, new OpflowTask.Listener() {
                 @Override
                 public void handleEvent() {
                     if (logger.isDebugEnabled()) logger.debug("timeout event has been raised");

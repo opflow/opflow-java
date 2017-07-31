@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,7 +140,7 @@ public class OpflowBroker {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
-                    String requestID = getRequestID(properties.getHeaders());
+                    String requestID = OpflowUtil.getRequestID(properties.getHeaders());
 
                     if (logger.isInfoEnabled()) {
                         logger.info("Request["+requestID+"] / DeliveryTag["+envelope.getDeliveryTag()+"] / ConsumerTag["+consumerTag+"]");
@@ -259,7 +258,7 @@ public class OpflowBroker {
         }
     }
     
-    private Channel getChannel() {
+    private Channel getChannel() throws IOException {
         if (channel == null) {
             try {
                 channel = connection.createChannel();
@@ -273,16 +272,9 @@ public class OpflowBroker {
                 });
             } catch (IOException exception) {
                 if (logger.isErrorEnabled()) logger.error("getChannel() has been failed, exception: " + exception.getMessage());
-                throw new OpflowConstructorException(exception);
+                throw exception;
             }
         }
         return channel;
-    }
-    
-    private String getRequestID(Map<String, Object> headers) {
-        if (headers == null) return UUID.randomUUID().toString();
-        Object requestID = headers.get("requestId");
-        if (requestID == null) return UUID.randomUUID().toString();
-        return requestID.toString();
     }
 }

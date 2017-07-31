@@ -32,7 +32,7 @@ public class OpflowRpcResponse {
             this.queueName = queueName;
         }
         
-        Map<String, Object> headers = getHeaders(properties);
+        Map<String, Object> headers = OpflowUtil.getHeaders(properties);
         if (headers.get("requestId") != null) {
             this.requestId = headers.get("requestId").toString();
             if (logger.isTraceEnabled()) logger.trace("requestId: " + this.requestId);
@@ -125,14 +125,6 @@ public class OpflowRpcResponse {
         }
     }
 
-    private Map<String, Object> getHeaders(AMQP.BasicProperties properties) {
-        if (properties != null && properties.getHeaders() != null) {
-            return properties.getHeaders();
-        } else {
-            return new HashMap<String, Object>();
-        }
-    }
-    
     private Map<String, Object> createHeaders(String status) {
         Map<String, Object> headers = new HashMap<String, Object>();
         headers.put("status", status);
