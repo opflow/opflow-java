@@ -19,17 +19,17 @@ public class OpflowRpcResponse {
     
     private final Channel channel;
     private final AMQP.BasicProperties properties;
-    private final String queueName;
+    private final String replyQueueName;
     private String requestId;
     
-    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String queueName) {
+    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String replyQueueName) {
         this.channel = channel;
         this.properties = properties;
 
         if (properties.getReplyTo() != null) {
-            this.queueName = properties.getReplyTo();
+            this.replyQueueName = properties.getReplyTo();
         } else {
-            this.queueName = queueName;
+            this.replyQueueName = replyQueueName;
         }
         
         Map<String, Object> headers = OpflowUtil.getHeaders(properties);
@@ -38,6 +38,10 @@ public class OpflowRpcResponse {
             if (logger.isTraceEnabled()) logger.trace("requestId: " + this.requestId);
         } else {
             if (logger.isTraceEnabled()) logger.trace("requestId is empty");
+        }
+        
+        if (logger.isTraceEnabled()) {
+            logger.trace("Request[" + this.requestId + "] will reply to: " + this.replyQueueName);
         }
     }
     
@@ -136,7 +140,7 @@ public class OpflowRpcResponse {
     
     private void basicPublish(byte[] data, AMQP.BasicProperties replyProps) {
         try {
-            channel.basicPublish("", queueName, replyProps, data);
+            channel.basicPublish("", replyQueueName, replyProps, data);
         } catch (IOException exception) {
             throw new OpflowOperationException(exception);
         }

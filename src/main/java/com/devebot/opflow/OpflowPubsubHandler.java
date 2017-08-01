@@ -21,7 +21,16 @@ public class OpflowPubsubHandler {
     private final String subscriberName;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowConstructorException {
-        broker = new OpflowBroker(params);
+        Map<String, Object> brokerParams = new HashMap<String, Object>();
+        brokerParams.put("mode", "pubsub");
+        brokerParams.put("uri", params.get("uri"));
+        brokerParams.put("exchangeName", params.get("exchangeName"));
+        brokerParams.put("exchangeType", "direct");
+        brokerParams.put("routingKey", params.get("routingKey"));
+        if (params.get("otherKeys") instanceof String) {
+            brokerParams.put("otherKeys", OpflowUtil.splitByComma((String)params.get("otherKeys")));
+        }
+        broker = new OpflowBroker(brokerParams);
         subscriberName = (String) params.get("subscriberName");
     }
 

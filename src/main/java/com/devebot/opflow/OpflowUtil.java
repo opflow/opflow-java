@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import com.devebot.opflow.exception.OpflowOperationException;
+import java.util.ArrayList;
 
 /**
  *
@@ -92,5 +93,16 @@ public class OpflowUtil {
         Object requestID = headers.get("requestId");
         if (requestID == null) return UUID.randomUUID().toString();
         return requestID.toString();
+    }
+    
+    public static String[] splitByComma(String source) {
+        if (source == null) return null;
+        String[] arr = source.split(",");
+        ArrayList<String> list = new ArrayList<String>(arr.length);
+        for(String item: arr) {
+            String str = item.trim();
+            if (str.length() > 0) list.add(str);
+        }
+        return list.toArray(new String[0]);
     }
 }

@@ -35,7 +35,7 @@ public class OpflowBroker {
     private String exchangeName;
     private String exchangeType;
     private String routingKey;
-    private String[] routingKeys;
+    private String[] otherKeys;
 
     public OpflowBroker(Map<String, Object> params) throws OpflowConstructorException {
         try {
@@ -80,8 +80,8 @@ public class OpflowBroker {
                 routingKey = (String) params.get("routingKey");
             }
             
-            if (params.get("routingKeys") instanceof String[]) {
-                routingKeys = (String[])params.get("routingKeys");
+            if (params.get("otherKeys") instanceof String[]) {
+                otherKeys = (String[])params.get("otherKeys");
             }
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("new OpflowBroker has been failed, exception: " + exception.getMessage());
@@ -123,12 +123,15 @@ public class OpflowBroker {
             }
             
             final String _queueName;
+            final boolean _fixedQueue;
             String opts_queueName = (String) opts.get("queueName");
             AMQP.Queue.DeclareOk _declareOk;
             if (opts_queueName != null) {
                 _declareOk = _channel.queueDeclare(opts_queueName, true, false, false, null);
+                _fixedQueue = true;
             } else {
                 _declareOk = _channel.queueDeclare();
+                _fixedQueue = false;
             }
             _queueName = _declareOk.getQueue();
             final Integer _consumerLimit = (Integer) opts.get("consumerLimit");
@@ -148,8 +151,8 @@ public class OpflowBroker {
                 if (routingKey != null) {
                     bindExchange(_channel, exchangeName, _queueName, routingKey);
                 }
-                if (routingKeys != null) {
-                    bindExchange(_channel, exchangeName, _queueName, routingKeys);
+                if (otherKeys != null) {
+                    bindExchange(_channel, exchangeName, _queueName, otherKeys);
                 }
             }
             
@@ -243,7 +246,7 @@ public class OpflowBroker {
             if (logger.isInfoEnabled()) {
                 logger.info("[*] Consume Channel[" + _channel.getChannelNumber() + "]/Queue[" + _queueName + "] -> consumerTag: " + _consumerTag);
             }
-            return new ConsumerInfo(_channel, _queueName, _consumer, _consumerTag);
+            return new ConsumerInfo(_channel, _queueName, _fixedQueue, _consumer, _consumerTag);
         } catch(IOException exception) {
             if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
@@ -253,12 +256,14 @@ public class OpflowBroker {
     public class ConsumerInfo {
         private final Channel channel;
         private final String queueName;
+        private final boolean fixedQueue;
         private final Consumer consumer;
         private final String consumerTag;
         
-        public ConsumerInfo(Channel channel, String queueName, Consumer consumer, String consumerTag) {
+        public ConsumerInfo(Channel channel, String queueName, boolean fixedQueue, Consumer consumer, String consumerTag) {
             this.channel = channel;
             this.queueName = queueName;
+            this.fixedQueue = fixedQueue;
             this.consumer = consumer;
             this.consumerTag = consumerTag;
         }
@@ -271,6 +276,10 @@ public class OpflowBroker {
             return queueName;
         }
 
+        public boolean isFixedQueue() {
+            return fixedQueue;
+        }
+        
         public Consumer getConsumer() {
             return consumer;
         }
