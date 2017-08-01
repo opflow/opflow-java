@@ -48,7 +48,7 @@ public class OpflowRpcMaster {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 String taskId = properties.getCorrelationId();
-                if (logger.isDebugEnabled()) logger.debug("received taskId: " + taskId);
+                if (logger.isDebugEnabled()) logger.debug("received taskId: " + taskId + "; Data: " + new String(content, "UTF-8"));
                 OpflowRpcResult task = tasks.get(taskId);
                 if (taskId == null || task == null) {
                     if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] not found. Skipped");
@@ -87,7 +87,7 @@ public class OpflowRpcMaster {
                 @Override
                 public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                     String taskId = properties.getCorrelationId();
-                    if (logger.isDebugEnabled()) logger.debug("received taskId: " + taskId);
+                    if (logger.isDebugEnabled()) logger.debug("received CorrelationId: " + taskId);
                     OpflowRpcResult task = tasks.get(taskId);
                     if (taskId == null || task == null) {
                         if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] not found. Skipped");
@@ -95,7 +95,7 @@ public class OpflowRpcMaster {
                     }
                     OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                     task.push(message);
-                    if (logger.isDebugEnabled()) logger.debug("Message has been pushed to task[" + taskId + "]");
+                    if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] message has been enqueued");
                 }
             }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
                 @Override
@@ -116,19 +116,21 @@ public class OpflowRpcMaster {
         OpflowTask.Listener listener = new OpflowTask.Listener() {
             @Override
             public void handleEvent() {
-                tasks.remove(taskId);
-                if (isStandalone) {
-                    cancelConsumer(consumerInfo);
-                }
-                if (tasks.isEmpty()) {
-                    lock.lock();
-                    try {
+                lock.lock();
+                try {
+                    tasks.remove(taskId);
+                    if (tasks.isEmpty()) {
+                        if (isStandalone) {
+                            cancelConsumer(consumerInfo);
+                        }
                         idle.signal();
-                    } finally {
-                        lock.unlock();
                     }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("tasks.size(): " + tasks.size());
+                    }
+                } finally {
+                    lock.unlock();
                 }
-                if (logger.isDebugEnabled()) logger.debug("tasks.size(): " + tasks.size());
             }
         };
         
@@ -162,7 +164,7 @@ public class OpflowRpcMaster {
     public void close() {
         lock.lock();
         try {
-            while(tasks.size() > 0) idle.await();
+            while(!tasks.isEmpty()) idle.await();
             if (responseConsumer != null) cancelConsumer(responseConsumer);
             if (broker != null) broker.close();
         } catch(Exception ex) {
@@ -173,12 +175,17 @@ public class OpflowRpcMaster {
     
     private void cancelConsumer(OpflowBroker.ConsumerInfo consumerInfo) {
         try {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] will be cancelled");
+            }
             consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
             if (logger.isDebugEnabled()) {
-                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] is cancelled");
+                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] has been cancelled");
             }
         } catch (IOException ex) {
-            if (logger.isDebugEnabled()) logger.debug("cancel consumer failed, IOException: " + ex.getMessage());
+            if (logger.isErrorEnabled()) {
+                logger.error("cancel consumer[" + consumerInfo.getConsumerTag() + "] failed, IOException: " + ex.getMessage());
+            }
         }
     }
 }

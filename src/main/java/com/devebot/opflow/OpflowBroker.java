@@ -35,6 +35,7 @@ public class OpflowBroker {
     private String exchangeName;
     private String exchangeType;
     private String routingKey;
+    private String[] routingKeys;
 
     public OpflowBroker(Map<String, Object> params) throws OpflowConstructorException {
         try {
@@ -68,12 +69,19 @@ public class OpflowBroker {
 
             exchangeName = (String) params.get("exchangeName");
             exchangeType = (String) params.get("exchangeType");
-            routingKey = (String) params.get("routingKey");
-
+            
             if (exchangeType == null) exchangeType = "direct";
 
             if (exchangeName != null && exchangeType != null) {
                 getChannel().exchangeDeclare(exchangeName, exchangeType, true);
+            }
+            
+            if (params.get("routingKey") instanceof String) {
+                routingKey = (String) params.get("routingKey");
+            }
+            
+            if (params.get("routingKeys") instanceof String[]) {
+                routingKeys = (String[])params.get("routingKeys");
             }
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("new OpflowBroker has been failed, exception: " + exception.getMessage());
@@ -136,8 +144,13 @@ public class OpflowBroker {
             }
             
             final Boolean _binding = (Boolean) opts.get("binding");
-            if (!Boolean.FALSE.equals(_binding) && exchangeName != null && routingKey != null) {
-                bindExchange(_channel, exchangeName, _queueName, routingKey);
+            if (!Boolean.FALSE.equals(_binding) && exchangeName != null) {
+                if (routingKey != null) {
+                    bindExchange(_channel, exchangeName, _queueName, routingKey);
+                }
+                if (routingKeys != null) {
+                    bindExchange(_channel, exchangeName, _queueName, routingKeys);
+                }
             }
             
             final String _replyToName;
