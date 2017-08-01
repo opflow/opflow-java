@@ -153,10 +153,10 @@ public class OpflowBroker {
                     }
 
                     if (logger.isTraceEnabled()) {
-                        if (body.length < 4*1024) {
+                        if (body.length <= 4*1024) {
                             logger.trace("Request[" + requestID + "] - Message: " + new String(body, "UTF-8"));
                         } else {
-                            logger.trace("Request[" + requestID + "] - Message size too large: " + body.length);
+                            logger.trace("Request[" + requestID + "] - Message size too large (>4KB): " + body.length);
                         }
                     }
 
@@ -183,9 +183,17 @@ public class OpflowBroker {
                         try {
                             _channel.close();
                         } catch (IOException ex) {
-                            
+                            if (logger.isErrorEnabled()) {
+                                logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, IOException: {1}", new Object[] {
+                                    consumerTag, ex.getMessage()
+                                }));
+                            }
                         } catch (TimeoutException ex) {
-                            
+                            if (logger.isErrorEnabled()) {
+                                logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, TimeoutException: {1}", new Object[] {
+                                    consumerTag, ex.getMessage()
+                                }));
+                            }
                         }
                     }
                 }
@@ -193,7 +201,7 @@ public class OpflowBroker {
                 @Override
                 public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
                     if (logger.isInfoEnabled()) {
-                        logger.info(MessageFormat.format("ConsumerTag[{1}] handle shutdown signal", new Object[] {
+                        logger.info(MessageFormat.format("ConsumerTag[{0}] handle shutdown signal", new Object[] {
                             consumerTag
                         }));
                     }
@@ -253,6 +261,11 @@ public class OpflowBroker {
         }
     }
     
+    /**
+     * Close this broker.
+     *
+     * @throws OpflowOperationException if an error is encountered
+     */
     public void close() {
         try {
             if (logger.isInfoEnabled()) logger.info("[*] Cancel consumers, close channels, close connection.");
