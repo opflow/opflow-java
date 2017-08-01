@@ -21,6 +21,7 @@ public class OpflowRpcMaster {
 
     final Logger logger = LoggerFactory.getLogger(OpflowRpcMaster.class);
     final int PREFETCH_NUM = 1;
+    final int CONSUMER_MAX = 1;
     
     final Lock lock = new ReentrantLock();
     final Condition idle = lock.newCondition();
@@ -62,6 +63,7 @@ public class OpflowRpcMaster {
             public void transform(Map<String, Object> opts) {
                 opts.put("queueName", responseName);
                 opts.put("binding", Boolean.FALSE);
+                opts.put("consumerLimit", CONSUMER_MAX);
                 opts.put("prefetch", PREFETCH_NUM);
                 opts.put("forceNewChannel", Boolean.FALSE);
             }
@@ -99,6 +101,7 @@ public class OpflowRpcMaster {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     opts.put("binding", Boolean.FALSE);
+                    opts.put("consumerLimit", CONSUMER_MAX);
                     opts.put("prefetch", PREFETCH_NUM);
                 }
             }));

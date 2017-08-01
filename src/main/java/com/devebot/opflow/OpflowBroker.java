@@ -17,6 +17,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowConsumerLimitExceedException;
 import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
@@ -115,10 +116,23 @@ public class OpflowBroker {
             
             final String _queueName;
             String opts_queueName = (String) opts.get("queueName");
+            AMQP.Queue.DeclareOk _declareOk;
             if (opts_queueName != null) {
-                _queueName = _channel.queueDeclare(opts_queueName, true, false, false, null).getQueue();
+                _declareOk = _channel.queueDeclare(opts_queueName, true, false, false, null);
             } else {
-                _queueName = _channel.queueDeclare().getQueue();
+                _declareOk = _channel.queueDeclare();
+            }
+            _queueName = _declareOk.getQueue();
+            final Integer _consumerLimit = (Integer) opts.get("consumerLimit");
+            if (logger.isTraceEnabled()) {
+                logger.trace("consume() - consumerCount/consumerLimit: " + _declareOk.getConsumerCount() + "/" + _consumerLimit);
+            }
+            if (_consumerLimit != null && _consumerLimit > 0) {
+                if (_declareOk.getConsumerCount() >= _consumerLimit) {
+                    String errorMessage = "consumerLimit exceed: " + _declareOk.getConsumerCount() + "/" + _consumerLimit;
+                    if (logger.isErrorEnabled()) logger.error("consume() - " + errorMessage);
+                    throw new OpflowConsumerLimitExceedException(errorMessage);
+                }
             }
             
             final Boolean _binding = (Boolean) opts.get("binding");

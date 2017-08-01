@@ -26,16 +26,16 @@ public class OpflowTask {
         private Listener listener;
         private int interval = 1000;
         private int max = 0;
-        private int count = -1;
+        private int count = 0;
         private boolean done = false;
 
         @Override
         public void run() {
             while(count < max && !done) {
                 try {
-                    if (logger.isTraceEnabled()) logger.trace("Check " + count + "/" + max);
                     Thread.sleep(interval);
                     count += 1;
+                    if (logger.isTraceEnabled()) logger.trace("Check " + count + "/" + max);
                     if (count >= max) {
                         if (this.listener != null) {
                             listener.handleEvent();
