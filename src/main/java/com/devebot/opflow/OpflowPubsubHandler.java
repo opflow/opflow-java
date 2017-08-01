@@ -22,7 +22,7 @@ public class OpflowPubsubHandler {
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowConstructorException {
         broker = new OpflowBroker(params);
-        subscriberName = (String) params.get("consumer.queueName");
+        subscriberName = (String) params.get("subscriberName");
     }
 
     public void publish(String data, Map<String, Object> opts, String routingKey) {

@@ -123,15 +123,7 @@ public class OpflowBroker {
             
             final Boolean _binding = (Boolean) opts.get("binding");
             if (!Boolean.FALSE.equals(_binding) && exchangeName != null && routingKey != null) {
-                _channel.exchangeDeclarePassive(exchangeName);
-                Map<String, Object> _bindingArgs = (Map<String, Object>) opts.get("bindingArgs");
-                if (_bindingArgs == null) _bindingArgs = new HashMap<String, Object>();
-                _channel.queueBind(_queueName, exchangeName, routingKey, _bindingArgs);
-                if (logger.isTraceEnabled()) {
-                    logger.trace(MessageFormat.format("Exchange[{0}] binded to Queue[{1}] with routingKey[{2}]", new Object[] {
-                        exchangeName, _queueName, routingKey
-                    }));
-                }
+                bindExchange(_channel, exchangeName, _queueName, routingKey);
             }
             
             final String _replyToName;
@@ -295,5 +287,27 @@ public class OpflowBroker {
             }
         }
         return channel;
+    }
+    
+    private void bindExchange(Channel _channel, String _exchangeName, String _queueName, String _routingKey) throws IOException {
+        bindExchange(_channel, _exchangeName, _queueName, new String[] { _routingKey });
+    }
+    
+    private void bindExchange(Channel _channel, String _exchangeName, String _queueName, String[] keys) throws IOException {
+        bindExchange(_channel, _exchangeName, _queueName, keys, null);
+    }
+    
+    private void bindExchange(Channel _channel, String _exchangeName, String _queueName, String[] keys, Map<String, Object> bindingArgs) throws IOException {
+        _channel.exchangeDeclarePassive(_exchangeName);
+        _channel.queueDeclarePassive(_queueName);
+        if (bindingArgs == null) bindingArgs = new HashMap<String, Object>();
+        for (String _routingKey : keys) {
+            _channel.queueBind(_queueName, _exchangeName, _routingKey, bindingArgs);
+            if (logger.isTraceEnabled()) {
+                logger.trace(MessageFormat.format("Exchange[{0}] binded to Queue[{1}] with key[{2}]", new Object[] {
+                    _exchangeName, _queueName, _routingKey
+                }));
+            }
+        }
     }
 }

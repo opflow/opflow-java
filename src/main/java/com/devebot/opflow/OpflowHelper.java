@@ -15,7 +15,7 @@ import java.util.Properties;
 public class OpflowHelper {
     
     public static OpflowRpcMaster createRpcMaster() throws OpflowConstructorException {
-        return createRpcMaster(null, null);
+        return createRpcMaster(null);
     }
     
     public static OpflowRpcMaster createRpcMaster(String propFile) throws OpflowConstructorException {
@@ -39,7 +39,7 @@ public class OpflowHelper {
     }
     
     public static OpflowRpcWorker createRpcWorker() throws OpflowConstructorException {
-        return createRpcWorker(null, null);
+        return createRpcWorker(null);
     }
     
     public static OpflowRpcWorker createRpcWorker(String propFile) throws OpflowConstructorException {
@@ -47,18 +47,44 @@ public class OpflowHelper {
     }
     
     public static OpflowRpcWorker createRpcWorker(String propFile, Properties defaultProps) throws OpflowConstructorException {
-        Properties properties = loadProperties(propFile, defaultProps);
+        Properties props = loadProperties(propFile, defaultProps);
         Map<String, Object> params = new HashMap<String, Object>();
-        if (properties.get("opflow.worker.uri") != null) {
-            params.put("uri", properties.get("opflow.worker.uri"));
+        if (props.get("opflow.worker.uri") != null) {
+            params.put("uri", props.get("opflow.worker.uri"));
         } else {
-            params.put("uri", properties.get("opflow.uri"));
+            params.put("uri", props.get("opflow.uri"));
         }
         
-        params.put("operatorName", properties.get("opflow.worker.operatorName"));
-        params.put("responseName", properties.get("opflow.worker.responseName"));
+        params.put("exchangeName", props.get("opflow.worker.exchangeName"));
+        params.put("routingKey", props.get("opflow.worker.routingKey"));
+        params.put("operatorName", props.get("opflow.worker.operatorName"));
+        params.put("responseName", props.get("opflow.worker.responseName"));
         
         return new OpflowRpcWorker(params);
+    }
+    
+    public static OpflowPubsubHandler createPubsubHandler() throws OpflowConstructorException {
+        return createPubsubHandler(null);
+    }
+    
+    public static OpflowPubsubHandler createPubsubHandler(String propFile) throws OpflowConstructorException {
+        return createPubsubHandler(propFile, null);
+    }
+    
+    public static OpflowPubsubHandler createPubsubHandler(String propFile, Properties defaultProps) throws OpflowConstructorException {
+        Properties props = loadProperties(propFile, defaultProps);
+        Map<String, Object> params = new HashMap<String, Object>();
+        if (props.get("opflow.pubsub.uri") != null) {
+            params.put("uri", props.get("opflow.pubsub.uri"));
+        } else {
+            params.put("uri", props.get("opflow.uri"));
+        }
+        
+        params.put("exchangeName", props.get("opflow.pubsub.exchangeName"));
+        params.put("routingKey", props.get("opflow.pubsub.routingKey"));
+        params.put("subscriberName", props.get("opflow.pubsub.subscriberName"));
+        
+        return new OpflowPubsubHandler(params);
     }
     
     private static Properties loadProperties(String propFile, Properties props) throws OpflowConstructorException {

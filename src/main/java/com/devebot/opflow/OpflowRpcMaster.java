@@ -61,6 +61,7 @@ public class OpflowRpcMaster {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("queueName", responseName);
+                opts.put("binding", Boolean.FALSE);
                 opts.put("prefetch", PREFETCH_NUM);
                 opts.put("forceNewChannel", Boolean.FALSE);
             }
@@ -97,6 +98,7 @@ public class OpflowRpcMaster {
             }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
                 @Override
                 public void transform(Map<String, Object> opts) {
+                    opts.put("binding", Boolean.FALSE);
                     opts.put("prefetch", PREFETCH_NUM);
                 }
             }));
