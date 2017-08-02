@@ -6,8 +6,9 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import com.devebot.opflow.exception.OpflowOperationException;
 import java.util.ArrayList;
+import java.util.Date;
+import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
  *
@@ -15,6 +16,14 @@ import java.util.ArrayList;
  */
 public class OpflowUtil {
     private static final Gson gson = new Gson();
+    
+    public static long getCurrentTime() {
+        return (new Date()).getTime();
+    }
+    
+    public static String getUUID() {
+        return UUID.randomUUID().toString();
+    }
     
     public static byte[] getBytes(String data) {
         if (data == null) return null;

@@ -1,5 +1,9 @@
 package com.devebot.opflow;
 
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,16 +13,89 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowTask {
     
-    public static class Timeout extends Thread {
-
-        final Logger logger = LoggerFactory.getLogger(Timeout.class);
+    public static class TimeoutMonitor {
+        final Logger logger = LoggerFactory.getLogger(TimeoutMonitor.class);
         
-        public Timeout(int max, Listener listener) {
+        private long timeout;
+        private final String monitorId;
+        private final Map<String, OpflowRpcResult> tasks;
+        private final int interval;
+        private final Timer timer = new Timer(true);
+        private final TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                long current = OpflowUtil.getCurrentTime();
+                if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].run() is invoked, current time: " + current);
+                for (String key : tasks.keySet()) {
+                    if (logger.isTraceEnabled()) logger.trace("Monitor[" + monitorId + "].run() examine task[" + key + "]");
+                    OpflowRpcResult task = tasks.get(key);
+                    long _timeout = task.getTimeout();
+                    if (_timeout <= 0) _timeout = timeout;
+                    if (_timeout > 0) {
+                        long diff = current - task.getTimestamp();
+                        if (diff > _timeout) {
+                            tasks.remove(key);
+                            task.exit(true);
+                            if (logger.isTraceEnabled()) {
+                                logger.trace("Monitor[" + monitorId + "].run() - task[" + key + "] has been timeout, will be removed");
+                            }
+                        } else {
+                            if (logger.isTraceEnabled()) {
+                                logger.trace("Monitor[" + monitorId + "].run() - task[" + key + "] is good, keep running");
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        
+        public TimeoutMonitor(Map<String, OpflowRpcResult> tasks) {
+            this(tasks, 2000, 0, null);
+        }
+        
+        public TimeoutMonitor(Map<String, OpflowRpcResult> tasks, int interval, long timeout, String monitorId) {
+            this.tasks = tasks;
+            this.interval = interval;
+            this.timeout = timeout;
+            if (monitorId != null) {
+                this.monitorId = monitorId;
+            } else {
+                this.monitorId = UUID.randomUUID().toString();
+            }
+            if (logger.isDebugEnabled()) logger.debug("Monitor[" + this.monitorId + "] has been created");
+        }
+        
+        public void start() {
+            if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].start()");
+            if (interval > 0) {
+                timer.scheduleAtFixedRate(timerTask, 0, interval);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Monitor[" + monitorId + "] has been started, with interval: " + this.interval);
+                }
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Monitor[" + monitorId + "] is not available, because interval: " + this.interval);
+                }
+            }
+        }
+        
+        public void stop() {
+            if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].stop()");
+            timer.cancel();
+            timer.purge();
+        }
+    }
+    
+    public static class TimeoutWatcher extends Thread {
+
+        final Logger logger = LoggerFactory.getLogger(TimeoutWatcher.class);
+        
+        public TimeoutWatcher(int max, Listener listener) {
             this.max = max;
             this.listener = listener;
         }
 
-        public Timeout(int interval, int max, Listener listener) {
+        public TimeoutWatcher(int interval, int max, Listener listener) {
             this(max, listener);
             this.interval = interval;
         }

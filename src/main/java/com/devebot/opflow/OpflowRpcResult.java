@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
@@ -20,18 +19,19 @@ public class OpflowRpcResult implements Iterator {
     private final String requestId;
     private final String routineId;
     private final Integer timeout;
-    private OpflowTask.Timeout timeoutWatcher;
-    private OpflowTask.Listener completeListener;
+    private final OpflowTask.Listener completeListener;
+    private OpflowTask.TimeoutWatcher timeoutWatcher;
+    private long timestamp;
     
-    public OpflowRpcResult(Map<String, Object> opts, final OpflowTask.Listener completeListener) {
-        this.requestId = (opts != null && opts.get("requestId") != null) ? 
-                (String)opts.get("requestId") : UUID.randomUUID().toString();
-        this.routineId = (opts != null && opts.get("routineId") != null) ? 
-                (String)opts.get("routineId") : UUID.randomUUID().toString();
-        this.timeout = (opts != null) ? (Integer)opts.get("timeout") : null;
+    public OpflowRpcResult(Map<String, Object> options, final OpflowTask.Listener completeListener) {
+        Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
+        this.requestId = (opts.get("requestId") != null) ? (String)opts.get("requestId") : OpflowUtil.getUUID();
+        this.routineId = (opts.get("routineId") != null) ? (String)opts.get("routineId") : OpflowUtil.getUUID();
+        this.timeout = (Integer)opts.get("timeout");
         this.completeListener = completeListener;
-        if (this.timeout > 0 && completeListener != null) {
-            timeoutWatcher = new OpflowTask.Timeout(this.timeout, new OpflowTask.Listener() {
+        if (Boolean.TRUE.equals(opts.get("watcherEnabled")) && completeListener != null &&
+                this.timeout != null && this.timeout > 0) {
+            timeoutWatcher = new OpflowTask.TimeoutWatcher(this.timeout, new OpflowTask.Listener() {
                 @Override
                 public void handleEvent() {
                     if (logger.isDebugEnabled()) logger.debug("timeout event has been raised");
@@ -42,6 +42,7 @@ public class OpflowRpcResult implements Iterator {
             });
             timeoutWatcher.start();
         }
+        checkTimestamp();
     }
 
     public String getRequestId() {
@@ -50,6 +51,15 @@ public class OpflowRpcResult implements Iterator {
     
     public String getRoutineId() {
         return routineId;
+    }
+
+    public long getTimeout() {
+        if (this.timeout == null || this.timeout <= 0) return 0;
+        return 1000 * this.timeout;
+    }
+    
+    public long getTimestamp() {
+        return timestamp;
     }
     
     private final BlockingQueue<OpflowMessage> list = new LinkedBlockingQueue<OpflowMessage>();
@@ -79,6 +89,7 @@ public class OpflowRpcResult implements Iterator {
         if (timeoutWatcher != null) {
             timeoutWatcher.check();
         }
+        checkTimestamp();
         if(isCompleted(message)) {
             if (logger.isDebugEnabled()) logger.debug("completed/failed message");
             list.add(OpflowMessage.EMPTY);
@@ -110,5 +121,9 @@ public class OpflowRpcResult implements Iterator {
             status = info.get("status").toString();
         }
         return STATUS.indexOf(status) >= 0;
+    }
+    
+    private void checkTimestamp() {
+        timestamp = OpflowUtil.getCurrentTime();
     }
 }

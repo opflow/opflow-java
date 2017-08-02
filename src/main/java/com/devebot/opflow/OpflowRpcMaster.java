@@ -38,11 +38,27 @@ public class OpflowRpcMaster {
         brokerParams.put("routingKey", params.get("routingKey"));
         broker = new OpflowBroker(brokerParams);
         responseName = (String) params.get("responseName");
+
+        if (Boolean.FALSE.equals(params.get("monitorEnabled"))) {
+            timeoutMonitor = null;
+        } else {
+            String monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId"): null;
+            int interval = 2000;
+            if (params.get("monitorInterval") != null && params.get("monitorInterval") instanceof Integer) {
+                interval = (Integer) params.get("monitorInterval");
+            }
+            long timeout = 0;
+            if (params.get("monitorTimeout") != null && params.get("monitorTimeout") instanceof Long) {
+                timeout = (Long) params.get("monitorTimeout");
+            }
+            timeoutMonitor = new OpflowTask.TimeoutMonitor(tasks, interval, timeout, monitorId);
+            timeoutMonitor.start();
+        }
     }
 
     private OpflowBroker.ConsumerInfo responseConsumer;
 
-    private final OpflowBroker.ConsumerInfo consumeResponse(final boolean anonymous) {
+    private OpflowBroker.ConsumerInfo consumeResponse(final boolean anonymous) {
         if (logger.isTraceEnabled()) logger.trace("invoke consumeResponse()");
         return broker.consume(new OpflowListener() {
             @Override
@@ -73,6 +89,7 @@ public class OpflowRpcMaster {
     }
     
     private final Map<String, OpflowRpcResult> tasks = new HashMap<String, OpflowRpcResult>();
+    private final OpflowTask.TimeoutMonitor timeoutMonitor;
     
     public OpflowRpcResult request(String routineId, String content, Map<String, Object> opts) {
         return request(routineId, OpflowUtil.getBytes(content), opts);
@@ -150,6 +167,7 @@ public class OpflowRpcMaster {
         try {
             while(!tasks.isEmpty()) idle.await();
             if (responseConsumer != null) cancelConsumer(responseConsumer);
+            if (timeoutMonitor != null) timeoutMonitor.stop();
             if (broker != null) broker.close();
         } catch(Exception ex) {
         } finally {
