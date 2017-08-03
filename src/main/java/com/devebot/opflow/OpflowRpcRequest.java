@@ -1,7 +1,12 @@
 package com.devebot.opflow;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -15,7 +20,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcRequest implements Iterator {
 
-    final Logger logger = LoggerFactory.getLogger(OpflowRpcRequest.class);
+    private final Logger logger = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final String requestId;
     private final String routineId;
     private final Integer timeout;
@@ -34,9 +39,9 @@ public class OpflowRpcRequest implements Iterator {
             timeoutWatcher = new OpflowTask.TimeoutWatcher(this.timeout, new OpflowTask.Listener() {
                 @Override
                 public void handleEvent() {
-                    if (logger.isDebugEnabled()) logger.debug("timeout event has been raised");
+                    if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] timeout event has been raised");
                     list.add(OpflowMessage.ERROR);
-                    if (logger.isDebugEnabled()) logger.debug("raise completeListener (timeout)");
+                    if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] raise completeListener (timeout)");
                     completeListener.handleEvent();
                 }
             });
@@ -91,16 +96,67 @@ public class OpflowRpcRequest implements Iterator {
         }
         checkTimestamp();
         if(isCompleted(message)) {
-            if (logger.isDebugEnabled()) logger.debug("completed/failed message");
+            if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] completed/failed message");
             list.add(OpflowMessage.EMPTY);
             if (completeListener != null) {
-                if (logger.isDebugEnabled()) logger.debug("raise completeListener (completed)");
+                if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] raise completeListener (completed)");
                 completeListener.handleEvent();
             }
             if (timeoutWatcher != null) {
                 timeoutWatcher.close();
             }
         }
+    }
+    
+    public List<OpflowMessage> iterate() {
+        List<OpflowMessage> buff = new LinkedList<OpflowMessage>();
+        while(this.hasNext()) buff.add(this.next());
+        return buff;
+    }
+    
+    private final JsonParser jsonParser = new JsonParser();
+    
+    public OpflowRpcResult exhaust() {
+        return exhaust(true);
+    }
+    
+    public OpflowRpcResult exhaust(final boolean includeProgress) {
+        if (logger.isTraceEnabled()) logger.trace("Request[" + requestId + "] withdraw ...");
+        byte[] error = null;
+        byte[] value = null;
+        List<OpflowRpcResult.Step> steps = new LinkedList<OpflowRpcResult.Step>();
+        while(this.hasNext()) {
+            OpflowMessage msg = this.next();
+            String status = getStatus(msg);
+            if (logger.isTraceEnabled()) {
+                logger.trace(MessageFormat.format("Request[{0}] receive message with status: {1}", new Object[] {
+                    requestId, status
+                }));
+            }
+            if (status == null) continue;
+            if ("progress".equals(status)) {
+                if (includeProgress) {
+                    try {
+                        JsonObject jsonObject = (JsonObject)jsonParser.parse(msg.getContentAsString());
+                        int percent = Integer.parseInt(jsonObject.get("percent").toString());
+                        steps.add(new OpflowRpcResult.Step(percent));
+                    } catch (JsonSyntaxException jse) {
+                        steps.add(new OpflowRpcResult.Step());
+                    } catch (NumberFormatException nfe) {
+                        steps.add(new OpflowRpcResult.Step());
+                    }
+                }
+            } else
+            if ("failed".equals(status)) {
+                error = msg.getContent();
+            } else
+            if ("completed".equals(status)) {
+                value = msg.getContent();
+            }
+        }
+        if (logger.isTraceEnabled()) logger.trace("Request[" + requestId + "] withdraw done");
+        if (!includeProgress) steps = null;
+        return new OpflowRpcResult(steps, error, value);
     }
     
     public void exit() {
@@ -113,13 +169,18 @@ public class OpflowRpcRequest implements Iterator {
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
     
-    private boolean isCompleted(OpflowMessage message) {
+    private String getStatus(OpflowMessage message) {
+        if (message == null) return null;
         Map<String, Object> info = message.getInfo();
-        if (info == null) return false;
-        String status = null;
-        if (info.get("status") != null) {
-            status = info.get("status").toString();
+        if (info != null && info.get("status") != null) {
+            return info.get("status").toString();
         }
+        return null;
+    }
+    
+    private boolean isCompleted(OpflowMessage message) {
+        String status = getStatus(message);
+        if (status == null) return false;
         return STATUS.indexOf(status) >= 0;
     }
     
