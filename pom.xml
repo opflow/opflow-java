@@ -7,10 +7,10 @@
     <groupId>com.devebot.opflow</groupId>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <name>opflow-java</name>
     <description>Devebot Opflow for Java</description>
-    <url>https://github.com/devebot/opflow-java</url>
+    <url>https://github.com/opflow/opflow-java</url>
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -26,9 +26,9 @@
         </developer>
     </developers>
     <scm>
-        <connection>scm:git:git://github.com/devebot/opflow-java.git</connection>
-        <developerConnection>scm:git:ssh://github.com:devebot/opflow-java.git</developerConnection>
-        <url>https://github.com/devebot/opflow-java/tree/master</url>
+        <connection>scm:git:git://github.com/opflow/opflow-java.git</connection>
+        <developerConnection>scm:git:ssh://github.com:opflow/opflow-java.git</developerConnection>
+        <url>https://github.com/opflow/opflow-java/tree/master</url>
     </scm>
 
     <properties>
@@ -88,6 +88,18 @@
             <version>3.10</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>0.9.10</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.21</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -113,6 +125,55 @@
                 <configuration>
                     <skipTests>false</skipTests>
                 </configuration>
+            </plugin>
+            <plugin>  
+                <groupId>org.apache.maven.plugins</groupId>  
+                <artifactId>maven-failsafe-plugin</artifactId>  
+                <executions>  
+                    <execution>  
+                        <id>integration-test</id>  
+                        <goals>  
+                            <goal>integration-test</goal>  
+                            <goal>verify</goal>  
+                        </goals>  
+                    </execution>
+                </executions>  
+                <configuration>  
+                    <includes>  
+                        <include>**/*Stories.java</include>  
+                    </includes>  
+                </configuration>  
+            </plugin>
+            <plugin>
+                <groupId>org.jbehave</groupId>
+                <artifactId>jbehave-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>run-stories-as-embeddables</id>
+                        <phase>integration-test</phase>
+                        <configuration>
+                            <includes>
+                                <include>**/*Stories.java</include>
+                            </includes>
+                            <metaFilters>
+                                <metaFilter>+author *</metaFilter>
+                                <metaFilter>-skip</metaFilter>
+                            </metaFilters>
+                            <systemProperties>
+                                <property>
+                                    <name>java.awt.headless</name>
+                                    <value>true</value>
+                                </property>
+                            </systemProperties>
+                            <ignoreFailureInStories>false</ignoreFailureInStories>
+                            <ignoreFailureInView>false</ignoreFailureInView>
+                            <generateViewAfterStories>false</generateViewAfterStories>
+                        </configuration>
+                        <goals>
+                            <goal>run-stories-as-embeddables</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

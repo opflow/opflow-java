@@ -6,6 +6,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.Date;
 import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
@@ -14,6 +16,14 @@ import com.devebot.opflow.exception.OpflowOperationException;
  */
 public class OpflowUtil {
     private static final Gson gson = new Gson();
+    
+    public static long getCurrentTime() {
+        return (new Date()).getTime();
+    }
+    
+    public static String getUUID() {
+        return UUID.randomUUID().toString();
+    }
     
     public static byte[] getBytes(String data) {
         if (data == null) return null;
@@ -92,5 +102,16 @@ public class OpflowUtil {
         Object requestID = headers.get("requestId");
         if (requestID == null) return UUID.randomUUID().toString();
         return requestID.toString();
+    }
+    
+    public static String[] splitByComma(String source) {
+        if (source == null) return null;
+        String[] arr = source.split(",");
+        ArrayList<String> list = new ArrayList<String>(arr.length);
+        for(String item: arr) {
+            String str = item.trim();
+            if (str.length() > 0) list.add(str);
+        }
+        return list.toArray(new String[0]);
     }
 }
