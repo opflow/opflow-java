@@ -29,29 +29,29 @@ public class OpflowRpcWorkerSteps {
     private final Gson gson = new Gson();
     private final JsonParser jsonParser = new JsonParser();
 
-    @Given("a RPC worker[$string]")
+    @Given("a RPC worker<$string>")
     public void createRpcWorker(String workerName) throws OpflowConstructorException {
         workers.put(workerName, OpflowHelper.createRpcWorker());
     }
     
-    @Given("a counter consumer in worker[$string]")
+    @Given("a counter consumer in worker<$string>")
     public void consumeAllMessage(String workerName) {
         workers.get(workerName).process(new OpflowRpcListener() {
             @Override
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
-                System.out.println("[+] Routine input: " + message.getContentAsString());
+                if (LOG.isTraceEnabled()) LOG.trace("[+] Routine input: " + message.getContentAsString());
                 return OpflowRpcListener.NEXT;
             }
         });
     }
     
-    @Given("a FibonacciGenerator consumer with names '$string' in worker[$string]")
+    @Given("a FibonacciGenerator consumer with names '$string' in worker<$string>")
     public void consumeFibonacciGenerator(String names, String workerName) {
         workers.get(workerName).process(new String[] {"fibonacci", "fib"}, new OpflowRpcListener() {
             @Override
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 JsonObject jsonObject = (JsonObject)jsonParser.parse(message.getContentAsString());
-                System.out.println("[+] Fibonacci received: '" + jsonObject.toString() + "'");
+                if (LOG.isTraceEnabled()) LOG.trace("[+] Fibonacci received: '" + jsonObject.toString() + "'");
 
                 response.emitStarted();
 
@@ -64,7 +64,7 @@ public class OpflowRpcWorkerSteps {
                 }
 
                 String result = gson.toJson(fibonacci.result());
-                System.out.println("[-] Fibonacci finished with: '" + result + "'");
+                if (LOG.isTraceEnabled()) LOG.trace("[-] Fibonacci finished with: '" + result + "'");
 
                 response.emitCompleted(result);
                 

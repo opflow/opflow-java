@@ -11,6 +11,8 @@ import org.jbehave.core.io.LoadFromURL;
 import org.jbehave.core.io.StoryFinder;
 import org.jbehave.core.steps.InstanceStepsFactory;
 import org.jbehave.core.junit.JUnitStories;
+import org.jbehave.core.reporters.Format;
+import org.jbehave.core.reporters.StoryReporterBuilder;
 import org.jbehave.core.steps.InjectableStepsFactory;
 
 /**
@@ -21,7 +23,11 @@ public class OpflowRpcStories extends JUnitStories {
  
     @Override
     public Configuration configuration() {
-        return new MostUsefulConfiguration().useStoryLoader(new LoadFromURL());
+        return new MostUsefulConfiguration()
+                .useStoryLoader(new LoadFromURL())
+                .useStoryReporterBuilder(new StoryReporterBuilder()
+                        .withDefaultFormats()
+			.withFormats(Format.CONSOLE, Format.TXT));
     }
  
     @Override
@@ -29,11 +35,6 @@ public class OpflowRpcStories extends JUnitStories {
         return new InstanceStepsFactory(configuration(),
                 new OpflowRpcMasterSteps(),
                 new OpflowRpcWorkerSteps());
-        /*
-        return new ScanningStepsFactory(configuration(), "com.devebot.opflow.jbehave.steps")
-                .matchingNames(".*")
-                .notMatchingNames(".*SkipSteps");
-        */
     }
      
     @Override
