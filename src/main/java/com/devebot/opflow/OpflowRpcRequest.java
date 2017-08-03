@@ -13,9 +13,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowRpcResult implements Iterator {
+public class OpflowRpcRequest implements Iterator {
 
-    final Logger logger = LoggerFactory.getLogger(OpflowRpcResult.class);
+    final Logger logger = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final String requestId;
     private final String routineId;
     private final Integer timeout;
@@ -23,7 +23,7 @@ public class OpflowRpcResult implements Iterator {
     private OpflowTask.TimeoutWatcher timeoutWatcher;
     private long timestamp;
     
-    public OpflowRpcResult(Map<String, Object> options, final OpflowTask.Listener completeListener) {
+    public OpflowRpcRequest(Map<String, Object> options, final OpflowTask.Listener completeListener) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         this.requestId = (opts.get("requestId") != null) ? (String)opts.get("requestId") : OpflowUtil.getUUID();
         this.routineId = (opts.get("routineId") != null) ? (String)opts.get("routineId") : OpflowUtil.getUUID();

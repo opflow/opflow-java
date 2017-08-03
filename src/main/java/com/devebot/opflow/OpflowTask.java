@@ -18,7 +18,7 @@ public class OpflowTask {
         
         private long timeout;
         private final String monitorId;
-        private final Map<String, OpflowRpcResult> tasks;
+        private final Map<String, OpflowRpcRequest> tasks;
         private final int interval;
         private final Timer timer = new Timer(true);
         private final TimerTask timerTask = new TimerTask() {
@@ -28,7 +28,7 @@ public class OpflowTask {
                 if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].run() is invoked, current time: " + current);
                 for (String key : tasks.keySet()) {
                     if (logger.isTraceEnabled()) logger.trace("Monitor[" + monitorId + "].run() examine task[" + key + "]");
-                    OpflowRpcResult task = tasks.get(key);
+                    OpflowRpcRequest task = tasks.get(key);
                     long _timeout = task.getTimeout();
                     if (_timeout <= 0) _timeout = timeout;
                     if (_timeout > 0) {
@@ -49,11 +49,11 @@ public class OpflowTask {
             }
         };
         
-        public TimeoutMonitor(Map<String, OpflowRpcResult> tasks) {
+        public TimeoutMonitor(Map<String, OpflowRpcRequest> tasks) {
             this(tasks, 2000, 0, null);
         }
         
-        public TimeoutMonitor(Map<String, OpflowRpcResult> tasks, int interval, long timeout, String monitorId) {
+        public TimeoutMonitor(Map<String, OpflowRpcRequest> tasks, int interval, long timeout, String monitorId) {
             this.tasks = tasks;
             this.interval = interval;
             this.timeout = timeout;

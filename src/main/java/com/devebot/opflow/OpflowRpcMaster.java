@@ -64,15 +64,15 @@ public class OpflowRpcMaster {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
                 String taskId = properties.getCorrelationId();
-                if (logger.isDebugEnabled()) logger.debug("received taskId: " + taskId + "; Data: " + new String(content, "UTF-8"));
-                OpflowRpcResult task = tasks.get(taskId);
+                if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] received data, size: " + (content != null ? content.length : -1));
+                OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
-                    if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] not found. Skipped");
+                    if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] not found, skipped");
                     return;
                 }
                 OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                 task.push(message);
-                if (logger.isDebugEnabled()) logger.debug("Message has been pushed to task[" + taskId + "]");
+                if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] - Message has been enqueued");
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
@@ -88,14 +88,14 @@ public class OpflowRpcMaster {
         }));
     }
     
-    private final Map<String, OpflowRpcResult> tasks = new HashMap<String, OpflowRpcResult>();
+    private final Map<String, OpflowRpcRequest> tasks = new HashMap<String, OpflowRpcRequest>();
     private final OpflowTask.TimeoutMonitor timeoutMonitor;
     
-    public OpflowRpcResult request(String routineId, String content, Map<String, Object> opts) {
+    public OpflowRpcRequest request(String routineId, String content, Map<String, Object> opts) {
         return request(routineId, OpflowUtil.getBytes(content), opts);
     }
     
-    public OpflowRpcResult request(String routineId, byte[] content, Map<String, Object> options) {
+    public OpflowRpcRequest request(String routineId, byte[] content, Map<String, Object> options) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         final boolean isStandalone = "standalone".equals((String)opts.get("mode"));
         
@@ -136,7 +136,7 @@ public class OpflowRpcMaster {
             opts.put("routineId", routineId);
         }
         
-        OpflowRpcResult task = new OpflowRpcResult(opts, listener);
+        OpflowRpcRequest task = new OpflowRpcRequest(opts, listener);
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<String, Object>();
