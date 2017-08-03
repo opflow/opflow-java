@@ -74,4 +74,32 @@ public class OpflowRpcMasterSteps {
         long value = Long.parseLong(jsonObject.get("value").toString());
         assertThat(value, equalTo(fibResult.getValue()));
     }
+    
+    @When("I make requests from number $fromNumber to number $toNumber to routine<$routineId> in master<$masterName>")
+    public void makeRangeOfRequests(final int fromNumber, final int toNumber, final String routineId, final String masterName) {
+        for(int number = fromNumber; number < toNumber; number++) {
+            String requestName = "reqseq" + number;
+            makeRequest(requestName, routineId, masterName, number);
+        }
+    }
+    
+    @Then("the requests from $fromNumber to $toNumber should finished successfully")
+    public void checkRangeOfRequests(final int fromNumber, final int toNumber) {
+        for(int i = fromNumber; i < toNumber; i++) {
+            String requestName = "reqseq" + i;
+            checkRequestOutput(requestName);
+        }
+    }
+    
+    @When("I do something in $number seconds")
+    public void doSomethingIn(final int number) {
+        try {
+            Thread.sleep(1000 * number);
+        } catch (InterruptedException ie) {}
+    }
+    
+    @When("I close RPC master<$masterName>")
+    public void closeRpcMaster(String masterName) {
+        masters.get(masterName).close();
+    }
 }
