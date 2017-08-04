@@ -90,20 +90,24 @@ public class OpflowTask {
 
         final Logger logger = LoggerFactory.getLogger(TimeoutWatcher.class);
         
-        public TimeoutWatcher(int max, Listener listener) {
-            this.max = max;
+        public TimeoutWatcher(long max, Listener listener) {
+            if (max > 0) {
+                this.max = max;
+            }
             this.listener = listener;
         }
 
-        public TimeoutWatcher(int interval, int max, Listener listener) {
+        public TimeoutWatcher(long interval, long max, Listener listener) {
             this(max, listener);
-            this.interval = interval;
+            if (interval > 0) {
+                this.interval = interval;
+            }
         }
 
         private Listener listener;
-        private int interval = 1000;
-        private int max = 0;
-        private int count = 0;
+        private long interval = 1000;
+        private long max = 0;
+        private long count = 0;
         private boolean done = false;
 
         @Override
@@ -111,7 +115,7 @@ public class OpflowTask {
             while(count < max && !done) {
                 try {
                     Thread.sleep(interval);
-                    count += 1;
+                    count += interval;
                     if (logger.isTraceEnabled()) logger.trace("Check " + count + "/" + max);
                     if (count >= max) {
                         if (this.listener != null) {
