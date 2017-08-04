@@ -19,15 +19,20 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcMaster {
 
-    final Logger logger = LoggerFactory.getLogger(OpflowRpcMaster.class);
+    private final Logger logger = LoggerFactory.getLogger(OpflowRpcMaster.class);
     final int PREFETCH_NUM = 1;
     final int CONSUMER_MAX = 1;
     
-    final Lock lock = new ReentrantLock();
-    final Condition idle = lock.newCondition();
+    private final Lock lock = new ReentrantLock();
+    private final Condition idle = lock.newCondition();
     
     private final OpflowBroker broker;
     private final String responseName;
+    
+    private final boolean monitorEnabled;
+    private final String monitorId;
+    private final int monitorInterval;
+    private final long monitorTimeout;
     
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowConstructorException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
@@ -39,23 +44,29 @@ public class OpflowRpcMaster {
         broker = new OpflowBroker(brokerParams);
         responseName = (String) params.get("responseName");
 
-        if (Boolean.FALSE.equals(params.get("monitorEnabled"))) {
-            timeoutMonitor = null;
+        if (params.get("monitorEnabled") != null && params.get("monitorEnabled") instanceof Boolean) {
+            monitorEnabled = (Boolean) params.get("monitorEnabled");
         } else {
-            String monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId"): null;
-            int interval = 2000;
-            if (params.get("monitorInterval") != null && params.get("monitorInterval") instanceof Integer) {
-                interval = (Integer) params.get("monitorInterval");
-            }
-            long timeout = 0;
-            if (params.get("monitorTimeout") != null && params.get("monitorTimeout") instanceof Long) {
-                timeout = (Long) params.get("monitorTimeout");
-            }
-            timeoutMonitor = new OpflowTask.TimeoutMonitor(tasks, interval, timeout, monitorId);
-            timeoutMonitor.start();
+            monitorEnabled = true;
+        }
+        
+        monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId"): null;
+        
+        if (params.get("monitorInterval") != null && params.get("monitorInterval") instanceof Integer) {
+            monitorInterval = (Integer) params.get("monitorInterval");
+        } else {
+            monitorInterval = 2000;
+        }
+        
+        if (params.get("monitorTimeout") != null && params.get("monitorTimeout") instanceof Long) {
+            monitorTimeout = (Long) params.get("monitorTimeout");
+        } else {
+            monitorTimeout = 0;
         }
     }
 
+    private final Map<String, OpflowRpcRequest> tasks = new HashMap<String, OpflowRpcRequest>();
+    
     private OpflowBroker.ConsumerInfo responseConsumer;
 
     private OpflowBroker.ConsumerInfo consumeResponse(final boolean anonymous) {
@@ -88,8 +99,16 @@ public class OpflowRpcMaster {
         }));
     }
     
-    private final Map<String, OpflowRpcRequest> tasks = new HashMap<String, OpflowRpcRequest>();
-    private final OpflowTask.TimeoutMonitor timeoutMonitor;
+    private OpflowTask.TimeoutMonitor timeoutMonitor = null;
+    
+    private OpflowTask.TimeoutMonitor initTimeoutMonitor() {
+        OpflowTask.TimeoutMonitor monitor = null;
+        if (monitorEnabled) {
+            monitor = new OpflowTask.TimeoutMonitor(tasks, monitorInterval, monitorTimeout, monitorId);
+            monitor.start();
+        }
+        return monitor;
+    }
     
     public OpflowRpcRequest request(String routineId, String content, Map<String, Object> opts) {
         return request(routineId, OpflowUtil.getBytes(content), opts);
@@ -98,6 +117,10 @@ public class OpflowRpcMaster {
     public OpflowRpcRequest request(String routineId, byte[] content, Map<String, Object> options) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         final boolean isStandalone = "standalone".equals((String)opts.get("mode"));
+        
+        if (timeoutMonitor == null) {
+            timeoutMonitor = initTimeoutMonitor();
+        }
         
         final OpflowBroker.ConsumerInfo consumerInfo;
         

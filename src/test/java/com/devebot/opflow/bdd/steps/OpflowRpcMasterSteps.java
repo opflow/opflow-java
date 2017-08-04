@@ -58,7 +58,7 @@ public class OpflowRpcMasterSteps {
 
     @Then("the request<$requestName> should finished successfully")
     public void checkRequestOutput(String requestName) {
-        OpflowRpcResult output = requests.get(requestName).exhaust();
+        OpflowRpcResult output = OpflowUtil.exhaustRequest(requests.get(requestName));
         JsonObject jsonObject = (JsonObject)jsonParser.parse(output.getValueAsString());
         
         int number = Integer.parseInt(jsonObject.get("number").toString());

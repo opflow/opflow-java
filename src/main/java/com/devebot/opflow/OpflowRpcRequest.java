@@ -108,57 +108,6 @@ public class OpflowRpcRequest implements Iterator {
         }
     }
     
-    public List<OpflowMessage> iterate() {
-        List<OpflowMessage> buff = new LinkedList<OpflowMessage>();
-        while(this.hasNext()) buff.add(this.next());
-        return buff;
-    }
-    
-    private final JsonParser jsonParser = new JsonParser();
-    
-    public OpflowRpcResult exhaust() {
-        return exhaust(true);
-    }
-    
-    public OpflowRpcResult exhaust(final boolean includeProgress) {
-        if (logger.isTraceEnabled()) logger.trace("Request[" + requestId + "] withdraw ...");
-        byte[] error = null;
-        byte[] value = null;
-        List<OpflowRpcResult.Step> steps = new LinkedList<OpflowRpcResult.Step>();
-        while(this.hasNext()) {
-            OpflowMessage msg = this.next();
-            String status = getStatus(msg);
-            if (logger.isTraceEnabled()) {
-                logger.trace(MessageFormat.format("Request[{0}] receive message with status: {1}", new Object[] {
-                    requestId, status
-                }));
-            }
-            if (status == null) continue;
-            if ("progress".equals(status)) {
-                if (includeProgress) {
-                    try {
-                        JsonObject jsonObject = (JsonObject)jsonParser.parse(msg.getContentAsString());
-                        int percent = Integer.parseInt(jsonObject.get("percent").toString());
-                        steps.add(new OpflowRpcResult.Step(percent));
-                    } catch (JsonSyntaxException jse) {
-                        steps.add(new OpflowRpcResult.Step());
-                    } catch (NumberFormatException nfe) {
-                        steps.add(new OpflowRpcResult.Step());
-                    }
-                }
-            } else
-            if ("failed".equals(status)) {
-                error = msg.getContent();
-            } else
-            if ("completed".equals(status)) {
-                value = msg.getContent();
-            }
-        }
-        if (logger.isTraceEnabled()) logger.trace("Request[" + requestId + "] withdraw done");
-        if (!includeProgress) steps = null;
-        return new OpflowRpcResult(steps, error, value);
-    }
-    
     public void exit() {
         exit(true);
     }
@@ -169,17 +118,8 @@ public class OpflowRpcRequest implements Iterator {
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
     
-    private String getStatus(OpflowMessage message) {
-        if (message == null) return null;
-        Map<String, Object> info = message.getInfo();
-        if (info != null && info.get("status") != null) {
-            return info.get("status").toString();
-        }
-        return null;
-    }
-    
     private boolean isCompleted(OpflowMessage message) {
-        String status = getStatus(message);
+        String status = OpflowUtil.getStatus(message);
         if (status == null) return false;
         return STATUS.indexOf(status) >= 0;
     }
