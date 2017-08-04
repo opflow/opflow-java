@@ -41,6 +41,11 @@ public class OpflowRpcMasterSteps {
     
     @When("I make a request<$requestName> to routine<$routineId> in master<$masterName> with input number: $number")
     public void makeRequest(final String requestName, final String routineId, final String masterName, final int number) {
+        makeRequest(requestName, routineId, masterName, number, 5000);
+    }
+
+    @When("I make a request<$requestName>($number) to routine<$routineId> in master<$masterName> with timeout: $timeout")
+    public void makeRequest(final String requestName, final String routineId, final String masterName, final int number, final long timeout) {
         inputs.put(requestName, number);
         OpflowRpcRequest request = masters.get(masterName).request("fibonacci", OpflowUtil.buildJson(new OpflowUtil.MapListener() {
             @Override
@@ -50,12 +55,12 @@ public class OpflowRpcMasterSteps {
         }), OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
-                opts.put("timeout", 5);
+                opts.put("timeout", timeout);
             }
         }));
         requests.put(requestName, request);
     }
-
+    
     @Then("the request<$requestName> should finished successfully")
     public void checkRequestOutput(String requestName) {
         OpflowRpcResult output = OpflowUtil.exhaustRequest(requests.get(requestName));

@@ -1,12 +1,7 @@
 package com.devebot.opflow;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -23,7 +18,7 @@ public class OpflowRpcRequest implements Iterator {
     private final Logger logger = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final String requestId;
     private final String routineId;
-    private final Integer timeout;
+    private final long timeout;
     private final OpflowTask.Listener completeListener;
     private OpflowTask.TimeoutWatcher timeoutWatcher;
     private long timestamp;
@@ -32,10 +27,17 @@ public class OpflowRpcRequest implements Iterator {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         this.requestId = (opts.get("requestId") != null) ? (String)opts.get("requestId") : OpflowUtil.getUUID();
         this.routineId = (opts.get("routineId") != null) ? (String)opts.get("routineId") : OpflowUtil.getUUID();
-        this.timeout = (Integer)opts.get("timeout");
+        if (opts.get("timeout") == null) {
+            this.timeout = 0;
+        } else if (opts.get("timeout") instanceof Long) {
+            this.timeout = (Long)opts.get("timeout");
+        } else if (opts.get("timeout") instanceof Integer) {
+            this.timeout = ((Integer)opts.get("timeout")).longValue();
+        } else {
+            this.timeout = 0;
+        }
         this.completeListener = completeListener;
-        if (Boolean.TRUE.equals(opts.get("watcherEnabled")) && completeListener != null &&
-                this.timeout != null && this.timeout > 0) {
+        if (Boolean.TRUE.equals(opts.get("watcherEnabled")) && completeListener != null && this.timeout > 0) {
             timeoutWatcher = new OpflowTask.TimeoutWatcher(this.timeout, new OpflowTask.Listener() {
                 @Override
                 public void handleEvent() {
@@ -59,8 +61,8 @@ public class OpflowRpcRequest implements Iterator {
     }
 
     public long getTimeout() {
-        if (this.timeout == null || this.timeout <= 0) return 0;
-        return 1000 * this.timeout;
+        if (this.timeout <= 0) return 0;
+        return this.timeout;
     }
     
     public long getTimestamp() {
