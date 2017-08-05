@@ -67,8 +67,9 @@ public class OpflowRpcWorker {
         if (consumerInfo != null) return consumerInfo;
         return consumerInfo = broker.consume(new OpflowListener() {
             @Override
-            public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
-                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, queueName);
+            public void processMessage(byte[] content, AMQP.BasicProperties properties, 
+                    String queueName, Channel channel, String workerTag) throws IOException {
+                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, workerTag, queueName);
                 Map<String, Object> headers = OpflowUtil.getHeaders(properties);
                 String routineId = null;
                 if (headers.get("routineId") != null) {
@@ -76,7 +77,8 @@ public class OpflowRpcWorker {
                 }
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
-                        Boolean nextAction = middleware.getListener().processMessage(new OpflowMessage(content, properties.getHeaders()), response);
+                        Boolean nextAction = middleware.getListener()
+                                .processMessage(new OpflowMessage(content, properties.getHeaders()), response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }

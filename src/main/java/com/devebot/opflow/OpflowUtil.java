@@ -127,13 +127,17 @@ public class OpflowUtil {
         return list.toArray(new String[0]);
     }
     
-    public static String getStatus(OpflowMessage message) {
-        if (message == null) return null;
+    public static String getMessageField(OpflowMessage message, String fieldName) {
+        if (message == null || fieldName == null) return null;
         Map<String, Object> info = message.getInfo();
-        if (info != null && info.get("status") != null) {
-            return info.get("status").toString();
+        if (info != null && info.get(fieldName) != null) {
+            return info.get(fieldName).toString();
         }
         return null;
+    }
+    
+    public static String getStatus(OpflowMessage message) {
+        return getMessageField(message, "status");
     }
     
     public static List<OpflowMessage> iterateRequest(OpflowRpcRequest request) {
@@ -150,6 +154,7 @@ public class OpflowUtil {
         String requestId = request.getRequestId();
         Iterator<OpflowMessage> iter = request;
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw ...");
+        String workerTag = null;
         byte[] error = null;
         byte[] value = null;
         List<OpflowRpcResult.Step> steps = new LinkedList<OpflowRpcResult.Step>();
@@ -176,14 +181,16 @@ public class OpflowUtil {
                 }
             } else
             if ("failed".equals(status)) {
+                workerTag = getMessageField(msg, "workerTag");
                 error = msg.getContent();
             } else
             if ("completed".equals(status)) {
+                workerTag = getMessageField(msg, "workerTag");
                 value = msg.getContent();
             }
         }
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw done");
         if (!includeProgress) steps = null;
-        return new OpflowRpcResult(steps, error, value);
+        return new OpflowRpcResult(workerTag, steps, error, value);
     }
 }

@@ -19,13 +19,15 @@ public class OpflowRpcResponse {
     
     private final Channel channel;
     private final AMQP.BasicProperties properties;
+    private final String workerTag;
     private final String replyQueueName;
     private String requestId;
     
-    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String replyQueueName) {
+    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String workerTag, String replyQueueName) {
         this.channel = channel;
         this.properties = properties;
-
+        this.workerTag = workerTag;
+        
         if (properties.getReplyTo() != null) {
             this.replyQueueName = properties.getReplyTo();
         } else {
@@ -104,7 +106,7 @@ public class OpflowRpcResponse {
         AMQP.BasicProperties replyProps = new AMQP.BasicProperties
             .Builder()
             .correlationId(properties.getCorrelationId())
-            .headers(createHeaders("failed"))
+            .headers(createHeaders("failed", true))
             .build();
         basicPublish(error, replyProps);
         if (logger.isTraceEnabled()) {
@@ -121,7 +123,7 @@ public class OpflowRpcResponse {
         AMQP.BasicProperties replyProps = new AMQP.BasicProperties
             .Builder()
             .correlationId(properties.getCorrelationId())
-            .headers(createHeaders("completed"))
+            .headers(createHeaders("completed", true))
             .build();
         basicPublish(result, replyProps);
         if (logger.isTraceEnabled()) {
@@ -130,10 +132,17 @@ public class OpflowRpcResponse {
     }
 
     private Map<String, Object> createHeaders(String status) {
+        return createHeaders(status, false);
+    }
+    
+    private Map<String, Object> createHeaders(String status, boolean finished) {
         Map<String, Object> headers = new HashMap<String, Object>();
         headers.put("status", status);
         if (this.requestId != null) {
             headers.put("requestId", this.requestId);
+        }
+        if (finished) {
+            headers.put("workerTag", this.workerTag);
         }
         return headers;
     }

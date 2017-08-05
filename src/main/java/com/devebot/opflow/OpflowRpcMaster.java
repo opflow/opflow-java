@@ -73,7 +73,8 @@ public class OpflowRpcMaster {
         if (logger.isTraceEnabled()) logger.trace("invoke consumeResponse()");
         return broker.consume(new OpflowListener() {
             @Override
-            public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException {
+            public void processMessage(byte[] content, AMQP.BasicProperties properties, 
+                    String queueName, Channel channel, String workerTag) throws IOException {
                 String taskId = properties.getCorrelationId();
                 if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] received data, size: " + (content != null ? content.length : -1));
                 OpflowRpcRequest task = tasks.get(taskId);

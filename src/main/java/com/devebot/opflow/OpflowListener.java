@@ -5,5 +5,5 @@ import com.rabbitmq.client.Channel;
 import java.io.IOException;
 
 public interface OpflowListener {
-    public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel) throws IOException;
+    public void processMessage(byte[] content, AMQP.BasicProperties properties, String queueName, Channel channel, String workerTag) throws IOException;
 }

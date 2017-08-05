@@ -185,7 +185,7 @@ public class OpflowBroker {
                     if (logger.isTraceEnabled()) logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
                         requestID
                     }));
-                    listener.processMessage(body, properties, _replyToName, _channel);
+                    listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
 
                     if (logger.isTraceEnabled()) {
                         logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
