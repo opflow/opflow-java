@@ -1,20 +1,27 @@
 package com.devebot.opflow;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  *
  * @author drupalex
  */
-public class OpflowRpcResult {
+public class OpflowRpcResult implements Serializable {
+    private final String workerTag;
     private final List<Step> progress;
     private final byte[] error;
     private final byte[] value;
     
-    public OpflowRpcResult(List<Step> progress, byte[] error, byte[] value) {
+    public OpflowRpcResult(String workerTag, List<Step> progress, byte[] error, byte[] value) {
+        this.workerTag = workerTag;
         this.progress = progress;
         this.error = error;
         this.value = value;
+    }
+    
+    public String getWorkerTag() {
+        return workerTag;
     }
     
     public byte[] getError() {
