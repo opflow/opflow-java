@@ -24,6 +24,7 @@ public class OpflowTask {
         private final TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
+                if (tasks == null || tasks.isEmpty()) return;
                 long current = OpflowUtil.getCurrentTime();
                 if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].run() is invoked, current time: " + current);
                 for (String key : tasks.keySet()) {
