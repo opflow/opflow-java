@@ -11,7 +11,6 @@ import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -34,6 +33,7 @@ public class OpflowBroker {
 
     private String exchangeName;
     private String exchangeType;
+    private Boolean exchangeDurable;
     private String routingKey;
     private String[] otherKeys;
 
@@ -66,14 +66,28 @@ public class OpflowBroker {
             }
 
             connection = factory.newConnection();
-
-            exchangeName = (String) params.get("exchangeName");
-            exchangeType = (String) params.get("exchangeType");
+        } catch (Exception exception) {
+            if (logger.isErrorEnabled()) logger.error("newConnection() has been failed, exception: " + exception.getMessage());
+            throw new OpflowConstructorException("connection refused, invalid connection parameters", exception);
+        }
+        
+        try {
+            if (params.get("exchangeName") instanceof String) {
+                exchangeName = (String) params.get("exchangeName");
+            }
             
+            if (params.get("exchangeType") instanceof String) {
+                exchangeType = (String) params.get("exchangeType");
+            }
             if (exchangeType == null) exchangeType = "direct";
 
-            if (exchangeName != null && exchangeType != null) {
-                getChannel().exchangeDeclare(exchangeName, exchangeType, true);
+            if (params.get("exchangeDurable") instanceof Boolean) {
+                exchangeDurable = (Boolean) params.get("exchangeDurable");
+            }
+            if (exchangeDurable == null) exchangeDurable = true;
+            
+            if (exchangeName != null) {
+                getChannel().exchangeDeclare(exchangeName, exchangeType, exchangeDurable);
             }
             
             if (params.get("routingKey") instanceof String) {
@@ -83,19 +97,27 @@ public class OpflowBroker {
             if (params.get("otherKeys") instanceof String[]) {
                 otherKeys = (String[])params.get("otherKeys");
             }
-        } catch (Exception exception) {
-            if (logger.isErrorEnabled()) logger.error("new OpflowBroker has been failed, exception: " + exception.getMessage());
-            throw new OpflowConstructorException(exception);
+        } catch (IOException exception) {
+            if (logger.isErrorEnabled()) logger.error("exchangeDeclare has been failed, exception: " + exception.getMessage());
+            throw new OpflowConstructorException("exchangeDeclare has been failed", exception);
         }
     }
-
+    
+    public void produce(final byte[] content, final AMQP.BasicProperties props) {
+        produce(content, props, null);
+    }
+    
     public void produce(final byte[] content, final AMQP.BasicProperties props, final Map<String, Object> override) {
         try {
             String customKey = this.routingKey;
             if (override != null && override.get("routingKey") != null) {
                 customKey = (String) override.get("routingKey");
             }
-            getChannel().basicPublish(this.exchangeName, customKey, props, content);
+            Channel _channel = getChannel();
+            if (_channel == null || !_channel.isOpen()) {
+                throw new OpflowOperationException("Channel is null or has been closed");
+            }
+            _channel.basicPublish(this.exchangeName, customKey, props, content);
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("produce() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
@@ -330,15 +352,10 @@ public class OpflowBroker {
     }
     
     private void bindExchange(Channel _channel, String _exchangeName, String _queueName, String[] keys) throws IOException {
-        bindExchange(_channel, _exchangeName, _queueName, keys, null);
-    }
-    
-    private void bindExchange(Channel _channel, String _exchangeName, String _queueName, String[] keys, Map<String, Object> bindingArgs) throws IOException {
         _channel.exchangeDeclarePassive(_exchangeName);
         _channel.queueDeclarePassive(_queueName);
-        if (bindingArgs == null) bindingArgs = new HashMap<String, Object>();
         for (String _routingKey : keys) {
-            _channel.queueBind(_queueName, _exchangeName, _routingKey, bindingArgs);
+            _channel.queueBind(_queueName, _exchangeName, _routingKey);
             if (logger.isTraceEnabled()) {
                 logger.trace(MessageFormat.format("Exchange[{0}] binded to Queue[{1}] with key[{2}]", new Object[] {
                     _exchangeName, _queueName, _routingKey

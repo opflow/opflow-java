@@ -158,7 +158,15 @@ public class OpflowHelper {
         return new OpflowPubsubHandler(params);
     }
     
-    private static Properties loadProperties(String propFile, Properties props) throws OpflowConstructorException {
+    public static Properties loadProperties() throws OpflowConstructorException {
+        return loadProperties(null, null);
+    }
+    
+    public static Properties loadProperties(String propFile) throws OpflowConstructorException {
+        return loadProperties(propFile, null);
+    }
+            
+    public static Properties loadProperties(String propFile, Properties props) throws OpflowConstructorException {
         try {
             if (props == null) {
                 if (propFile == null) propFile = "opflow.properties";

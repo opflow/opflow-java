@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowRpcRequest implements Iterator {
+public class OpflowRpcRequest implements Iterator, OpflowTask.TimeoutCandidate {
 
     private final Logger logger = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final String requestId;
@@ -60,13 +60,20 @@ public class OpflowRpcRequest implements Iterator {
         return routineId;
     }
 
+    @Override
     public long getTimeout() {
         if (this.timeout <= 0) return 0;
         return this.timeout;
     }
     
+    @Override
     public long getTimestamp() {
         return timestamp;
+    }
+    
+    @Override
+    public void raiseTimeout() {
+        list.add(OpflowMessage.ERROR);
     }
     
     private final BlockingQueue<OpflowMessage> list = new LinkedBlockingQueue<OpflowMessage>();
@@ -97,7 +104,7 @@ public class OpflowRpcRequest implements Iterator {
             timeoutWatcher.check();
         }
         checkTimestamp();
-        if(isCompleted(message)) {
+        if(isDone(message)) {
             if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] completed/failed message");
             list.add(OpflowMessage.EMPTY);
             if (completeListener != null) {
@@ -110,17 +117,9 @@ public class OpflowRpcRequest implements Iterator {
         }
     }
     
-    public void exit() {
-        exit(true);
-    }
-    
-    public void exit(boolean error) {
-        list.add(error ? OpflowMessage.ERROR : OpflowMessage.EMPTY);
-    }
-    
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
     
-    private boolean isCompleted(OpflowMessage message) {
+    private boolean isDone(OpflowMessage message) {
         String status = OpflowUtil.getStatus(message);
         if (status == null) return false;
         return STATUS.indexOf(status) >= 0;

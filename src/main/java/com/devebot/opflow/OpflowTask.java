@@ -13,12 +13,20 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowTask {
     
+    public interface TimeoutCandidate {
+        long getTimeout();
+
+        long getTimestamp();
+
+        void raiseTimeout();
+    }
+
     public static class TimeoutMonitor {
         final Logger logger = LoggerFactory.getLogger(TimeoutMonitor.class);
         
         private long timeout;
         private final String monitorId;
-        private final Map<String, OpflowRpcRequest> tasks;
+        private final Map<String, ? extends TimeoutCandidate> tasks;
         private final int interval;
         private final Timer timer = new Timer(true);
         private final TimerTask timerTask = new TimerTask() {
@@ -29,14 +37,14 @@ public class OpflowTask {
                 if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].run() is invoked, current time: " + current);
                 for (String key : tasks.keySet()) {
                     if (logger.isTraceEnabled()) logger.trace("Monitor[" + monitorId + "].run() examine task[" + key + "]");
-                    OpflowRpcRequest task = tasks.get(key);
+                    TimeoutCandidate task = tasks.get(key);
                     long _timeout = task.getTimeout();
                     if (_timeout <= 0) _timeout = timeout;
                     if (_timeout > 0) {
                         long diff = current - task.getTimestamp();
                         if (diff > _timeout) {
                             tasks.remove(key);
-                            task.exit(true);
+                            task.raiseTimeout();
                             if (logger.isTraceEnabled()) {
                                 logger.trace("Monitor[" + monitorId + "].run() - task[" + key + "] has been timeout, will be removed");
                             }
@@ -50,11 +58,11 @@ public class OpflowTask {
             }
         };
         
-        public TimeoutMonitor(Map<String, OpflowRpcRequest> tasks) {
+        public TimeoutMonitor(Map<String, ? extends TimeoutCandidate> tasks) {
             this(tasks, 2000, 0, null);
         }
         
-        public TimeoutMonitor(Map<String, OpflowRpcRequest> tasks, int interval, long timeout, String monitorId) {
+        public TimeoutMonitor(Map<String, ? extends TimeoutCandidate> tasks, int interval, long timeout, String monitorId) {
             this.tasks = tasks;
             this.interval = interval;
             this.timeout = timeout;

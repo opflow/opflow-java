@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -65,12 +66,12 @@ public class OpflowRpcMaster {
         }
     }
 
-    private final Map<String, OpflowRpcRequest> tasks = new HashMap<String, OpflowRpcRequest>();
+    private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<String, OpflowRpcRequest>();
     
     private OpflowBroker.ConsumerInfo responseConsumer;
 
-    private OpflowBroker.ConsumerInfo consumeResponse(final boolean anonymous) {
-        if (logger.isTraceEnabled()) logger.trace("invoke consumeResponse()");
+    private OpflowBroker.ConsumerInfo initResponseConsumer(final boolean anonymous) {
+        if (logger.isTraceEnabled()) logger.trace("initResponseConsumer(forked:" + anonymous + ")");
         return broker.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, 
@@ -111,8 +112,16 @@ public class OpflowRpcMaster {
         return monitor;
     }
     
+    public OpflowRpcRequest request(String routineId, String content) {
+        return request(routineId, content, null);
+    }
+    
     public OpflowRpcRequest request(String routineId, String content, Map<String, Object> opts) {
         return request(routineId, OpflowUtil.getBytes(content), opts);
+    }
+    
+    public OpflowRpcRequest request(String routineId, byte[] content) {
+        return request(routineId, content, null);
     }
     
     public OpflowRpcRequest request(String routineId, byte[] content, Map<String, Object> options) {
@@ -126,10 +135,10 @@ public class OpflowRpcMaster {
         final OpflowBroker.ConsumerInfo consumerInfo;
         
         if (isStandalone) {
-            consumerInfo = consumeResponse(true);
+            consumerInfo = initResponseConsumer(true);
         } else {
             if (responseConsumer == null) {
-                responseConsumer = consumeResponse(false);
+                responseConsumer = initResponseConsumer(false);
             }
             consumerInfo = responseConsumer;
         }
@@ -181,21 +190,28 @@ public class OpflowRpcMaster {
         
         AMQP.BasicProperties props = builder.build();
 
-        broker.produce(content, props, null);
+        broker.produce(content, props);
         
         return task;
     }
 
     public void close() {
         lock.lock();
+        if (logger.isTraceEnabled()) logger.trace("close() - obtain the lock");
         try {
+            if (logger.isTraceEnabled()) logger.trace("close() - check tasks.isEmpty()? and await...");
             while(!tasks.isEmpty()) idle.await();
+            if (logger.isTraceEnabled()) logger.trace("close() - cancel responseConsumer");
             if (responseConsumer != null) cancelConsumer(responseConsumer);
+            if (logger.isTraceEnabled()) logger.trace("close() - stop timeoutMonitor");
             if (timeoutMonitor != null) timeoutMonitor.stop();
+            if (logger.isTraceEnabled()) logger.trace("close() - close broker/engine");
             if (broker != null) broker.close();
-        } catch(Exception ex) {
+        } catch(InterruptedException ex) {
+            if (logger.isErrorEnabled()) logger.error("close() - an exception has been thrown");
         } finally {
             lock.unlock();
+            if (logger.isTraceEnabled()) logger.trace("close() - lock has been released");
         }
     }
     
