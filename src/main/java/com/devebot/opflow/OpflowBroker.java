@@ -113,7 +113,11 @@ public class OpflowBroker {
             if (override != null && override.get("routingKey") != null) {
                 customKey = (String) override.get("routingKey");
             }
-            getChannel().basicPublish(this.exchangeName, customKey, props, content);
+            Channel _channel = getChannel();
+            if (_channel == null || !_channel.isOpen()) {
+                throw new OpflowOperationException("Channel is null or has been closed");
+            }
+            _channel.basicPublish(this.exchangeName, customKey, props, content);
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("produce() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);

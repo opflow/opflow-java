@@ -70,8 +70,8 @@ public class OpflowRpcMaster {
     
     private OpflowBroker.ConsumerInfo responseConsumer;
 
-    private OpflowBroker.ConsumerInfo consumeResponse(final boolean anonymous) {
-        if (logger.isTraceEnabled()) logger.trace("invoke consumeResponse()");
+    private OpflowBroker.ConsumerInfo initResponseConsumer(final boolean anonymous) {
+        if (logger.isTraceEnabled()) logger.trace("initResponseConsumer(forked:" + anonymous + ")");
         return broker.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, 
@@ -135,10 +135,10 @@ public class OpflowRpcMaster {
         final OpflowBroker.ConsumerInfo consumerInfo;
         
         if (isStandalone) {
-            consumerInfo = consumeResponse(true);
+            consumerInfo = initResponseConsumer(true);
         } else {
             if (responseConsumer == null) {
-                responseConsumer = consumeResponse(false);
+                responseConsumer = initResponseConsumer(false);
             }
             consumerInfo = responseConsumer;
         }
@@ -197,14 +197,21 @@ public class OpflowRpcMaster {
 
     public void close() {
         lock.lock();
+        if (logger.isTraceEnabled()) logger.trace("close() - obtain the lock");
         try {
+            if (logger.isTraceEnabled()) logger.trace("close() - check tasks.isEmpty()? and await...");
             while(!tasks.isEmpty()) idle.await();
+            if (logger.isTraceEnabled()) logger.trace("close() - cancel responseConsumer");
             if (responseConsumer != null) cancelConsumer(responseConsumer);
+            if (logger.isTraceEnabled()) logger.trace("close() - stop timeoutMonitor");
             if (timeoutMonitor != null) timeoutMonitor.stop();
+            if (logger.isTraceEnabled()) logger.trace("close() - close broker/engine");
             if (broker != null) broker.close();
-        } catch(Exception ex) {
+        } catch(InterruptedException ex) {
+            if (logger.isErrorEnabled()) logger.error("close() - an exception has been thrown");
         } finally {
             lock.unlock();
+            if (logger.isTraceEnabled()) logger.trace("close() - lock has been released");
         }
     }
     
