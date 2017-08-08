@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowRpcRequest implements Iterator {
+public class OpflowRpcRequest implements Iterator, OpflowTask.TimeoutCandidate {
 
     private final Logger logger = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final String requestId;
@@ -60,13 +60,20 @@ public class OpflowRpcRequest implements Iterator {
         return routineId;
     }
 
+    @Override
     public long getTimeout() {
         if (this.timeout <= 0) return 0;
         return this.timeout;
     }
     
+    @Override
     public long getTimestamp() {
         return timestamp;
+    }
+    
+    @Override
+    public void raiseTimeout() {
+        list.add(OpflowMessage.ERROR);
     }
     
     private final BlockingQueue<OpflowMessage> list = new LinkedBlockingQueue<OpflowMessage>();
@@ -108,14 +115,6 @@ public class OpflowRpcRequest implements Iterator {
                 timeoutWatcher.close();
             }
         }
-    }
-    
-    public void exit() {
-        exit(true);
-    }
-    
-    public void exit(boolean error) {
-        list.add(error ? OpflowMessage.ERROR : OpflowMessage.EMPTY);
     }
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
