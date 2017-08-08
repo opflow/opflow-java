@@ -1,9 +1,8 @@
 package com.devebot.opflow.tdd;
 
-import com.devebot.opflow.OpflowBroker;
 import com.devebot.opflow.OpflowHelper;
+import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.exception.OpflowConstructorException;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -17,7 +16,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author drupalex
  */
-public class OpflowBrokerTest {
+public class OpflowRpcWorkerTest {
     Properties props;
     
     @Before
@@ -29,23 +28,13 @@ public class OpflowBrokerTest {
     public ExpectedException thrown = ExpectedException.none();
     
     @Test
-    public void testConstructor() throws OpflowConstructorException {
+    public void testConstructorWithNullOperatorName() throws OpflowConstructorException {
         thrown.expect(OpflowConstructorException.class);
-        thrown.expectCause(CoreMatchers.is(IOException.class));
-        thrown.expectMessage(CoreMatchers.is("connection refused, invalid connection parameters"));
-        Map<String, Object> pars = new HashMap<String, Object>();
-        OpflowBroker broker = new OpflowBroker(pars);
-    }
-    
-    @Test
-    public void testConstructorWithInvalidExchangeType() throws OpflowConstructorException {
-        thrown.expect(OpflowConstructorException.class);
-        thrown.expectCause(CoreMatchers.is(IOException.class));
-        thrown.expectMessage(CoreMatchers.is("exchangeDeclare has been failed"));
+        thrown.expectMessage(CoreMatchers.is("operatorName must not be null"));
         Map<String, Object> pars = new HashMap<String, Object>();
         pars.put("uri", props.get("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
-        pars.put("exchangeType", "nothing");
-        OpflowBroker broker = new OpflowBroker(pars);
+        pars.put("routingKey", "tdd-opflow-rpc");
+        OpflowRpcWorker broker = new OpflowRpcWorker(pars);
     }
 }

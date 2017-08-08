@@ -97,7 +97,7 @@ public class OpflowRpcRequest implements Iterator {
             timeoutWatcher.check();
         }
         checkTimestamp();
-        if(isCompleted(message)) {
+        if(isDone(message)) {
             if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] completed/failed message");
             list.add(OpflowMessage.EMPTY);
             if (completeListener != null) {
@@ -120,7 +120,7 @@ public class OpflowRpcRequest implements Iterator {
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
     
-    private boolean isCompleted(OpflowMessage message) {
+    private boolean isDone(OpflowMessage message) {
         String status = OpflowUtil.getStatus(message);
         if (status == null) return false;
         return STATUS.indexOf(status) >= 0;

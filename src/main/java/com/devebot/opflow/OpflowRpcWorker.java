@@ -32,6 +32,9 @@ public class OpflowRpcWorker {
         brokerParams.put("routingKey", params.get("routingKey"));
         broker = new OpflowBroker(brokerParams);
         operatorName = (String) params.get("operatorName");
+        if (operatorName == null) {
+            throw new OpflowConstructorException("operatorName must not be null");
+        }
         responseName = (String) params.get("responseName");
     }
 

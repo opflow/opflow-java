@@ -102,7 +102,11 @@ public class OpflowBroker {
             throw new OpflowConstructorException("exchangeDeclare has been failed", exception);
         }
     }
-
+    
+    public void produce(final byte[] content, final AMQP.BasicProperties props) {
+        produce(content, props, null);
+    }
+    
     public void produce(final byte[] content, final AMQP.BasicProperties props, final Map<String, Object> override) {
         try {
             String customKey = this.routingKey;
