@@ -253,7 +253,7 @@ public class OpflowBroker {
             };
             
             final String _consumerTag = _channel.basicConsume(_queueName, false, _consumer);
-                        
+            
             _channel.addShutdownListener(new ShutdownListener() {
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {

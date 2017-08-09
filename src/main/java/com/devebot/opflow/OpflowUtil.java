@@ -1,6 +1,9 @@
 package com.devebot.opflow;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.rabbitmq.client.AMQP;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -8,16 +11,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Date;
-import com.devebot.opflow.exception.OpflowOperationException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.devebot.opflow.exception.OpflowJsonTransformationException;
+import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
  *
@@ -26,8 +27,26 @@ import org.slf4j.LoggerFactory;
 public class OpflowUtil {
     private static final Logger LOG = LoggerFactory.getLogger(OpflowUtil.class);
     
-    private static final Gson gson = new Gson();
-    private static final JsonParser jsonParser = new JsonParser();
+    private static final Gson GSON = new Gson();
+    private static final JsonParser JSON_PARSER = new JsonParser();
+    
+    public static Map<String, Object> jsonStringToMap(String json) {
+        try {
+            Map<String,Object> map = GSON.fromJson(json, Map.class);
+            return map;
+        } catch (JsonSyntaxException e) {
+            throw new OpflowJsonTransformationException(e);
+        }
+    }
+    
+    public static String jsonMapToString(Map<String, Object> jsonMap) {
+        return GSON.toJson(jsonMap);
+    }
+    
+    private static String extractSingleField(String json, String fieldName) {
+        JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
+        return jsonObject.get(fieldName).toString();
+    }
     
     public static long getCurrentTime() {
         return (new Date()).getTime();
@@ -82,7 +101,7 @@ public class OpflowUtil {
         if (listener != null) {
             listener.transform(jsonMap);
         }
-        return gson.toJson(jsonMap);
+        return jsonMapToString(jsonMap);
     }
     
     public static Map<String, Object> buildOptions(MapListener listener) {
@@ -170,8 +189,7 @@ public class OpflowUtil {
             if ("progress".equals(status)) {
                 if (includeProgress) {
                     try {
-                        JsonObject jsonObject = (JsonObject)jsonParser.parse(msg.getContentAsString());
-                        int percent = Integer.parseInt(jsonObject.get("percent").toString());
+                        int percent = Integer.parseInt(extractSingleField(msg.getContentAsString(), "percent"));
                         steps.add(new OpflowRpcResult.Step(percent));
                     } catch (JsonSyntaxException jse) {
                         steps.add(new OpflowRpcResult.Step());
