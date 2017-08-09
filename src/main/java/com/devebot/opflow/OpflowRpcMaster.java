@@ -70,8 +70,8 @@ public class OpflowRpcMaster {
     
     private OpflowBroker.ConsumerInfo responseConsumer;
 
-    private OpflowBroker.ConsumerInfo initResponseConsumer(final boolean anonymous) {
-        if (logger.isTraceEnabled()) logger.trace("initResponseConsumer(forked:" + anonymous + ")");
+    private OpflowBroker.ConsumerInfo initResponseConsumer(final boolean forked) {
+        if (logger.isTraceEnabled()) logger.trace("initResponseConsumer(forked:" + forked + ")");
         return broker.consume(new OpflowListener() {
             @Override
             public void processMessage(byte[] content, AMQP.BasicProperties properties, 
@@ -90,7 +90,7 @@ public class OpflowRpcMaster {
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
-                if (!anonymous) {
+                if (!forked) {
                     opts.put("queueName", responseName);
                     opts.put("consumerLimit", CONSUMER_MAX);
                     opts.put("forceNewChannel", Boolean.FALSE);

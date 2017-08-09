@@ -30,6 +30,14 @@ public class OpflowUtil {
     private static final Gson GSON = new Gson();
     private static final JsonParser JSON_PARSER = new JsonParser();
     
+    public static String jsonObjToString(Object jsonObj) {
+        return GSON.toJson(jsonObj);
+    }
+    
+    public static String jsonMapToString(Map<String, Object> jsonMap) {
+        return GSON.toJson(jsonMap);
+    }
+    
     public static Map<String, Object> jsonStringToMap(String json) {
         try {
             Map<String,Object> map = GSON.fromJson(json, Map.class);
@@ -37,10 +45,6 @@ public class OpflowUtil {
         } catch (JsonSyntaxException e) {
             throw new OpflowJsonTransformationException(e);
         }
-    }
-    
-    public static String jsonMapToString(Map<String, Object> jsonMap) {
-        return GSON.toJson(jsonMap);
     }
     
     private static String extractSingleField(String json, String fieldName) {
