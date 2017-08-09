@@ -22,6 +22,7 @@ import org.jbehave.core.annotations.When;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import org.jbehave.core.annotations.Named;
 
 public class OpflowRpcMasterSteps {
     private final JsonParser jsonParser = new JsonParser();
@@ -30,12 +31,13 @@ public class OpflowRpcMasterSteps {
     private final Map<String, Integer> inputs = new HashMap<String, Integer>();
     
     @Given("a RPC master<$masterName>")
-    public void createRpcMaster(String masterName) throws OpflowConstructorException {
+    public void createRpcMaster(@Named("masterName") final String masterName) throws OpflowConstructorException {
         masters.put(masterName, OpflowHelper.createRpcMaster());
     }
     
     @Given("a RPC master<$masterName> with properties file: '$propFile'")
-    public void createRpcMaster(String masterName, String propFile) throws OpflowConstructorException {
+    public void createRpcMaster(@Named("masterName") final String masterName, 
+            @Named("propFile") final String propFile) throws OpflowConstructorException {
         masters.put(masterName, OpflowHelper.createRpcMaster(propFile));
     }
     
@@ -62,7 +64,7 @@ public class OpflowRpcMasterSteps {
     }
     
     @Then("the request<$requestName> should finished successfully")
-    public void checkRequestOutput(String requestName) {
+    public void checkRequestOutput(@Named("requestName") final String requestName) {
         OpflowRpcResult output = OpflowUtil.exhaustRequest(requests.get(requestName));
         JsonObject jsonObject = (JsonObject)jsonParser.parse(output.getValueAsString());
         
