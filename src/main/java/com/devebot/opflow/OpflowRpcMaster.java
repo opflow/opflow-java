@@ -42,6 +42,7 @@ public class OpflowRpcMaster {
         brokerParams.put("exchangeName", params.get("exchangeName"));
         brokerParams.put("exchangeType", "direct");
         brokerParams.put("routingKey", params.get("routingKey"));
+        brokerParams.put("applicationId", params.get("applicationId"));
         broker = new OpflowBroker(brokerParams);
         responseName = (String) params.get("responseName");
 
@@ -188,9 +189,7 @@ public class OpflowRpcMaster {
             builder.replyTo(consumerInfo.getQueueName());
         }
         
-        AMQP.BasicProperties props = builder.build();
-
-        broker.produce(content, props);
+        broker.produce(content, builder);
         
         return task;
     }

@@ -36,6 +36,7 @@ public class OpflowBroker {
     private Boolean exchangeDurable;
     private String routingKey;
     private String[] otherKeys;
+    private String applicationId;
 
     public OpflowBroker(Map<String, Object> params) throws OpflowConstructorException {
         try {
@@ -97,27 +98,36 @@ public class OpflowBroker {
             if (params.get("otherKeys") instanceof String[]) {
                 otherKeys = (String[])params.get("otherKeys");
             }
+            
+            if (params.get("applicationId") instanceof String) {
+                applicationId = (String) params.get("applicationId");
+            }
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("exchangeDeclare has been failed, exception: " + exception.getMessage());
             throw new OpflowConstructorException("exchangeDeclare has been failed", exception);
         }
     }
     
-    public void produce(final byte[] content, final AMQP.BasicProperties props) {
-        produce(content, props, null);
+    public void produce(final byte[] content, final AMQP.BasicProperties.Builder propBuilder) {
+        produce(content, propBuilder, null);
     }
     
-    public void produce(final byte[] content, final AMQP.BasicProperties props, final Map<String, Object> override) {
+    public void produce(final byte[] content, final AMQP.BasicProperties.Builder propBuilder, final Map<String, Object> override) {
         try {
             String customKey = this.routingKey;
             if (override != null && override.get("routingKey") != null) {
                 customKey = (String) override.get("routingKey");
             }
+            String appId = this.applicationId;
+            if (override != null && override.get("applicationId") != null) {
+                appId = (String) override.get("applicationId");
+            }
+            propBuilder.appId(appId);
             Channel _channel = getChannel();
             if (_channel == null || !_channel.isOpen()) {
                 throw new OpflowOperationException("Channel is null or has been closed");
             }
-            _channel.basicPublish(this.exchangeName, customKey, props, content);
+            _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), content);
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("produce() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
@@ -205,6 +215,16 @@ public class OpflowBroker {
                     }
                     
                     try {
+                        if (applicationId != null && !applicationId.equals(properties.getAppId())) {
+                            if (logger.isInfoEnabled()) {
+                                logger.info(MessageFormat.format("Request[{0}] - Received AppId:{3}, but accepted AppId:{4}, rejected", new Object[] {
+                                    requestID, envelope.getDeliveryTag(), consumerTag, properties.getAppId(), applicationId
+                                }));
+                            }
+                            _channel.basicNack(envelope.getDeliveryTag(), false, true);
+                            return;
+                        }
+                        
                         if (logger.isTraceEnabled()) logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
                             requestID
                         }));

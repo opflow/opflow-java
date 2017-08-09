@@ -30,6 +30,7 @@ public class OpflowRpcWorker {
         brokerParams.put("exchangeName", params.get("exchangeName"));
         brokerParams.put("exchangeType", "direct");
         brokerParams.put("routingKey", params.get("routingKey"));
+        brokerParams.put("applicationId", params.get("applicationId"));
         broker = new OpflowBroker(brokerParams);
         operatorName = (String) params.get("operatorName");
         if (operatorName == null) {
