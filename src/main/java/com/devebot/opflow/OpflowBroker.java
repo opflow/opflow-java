@@ -308,6 +308,23 @@ public class OpflowBroker {
         }
     }
     
+    public void cancelConsumer(OpflowBroker.ConsumerInfo consumerInfo) {
+        if (consumerInfo == null) return;
+        try {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] will be cancelled");
+            }
+            consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] has been cancelled");
+            }
+        } catch (IOException ex) {
+            if (logger.isErrorEnabled()) {
+                logger.error("cancel consumer[" + consumerInfo.getConsumerTag() + "] failed, IOException: " + ex.getMessage());
+            }
+        }
+    }
+    
     public class ConsumerInfo {
         private final Channel channel;
         private final String queueName;

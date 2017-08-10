@@ -94,7 +94,10 @@ public class OpflowRpcWorker {
     }
     
     public void close() {
-        if (broker != null) broker.close();
+        if (broker != null) {
+            broker.cancelConsumer(consumerInfo);
+            broker.close();
+        }
     }
     
     public class Middleware {

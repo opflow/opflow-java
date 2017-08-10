@@ -153,7 +153,7 @@ public class OpflowRpcMaster {
                     tasks.remove(taskId);
                     if (tasks.isEmpty()) {
                         if (isStandalone) {
-                            cancelConsumer(consumerInfo);
+                            broker.cancelConsumer(consumerInfo);
                         }
                         idle.signal();
                     }
@@ -201,7 +201,7 @@ public class OpflowRpcMaster {
             if (logger.isTraceEnabled()) logger.trace("close() - check tasks.isEmpty()? and await...");
             while(!tasks.isEmpty()) idle.await();
             if (logger.isTraceEnabled()) logger.trace("close() - cancel responseConsumer");
-            if (responseConsumer != null) cancelConsumer(responseConsumer);
+            if (responseConsumer != null) broker.cancelConsumer(responseConsumer);
             if (logger.isTraceEnabled()) logger.trace("close() - stop timeoutMonitor");
             if (timeoutMonitor != null) timeoutMonitor.stop();
             if (logger.isTraceEnabled()) logger.trace("close() - close broker/engine");
@@ -211,22 +211,6 @@ public class OpflowRpcMaster {
         } finally {
             lock.unlock();
             if (logger.isTraceEnabled()) logger.trace("close() - lock has been released");
-        }
-    }
-    
-    private void cancelConsumer(OpflowBroker.ConsumerInfo consumerInfo) {
-        try {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] will be cancelled");
-            }
-            consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
-            if (logger.isDebugEnabled()) {
-                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] has been cancelled");
-            }
-        } catch (IOException ex) {
-            if (logger.isErrorEnabled()) {
-                logger.error("cancel consumer[" + consumerInfo.getConsumerTag() + "] failed, IOException: " + ex.getMessage());
-            }
         }
     }
 }
