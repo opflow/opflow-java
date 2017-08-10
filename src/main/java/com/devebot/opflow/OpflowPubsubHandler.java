@@ -30,6 +30,7 @@ public class OpflowPubsubHandler {
         if (params.get("otherKeys") instanceof String) {
             brokerParams.put("otherKeys", OpflowUtil.splitByComma((String)params.get("otherKeys")));
         }
+        brokerParams.put("applicationId", params.get("applicationId"));
         broker = new OpflowBroker(brokerParams);
         subscriberName = (String) params.get("subscriberName");
     }
@@ -39,15 +40,14 @@ public class OpflowPubsubHandler {
     }
     
     public void publish(byte[] data, Map<String, Object> opts, String routingKey) {
-        AMQP.BasicProperties props = new AMQP.BasicProperties
+        AMQP.BasicProperties.Builder propBuilder = new AMQP.BasicProperties
                 .Builder()
-                .headers(opts)
-                .build();
+                .headers(opts);
         Map<String, Object> override = new HashMap<String, Object>();
         if (routingKey != null) {
             override.put("routingKey", routingKey);
         }
-        broker.produce(data, props, override);
+        broker.produce(data, propBuilder, override);
     }
     
     public OpflowBroker.ConsumerInfo subscribe(final OpflowPubsubListener listener) {

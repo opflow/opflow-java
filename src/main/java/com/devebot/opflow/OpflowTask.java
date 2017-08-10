@@ -13,20 +13,22 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowTask {
     
-    public interface TimeoutCandidate {
+    public interface Listener {
+        public void handleEvent();
+    }
+    
+    public interface Timeoutable {
         long getTimeout();
-
         long getTimestamp();
-
         void raiseTimeout();
     }
-
+    
     public static class TimeoutMonitor {
         final Logger logger = LoggerFactory.getLogger(TimeoutMonitor.class);
         
         private long timeout;
         private final String monitorId;
-        private final Map<String, ? extends TimeoutCandidate> tasks;
+        private final Map<String, ? extends Timeoutable> tasks;
         private final int interval;
         private final Timer timer = new Timer(true);
         private final TimerTask timerTask = new TimerTask() {
@@ -37,7 +39,7 @@ public class OpflowTask {
                 if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].run() is invoked, current time: " + current);
                 for (String key : tasks.keySet()) {
                     if (logger.isTraceEnabled()) logger.trace("Monitor[" + monitorId + "].run() examine task[" + key + "]");
-                    TimeoutCandidate task = tasks.get(key);
+                    Timeoutable task = tasks.get(key);
                     long _timeout = task.getTimeout();
                     if (_timeout <= 0) _timeout = timeout;
                     if (_timeout > 0) {
@@ -58,11 +60,19 @@ public class OpflowTask {
             }
         };
         
-        public TimeoutMonitor(Map<String, ? extends TimeoutCandidate> tasks) {
-            this(tasks, 2000, 0, null);
+        public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks) {
+            this(tasks, 2000);
         }
         
-        public TimeoutMonitor(Map<String, ? extends TimeoutCandidate> tasks, int interval, long timeout, String monitorId) {
+        public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks, int interval) {
+            this(tasks, interval, 0l);
+        }
+        
+        public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks, int interval, long timeout) {
+            this(tasks, interval, timeout, null);
+        }
+        
+        public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks, int interval, long timeout, String monitorId) {
             this.tasks = tasks;
             this.interval = interval;
             this.timeout = timeout;
@@ -145,9 +155,5 @@ public class OpflowTask {
             this.done = true;
             if (logger.isTraceEnabled()) logger.trace("Thread is closed gracefully");
         }
-    }
-    
-    public interface Listener {
-         public void handleEvent();
     }
 }

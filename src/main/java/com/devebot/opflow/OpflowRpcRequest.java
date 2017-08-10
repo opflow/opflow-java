@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowRpcRequest implements Iterator, OpflowTask.TimeoutCandidate {
+public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
 
     private final Logger logger = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final String requestId;

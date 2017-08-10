@@ -60,12 +60,7 @@ public class OpflowRpcResponse {
     
     public void emitStarted(byte[] info) {
         if (info == null) info = new byte[0];
-        AMQP.BasicProperties replyProps = new AMQP.BasicProperties
-            .Builder()
-            .correlationId(properties.getCorrelationId())
-            .headers(createHeaders("started"))
-            .build();
-        basicPublish(info, replyProps);
+        basicPublish(info, createProperties(properties, createHeaders("started")).build());
         if (logger.isTraceEnabled()) {
             logger.trace("Request[" + this.requestId + "] emitStarted() - byte[].length: " + info.length);
         }
@@ -76,11 +71,6 @@ public class OpflowRpcResponse {
     }
     
     public void emitProgress(int completed, int total, String jsonData) {
-        AMQP.BasicProperties replyProps = new AMQP.BasicProperties
-            .Builder()
-            .correlationId(properties.getCorrelationId())
-            .headers(createHeaders("progress"))
-            .build();
         int percent = -1;
         if (total > 0 && completed >= 0 && completed <= total) {
             percent = (total == 100) ? completed : Math.round((completed * 100) / total);
@@ -91,7 +81,7 @@ public class OpflowRpcResponse {
         } else {
             result = "{ \"percent\": " + percent + ", \"data\": " + jsonData + "}";
         }
-        basicPublish(OpflowUtil.getBytes(result), replyProps);
+        basicPublish(OpflowUtil.getBytes(result), createProperties(properties, createHeaders("progress")).build());
         if (logger.isTraceEnabled()) {
             logger.trace("Request[" + this.requestId + "] emitProgress(): " + result);
         }
@@ -103,12 +93,7 @@ public class OpflowRpcResponse {
     
     public void emitFailed(byte[] error) {
         if (error == null) error = new byte[0];
-        AMQP.BasicProperties replyProps = new AMQP.BasicProperties
-            .Builder()
-            .correlationId(properties.getCorrelationId())
-            .headers(createHeaders("failed", true))
-            .build();
-        basicPublish(error, replyProps);
+        basicPublish(error, createProperties(properties, createHeaders("failed", true)).build());
         if (logger.isTraceEnabled()) {
             logger.trace("Request[" + this.requestId + "] emitFailed() - byte[].length: " + error.length);
         }
@@ -120,17 +105,22 @@ public class OpflowRpcResponse {
 
     public void emitCompleted(byte[] result) {
         if (result == null) result = new byte[0];
-        AMQP.BasicProperties replyProps = new AMQP.BasicProperties
-            .Builder()
-            .correlationId(properties.getCorrelationId())
-            .headers(createHeaders("completed", true))
-            .build();
-        basicPublish(result, replyProps);
+        basicPublish(result, createProperties(properties, createHeaders("completed", true)).build());
         if (logger.isTraceEnabled()) {
             logger.trace("Request[" + this.requestId + "] emitCompleted() - byte[].length: " + result.length);
         }
     }
 
+    private AMQP.BasicProperties.Builder createProperties(AMQP.BasicProperties properties, Map<String, Object> headers) {
+        AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()
+            .headers(headers)
+            .correlationId(properties.getCorrelationId());
+        if (properties.getAppId() != null) {
+            builder.appId(properties.getAppId());
+        }
+        return builder;
+    }
+    
     private Map<String, Object> createHeaders(String status) {
         return createHeaders(status, false);
     }

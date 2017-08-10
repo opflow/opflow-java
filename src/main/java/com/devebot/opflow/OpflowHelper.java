@@ -4,6 +4,8 @@ import com.devebot.opflow.exception.OpflowConstructorException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -35,25 +37,31 @@ public class OpflowHelper {
         Properties props = loadProperties(propFile, defaultProps);
         Map<String, Object> params = new HashMap<String, Object>();
         
-        if (props.get("opflow.master.uri") != null) {
-            params.put("uri", props.get("opflow.master.uri"));
+        if (props.getProperty("opflow.master.uri") != null) {
+            params.put("uri", props.getProperty("opflow.master.uri"));
         } else {
-            params.put("uri", props.get("opflow.uri"));
+            params.put("uri", props.getProperty("opflow.uri"));
         }
         
-        if (props.get("opflow.master.exchangeName") != null) {
-            params.put("exchangeName", props.get("opflow.master.exchangeName"));
+        if (props.getProperty("opflow.master.exchangeName") != null) {
+            params.put("exchangeName", props.getProperty("opflow.master.exchangeName"));
         } else {
-            params.put("exchangeName", props.get("opflow.exchangeName"));
+            params.put("exchangeName", props.getProperty("opflow.exchangeName"));
         }
         
-        if (props.get("opflow.master.routingKey") != null) {
-            params.put("routingKey", props.get("opflow.master.routingKey"));
+        if (props.getProperty("opflow.master.routingKey") != null) {
+            params.put("routingKey", props.getProperty("opflow.master.routingKey"));
         } else {
-            params.put("routingKey", props.get("opflow.routingKey"));
+            params.put("routingKey", props.getProperty("opflow.routingKey"));
         }
         
-        params.put("responseName", props.get("opflow.master.responseName"));
+        if (props.getProperty("opflow.master.applicationId") != null) {
+            params.put("applicationId", props.getProperty("opflow.master.applicationId"));
+        } else {
+            params.put("applicationId", props.getProperty("opflow.applicationId"));
+        }
+        
+        params.put("responseName", props.getProperty("opflow.master.responseName"));
         
         if (LOG.isTraceEnabled()) LOG.trace("OpflowRpcMaster has been created successfully");
         
@@ -78,31 +86,37 @@ public class OpflowHelper {
         Properties props = loadProperties(propFile, defaultProps);
         Map<String, Object> params = new HashMap<String, Object>();
         
-        if (props.get("opflow.worker.uri") != null) {
-            params.put("uri", props.get("opflow.worker.uri"));
+        if (props.getProperty("opflow.worker.uri") != null) {
+            params.put("uri", props.getProperty("opflow.worker.uri"));
         } else {
-            params.put("uri", props.get("opflow.uri"));
+            params.put("uri", props.getProperty("opflow.uri"));
         }
         
-        if (props.get("opflow.worker.exchangeName") != null) {
-            params.put("exchangeName", props.get("opflow.worker.exchangeName"));
+        if (props.getProperty("opflow.worker.exchangeName") != null) {
+            params.put("exchangeName", props.getProperty("opflow.worker.exchangeName"));
         } else {
-            params.put("exchangeName", props.get("opflow.exchangeName"));
+            params.put("exchangeName", props.getProperty("opflow.exchangeName"));
         }
         
-        if (props.get("opflow.worker.routingKey") != null) {
-            params.put("routingKey", props.get("opflow.worker.routingKey"));
+        if (props.getProperty("opflow.worker.routingKey") != null) {
+            params.put("routingKey", props.getProperty("opflow.worker.routingKey"));
         } else {
-            params.put("routingKey", props.get("opflow.routingKey"));
+            params.put("routingKey", props.getProperty("opflow.routingKey"));
         }
         
-        if (props.get("opflow.worker.operatorName") != null) {
-            params.put("operatorName", props.get("opflow.worker.operatorName"));
+        if (props.getProperty("opflow.worker.applicationId") != null) {
+            params.put("applicationId", props.getProperty("opflow.worker.applicationId"));
         } else {
-            params.put("operatorName", props.get("opflow.queueName"));
+            params.put("applicationId", props.getProperty("opflow.applicationId"));
         }
         
-        params.put("responseName", props.get("opflow.worker.responseName"));
+        if (props.getProperty("opflow.worker.operatorName") != null) {
+            params.put("operatorName", props.getProperty("opflow.worker.operatorName"));
+        } else {
+            params.put("operatorName", props.getProperty("opflow.queueName"));
+        }
+        
+        params.put("responseName", props.getProperty("opflow.worker.responseName"));
         
         if (LOG.isTraceEnabled()) LOG.trace("OpflowRpcWorker has been created successfully");
         
@@ -127,30 +141,36 @@ public class OpflowHelper {
         Properties props = loadProperties(propFile, defaultProps);
         Map<String, Object> params = new HashMap<String, Object>();
         
-        if (props.get("opflow.pubsub.uri") != null) {
-            params.put("uri", props.get("opflow.pubsub.uri"));
+        if (props.getProperty("opflow.pubsub.uri") != null) {
+            params.put("uri", props.getProperty("opflow.pubsub.uri"));
         } else {
-            params.put("uri", props.get("opflow.uri"));
+            params.put("uri", props.getProperty("opflow.uri"));
         }
         
-        if (props.get("opflow.pubsub.exchangeName") != null) {
-            params.put("exchangeName", props.get("opflow.pubsub.exchangeName"));
+        if (props.getProperty("opflow.pubsub.exchangeName") != null) {
+            params.put("exchangeName", props.getProperty("opflow.pubsub.exchangeName"));
         } else {
-            params.put("exchangeName", props.get("opflow.exchangeName"));
+            params.put("exchangeName", props.getProperty("opflow.exchangeName"));
         }
         
-        if (props.get("opflow.pubsub.routingKey") != null) {
-            params.put("routingKey", props.get("opflow.pubsub.routingKey"));
+        if (props.getProperty("opflow.pubsub.routingKey") != null) {
+            params.put("routingKey", props.getProperty("opflow.pubsub.routingKey"));
         } else {
-            params.put("routingKey", props.get("opflow.routingKey"));
+            params.put("routingKey", props.getProperty("opflow.routingKey"));
         }
         
-        params.put("otherKeys", props.get("opflow.pubsub.otherKeys"));
-        
-        if (props.get("opflow.pubsub.subscriberName") != null) {
-            params.put("subscriberName", props.get("opflow.pubsub.subscriberName"));
+        if (props.getProperty("opflow.pubsub.applicationId") != null) {
+            params.put("applicationId", props.getProperty("opflow.pubsub.applicationId"));
         } else {
-            params.put("subscriberName", props.get("opflow.queueName"));
+            params.put("applicationId", props.getProperty("opflow.applicationId"));
+        }
+        
+        params.put("otherKeys", props.getProperty("opflow.pubsub.otherKeys"));
+        
+        if (props.getProperty("opflow.pubsub.subscriberName") != null) {
+            params.put("subscriberName", props.getProperty("opflow.pubsub.subscriberName"));
+        } else {
+            params.put("subscriberName", props.getProperty("opflow.queueName"));
         }
         
         if (LOG.isTraceEnabled()) LOG.trace("OpflowPubsubHandler has been created successfully");
@@ -181,9 +201,16 @@ public class OpflowHelper {
                 }
                 props.load(inputStream);
             }
+            if (LOG.isTraceEnabled()) LOG.trace("[-] Properties: " + getPropertyAsString(props));
             return props;
         } catch (IOException exception) {
             throw new OpflowConstructorException(exception);
         }
+    }
+    
+    private static String getPropertyAsString(Properties prop) {
+        StringWriter writer = new StringWriter();
+        prop.list(new PrintWriter(writer));
+        return writer.getBuffer().toString();
     }
 }
