@@ -74,11 +74,7 @@ public class OpflowRpcWorker {
             public void processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, workerTag, queueName);
-                Map<String, Object> headers = OpflowUtil.getHeaders(properties);
-                String routineId = null;
-                if (headers.get("routineId") != null) {
-                    routineId = headers.get("routineId").toString();
-                }
+                String routineId = OpflowUtil.getRoutineId(properties.getHeaders(), false);
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
                         Boolean nextAction = middleware.getListener()

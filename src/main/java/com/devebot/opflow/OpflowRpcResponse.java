@@ -21,7 +21,7 @@ public class OpflowRpcResponse {
     private final AMQP.BasicProperties properties;
     private final String workerTag;
     private final String replyQueueName;
-    private String requestId;
+    private final String requestId;
     
     public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String workerTag, String replyQueueName) {
         this.channel = channel;
@@ -34,13 +34,7 @@ public class OpflowRpcResponse {
             this.replyQueueName = replyQueueName;
         }
         
-        Map<String, Object> headers = OpflowUtil.getHeaders(properties);
-        if (headers.get("requestId") != null) {
-            this.requestId = headers.get("requestId").toString();
-            if (logger.isTraceEnabled()) logger.trace("requestId: " + this.requestId);
-        } else {
-            if (logger.isTraceEnabled()) logger.trace("requestId is empty");
-        }
+        this.requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
         
         if (logger.isTraceEnabled()) {
             logger.trace("Request[" + this.requestId + "] will reply to: " + this.replyQueueName);

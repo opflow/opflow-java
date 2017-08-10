@@ -200,7 +200,7 @@ public class OpflowBroker {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
-                    String requestID = OpflowUtil.getRequestID(properties.getHeaders());
+                    String requestID = OpflowUtil.getRequestId(properties.getHeaders(), false);
 
                     if (logger.isInfoEnabled()) {
                         logger.info("Request["+requestID+"] / DeliveryTag["+envelope.getDeliveryTag()+"] / ConsumerTag["+consumerTag+"]");
