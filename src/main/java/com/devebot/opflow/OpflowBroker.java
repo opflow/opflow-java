@@ -228,17 +228,26 @@ public class OpflowBroker {
                         if (logger.isTraceEnabled()) logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
                             requestID
                         }));
-                        listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
+                        boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
 
                         if (logger.isTraceEnabled()) {
                             logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
                                 requestID, envelope.getDeliveryTag(), consumerTag
                             }));
                         }
-                        _channel.basicAck(envelope.getDeliveryTag(), false);
+                        
+                        if (captured) {
+                            _channel.basicAck(envelope.getDeliveryTag(), false);
 
-                        if (logger.isInfoEnabled()) {
-                            logger.info("Request[" + requestID + "] has finished successfully");
+                            if (logger.isInfoEnabled()) {
+                                logger.info("Request[" + requestID + "] has finished successfully");
+                            }
+                        } else {
+                            _channel.basicNack(envelope.getDeliveryTag(), false, true);
+                            
+                            if (logger.isInfoEnabled()) {
+                                logger.info("Request[" + requestID + "] has not matched the criteria, skipped");
+                            }
                         }
                     } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel

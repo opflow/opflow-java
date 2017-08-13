@@ -53,9 +53,10 @@ public class OpflowPubsubHandler {
     public OpflowBroker.ConsumerInfo subscribe(final OpflowPubsubListener listener) {
         return broker.consume(new OpflowListener() {
             @Override
-            public void processMessage(byte[] content, AMQP.BasicProperties properties, 
+            public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
                 listener.processMessage(new OpflowMessage(content, properties.getHeaders()));
+                return true;
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override

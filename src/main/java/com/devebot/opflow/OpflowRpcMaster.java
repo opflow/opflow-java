@@ -75,18 +75,19 @@ public class OpflowRpcMaster {
         if (logger.isTraceEnabled()) logger.trace("initResponseConsumer(forked:" + forked + ")");
         return broker.consume(new OpflowListener() {
             @Override
-            public void processMessage(byte[] content, AMQP.BasicProperties properties, 
+            public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
                 String taskId = properties.getCorrelationId();
                 if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] received data, size: " + (content != null ? content.length : -1));
                 OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
                     if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] not found, skipped");
-                    return;
+                } else {
+                    OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
+                    task.push(message);
+                    if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] - returned value has been pushed");
                 }
-                OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
-                task.push(message);
-                if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] - Message has been enqueued");
+                return true;
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
@@ -127,7 +128,7 @@ public class OpflowRpcMaster {
     
     public OpflowRpcRequest request(String routineId, byte[] content, Map<String, Object> options) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
-        final boolean isStandalone = "standalone".equals((String)opts.get("mode"));
+        final boolean forked = "forked".equals((String)opts.get("mode"));
         
         if (timeoutMonitor == null) {
             timeoutMonitor = initTimeoutMonitor();
@@ -135,7 +136,7 @@ public class OpflowRpcMaster {
         
         final OpflowBroker.ConsumerInfo consumerInfo;
         
-        if (isStandalone) {
+        if (forked) {
             consumerInfo = initResponseConsumer(true);
         } else {
             if (responseConsumer == null) {
@@ -152,7 +153,7 @@ public class OpflowRpcMaster {
                 try {
                     tasks.remove(taskId);
                     if (tasks.isEmpty()) {
-                        if (isStandalone) {
+                        if (forked) {
                             broker.cancelConsumer(consumerInfo);
                         }
                         idle.signal();
