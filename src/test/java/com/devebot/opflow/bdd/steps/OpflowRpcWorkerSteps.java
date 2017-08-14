@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.jbehave.core.annotations.Given;
+import org.jbehave.core.annotations.Named;
+import org.jbehave.core.annotations.When;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,12 +29,18 @@ public class OpflowRpcWorkerSteps {
     private final Map<String, OpflowRpcWorker> workers = new HashMap<String, OpflowRpcWorker>();
     
     @Given("a RPC worker<$string>")
-    public void createRpcWorker(String workerName) throws OpflowConstructorException {
+    public void createRpcWorker(@Named("workerName") String workerName) throws OpflowConstructorException {
         workers.put(workerName, OpflowHelper.createRpcWorker());
     }
     
-    @Given("a counter consumer in worker<$string>")
-    public void consumeAllMessage(String workerName) {
+    @Given("a RPC worker<$workerName> with properties file: '$propFile'")
+    public void createRpcMaster(@Named("workerName") final String workerName, 
+            @Named("propFile") final String propFile) throws OpflowConstructorException {
+        workers.put(workerName, OpflowHelper.createRpcWorker(propFile));
+    }
+    
+    @Given("a counter consumer in worker<$workerName>")
+    public void consumeAllMessage(@Named("workerName") String workerName) {
         workers.get(workerName).process(new OpflowRpcListener() {
             @Override
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
@@ -42,9 +50,11 @@ public class OpflowRpcWorkerSteps {
         });
     }
     
-    @Given("a FibonacciGenerator consumer with names '$string' in worker<$string>")
-    public void consumeFibonacciGenerator(String names, String workerName) {
-        workers.get(workerName).process(new String[] {"fibonacci", "fib"}, new OpflowRpcListener() {
+    @Given("a FibonacciGenerator consumer with names '$names' in worker<$workerName>")
+    public void consumeFibonacciGenerator(@Named("names") String names, @Named("workerName") String workerName) {
+        names = (names == null) ? "" : names;
+        String[] nameArray = names.split(",");
+        workers.get(workerName).process(nameArray, new OpflowRpcListener() {
             @Override
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 try {
@@ -61,6 +71,7 @@ public class OpflowRpcWorkerSteps {
                     
                     FibonacciGenerator fibonacci = new FibonacciGenerator(number);
 
+                    // OPTIONAL
                     while(fibonacci.next()) {
                         FibonacciGenerator.Result r = fibonacci.result();
                         response.emitProgress(r.getStep(), r.getNumber());
@@ -88,5 +99,10 @@ public class OpflowRpcWorkerSteps {
                 return null;
             }
         });
+    }
+    
+    @When("I close RPC worker<$workerName>")
+    public void closeRpcMaster(@Named("workerName") String workerName) {
+        workers.get(workerName).close();
     }
 }

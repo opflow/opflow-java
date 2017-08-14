@@ -42,12 +42,19 @@ public class OpflowRpcMasterSteps {
     }
     
     @When("I make a request<$requestName> to routine<$routineId> in master<$masterName> with input number: $number")
-    public void makeRequest(final String requestName, final String routineId, final String masterName, final int number) {
+    public void makeRequest(@Named("requestName") final String requestName, 
+            @Named("routineId") final String routineId, 
+            @Named("masterName") final String masterName, 
+            @Named("number") final int number) {
         makeRequest(requestName, routineId, masterName, number, 5000);
     }
 
     @When("I make a request<$requestName>($number) to routine<$routineId> in master<$masterName> with timeout: $timeout")
-    public void makeRequest(final String requestName, final String routineId, final String masterName, final int number, final long timeout) {
+    public void makeRequest(@Named("requestName") final String requestName, 
+            @Named("routineId") final String routineId, 
+            @Named("masterName") final String masterName, 
+            @Named("number") final int number, 
+            @Named("timeout") final long timeout) {
         inputs.put(requestName, number);
         OpflowRpcRequest request = masters.get(masterName).request("fibonacci", OpflowUtil.buildJson(new OpflowUtil.MapListener() {
             @Override
@@ -83,7 +90,10 @@ public class OpflowRpcMasterSteps {
     }
     
     @When("I make requests from number $fromNumber to number $toNumber to routine<$routineId> in master<$masterName>")
-    public void makeRangeOfRequests(final int fromNumber, final int toNumber, final String routineId, final String masterName) {
+    public void makeRangeOfRequests(@Named("fromNumber") final int fromNumber, 
+            @Named("toNumber") final int toNumber, 
+            @Named("routineId") final String routineId, 
+            @Named("masterName") final String masterName) {
         for(int number = fromNumber; number < toNumber; number++) {
             String requestName = "reqseq" + number;
             makeRequest(requestName, routineId, masterName, number);
@@ -91,7 +101,8 @@ public class OpflowRpcMasterSteps {
     }
     
     @Then("the requests from $fromNumber to $toNumber should finished successfully")
-    public void checkRangeOfRequests(final int fromNumber, final int toNumber) {
+    public void checkRangeOfRequests(@Named("fromNumber") final int fromNumber, 
+            @Named("toNumber") final int toNumber) {
         for(int i = fromNumber; i < toNumber; i++) {
             String requestName = "reqseq" + i;
             checkRequestOutput(requestName);
@@ -99,14 +110,14 @@ public class OpflowRpcMasterSteps {
     }
     
     @When("I do something in $number seconds")
-    public void doSomethingIn(final int number) {
+    public void doSomethingIn(@Named("number") final int number) {
         try {
             Thread.sleep(1000 * number);
         } catch (InterruptedException ie) {}
     }
     
     @When("I close RPC master<$masterName>")
-    public void closeRpcMaster(String masterName) {
+    public void closeRpcMaster(@Named("masterName") String masterName) {
         masters.get(masterName).close();
     }
 }
