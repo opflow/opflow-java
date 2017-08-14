@@ -1,5 +1,6 @@
 package com.devebot.opflow.bdd;
 
+import com.devebot.opflow.bdd.steps.OpflowCommonSteps;
 import com.devebot.opflow.bdd.steps.OpflowRpcMasterSteps;
 import com.devebot.opflow.bdd.steps.OpflowRpcWorkerSteps;
 import java.util.Arrays;
@@ -33,6 +34,7 @@ public class OpflowRpcStories extends JUnitStories {
     @Override
     public InjectableStepsFactory stepsFactory() {
         return new InstanceStepsFactory(configuration(),
+                new OpflowCommonSteps(),
                 new OpflowRpcMasterSteps(),
                 new OpflowRpcWorkerSteps());
     }

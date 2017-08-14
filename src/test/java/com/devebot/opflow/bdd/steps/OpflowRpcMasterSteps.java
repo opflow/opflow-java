@@ -109,13 +109,6 @@ public class OpflowRpcMasterSteps {
         }
     }
     
-    @When("I do something in $number seconds")
-    public void doSomethingIn(@Named("number") final int number) {
-        try {
-            Thread.sleep(1000 * number);
-        } catch (InterruptedException ie) {}
-    }
-    
     @When("I close RPC master<$masterName>")
     public void closeRpcMaster(@Named("masterName") String masterName) {
         masters.get(masterName).close();

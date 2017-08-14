@@ -50,11 +50,41 @@ public class OpflowRpcWorkerSteps {
         });
     }
     
+    @Given("a EchoJsonObject consumer in worker<$workerName> with names '$names'")
+    public void consumeEchoJsonObject(@Named("names") String names, @Named("workerName") String workerName) {
+        workers.get(workerName).process(splitString(names), new OpflowRpcListener() {
+            @Override
+            public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+                try {
+                    String msg = message.getContentAsString();
+                    if (LOG.isTraceEnabled()) LOG.trace("[+] EchoJsonObject received: '" + msg + "'");
+                    
+                    String result = msg;
+                    
+                    // MANDATORY
+                    response.emitCompleted(result);
+                } catch (final Exception ex) {
+                    String errmsg = OpflowUtil.buildJson(new OpflowUtil.MapListener() {
+                        @Override
+                        public void transform(Map<String, Object> opts) {
+                            opts.put("exceptionClass", ex.getClass().getName());
+                            opts.put("exceptionMessage", ex.getMessage());
+                        }
+                    });
+                    if (LOG.isErrorEnabled()) LOG.error("[-] EchoJsonObject error message: " + errmsg);
+                    
+                    // MANDATORY
+                    response.emitFailed(errmsg);
+                }
+                
+                return null;
+            }
+        });
+    }
+    
     @Given("a FibonacciGenerator consumer with names '$names' in worker<$workerName>")
     public void consumeFibonacciGenerator(@Named("names") String names, @Named("workerName") String workerName) {
-        names = (names == null) ? "" : names;
-        String[] nameArray = names.split(",");
-        workers.get(workerName).process(nameArray, new OpflowRpcListener() {
+        workers.get(workerName).process(splitString(names), new OpflowRpcListener() {
             @Override
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 try {
@@ -104,5 +134,9 @@ public class OpflowRpcWorkerSteps {
     @When("I close RPC worker<$workerName>")
     public void closeRpcMaster(@Named("workerName") String workerName) {
         workers.get(workerName).close();
+    }
+    
+    private static String[] splitString(String str) {
+        return (str == null) ? null : str.split(",");
     }
 }
