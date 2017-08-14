@@ -18,21 +18,39 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jbehave.core.annotations.BeforeScenario;
 import org.jbehave.core.annotations.Given;
+import org.jbehave.core.annotations.Named;
 import org.jbehave.core.annotations.Then;
 import org.jbehave.core.annotations.When;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItemInArray;
-import org.jbehave.core.annotations.Named;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class OpflowRpcMasterSteps {
     private final JsonParser jsonParser = new JsonParser();
     private final Map<String, OpflowRpcMaster> masters =  new HashMap<String, OpflowRpcMaster>();
     private final Map<String, OpflowRpcRequest> requests = new HashMap<String, OpflowRpcRequest>();
     private final Map<String, Integer> inputs = new HashMap<String, Integer>();
+    private final Map<String, RoutineState> routineStates = new HashMap<String, RoutineState>();
+    
+    private RoutineState getRoutineState(String routineId) {
+        RoutineState routineState = routineStates.get(routineId);
+        if (routineState == null) {
+            routineState = new RoutineState();
+            routineStates.put(routineId, routineState);
+        }
+        return routineState;
+    }
+    
+    @BeforeScenario
+    public void beforeEachScenario() {
+        masters.clear();
+        requests.clear();
+        inputs.clear();
+        routineStates.clear();
+    }
     
     @Given("a RPC master<$masterName>")
     public void createRpcMaster(@Named("masterName") final String masterName) throws OpflowConstructorException {
@@ -60,7 +78,8 @@ public class OpflowRpcMasterSteps {
             @Named("number") final int number, 
             @Named("timeout") final long timeout) {
         inputs.put(requestName, number);
-        OpflowRpcRequest request = masters.get(masterName).request("fibonacci", OpflowUtil.buildJson(new OpflowUtil.MapListener() {
+        getRoutineState(routineId).checkPublished();
+        OpflowRpcRequest request = masters.get(masterName).request(routineId, OpflowUtil.buildJson(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("number", number);
@@ -76,21 +95,32 @@ public class OpflowRpcMasterSteps {
     
     @Then("the request<$requestName> should finished successfully")
     public void checkRequestOutput(@Named("requestName") final String requestName) {
+        String routineId = requests.get(requestName).getRoutineId();
         OpflowRpcResult output = OpflowUtil.exhaustRequest(requests.get(requestName));
-        JsonObject jsonObject = (JsonObject)jsonParser.parse(output.getValueAsString());
+        JsonObject jsonOutput = (JsonObject)jsonParser.parse(output.getValueAsString());
         
-        int number = Integer.parseInt(jsonObject.get("number").toString());
+        int number = Integer.parseInt(jsonOutput.get("number").toString());
         assertThat(number, equalTo(inputs.get(requestName)));
         
-        FibonacciGenerator fibGen = new FibonacciGenerator(number);
-        FibonacciGenerator.Result fibResult = fibGen.finish();
+        if (!"echo".equals(requestName)) {
+            FibonacciGenerator fibGen = new FibonacciGenerator(number);
+            FibonacciGenerator.Result fibResult = fibGen.finish();
+
+            int step = Integer.parseInt(jsonOutput.get("step").toString());
+            assertThat(step, equalTo(fibResult.getStep()));
+            assertThat(step, equalTo(output.getProgress().length));
+
+            long value = Long.parseLong(jsonOutput.get("value").toString());
+            assertThat(value, equalTo(fibResult.getValue()));
+        }
         
-        int step = Integer.parseInt(jsonObject.get("step").toString());
-        assertThat(step, equalTo(fibResult.getStep()));
-        assertThat(step, equalTo(output.getProgress().length));
-        
-        long value = Long.parseLong(jsonObject.get("value").toString());
-        assertThat(value, equalTo(fibResult.getValue()));
+        getRoutineState(routineId).checkCompleted();
+    }
+    
+    @Then("the request<$requestName> should be timeout")
+    public void requestShouldBeTimeout(@Named("requestName") final String requestName) {
+        OpflowRpcResult output = OpflowUtil.exhaustRequest(requests.get(requestName));
+        assertThat(output.isTimeout(), equalTo(true));
     }
     
     @When("I make requests from number $fromNumber to number $toNumber to routine<$routineId> in master<$masterName>")
@@ -98,7 +128,7 @@ public class OpflowRpcMasterSteps {
             @Named("toNumber") final int toNumber, 
             @Named("routineId") final String routineId, 
             @Named("masterName") final String masterName) {
-        for(int number = fromNumber; number < toNumber; number++) {
+        for(int number = fromNumber; number <= toNumber; number++) {
             String requestName = "reqseq" + number;
             makeRequest(requestName, routineId, masterName, number);
         }
@@ -107,7 +137,7 @@ public class OpflowRpcMasterSteps {
     @Then("the requests from $fromNumber to $toNumber should finished successfully")
     public void checkRangeOfRequests(@Named("fromNumber") final int fromNumber, 
             @Named("toNumber") final int toNumber) {
-        for(int i = fromNumber; i < toNumber; i++) {
+        for(int i = fromNumber; i <= toNumber; i++) {
             String requestName = "reqseq" + i;
             checkRequestOutput(requestName);
         }
@@ -127,6 +157,53 @@ public class OpflowRpcMasterSteps {
             assertThat(OpflowRpcMaster.State.CONNECTION_OPENED, equalTo(state.getConnectionState()));
         } else if ("closed".equals(status)) {
             assertThat(OpflowRpcMaster.State.CONNECTION_CLOSED, equalTo(state.getConnectionState()));
+        }
+    }
+    
+    @Then("the routine<$routineId> have been published '$publishedTotal' requests, " +
+            "received '$completedTotal' successful messages and '$failedTotal' failed messages")
+    public void checkRpcMasterState(@Named("routineId") final String routineId, 
+            @Named("publishedTotal") long publishedTotal,
+            @Named("completedTotal") long completedTotal, @Named("failedTotal") long failedTotal) {
+        assertThat(getRoutineState(routineId).getPublishedTotal(), equalTo(publishedTotal));
+    }
+    
+    private class RoutineState {
+        private long publishedTotal = 0;
+        private long responseTotal = 0;
+        private long failedTotal = 0;
+        private long completedTotal = 0;
+        
+        public synchronized void checkPublished() {
+            publishedTotal++;
+        }
+        
+        public long getPublishedTotal() {
+            return publishedTotal;
+        }
+        
+        public synchronized void checkResponse() {
+            responseTotal++;
+        }
+        
+        public long getResponseTotal() {
+            return responseTotal;
+        }
+        
+        public synchronized void checkFailed() {
+            failedTotal++;
+        }
+        
+        public long getFailedTotal() {
+            return failedTotal;
+        }
+        
+        public synchronized void checkCompleted() {
+            completedTotal++;
+        }
+        
+        public long getCompletedTotal() {
+            return completedTotal;
         }
     }
 }

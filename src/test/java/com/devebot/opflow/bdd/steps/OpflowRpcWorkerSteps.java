@@ -17,6 +17,7 @@ import java.util.Map;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
+import org.jbehave.core.annotations.BeforeScenario;
 import org.jbehave.core.annotations.Given;
 import org.jbehave.core.annotations.Named;
 import org.jbehave.core.annotations.Then;
@@ -33,6 +34,13 @@ public class OpflowRpcWorkerSteps {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcWorkerSteps.class);
     
     private final Map<String, OpflowRpcWorker> workers = new HashMap<String, OpflowRpcWorker>();
+    private final OperationState fibonacciState = new OperationState();
+    
+    @BeforeScenario
+    public void beforeEachScenario() {
+        workers.clear();
+        fibonacciState.clear();
+    }
     
     @Given("a RPC worker<$string>")
     public void createRpcWorker(@Named("workerName") String workerName) throws OpflowConstructorException {
@@ -94,6 +102,7 @@ public class OpflowRpcWorkerSteps {
             @Override
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 try {
+                    fibonacciState.checkPerformed();
                     String msg = message.getContentAsString();
                     if (LOG.isTraceEnabled()) LOG.trace("[+] Fibonacci received: '" + msg + "'");
 
@@ -118,6 +127,7 @@ public class OpflowRpcWorkerSteps {
 
                     // MANDATORY
                     response.emitCompleted(result);
+                    fibonacciState.checkCompleted();
                 } catch (final Exception ex) {
                     String errmsg = OpflowUtil.buildJson(new OpflowUtil.MapListener() {
                         @Override
@@ -130,6 +140,7 @@ public class OpflowRpcWorkerSteps {
                     
                     // MANDATORY
                     response.emitFailed(errmsg);
+                    fibonacciState.checkFailed();
                 }
                 
                 return null;
@@ -154,7 +165,62 @@ public class OpflowRpcWorkerSteps {
         }
     }
     
+    @Then("the FibonacciGenerator consumers have performed '$performedTotal' messages," + 
+            " in which '$completedTotal' messages are successful and '$failedTotal' messages are failed")
+    public void checkRpcWorkerState(@Named("performedTotal") long performedTotal,
+            @Named("completedTotal") long completedTotal, @Named("failedTotal") long failedTotal) {
+        assertThat(fibonacciState.getPerformedTotal(), equalTo(performedTotal));
+        assertThat(fibonacciState.getCompletedTotal(), equalTo(completedTotal));
+        assertThat(fibonacciState.getFailedTotal(), equalTo(failedTotal));
+    }
+    
     private static String[] splitString(String str) {
         return (str == null) ? null : str.split(",");
+    }
+    
+    private class OperationState {
+        private long consumedTotal = 0;
+        private long performedTotal = 0;
+        private long failedTotal = 0;
+        private long completedTotal = 0;
+        
+        public void clear() {
+            consumedTotal = 0;
+            performedTotal = 0;
+            failedTotal = 0;
+            completedTotal = 0;
+        }
+        
+        public synchronized void checkConsumed() {
+            consumedTotal++;
+        }
+        
+        public long getConsumedTotal() {
+            return consumedTotal;
+        }
+        
+        public synchronized void checkPerformed() {
+            performedTotal++;
+        }
+        
+        public long getPerformedTotal() {
+            return performedTotal;
+        }
+        
+        public synchronized void checkFailed() {
+            failedTotal++;
+        }
+        
+        public long getFailedTotal() {
+            return failedTotal;
+        }
+        
+        public synchronized void checkCompleted() {
+            completedTotal++;
+        }
+        
+        public long getCompletedTotal() {
+            return completedTotal;
+        }
     }
 }
