@@ -370,6 +370,41 @@ public class OpflowBroker {
         }
     }
     
+    public static class State {
+        public static final int CONNECTION_NEW = 0;
+        public static final int CONNECTION_OPENED = 1;
+        public static final int CONNECTION_CLOSED = 2;
+        private final int[] CONNECTION_STATES =  new int[] {
+            CONNECTION_NEW, CONNECTION_OPENED, CONNECTION_CLOSED
+        };
+        
+        private int connectionState = -1;
+        
+        public int getConnectionState() {
+            return connectionState;
+        }
+        
+        public State(State state) {
+            this.connectionState = state.connectionState;
+        }
+        
+        private State(int connectionState) {
+            for (int i=0; i<CONNECTION_STATES.length; i++) {
+                if (CONNECTION_STATES[i] == connectionState) {
+                    this.connectionState = connectionState;
+                    break;
+                }
+            }
+            if (this.connectionState < 0) this.connectionState = CONNECTION_NEW;
+        }
+    }
+    
+    public State check() {
+        int conn = connection.isOpen() ? State.CONNECTION_OPENED : State.CONNECTION_CLOSED;
+        State state = new State(conn);
+        return state;
+    }
+    
     /**
      * Close this broker.
      *

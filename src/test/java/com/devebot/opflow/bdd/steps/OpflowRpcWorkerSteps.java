@@ -9,11 +9,17 @@ import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowConstructorException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.lab.FibonacciGenerator;
+import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import org.jbehave.core.annotations.Given;
 import org.jbehave.core.annotations.Named;
+import org.jbehave.core.annotations.Then;
 import org.jbehave.core.annotations.When;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,6 +140,18 @@ public class OpflowRpcWorkerSteps {
     @When("I close RPC worker<$workerName>")
     public void closeRpcMaster(@Named("workerName") String workerName) {
         workers.get(workerName).close();
+    }
+    
+    @Then("the RPC worker<$workerName> connection is '$status'")
+    public void checkRpcWorker(@Named("workerName") String workerName, @Named("status") String status) {
+        OpflowRpcWorker.State state = workers.get(workerName).check();
+        List<String> collection = Lists.newArrayList("opened", "closed");
+        assertThat(collection, hasItem(status));
+        if ("opened".equals(status)) {
+            assertThat(OpflowRpcWorker.State.CONNECTION_OPENED, equalTo(state.getConnectionState()));
+        } else if ("closed".equals(status)) {
+            assertThat(OpflowRpcWorker.State.CONNECTION_CLOSED, equalTo(state.getConnectionState()));
+        }
     }
     
     private static String[] splitString(String str) {

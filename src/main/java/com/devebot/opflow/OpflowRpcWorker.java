@@ -96,6 +96,17 @@ public class OpflowRpcWorker {
         }));
     }
     
+    public class State extends OpflowBroker.State {
+        public State(OpflowBroker.State superState) {
+            super(superState);
+        }
+    }
+    
+    public State check() {
+        State state = new State(broker.check());
+        return state;
+    }
+    
     public void close() {
         if (broker != null) {
             broker.cancelConsumer(consumerInfo);

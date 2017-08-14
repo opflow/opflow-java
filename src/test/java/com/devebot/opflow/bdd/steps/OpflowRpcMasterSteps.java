@@ -11,9 +11,11 @@ import com.devebot.opflow.OpflowRpcResult;
 import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowConstructorException;
 import com.devebot.opflow.lab.FibonacciGenerator;
+import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.jbehave.core.annotations.Given;
@@ -22,6 +24,8 @@ import org.jbehave.core.annotations.When;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItemInArray;
 import org.jbehave.core.annotations.Named;
 
 public class OpflowRpcMasterSteps {
@@ -112,5 +116,17 @@ public class OpflowRpcMasterSteps {
     @When("I close RPC master<$masterName>")
     public void closeRpcMaster(@Named("masterName") String masterName) {
         masters.get(masterName).close();
+    }
+    
+    @Then("the RPC master<$masterName> connection is '$status'")
+    public void checkRpcMaster(@Named("masterName") String masterName, @Named("status") String status) {
+        OpflowRpcMaster.State state = masters.get(masterName).check();
+        List<String> collection = Lists.newArrayList("opened", "closed");
+        assertThat(collection, hasItem(status));
+        if ("opened".equals(status)) {
+            assertThat(OpflowRpcMaster.State.CONNECTION_OPENED, equalTo(state.getConnectionState()));
+        } else if ("closed".equals(status)) {
+            assertThat(OpflowRpcMaster.State.CONNECTION_CLOSED, equalTo(state.getConnectionState()));
+        }
     }
 }

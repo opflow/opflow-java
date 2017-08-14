@@ -195,6 +195,17 @@ public class OpflowRpcMaster {
         return task;
     }
 
+    public class State extends OpflowBroker.State {
+        public State(OpflowBroker.State superState) {
+            super(superState);
+        }
+    }
+    
+    public State check() {
+        State state = new State(broker.check());
+        return state;
+    }
+    
     public void close() {
         lock.lock();
         if (logger.isTraceEnabled()) logger.trace("close() - obtain the lock");
