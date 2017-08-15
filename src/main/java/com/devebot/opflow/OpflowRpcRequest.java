@@ -25,8 +25,8 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
     
     public OpflowRpcRequest(Map<String, Object> options, final OpflowTask.Listener completeListener) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
-        this.requestId = (opts.get("requestId") != null) ? (String)opts.get("requestId") : OpflowUtil.getUUID();
-        this.routineId = (opts.get("routineId") != null) ? (String)opts.get("routineId") : OpflowUtil.getUUID();
+        this.requestId = OpflowUtil.getRequestId(opts);
+        this.routineId = OpflowUtil.getRoutineId(opts);
         if (opts.get("timeout") == null) {
             this.timeout = 0;
         } else if (opts.get("timeout") instanceof Long) {

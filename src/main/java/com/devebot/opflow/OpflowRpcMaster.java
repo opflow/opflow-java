@@ -75,18 +75,19 @@ public class OpflowRpcMaster {
         if (logger.isTraceEnabled()) logger.trace("initResponseConsumer(forked:" + forked + ")");
         return broker.consume(new OpflowListener() {
             @Override
-            public void processMessage(byte[] content, AMQP.BasicProperties properties, 
+            public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
                 String taskId = properties.getCorrelationId();
                 if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] received data, size: " + (content != null ? content.length : -1));
                 OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
                     if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] not found, skipped");
-                    return;
+                } else {
+                    OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
+                    task.push(message);
+                    if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] - returned value has been pushed");
                 }
-                OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
-                task.push(message);
-                if (logger.isDebugEnabled()) logger.debug("task[" + taskId + "] - Message has been enqueued");
+                return true;
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
@@ -127,7 +128,7 @@ public class OpflowRpcMaster {
     
     public OpflowRpcRequest request(String routineId, byte[] content, Map<String, Object> options) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
-        final boolean isStandalone = "standalone".equals((String)opts.get("mode"));
+        final boolean forked = "forked".equals((String)opts.get("mode"));
         
         if (timeoutMonitor == null) {
             timeoutMonitor = initTimeoutMonitor();
@@ -135,7 +136,7 @@ public class OpflowRpcMaster {
         
         final OpflowBroker.ConsumerInfo consumerInfo;
         
-        if (isStandalone) {
+        if (forked) {
             consumerInfo = initResponseConsumer(true);
         } else {
             if (responseConsumer == null) {
@@ -152,8 +153,8 @@ public class OpflowRpcMaster {
                 try {
                     tasks.remove(taskId);
                     if (tasks.isEmpty()) {
-                        if (isStandalone) {
-                            cancelConsumer(consumerInfo);
+                        if (forked) {
+                            broker.cancelConsumer(consumerInfo);
                         }
                         idle.signal();
                     }
@@ -194,6 +195,17 @@ public class OpflowRpcMaster {
         return task;
     }
 
+    public class State extends OpflowBroker.State {
+        public State(OpflowBroker.State superState) {
+            super(superState);
+        }
+    }
+    
+    public State check() {
+        State state = new State(broker.check());
+        return state;
+    }
+    
     public void close() {
         lock.lock();
         if (logger.isTraceEnabled()) logger.trace("close() - obtain the lock");
@@ -201,7 +213,7 @@ public class OpflowRpcMaster {
             if (logger.isTraceEnabled()) logger.trace("close() - check tasks.isEmpty()? and await...");
             while(!tasks.isEmpty()) idle.await();
             if (logger.isTraceEnabled()) logger.trace("close() - cancel responseConsumer");
-            if (responseConsumer != null) cancelConsumer(responseConsumer);
+            if (responseConsumer != null) broker.cancelConsumer(responseConsumer);
             if (logger.isTraceEnabled()) logger.trace("close() - stop timeoutMonitor");
             if (timeoutMonitor != null) timeoutMonitor.stop();
             if (logger.isTraceEnabled()) logger.trace("close() - close broker/engine");
@@ -211,22 +223,6 @@ public class OpflowRpcMaster {
         } finally {
             lock.unlock();
             if (logger.isTraceEnabled()) logger.trace("close() - lock has been released");
-        }
-    }
-    
-    private void cancelConsumer(OpflowBroker.ConsumerInfo consumerInfo) {
-        try {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] will be cancelled");
-            }
-            consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
-            if (logger.isDebugEnabled()) {
-                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] has been cancelled");
-            }
-        } catch (IOException ex) {
-            if (logger.isErrorEnabled()) {
-                logger.error("cancel consumer[" + consumerInfo.getConsumerTag() + "] failed, IOException: " + ex.getMessage());
-            }
         }
     }
 }

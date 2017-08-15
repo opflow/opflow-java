@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import com.rabbitmq.client.AMQP;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,19 +123,33 @@ public class OpflowUtil {
         return (opts == null) ? new HashMap<String, Object>() : opts;
     }
     
-    public static Map<String, Object> getHeaders(AMQP.BasicProperties properties) {
-        if (properties != null && properties.getHeaders() != null) {
-            return properties.getHeaders();
-        } else {
-            return new HashMap<String, Object>();
-        }
+    public static String getRequestId(Map<String, Object> headers) {
+        return getRequestId(headers, true);
     }
-
-    public static String getRequestID(Map<String, Object> headers) {
-        if (headers == null) return UUID.randomUUID().toString();
-        Object requestID = headers.get("requestId");
-        if (requestID == null) return UUID.randomUUID().toString();
-        return requestID.toString();
+    
+    public static String getRequestId(Map<String, Object> headers, boolean uuidIfNotFound) {
+        return getOptionField(headers, "requestId", uuidIfNotFound);
+    }
+    
+    public static String getRoutineId(Map<String, Object> headers) {
+        return getRoutineId(headers, true);
+    }
+    
+    public static String getRoutineId(Map<String, Object> headers, boolean uuidIfNotFound) {
+        return getOptionField(headers, "routineId", uuidIfNotFound);
+    }
+    
+    public static String getOptionField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
+        Object value = null;
+        if (options != null) value = options.get(fieldName);
+        if (value == null) {
+            if (uuidIfNotFound) {
+                value = UUID.randomUUID();
+            } else {
+                return null;
+            }
+        }
+        return value.toString();
     }
     
     public static String[] splitByComma(String source) {
@@ -174,6 +187,7 @@ public class OpflowUtil {
     }
     
     public static OpflowRpcResult exhaustRequest(OpflowRpcRequest request, final boolean includeProgress) {
+        String routineId = request.getRoutineId();
         String requestId = request.getRequestId();
         Iterator<OpflowMessage> iter = request;
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw ...");
@@ -213,6 +227,6 @@ public class OpflowUtil {
         }
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw done");
         if (!includeProgress) steps = null;
-        return new OpflowRpcResult(workerTag, steps, error, value);
+        return new OpflowRpcResult(routineId, requestId, workerTag, steps, error, value);
     }
 }

@@ -196,11 +196,18 @@ public class OpflowBroker {
                 _replyToName = null;
             }
             
+            final Boolean _autoAck;
+            if (opts.get("autoAck") != null && opts.get("autoAck") instanceof Boolean) {
+                _autoAck = (Boolean) opts.get("autoAck");
+            } else {
+                _autoAck = Boolean.TRUE;
+            }
+            
             final Consumer _consumer = new DefaultConsumer(_channel) {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
-                    String requestID = OpflowUtil.getRequestID(properties.getHeaders());
+                    String requestID = OpflowUtil.getRequestId(properties.getHeaders(), false);
 
                     if (logger.isInfoEnabled()) {
                         logger.info("Request["+requestID+"] / DeliveryTag["+envelope.getDeliveryTag()+"] / ConsumerTag["+consumerTag+"]");
@@ -217,28 +224,28 @@ public class OpflowBroker {
                     try {
                         if (applicationId != null && !applicationId.equals(properties.getAppId())) {
                             if (logger.isInfoEnabled()) {
-                                logger.info(MessageFormat.format("Request[{0}] - Received AppId:{3}, but accepted AppId:{4}, rejected", new Object[] {
-                                    requestID, envelope.getDeliveryTag(), consumerTag, properties.getAppId(), applicationId
+                                logger.info(MessageFormat.format("Request[{0}]/AppId:{1} - but received AppId:{2}, rejected", new Object[] {
+                                    requestID, applicationId, properties.getAppId()
                                 }));
                             }
-                            _channel.basicNack(envelope.getDeliveryTag(), false, true);
-                            return;
-                        }
-                        
-                        if (logger.isTraceEnabled()) logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
-                            requestID
-                        }));
-                        listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
+                        } else {
+                            if (logger.isTraceEnabled()) {
+                                logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
+                                    requestID
+                                }));
+                            }
 
-                        if (logger.isTraceEnabled()) {
-                            logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
-                                requestID, envelope.getDeliveryTag(), consumerTag
-                            }));
-                        }
-                        _channel.basicAck(envelope.getDeliveryTag(), false);
+                            boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
 
-                        if (logger.isInfoEnabled()) {
-                            logger.info("Request[" + requestID + "] has finished successfully");
+                            if (captured) {
+                                if (logger.isInfoEnabled()) {
+                                    logger.info("Request[" + requestID + "] has finished successfully");
+                                }
+                            } else {
+                                if (logger.isInfoEnabled()) {
+                                    logger.info("Request[" + requestID + "] has not matched the criteria, skipped");
+                                }
+                            }
                         }
                     } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
@@ -252,13 +259,21 @@ public class OpflowBroker {
                             logger.info("Request[" + requestID + "] has been failed. Request is rejected, service still alive");
                         }
                     }
+                    
+                    if (logger.isTraceEnabled()) {
+                        logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
+                            requestID, envelope.getDeliveryTag(), consumerTag
+                        }));
+                    }
+                    
+                    if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
                 }
                 
                 @Override
                 public void handleCancelOk(String consumerTag) {
                     if (!Boolean.FALSE.equals(_forceNewChannel)) {
                         try {
-                            _channel.close();
+                            if (_channel != null && _channel.isOpen()) _channel.close();
                         } catch (IOException ex) {
                             if (logger.isErrorEnabled()) {
                                 logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, IOException: {1}", new Object[] {
@@ -285,7 +300,7 @@ public class OpflowBroker {
                 }
             };
             
-            final String _consumerTag = _channel.basicConsume(_queueName, false, _consumer);
+            final String _consumerTag = _channel.basicConsume(_queueName, _autoAck, _consumer);
             
             _channel.addShutdownListener(new ShutdownListener() {
                 @Override
@@ -305,6 +320,23 @@ public class OpflowBroker {
         } catch(IOException exception) {
             if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
+        }
+    }
+    
+    public void cancelConsumer(OpflowBroker.ConsumerInfo consumerInfo) {
+        if (consumerInfo == null) return;
+        try {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] will be cancelled");
+            }
+            consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] has been cancelled");
+            }
+        } catch (IOException ex) {
+            if (logger.isErrorEnabled()) {
+                logger.error("cancel consumer[" + consumerInfo.getConsumerTag() + "] failed, IOException: " + ex.getMessage());
+            }
         }
     }
     
@@ -344,6 +376,41 @@ public class OpflowBroker {
         }
     }
     
+    public static class State {
+        public static final int CONNECTION_NEW = 0;
+        public static final int CONNECTION_OPENED = 1;
+        public static final int CONNECTION_CLOSED = 2;
+        private final int[] CONNECTION_STATES =  new int[] {
+            CONNECTION_NEW, CONNECTION_OPENED, CONNECTION_CLOSED
+        };
+        
+        private int connectionState = -1;
+        
+        public int getConnectionState() {
+            return connectionState;
+        }
+        
+        public State(State state) {
+            this.connectionState = state.connectionState;
+        }
+        
+        private State(int connectionState) {
+            for (int i=0; i<CONNECTION_STATES.length; i++) {
+                if (CONNECTION_STATES[i] == connectionState) {
+                    this.connectionState = connectionState;
+                    break;
+                }
+            }
+            if (this.connectionState < 0) this.connectionState = CONNECTION_NEW;
+        }
+    }
+    
+    public State check() {
+        int conn = connection.isOpen() ? State.CONNECTION_OPENED : State.CONNECTION_CLOSED;
+        State state = new State(conn);
+        return state;
+    }
+    
     /**
      * Close this broker.
      *
@@ -352,8 +419,8 @@ public class OpflowBroker {
     public void close() {
         try {
             if (logger.isInfoEnabled()) logger.info("[*] Cancel consumers, close channels, close connection.");
-            if (channel != null) channel.close();
-            if (connection != null) connection.close();
+            if (channel != null && channel.isOpen()) channel.close();
+            if (connection != null && connection.isOpen()) connection.close();
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("close() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);

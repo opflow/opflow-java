@@ -8,20 +8,37 @@ import java.util.List;
  * @author drupalex
  */
 public class OpflowRpcResult implements Serializable {
+    private final String routineId;
+    private final String requestId;
     private final String workerTag;
     private final List<Step> progress;
     private final byte[] error;
     private final byte[] value;
     
-    public OpflowRpcResult(String workerTag, List<Step> progress, byte[] error, byte[] value) {
+    public OpflowRpcResult(String routineId, String requestId, String workerTag, 
+            List<Step> progress, byte[] error, byte[] value) {
+        this.routineId = routineId;
+        this.requestId = requestId;
         this.workerTag = workerTag;
         this.progress = progress;
         this.error = error;
         this.value = value;
     }
+
+    public String getRoutineId() {
+        return routineId;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
     
     public String getWorkerTag() {
         return workerTag;
+    }
+    
+    public boolean isTimeout() {
+        return error == null && value == null;
     }
     
     public byte[] getError() {

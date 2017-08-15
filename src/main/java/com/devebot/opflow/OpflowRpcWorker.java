@@ -71,21 +71,20 @@ public class OpflowRpcWorker {
         if (consumerInfo != null) return consumerInfo;
         return consumerInfo = broker.consume(new OpflowListener() {
             @Override
-            public void processMessage(byte[] content, AMQP.BasicProperties properties, 
+            public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, workerTag, queueName);
-                Map<String, Object> headers = OpflowUtil.getHeaders(properties);
-                String routineId = null;
-                if (headers.get("routineId") != null) {
-                    routineId = headers.get("routineId").toString();
-                }
+                String routineId = OpflowUtil.getRoutineId(properties.getHeaders(), false);
+                int count = 0;
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
+                        count++;
                         Boolean nextAction = middleware.getListener()
                                 .processMessage(new OpflowMessage(content, properties.getHeaders()), response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
+                return count > 0;
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
@@ -97,8 +96,22 @@ public class OpflowRpcWorker {
         }));
     }
     
+    public class State extends OpflowBroker.State {
+        public State(OpflowBroker.State superState) {
+            super(superState);
+        }
+    }
+    
+    public State check() {
+        State state = new State(broker.check());
+        return state;
+    }
+    
     public void close() {
-        if (broker != null) broker.close();
+        if (broker != null) {
+            broker.cancelConsumer(consumerInfo);
+            broker.close();
+        }
     }
     
     public class Middleware {
