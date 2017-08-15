@@ -187,6 +187,7 @@ public class OpflowUtil {
     }
     
     public static OpflowRpcResult exhaustRequest(OpflowRpcRequest request, final boolean includeProgress) {
+        String routineId = request.getRoutineId();
         String requestId = request.getRequestId();
         Iterator<OpflowMessage> iter = request;
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw ...");
@@ -226,6 +227,6 @@ public class OpflowUtil {
         }
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw done");
         if (!includeProgress) steps = null;
-        return new OpflowRpcResult(workerTag, steps, error, value);
+        return new OpflowRpcResult(routineId, requestId, workerTag, steps, error, value);
     }
 }

@@ -40,6 +40,7 @@ public class OpflowTask {
                 for (String key : tasks.keySet()) {
                     if (logger.isTraceEnabled()) logger.trace("Monitor[" + monitorId + "].run() examine task[" + key + "]");
                     Timeoutable task = tasks.get(key);
+                    if (task == null) continue;
                     long _timeout = task.getTimeout();
                     if (_timeout <= 0) _timeout = timeout;
                     if (_timeout > 0) {

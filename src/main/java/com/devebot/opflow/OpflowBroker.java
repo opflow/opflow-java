@@ -196,6 +196,13 @@ public class OpflowBroker {
                 _replyToName = null;
             }
             
+            final Boolean _autoAck;
+            if (opts.get("autoAck") != null && opts.get("autoAck") instanceof Boolean) {
+                _autoAck = (Boolean) opts.get("autoAck");
+            } else {
+                _autoAck = Boolean.TRUE;
+            }
+            
             final Consumer _consumer = new DefaultConsumer(_channel) {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope,
@@ -217,36 +224,27 @@ public class OpflowBroker {
                     try {
                         if (applicationId != null && !applicationId.equals(properties.getAppId())) {
                             if (logger.isInfoEnabled()) {
-                                logger.info(MessageFormat.format("Request[{0}] - Received AppId:{3}, but accepted AppId:{4}, rejected", new Object[] {
-                                    requestID, envelope.getDeliveryTag(), consumerTag, properties.getAppId(), applicationId
+                                logger.info(MessageFormat.format("Request[{0}]/AppId:{1} - but received AppId:{2}, rejected", new Object[] {
+                                    requestID, applicationId, properties.getAppId()
                                 }));
                             }
-                            _channel.basicNack(envelope.getDeliveryTag(), false, true);
-                            return;
-                        }
-                        
-                        if (logger.isTraceEnabled()) logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
-                            requestID
-                        }));
-                        boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
-
-                        if (logger.isTraceEnabled()) {
-                            logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
-                                requestID, envelope.getDeliveryTag(), consumerTag
-                            }));
-                        }
-                        
-                        if (captured) {
-                            _channel.basicAck(envelope.getDeliveryTag(), false);
-
-                            if (logger.isInfoEnabled()) {
-                                logger.info("Request[" + requestID + "] has finished successfully");
-                            }
                         } else {
-                            _channel.basicNack(envelope.getDeliveryTag(), false, true);
-                            
-                            if (logger.isInfoEnabled()) {
-                                logger.info("Request[" + requestID + "] has not matched the criteria, skipped");
+                            if (logger.isTraceEnabled()) {
+                                logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
+                                    requestID
+                                }));
+                            }
+
+                            boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
+
+                            if (captured) {
+                                if (logger.isInfoEnabled()) {
+                                    logger.info("Request[" + requestID + "] has finished successfully");
+                                }
+                            } else {
+                                if (logger.isInfoEnabled()) {
+                                    logger.info("Request[" + requestID + "] has not matched the criteria, skipped");
+                                }
                             }
                         }
                     } catch (Exception ex) {
@@ -261,13 +259,21 @@ public class OpflowBroker {
                             logger.info("Request[" + requestID + "] has been failed. Request is rejected, service still alive");
                         }
                     }
+                    
+                    if (logger.isTraceEnabled()) {
+                        logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
+                            requestID, envelope.getDeliveryTag(), consumerTag
+                        }));
+                    }
+                    
+                    if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
                 }
                 
                 @Override
                 public void handleCancelOk(String consumerTag) {
                     if (!Boolean.FALSE.equals(_forceNewChannel)) {
                         try {
-                            _channel.close();
+                            if (_channel != null && _channel.isOpen()) _channel.close();
                         } catch (IOException ex) {
                             if (logger.isErrorEnabled()) {
                                 logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, IOException: {1}", new Object[] {
@@ -294,7 +300,7 @@ public class OpflowBroker {
                 }
             };
             
-            final String _consumerTag = _channel.basicConsume(_queueName, false, _consumer);
+            final String _consumerTag = _channel.basicConsume(_queueName, _autoAck, _consumer);
             
             _channel.addShutdownListener(new ShutdownListener() {
                 @Override
@@ -413,8 +419,8 @@ public class OpflowBroker {
     public void close() {
         try {
             if (logger.isInfoEnabled()) logger.info("[*] Cancel consumers, close channels, close connection.");
-            if (channel != null) channel.close();
-            if (connection != null) connection.close();
+            if (channel != null && channel.isOpen()) channel.close();
+            if (connection != null && connection.isOpen()) connection.close();
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("close() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
