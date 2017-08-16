@@ -35,14 +35,37 @@ public class OpflowPubsubHandler {
         subscriberName = (String) params.get("subscriberName");
     }
 
+    public void publish(String data) {
+        publish(data, null);
+    }
+    
+    public void publish(String data, Map<String, Object> opts) {
+        publish(data, opts, null);
+    }
+    
     public void publish(String data, Map<String, Object> opts, String routingKey) {
         publish(OpflowUtil.getBytes(data), opts, routingKey);
     }
     
+    public void publish(byte[] data) {
+        publish(data, null);
+    }
+    
+    public void publish(byte[] data, Map<String, Object> opts) {
+        publish(data, opts, null);
+    }
+    
     public void publish(byte[] data, Map<String, Object> opts, String routingKey) {
-        AMQP.BasicProperties.Builder propBuilder = new AMQP.BasicProperties
-                .Builder()
-                .headers(opts);
+        AMQP.BasicProperties.Builder propBuilder = new AMQP.BasicProperties.Builder();
+        
+        if (opts == null) {
+            opts = new HashMap<String, Object>();
+        }
+        if (opts.get("requestId") == null) {
+            opts.put("requestId", OpflowUtil.getUUID());
+        }
+        propBuilder.headers(opts);
+        
         Map<String, Object> override = new HashMap<String, Object>();
         if (routingKey != null) {
             override.put("routingKey", routingKey);
@@ -65,5 +88,22 @@ public class OpflowPubsubHandler {
                 opts.put("queueName", subscriberName);
             }
         }));
+    }
+    
+    public void close() {
+        if (broker != null) {
+            broker.close();
+        }
+    }
+    
+    public State check() {
+        State state = new State(broker.check());
+        return state;
+    }
+    
+    public class State extends OpflowBroker.State {
+        public State(OpflowBroker.State superState) {
+            super(superState);
+        }
     }
 }

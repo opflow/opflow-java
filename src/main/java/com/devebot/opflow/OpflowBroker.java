@@ -294,6 +294,12 @@ public class OpflowBroker {
                                     consumerTag, ex.getMessage()
                                 }));
                             }
+                        } catch (ShutdownSignalException sig) {
+                            if (logger.isErrorEnabled()) {
+                                logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, ShutdownSignalException: {1}", new Object[] {
+                                    consumerTag, sig.getMessage()
+                                }));
+                            }
                         }
                     }
                 }
