@@ -61,6 +61,7 @@ public class OpflowPubsubHandler {
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
+                opts.put("autoAck", Boolean.FALSE);
                 opts.put("queueName", subscriberName);
             }
         }));

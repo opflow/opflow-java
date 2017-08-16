@@ -214,7 +214,7 @@ public class OpflowBroker {
                     }
 
                     if (logger.isTraceEnabled()) {
-                        if (body.length <= 4*1024) {
+                        if (body.length <= 4096) {
                             logger.trace("Request[" + requestID + "] - Message: " + new String(body, "UTF-8"));
                         } else {
                             logger.trace("Request[" + requestID + "] - Message size too large (>4KB): " + body.length);
@@ -222,13 +222,7 @@ public class OpflowBroker {
                     }
                     
                     try {
-                        if (applicationId != null && !applicationId.equals(properties.getAppId())) {
-                            if (logger.isInfoEnabled()) {
-                                logger.info(MessageFormat.format("Request[{0}]/AppId:{1} - but received AppId:{2}, rejected", new Object[] {
-                                    requestID, applicationId, properties.getAppId()
-                                }));
-                            }
-                        } else {
+                        if (applicationId == null || applicationId.equals(properties.getAppId())) {
                             if (logger.isTraceEnabled()) {
                                 logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
                                     requestID
@@ -246,27 +240,41 @@ public class OpflowBroker {
                                     logger.info("Request[" + requestID + "] has not matched the criteria, skipped");
                                 }
                             }
+                            
+                            if (logger.isTraceEnabled()) {
+                                logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
+                                    requestID, envelope.getDeliveryTag(), consumerTag
+                                }));
+                            }
+
+                            if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
+                        } else {
+                            if (logger.isInfoEnabled()) {
+                                logger.info(MessageFormat.format("Request[{0}]/AppId:{1} - but received AppId:{2}, rejected", new Object[] {
+                                    requestID, applicationId, properties.getAppId()
+                                }));
+                            }
+                            if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
                         }
                     } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
                         if (logger.isErrorEnabled()) {
                             logger.error(MessageFormat.format("Request[{0}]/DeliveryTag[{1}]/ConsumerTag[{2}] has been failed. " +
-                                    "Exception.Class: {3} / message: {4}", new Object[] {
+                                    "Exception.Class: {3} / message: {4}. Service still alive", new Object[] {
                                 requestID, envelope.getDeliveryTag(), consumerTag, ex.getClass().getName(), ex.getMessage()
                             }));
                         }
-                        if (logger.isInfoEnabled()) {
-                            logger.info("Request[" + requestID + "] has been failed. Request is rejected, service still alive");
+                        if (_autoAck) {
+                            if (logger.isInfoEnabled()) {
+                                logger.info("Request[" + requestID + "] has been failed. AutoAck => request is rejected");
+                            }
+                        } else {
+                            _channel.basicNack(envelope.getDeliveryTag(), false, true);
+                            if (logger.isInfoEnabled()) {
+                                logger.info("Request[" + requestID + "] has been failed. No AutoAck => request is requeued");
+                            }
                         }
                     }
-                    
-                    if (logger.isTraceEnabled()) {
-                        logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
-                            requestID, envelope.getDeliveryTag(), consumerTag
-                        }));
-                    }
-                    
-                    if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
                 }
                 
                 @Override

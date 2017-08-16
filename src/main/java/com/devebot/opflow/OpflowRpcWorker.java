@@ -73,14 +73,14 @@ public class OpflowRpcWorker {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
+                OpflowMessage request = new OpflowMessage(content, properties.getHeaders());
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, workerTag, queueName);
                 String routineId = OpflowUtil.getRoutineId(properties.getHeaders(), false);
                 int count = 0;
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
                         count++;
-                        Boolean nextAction = middleware.getListener()
-                                .processMessage(new OpflowMessage(content, properties.getHeaders()), response);
+                        Boolean nextAction = middleware.getListener().processMessage(request, response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
