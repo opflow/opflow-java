@@ -1,11 +1,13 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowOperationException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +21,8 @@ public class OpflowPubsubHandler {
 
     private final OpflowBroker broker;
     private final String subscriberName;
+    private final String recyclebinName;
+    private int redeliveredLimit = 0;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowConstructorException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
@@ -32,7 +36,22 @@ public class OpflowPubsubHandler {
         }
         brokerParams.put("applicationId", params.get("applicationId"));
         broker = new OpflowBroker(brokerParams);
+        
         subscriberName = (String) params.get("subscriberName");
+        if (subscriberName == null) {
+            throw new OpflowConstructorException("subscriberName must not be null");
+        } else {
+            checkQueue(subscriberName);
+        }
+        
+        recyclebinName = (String) params.get("recyclebinName");
+        if (recyclebinName != null) {
+            checkQueue(recyclebinName);
+            if (params.get("redeliveredLimit") instanceof Integer) {
+                redeliveredLimit = (Integer) params.get("redeliveredLimit");
+                if (redeliveredLimit < 0) redeliveredLimit = 0;
+            }
+        }
     }
 
     public void publish(String data) {
@@ -78,7 +97,29 @@ public class OpflowPubsubHandler {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
-                listener.processMessage(new OpflowMessage(content, properties.getHeaders()));
+                try {
+                    listener.processMessage(new OpflowMessage(content, properties.getHeaders()));
+                } catch (Exception exception) {
+                    Map<String, Object> headers = properties.getHeaders();
+                    
+                    int redeliveredCount = 0;
+                    if (headers.get("redeliveredCount") instanceof Integer) {
+                        redeliveredCount = (Integer) headers.get("redeliveredCount");
+                    }
+                    redeliveredCount += 1;
+                    headers.put("redeliveredCount", redeliveredCount);
+                    
+                    AMQP.BasicProperties.Builder propBuilder = copyBasicProperties(properties);
+                    AMQP.BasicProperties props = propBuilder.headers(headers).build();
+                    
+                    if (redeliveredCount <= redeliveredLimit) {
+                        sendToQueue(content, props, subscriberName, channel);
+                    } else {
+                        if (recyclebinName != null) {
+                            sendToQueue(content, props, recyclebinName, channel);
+                        }
+                    }
+                }
                 return true;
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
@@ -105,5 +146,77 @@ public class OpflowPubsubHandler {
         public State(OpflowBroker.State superState) {
             super(superState);
         }
+    }
+    
+    public int countSubscriber() {
+        return countQueue(subscriberName);
+    }
+    
+    public void purgeSubscriber() {
+        purgeQueue(subscriberName);
+    }
+    
+    public int countRecyclebin() {
+        return countQueue(recyclebinName);
+    }
+    
+    public void purgeRecyclebin() {
+        purgeQueue(recyclebinName);
+    }
+    
+    private void checkQueue(final String queueName) throws OpflowConstructorException {
+        try {
+            broker.checkQueue(queueName);
+        } catch (IOException ioe) {
+            throw new OpflowConstructorException(ioe);
+        } catch (TimeoutException te) {
+            throw new OpflowConstructorException(te);
+        }
+    }
+    
+    private int countQueue(final String queueName) {
+        OpflowUtil.assertTestingEnv();
+        try {
+            return broker.checkQueue(queueName).getMessageCount();
+        } catch (Exception exception) {
+            throw new OpflowOperationException(exception);
+        }
+    }
+    
+    private void purgeQueue(final String queueName) {
+        OpflowUtil.assertTestingEnv();
+        try {
+            broker.purgeQueue(queueName);
+        } catch (Exception exception) {
+            throw new OpflowOperationException(exception);
+        }
+    }
+    
+    private void sendToQueue(byte[] data, AMQP.BasicProperties replyProps, String queueName, Channel channel) {
+        try {
+            channel.basicPublish("", queueName, replyProps, data);
+        } catch (IOException exception) {
+            throw new OpflowOperationException(exception);
+        }
+    }
+    
+    private AMQP.BasicProperties.Builder copyBasicProperties(AMQP.BasicProperties properties) {
+        AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder();
+        
+        if (properties.getAppId() != null) builder.appId(properties.getAppId());
+        if (properties.getClusterId() != null) builder.clusterId(properties.getClusterId());
+        if (properties.getContentEncoding() != null) builder.contentEncoding(properties.getContentEncoding());
+        if (properties.getContentType() != null) builder.contentType(properties.getContentType());
+        if (properties.getCorrelationId() != null) builder.correlationId(properties.getCorrelationId());
+        if (properties.getDeliveryMode() != null) builder.deliveryMode(properties.getDeliveryMode());
+        if (properties.getExpiration() != null) builder.expiration(properties.getExpiration());
+        if (properties.getMessageId() != null) builder.messageId(properties.getMessageId());
+        if (properties.getPriority() != null) builder.priority(properties.getPriority());
+        if (properties.getReplyTo() != null) builder.replyTo(properties.getReplyTo());
+        if (properties.getTimestamp() != null) builder.timestamp(properties.getTimestamp());
+        if (properties.getType() != null) builder.type(properties.getType());
+        if (properties.getUserId() != null) builder.userId(properties.getUserId());
+        
+        return builder;
     }
 }
