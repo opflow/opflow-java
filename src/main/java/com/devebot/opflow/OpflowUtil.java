@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.exception.OpflowRestrictedTestingException;
 
 /**
  *
@@ -228,5 +229,13 @@ public class OpflowUtil {
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw done");
         if (!includeProgress) steps = null;
         return new OpflowRpcResult(routineId, requestId, workerTag, steps, error, value);
+    }
+    
+    public static boolean isTestingEnv() {
+        return "test".equals(System.getProperty("opflow.mode"));
+    }
+    
+    public static void assertTestingEnv() {
+        if (!OpflowUtil.isTestingEnv()) throw new OpflowRestrictedTestingException();
     }
 }

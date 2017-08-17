@@ -6,6 +6,7 @@ import com.devebot.opflow.OpflowPubsubHandler;
 import com.devebot.opflow.OpflowPubsubListener;
 import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowOperationException;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.HashMap;
@@ -34,14 +35,23 @@ public class OpflowPubsubSteps {
     
     private final Lock lock = new ReentrantLock();
     private final Condition done = lock.newCondition();
+    private boolean running = true;
     
     private final Map<String, OpflowPubsubHandler> pubsubs =  new HashMap<String, OpflowPubsubHandler>();
-    private final Map<String, Integer> messageTotal =  new HashMap<String, Integer>();
+    private final Map<String, Integer> messageTotal = new HashMap<String, Integer>();
     private final Map<String, Integer> counter =  new ConcurrentHashMap<String, Integer>();
+    private final Integer[] rejected = new Integer[] { 15, 25, 35, 55, 95 };
     
     @Given("a PubsubHandler named '$pubsubName'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName) throws OpflowConstructorException {
         pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler());
+        counter.put(pubsubName, 0);
+    }
+    
+    @Given("a PubsubHandler named '$pubsubName' with properties file: '$propFile'")
+    public void createPubsubHandler(@Named("pubsubName") final String pubsubName, 
+            @Named("propFile") final String propFile) throws OpflowConstructorException {
+        pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler(propFile));
         counter.put(pubsubName, 0);
     }
     
@@ -53,29 +63,46 @@ public class OpflowPubsubSteps {
             listener = new OpflowPubsubListener() {
                 @Override
                 public void processMessage(OpflowMessage message) throws IOException {
-                    try {
-                        String msg = message.getContentAsString();
-                        if (LOG.isTraceEnabled()) LOG.trace("[+] EchoJsonObject received: '" + msg + "'");
-                        counter.put(pubsubName, counter.get(pubsubName) + 1);
-                        if (counter.get(pubsubName) >= messageTotal.get(pubsubName)) {
-                            lock.lock();
-                            try {
-                                done.signal();
-                            } finally {
-                                lock.unlock();
-                            }
+                    String msg = message.getContentAsString();
+                    if (LOG.isTraceEnabled()) LOG.trace("[+] EchoJsonObject received: '" + msg + "'");
+                    counter.put(pubsubName, counter.get(pubsubName) + 1);
+                    if (counter.get(pubsubName) >= messageTotal.get(pubsubName)) {
+                        lock.lock();
+                        try {
+                            running = false;
+                            done.signal();
+                        } finally {
+                            lock.unlock();
                         }
-                    } catch (final Exception ex) {
-                        String errmsg = OpflowUtil.buildJson(new OpflowUtil.MapListener() {
-                            @Override
-                            public void transform(Map<String, Object> opts) {
-                                opts.put("exceptionClass", ex.getClass().getName());
-                                opts.put("exceptionMessage", ex.getMessage());
-                            }
-                        });
-                        if (LOG.isErrorEnabled()) LOG.error("[-] EchoJsonObject error message: " + errmsg);
                     }
-                    
+                }
+            };
+        }
+        
+        if ("EchoRandomError".equals(names)) {
+            listener = new OpflowPubsubListener() {
+                @Override
+                public void processMessage(OpflowMessage message) throws IOException {
+                    counter.put(pubsubName, counter.get(pubsubName) + 1);
+                    String msg = message.getContentAsString();
+                    int current = counter.get(pubsubName);
+                    int total = messageTotal.get(pubsubName);
+                    if (LOG.isTraceEnabled()) LOG.trace("[+] EchoRandomError received: '" + msg + "'/" + current);
+                    if (current >= (total + 3 * rejected.length)) {
+                        lock.lock();
+                        try {
+                            running = false;
+                            done.signal();
+                        } finally {
+                            lock.unlock();
+                        }
+                        return;
+                    }
+                    Map<String, Object> msgObj = OpflowUtil.jsonStringToMap(msg);
+                    Integer number = ((Double) msgObj.get("number")).intValue();
+                    if (OpflowUtil.arrayContains(rejected, number)) {
+                        throw new OpflowOperationException("Invalid number: " + number);
+                    }
                 }
             };
         }
@@ -87,6 +114,7 @@ public class OpflowPubsubSteps {
     public void totalReceivedMessages(@Named("total") final int total, 
             @Named("pubsubName") final String pubsubName) {
         messageTotal.put(pubsubName, total);
+        running = true;
         for(int i = 0; i < total; i++) {
             final int number = i;
             pubsubs.get(pubsubName).publish(OpflowUtil.buildJson(new OpflowUtil.MapListener() {
@@ -98,12 +126,34 @@ public class OpflowPubsubSteps {
         }
     }
     
+    @When("I purge subscriber in PubsubHandler named '$pubsubName'")
+    public void purgeSubscriber(@Named("pubsubName") final String pubsubName) {
+        pubsubs.get(pubsubName).purgeSubscriber();
+    }
+    
+    @Then("subscriber in PubsubHandler named '$pubsubName' has '$total' messages")
+    public void countSubscriber(@Named("pubsubName") final String pubsubName, 
+            @Named("total") final int total) {
+        assertThat(pubsubs.get(pubsubName).countSubscriber(), equalTo(total));
+    }
+    
+    @When("I purge recyclebin in PubsubHandler named '$pubsubName'")
+    public void purgeRecyclebin(@Named("pubsubName") final String pubsubName) {
+        pubsubs.get(pubsubName).purgeRecyclebin();
+    }
+    
+    @Then("recyclebin in PubsubHandler named '$pubsubName' has '$total' messages")
+    public void countRecyclebin(@Named("pubsubName") final String pubsubName, 
+            @Named("total") final int total) {
+        assertThat(pubsubs.get(pubsubName).countRecyclebin(), equalTo(total));
+    }
+    
     @Then("PubsubHandler named '$pubsubName' receives '$total' messages")
     public void totalReceivedMessages(@Named("pubsubName") final String pubsubName, 
             @Named("total") final int total) {
         lock.lock();
         try {
-            done.await();
+            while (running) done.await();
             assertThat(counter.get(pubsubName), equalTo(total));
         } catch(InterruptedException ie) {
         } finally {
