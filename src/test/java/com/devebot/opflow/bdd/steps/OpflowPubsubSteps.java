@@ -4,6 +4,7 @@ import com.devebot.opflow.OpflowHelper;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowPubsubHandler;
 import com.devebot.opflow.OpflowPubsubListener;
+import com.devebot.opflow.OpflowTask;
 import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowConstructorException;
 import com.devebot.opflow.exception.OpflowOperationException;
@@ -12,10 +13,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -33,26 +30,21 @@ import org.slf4j.LoggerFactory;
 public class OpflowPubsubSteps {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubSteps.class);
     
-    private final Lock lock = new ReentrantLock();
-    private final Condition done = lock.newCondition();
-    private boolean running = true;
-    
     private final Map<String, OpflowPubsubHandler> pubsubs =  new HashMap<String, OpflowPubsubHandler>();
-    private final Map<String, Integer> messageTotal = new HashMap<String, Integer>();
-    private final Map<String, Integer> counter =  new ConcurrentHashMap<String, Integer>();
+    private final Map<String, OpflowTask.Countdown> countdowns =  new HashMap<String, OpflowTask.Countdown>();
     private final Integer[] rejected = new Integer[] { 15, 25, 35, 55, 95 };
     
     @Given("a PubsubHandler named '$pubsubName'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName) throws OpflowConstructorException {
         pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler());
-        counter.put(pubsubName, 0);
+        countdowns.put(pubsubName, new OpflowTask.Countdown());
     }
     
     @Given("a PubsubHandler named '$pubsubName' with properties file: '$propFile'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName, 
             @Named("propFile") final String propFile) throws OpflowConstructorException {
         pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler(propFile));
-        counter.put(pubsubName, 0);
+        countdowns.put(pubsubName, new OpflowTask.Countdown());
     }
     
     @Given("a subscriber named '$names' in PubsubHandler named '$pubsubName'")
@@ -65,16 +57,7 @@ public class OpflowPubsubSteps {
                 public void processMessage(OpflowMessage message) throws IOException {
                     String msg = message.getContentAsString();
                     if (LOG.isTraceEnabled()) LOG.trace("[+] EchoJsonObject received: '" + msg + "'");
-                    counter.put(pubsubName, counter.get(pubsubName) + 1);
-                    if (counter.get(pubsubName) >= messageTotal.get(pubsubName)) {
-                        lock.lock();
-                        try {
-                            running = false;
-                            done.signal();
-                        } finally {
-                            lock.unlock();
-                        }
-                    }
+                    countdowns.get(pubsubName).check();
                 }
             };
         }
@@ -83,11 +66,9 @@ public class OpflowPubsubSteps {
             listener = new OpflowPubsubListener() {
                 @Override
                 public void processMessage(OpflowMessage message) throws IOException {
-                    counter.put(pubsubName, counter.get(pubsubName) + 1);
                     String msg = message.getContentAsString();
-                    int current = counter.get(pubsubName);
-                    int total = messageTotal.get(pubsubName);
-                    if (LOG.isTraceEnabled()) LOG.trace("[+] EchoRandomError received: '" + msg + "'/" + current);
+                    if (LOG.isTraceEnabled()) LOG.trace("[+] EchoRandomError received: '" + msg + "'" +
+                            " #" + countdowns.get(pubsubName).getCount());
                     Map<String, Object> msgObj = OpflowUtil.jsonStringToMap(msg);
                     Integer number = ((Double) msgObj.get("number")).intValue();
                     try {
@@ -95,15 +76,7 @@ public class OpflowPubsubSteps {
                             throw new OpflowOperationException("Invalid number: " + number);
                         }
                     } finally {
-                        if (current >= (total + 3 * rejected.length)) {
-                            lock.lock();
-                            try {
-                                running = false;
-                                done.signal();
-                            } finally {
-                                lock.unlock();
-                            }
-                        }
+                        countdowns.get(pubsubName).check();
                     }
                 }
             };
@@ -112,11 +85,15 @@ public class OpflowPubsubSteps {
         if (listener != null) pubsubs.get(pubsubName).subscribe(listener);
     }
     
-    @When("I publish '$total' random messages to PubsubHandler named '$pubsubName'")
-    public void totalReceivedMessages(@Named("total") final int total, 
+    @When("I publish '$total' random messages to subscriber '$names' on PubsubHandler named '$pubsubName'")
+    public void totalReceivedMessages(@Named("names") final String names, @Named("total") final int total, 
             @Named("pubsubName") final String pubsubName) {
-        messageTotal.put(pubsubName, total);
-        running = true;
+        if ("EchoJsonObject".equals(names)) {
+            countdowns.get(pubsubName).reset(total);
+        }
+        if ("EchoRandomError".equals(names)) {
+            countdowns.get(pubsubName).reset(total + 3 * rejected.length);
+        }
         for(int i = 0; i < total; i++) {
             final int number = i;
             pubsubs.get(pubsubName).publish(OpflowUtil.buildJson(new OpflowUtil.MapListener() {
@@ -130,19 +107,13 @@ public class OpflowPubsubSteps {
     
     @When("waiting for subscriber of PubsubHandler($pubsubName) finish")
     public void waitSubscriberFinish(@Named("pubsubName") final String pubsubName) {
-        lock.lock();
-        try {
-            while (running) done.await();
-        } catch(InterruptedException ie) {
-        } finally {
-            lock.unlock();
-        }
+        countdowns.get(pubsubName).bingo();
     }
     
     @Then("PubsubHandler named '$pubsubName' receives '$total' messages")
     public void totalReceivedMessages(@Named("pubsubName") final String pubsubName, 
             @Named("total") final int total) {
-        assertThat(counter.get(pubsubName), equalTo(total));
+        assertThat(countdowns.get(pubsubName).getCount(), equalTo(total));
     }
     
     @When("I purge subscriber in PubsubHandler named '$pubsubName'")

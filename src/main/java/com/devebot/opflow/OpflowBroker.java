@@ -347,35 +347,9 @@ public class OpflowBroker {
         try {
             if (listener != null) output = (T) listener.handleEvent(_channel);
         } finally {
-            _channel.close();
+            if (_channel != null && _channel.isOpen()) _channel.close();
         }
         return output;
-    }
-    
-    public AMQP.Queue.DeclareOk checkQueue(final String queueName) throws IOException, TimeoutException {
-        if (queueName == null) return null;
-        return acquireChannel(new Operator() {
-            @Override
-            public AMQP.Queue.DeclareOk handleEvent(Channel _channel) throws IOException {
-                AMQP.Queue.DeclareOk _declareOk;
-                try {
-                    _declareOk = _channel.queueDeclarePassive(queueName);
-                } catch (IOException e1) {
-                    _declareOk = _channel.queueDeclare(queueName, true, false, false, null);
-                }
-                return _declareOk;
-            }
-        });
-    }
-    
-    public AMQP.Queue.PurgeOk purgeQueue(final String queueName) throws IOException, TimeoutException {
-        if (queueName == null) return null;
-        return acquireChannel(new Operator() {
-            @Override
-            public AMQP.Queue.PurgeOk handleEvent(Channel _channel) throws IOException {
-                return _channel.queuePurge(queueName);
-            }
-        });
     }
     
     public void cancelConsumer(OpflowBroker.ConsumerInfo consumerInfo) {
