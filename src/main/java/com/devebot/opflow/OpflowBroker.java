@@ -214,7 +214,7 @@ public class OpflowBroker {
                     }
 
                     if (logger.isTraceEnabled()) {
-                        if (body.length <= 4*1024) {
+                        if (body.length <= 4096) {
                             logger.trace("Request[" + requestID + "] - Message: " + new String(body, "UTF-8"));
                         } else {
                             logger.trace("Request[" + requestID + "] - Message size too large (>4KB): " + body.length);
@@ -222,13 +222,7 @@ public class OpflowBroker {
                     }
                     
                     try {
-                        if (applicationId != null && !applicationId.equals(properties.getAppId())) {
-                            if (logger.isInfoEnabled()) {
-                                logger.info(MessageFormat.format("Request[{0}]/AppId:{1} - but received AppId:{2}, rejected", new Object[] {
-                                    requestID, applicationId, properties.getAppId()
-                                }));
-                            }
-                        } else {
+                        if (applicationId == null || applicationId.equals(properties.getAppId())) {
                             if (logger.isTraceEnabled()) {
                                 logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
                                     requestID
@@ -246,27 +240,41 @@ public class OpflowBroker {
                                     logger.info("Request[" + requestID + "] has not matched the criteria, skipped");
                                 }
                             }
+                            
+                            if (logger.isTraceEnabled()) {
+                                logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
+                                    requestID, envelope.getDeliveryTag(), consumerTag
+                                }));
+                            }
+
+                            if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
+                        } else {
+                            if (logger.isInfoEnabled()) {
+                                logger.info(MessageFormat.format("Request[{0}]/AppId:{1} - but received AppId:{2}, rejected", new Object[] {
+                                    requestID, applicationId, properties.getAppId()
+                                }));
+                            }
+                            if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
                         }
                     } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
                         if (logger.isErrorEnabled()) {
                             logger.error(MessageFormat.format("Request[{0}]/DeliveryTag[{1}]/ConsumerTag[{2}] has been failed. " +
-                                    "Exception.Class: {3} / message: {4}", new Object[] {
+                                    "Exception.Class: {3} / message: {4}. Service still alive", new Object[] {
                                 requestID, envelope.getDeliveryTag(), consumerTag, ex.getClass().getName(), ex.getMessage()
                             }));
                         }
-                        if (logger.isInfoEnabled()) {
-                            logger.info("Request[" + requestID + "] has been failed. Request is rejected, service still alive");
+                        if (_autoAck) {
+                            if (logger.isInfoEnabled()) {
+                                logger.info("Request[" + requestID + "] has been failed. AutoAck => request is rejected");
+                            }
+                        } else {
+                            _channel.basicNack(envelope.getDeliveryTag(), false, true);
+                            if (logger.isInfoEnabled()) {
+                                logger.info("Request[" + requestID + "] has been failed. No AutoAck => request is requeued");
+                            }
                         }
                     }
-                    
-                    if (logger.isTraceEnabled()) {
-                        logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
-                            requestID, envelope.getDeliveryTag(), consumerTag
-                        }));
-                    }
-                    
-                    if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
                 }
                 
                 @Override
@@ -284,6 +292,12 @@ public class OpflowBroker {
                             if (logger.isErrorEnabled()) {
                                 logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, TimeoutException: {1}", new Object[] {
                                     consumerTag, ex.getMessage()
+                                }));
+                            }
+                        } catch (ShutdownSignalException sig) {
+                            if (logger.isErrorEnabled()) {
+                                logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, ShutdownSignalException: {1}", new Object[] {
+                                    consumerTag, sig.getMessage()
                                 }));
                             }
                         }
@@ -321,6 +335,47 @@ public class OpflowBroker {
             if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
         }
+    }
+    
+    public interface Operator {
+        public Object handleEvent(Channel channel) throws IOException;
+    }
+    
+    public <T> T acquireChannel(Operator listener) throws IOException, TimeoutException {
+        T output = null;
+        Channel _channel = connection.createChannel();
+        try {
+            if (listener != null) output = (T) listener.handleEvent(_channel);
+        } finally {
+            _channel.close();
+        }
+        return output;
+    }
+    
+    public AMQP.Queue.DeclareOk checkQueue(final String queueName) throws IOException, TimeoutException {
+        if (queueName == null) return null;
+        return acquireChannel(new Operator() {
+            @Override
+            public AMQP.Queue.DeclareOk handleEvent(Channel _channel) throws IOException {
+                AMQP.Queue.DeclareOk _declareOk;
+                try {
+                    _declareOk = _channel.queueDeclarePassive(queueName);
+                } catch (IOException e1) {
+                    _declareOk = _channel.queueDeclare(queueName, true, false, false, null);
+                }
+                return _declareOk;
+            }
+        });
+    }
+    
+    public AMQP.Queue.PurgeOk purgeQueue(final String queueName) throws IOException, TimeoutException {
+        if (queueName == null) return null;
+        return acquireChannel(new Operator() {
+            @Override
+            public AMQP.Queue.PurgeOk handleEvent(Channel _channel) throws IOException {
+                return _channel.queuePurge(queueName);
+            }
+        });
     }
     
     public void cancelConsumer(OpflowBroker.ConsumerInfo consumerInfo) {

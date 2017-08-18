@@ -28,6 +28,8 @@ public class OpflowRpcMaster {
     private final Condition idle = lock.newCondition();
     
     private final OpflowBroker broker;
+    private final OpflowExecutor executor;
+    
     private final String responseName;
     
     private final boolean monitorEnabled;
@@ -44,8 +46,13 @@ public class OpflowRpcMaster {
         brokerParams.put("routingKey", params.get("routingKey"));
         brokerParams.put("applicationId", params.get("applicationId"));
         broker = new OpflowBroker(brokerParams);
+        executor = new OpflowExecutor(broker);
+        
         responseName = (String) params.get("responseName");
-
+        if (responseName != null) {
+            executor.assertQueue(responseName);
+        }
+        
         if (params.get("monitorEnabled") != null && params.get("monitorEnabled") instanceof Boolean) {
             monitorEnabled = (Boolean) params.get("monitorEnabled");
         } else {
@@ -224,5 +231,13 @@ public class OpflowRpcMaster {
             lock.unlock();
             if (logger.isTraceEnabled()) logger.trace("close() - lock has been released");
         }
+    }
+    
+    public OpflowExecutor getExecutor() {
+        return executor;
+    }
+    
+    public String getResponseName() {
+        return responseName;
     }
 }

@@ -173,6 +173,15 @@ public class OpflowHelper {
             params.put("subscriberName", props.getProperty("opflow.queueName"));
         }
         
+        params.put("recyclebinName", props.getProperty("opflow.pubsub.recyclebinName"));
+        
+        String redeliveredLimit = props.getProperty("opflow.pubsub.redeliveredLimit");
+        try {
+            params.put("redeliveredLimit", Integer.parseInt(redeliveredLimit));
+        } catch (NumberFormatException nfe) {
+            if (LOG.isErrorEnabled()) LOG.error("createPubsubHandler() - redeliveredLimit is not a number");
+        }
+        
         if (LOG.isTraceEnabled()) LOG.trace("OpflowPubsubHandler has been created successfully");
         
         return new OpflowPubsubHandler(params);
