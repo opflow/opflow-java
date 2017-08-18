@@ -7,7 +7,6 @@ import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +19,7 @@ public class OpflowPubsubHandler {
     final Logger logger = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
     private final OpflowBroker broker;
+    private final OpflowExecutor executor;
     private final String subscriberName;
     private final String recyclebinName;
     private int redeliveredLimit = 0;
@@ -36,17 +36,18 @@ public class OpflowPubsubHandler {
         }
         brokerParams.put("applicationId", params.get("applicationId"));
         broker = new OpflowBroker(brokerParams);
+        executor = new OpflowExecutor(broker);
         
         subscriberName = (String) params.get("subscriberName");
         if (subscriberName == null) {
             throw new OpflowConstructorException("subscriberName must not be null");
         } else {
-            checkQueue(subscriberName);
+            executor.assertQueue(subscriberName);
         }
         
         recyclebinName = (String) params.get("recyclebinName");
         if (recyclebinName != null) {
-            checkQueue(recyclebinName);
+            executor.assertQueue(recyclebinName);
             if (params.get("redeliveredLimit") instanceof Integer) {
                 redeliveredLimit = (Integer) params.get("redeliveredLimit");
                 if (redeliveredLimit < 0) redeliveredLimit = 0;
@@ -147,49 +148,17 @@ public class OpflowPubsubHandler {
             super(superState);
         }
     }
-    
-    public int countSubscriber() {
-        return countQueue(subscriberName);
+
+    public OpflowExecutor getExecutor() {
+        return executor;
     }
-    
-    public void purgeSubscriber() {
-        purgeQueue(subscriberName);
+
+    public String getSubscriberName() {
+        return subscriberName;
     }
-    
-    public int countRecyclebin() {
-        return countQueue(recyclebinName);
-    }
-    
-    public void purgeRecyclebin() {
-        purgeQueue(recyclebinName);
-    }
-    
-    private void checkQueue(final String queueName) throws OpflowConstructorException {
-        try {
-            broker.checkQueue(queueName);
-        } catch (IOException ioe) {
-            throw new OpflowConstructorException(ioe);
-        } catch (TimeoutException te) {
-            throw new OpflowConstructorException(te);
-        }
-    }
-    
-    private int countQueue(final String queueName) {
-        OpflowUtil.assertTestingEnv();
-        try {
-            return broker.checkQueue(queueName).getMessageCount();
-        } catch (Exception exception) {
-            throw new OpflowOperationException(exception);
-        }
-    }
-    
-    private void purgeQueue(final String queueName) {
-        OpflowUtil.assertTestingEnv();
-        try {
-            broker.purgeQueue(queueName);
-        } catch (Exception exception) {
-            throw new OpflowOperationException(exception);
-        }
+
+    public String getRecyclebinName() {
+        return recyclebinName;
     }
     
     private void sendToQueue(byte[] data, AMQP.BasicProperties replyProps, String queueName, Channel channel) {

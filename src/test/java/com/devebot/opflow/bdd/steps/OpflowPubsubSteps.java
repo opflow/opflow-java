@@ -88,20 +88,22 @@ public class OpflowPubsubSteps {
                     int current = counter.get(pubsubName);
                     int total = messageTotal.get(pubsubName);
                     if (LOG.isTraceEnabled()) LOG.trace("[+] EchoRandomError received: '" + msg + "'/" + current);
-                    if (current >= (total + 3 * rejected.length)) {
-                        lock.lock();
-                        try {
-                            running = false;
-                            done.signal();
-                        } finally {
-                            lock.unlock();
-                        }
-                        return;
-                    }
                     Map<String, Object> msgObj = OpflowUtil.jsonStringToMap(msg);
                     Integer number = ((Double) msgObj.get("number")).intValue();
-                    if (OpflowUtil.arrayContains(rejected, number)) {
-                        throw new OpflowOperationException("Invalid number: " + number);
+                    try {
+                        if (OpflowUtil.arrayContains(rejected, number)) {
+                            throw new OpflowOperationException("Invalid number: " + number);
+                        }
+                    } finally {
+                        if (current >= (total + 3 * rejected.length)) {
+                            lock.lock();
+                            try {
+                                running = false;
+                                done.signal();
+                            } finally {
+                                lock.unlock();
+                            }
+                        }
                     }
                 }
             };
@@ -126,39 +128,47 @@ public class OpflowPubsubSteps {
         }
     }
     
-    @When("I purge subscriber in PubsubHandler named '$pubsubName'")
-    public void purgeSubscriber(@Named("pubsubName") final String pubsubName) {
-        pubsubs.get(pubsubName).purgeSubscriber();
-    }
-    
-    @Then("subscriber in PubsubHandler named '$pubsubName' has '$total' messages")
-    public void countSubscriber(@Named("pubsubName") final String pubsubName, 
-            @Named("total") final int total) {
-        assertThat(pubsubs.get(pubsubName).countSubscriber(), equalTo(total));
-    }
-    
-    @When("I purge recyclebin in PubsubHandler named '$pubsubName'")
-    public void purgeRecyclebin(@Named("pubsubName") final String pubsubName) {
-        pubsubs.get(pubsubName).purgeRecyclebin();
-    }
-    
-    @Then("recyclebin in PubsubHandler named '$pubsubName' has '$total' messages")
-    public void countRecyclebin(@Named("pubsubName") final String pubsubName, 
-            @Named("total") final int total) {
-        assertThat(pubsubs.get(pubsubName).countRecyclebin(), equalTo(total));
+    @When("waiting for subscriber of PubsubHandler($pubsubName) finish")
+    public void waitSubscriberFinish(@Named("pubsubName") final String pubsubName) {
+        lock.lock();
+        try {
+            while (running) done.await();
+        } catch(InterruptedException ie) {
+        } finally {
+            lock.unlock();
+        }
     }
     
     @Then("PubsubHandler named '$pubsubName' receives '$total' messages")
     public void totalReceivedMessages(@Named("pubsubName") final String pubsubName, 
             @Named("total") final int total) {
-        lock.lock();
-        try {
-            while (running) done.await();
-            assertThat(counter.get(pubsubName), equalTo(total));
-        } catch(InterruptedException ie) {
-        } finally {
-            lock.unlock();
-        }
+        assertThat(counter.get(pubsubName), equalTo(total));
+    }
+    
+    @When("I purge subscriber in PubsubHandler named '$pubsubName'")
+    public void purgeSubscriber(@Named("pubsubName") final String pubsubName) {
+        OpflowPubsubHandler pubsub = pubsubs.get(pubsubName);
+        pubsub.getExecutor().purgeQueue(pubsub.getSubscriberName());
+    }
+    
+    @Then("subscriber in PubsubHandler named '$pubsubName' has '$total' messages")
+    public void countSubscriber(@Named("pubsubName") final String pubsubName, 
+            @Named("total") final int total) {
+        OpflowPubsubHandler pubsub = pubsubs.get(pubsubName);
+        assertThat(pubsub.getExecutor().countQueue(pubsub.getSubscriberName()), equalTo(total));
+    }
+    
+    @When("I purge recyclebin in PubsubHandler named '$pubsubName'")
+    public void purgeRecyclebin(@Named("pubsubName") final String pubsubName) {
+        OpflowPubsubHandler pubsub = pubsubs.get(pubsubName);
+        pubsub.getExecutor().purgeQueue(pubsub.getRecyclebinName());
+    }
+    
+    @Then("recyclebin in PubsubHandler named '$pubsubName' has '$total' messages")
+    public void countRecyclebin(@Named("pubsubName") final String pubsubName, 
+            @Named("total") final int total) {
+        OpflowPubsubHandler pubsub = pubsubs.get(pubsubName);
+        assertThat(pubsub.getExecutor().countQueue(pubsub.getRecyclebinName()), equalTo(total));
     }
     
     @When("I close PubsubHandler named '$pubsubName'")

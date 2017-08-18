@@ -168,6 +168,19 @@ public class OpflowRpcMasterSteps {
         assertThat(getRoutineState(routineId).getPublishedTotal(), equalTo(publishedTotal));
     }
     
+    @When("I purge responseQueue in RpcMaster named '$masterName'")
+    public void purgeOperatorQueue(@Named("masterName") final String masterName) {
+        OpflowRpcMaster master = masters.get(masterName);
+        master.getExecutor().purgeQueue(master.getResponseName());
+    }
+    
+    @Then("responseQueue in RpcMaster named '$masterName' has '$total' messages")
+    public void countOperatorQueue(@Named("masterName") final String masterName, 
+            @Named("total") final int total) {
+        OpflowRpcMaster master = masters.get(masterName);
+        assertThat(master.getExecutor().countQueue(master.getResponseName()), equalTo(total));
+    }
+    
     private class RoutineState {
         private long publishedTotal = 0;
         private long responseTotal = 0;

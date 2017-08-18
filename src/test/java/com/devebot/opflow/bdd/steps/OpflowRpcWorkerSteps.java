@@ -174,6 +174,19 @@ public class OpflowRpcWorkerSteps {
         assertThat(fibonacciState.getFailedTotal(), equalTo(failedTotal));
     }
     
+    @When("I purge operatorQueue in RpcWorker named '$workerName'")
+    public void purgeOperatorQueue(@Named("workerName") final String workerName) {
+        OpflowRpcWorker worker = workers.get(workerName);
+        worker.getExecutor().purgeQueue(worker.getOperatorName());
+    }
+    
+    @Then("operatorQueue in RpcWorker named '$workerName' has '$total' messages")
+    public void countOperatorQueue(@Named("workerName") final String workerName, 
+            @Named("total") final int total) {
+        OpflowRpcWorker worker = workers.get(workerName);
+        assertThat(worker.getExecutor().countQueue(worker.getOperatorName()), equalTo(total));
+    }
+    
     private static String[] splitString(String str) {
         return (str == null) ? null : str.split(",");
     }

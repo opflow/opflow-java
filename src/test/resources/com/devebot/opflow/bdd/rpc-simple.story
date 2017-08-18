@@ -2,8 +2,12 @@ Scenario: Execute single RPC request
 
 Given a RPC master<demo1> with properties file: 'opflow.properties'
 Then the RPC master<demo1> connection is 'opened'
+When I purge responseQueue in RpcMaster named 'demo1'
+Then responseQueue in RpcMaster named 'demo1' has '0' messages
 Given a RPC worker<demo1>
 Then the RPC worker<demo1> connection is 'opened'
+When I purge operatorQueue in RpcWorker named 'demo1'
+Then operatorQueue in RpcWorker named 'demo1' has '0' messages
 Given a counter consumer in worker<demo1>
 And a FibonacciGenerator consumer with names 'fibonacci,fib' in worker<demo1>
 When I make a request<fib20> to routine<fibonacci> in master<demo1> with input number: 20

@@ -20,6 +20,7 @@ public class OpflowRpcWorker {
     final Logger logger = LoggerFactory.getLogger(OpflowRpcWorker.class);
 
     private final OpflowBroker broker;
+    private final OpflowExecutor executor;
     private final String operatorName;
     private final String responseName;
     
@@ -32,11 +33,19 @@ public class OpflowRpcWorker {
         brokerParams.put("routingKey", params.get("routingKey"));
         brokerParams.put("applicationId", params.get("applicationId"));
         broker = new OpflowBroker(brokerParams);
+        executor = new OpflowExecutor(broker);
+        
         operatorName = (String) params.get("operatorName");
         if (operatorName == null) {
             throw new OpflowConstructorException("operatorName must not be null");
+        } else {
+            executor.assertQueue(operatorName);
         }
+        
         responseName = (String) params.get("responseName");
+        if (responseName != null) {
+            executor.assertQueue(responseName);
+        }
     }
 
     private OpflowBroker.ConsumerInfo consumerInfo;
@@ -112,6 +121,18 @@ public class OpflowRpcWorker {
             broker.cancelConsumer(consumerInfo);
             broker.close();
         }
+    }
+
+    public OpflowExecutor getExecutor() {
+        return executor;
+    }
+
+    public String getOperatorName() {
+        return operatorName;
+    }
+
+    public String getResponseName() {
+        return responseName;
     }
     
     public class Middleware {
