@@ -18,7 +18,7 @@ public class OpflowPubsubHandler {
     
     final Logger logger = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
-    private final OpflowBroker broker;
+    private final OpflowEngine engine;
     private final OpflowExecutor executor;
     private final String subscriberName;
     private final String recyclebinName;
@@ -35,8 +35,8 @@ public class OpflowPubsubHandler {
             brokerParams.put("otherKeys", OpflowUtil.splitByComma((String)params.get("otherKeys")));
         }
         brokerParams.put("applicationId", params.get("applicationId"));
-        broker = new OpflowBroker(brokerParams);
-        executor = new OpflowExecutor(broker);
+        engine = new OpflowEngine(brokerParams);
+        executor = new OpflowExecutor(engine);
         
         subscriberName = (String) params.get("subscriberName");
         if (subscriberName == null) {
@@ -90,11 +90,11 @@ public class OpflowPubsubHandler {
         if (routingKey != null) {
             override.put("routingKey", routingKey);
         }
-        broker.produce(data, propBuilder, override);
+        engine.produce(data, propBuilder, override);
     }
     
-    public OpflowBroker.ConsumerInfo subscribe(final OpflowPubsubListener listener) {
-        return broker.consume(new OpflowListener() {
+    public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener listener) {
+        return engine.consume(new OpflowListener() {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
@@ -133,18 +133,18 @@ public class OpflowPubsubHandler {
     }
     
     public void close() {
-        if (broker != null) {
-            broker.close();
+        if (engine != null) {
+            engine.close();
         }
     }
     
     public State check() {
-        State state = new State(broker.check());
+        State state = new State(engine.check());
         return state;
     }
     
-    public class State extends OpflowBroker.State {
-        public State(OpflowBroker.State superState) {
+    public class State extends OpflowEngine.State {
+        public State(OpflowEngine.State superState) {
             super(superState);
         }
     }

@@ -37,4 +37,13 @@ public class OpflowPubsubHandlerTest {
         pars.put("routingKey", "tdd-opflow-rpc");
         OpflowPubsubHandler broker = new OpflowPubsubHandler(pars);
     }
+    
+//    @Test
+//    public void testConstructorAutoCreateQueues() throws OpflowConstructorException {
+//        Map<String, Object> pars = new HashMap<String, Object>();
+//        pars.put("uri", props.get("opflow.uri"));
+//        pars.put("exchangeName", "tdd-opflow-exchange");
+//        pars.put("routingKey", "tdd-opflow-rpc");
+//        OpflowPubsubHandler broker = new OpflowPubsubHandler(pars);
+//    }
 }

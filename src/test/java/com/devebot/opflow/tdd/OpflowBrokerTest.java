@@ -1,6 +1,6 @@
 package com.devebot.opflow.tdd;
 
-import com.devebot.opflow.OpflowBroker;
+import com.devebot.opflow.OpflowEngine;
 import com.devebot.opflow.OpflowHelper;
 import com.devebot.opflow.exception.OpflowConstructorException;
 import java.io.IOException;
@@ -34,7 +34,7 @@ public class OpflowBrokerTest {
         thrown.expectCause(CoreMatchers.is(IOException.class));
         thrown.expectMessage(CoreMatchers.is("connection refused, invalid connection parameters"));
         Map<String, Object> pars = new HashMap<String, Object>();
-        OpflowBroker broker = new OpflowBroker(pars);
+        OpflowEngine engine = new OpflowEngine(pars);
     }
     
     @Test
@@ -46,6 +46,6 @@ public class OpflowBrokerTest {
         pars.put("uri", props.get("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
         pars.put("exchangeType", "nothing");
-        OpflowBroker broker = new OpflowBroker(pars);
+        OpflowEngine engine = new OpflowEngine(pars);
     }
 }

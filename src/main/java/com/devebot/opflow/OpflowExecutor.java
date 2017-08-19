@@ -12,10 +12,10 @@ import java.util.concurrent.TimeoutException;
  * @author drupalex
  */
 public class OpflowExecutor {
-    private final OpflowBroker broker;
+    private final OpflowEngine engine;
     
-    public OpflowExecutor(OpflowBroker engine) {
-        this.broker = engine;
+    public OpflowExecutor(OpflowEngine engine) {
+        this.engine = engine;
     }
     
     public void assertQueue(final String queueName) throws OpflowConstructorException {
@@ -47,14 +47,14 @@ public class OpflowExecutor {
     private AMQP.Queue.DeclareOk declareQueue(final String queueName) throws IOException, TimeoutException {
         if (queueName == null) return null;
         try {
-            return broker.acquireChannel(new OpflowBroker.Operator() {
+            return engine.acquireChannel(new OpflowEngine.Operator() {
                 @Override
                 public AMQP.Queue.DeclareOk handleEvent(Channel _channel) throws IOException {
                     return _channel.queueDeclarePassive(queueName);
                 }
             });
         } catch (IOException e1) {
-            return broker.acquireChannel(new OpflowBroker.Operator() {
+            return engine.acquireChannel(new OpflowEngine.Operator() {
                 @Override
                 public AMQP.Queue.DeclareOk handleEvent(Channel _channel) throws IOException {
                     return _channel.queueDeclare(queueName, true, false, false, null);
@@ -66,7 +66,7 @@ public class OpflowExecutor {
     public AMQP.Queue.PurgeOk purgeQueue(final String queueName) {
         if (queueName == null) return null;
         try {
-            return broker.acquireChannel(new OpflowBroker.Operator() {
+            return engine.acquireChannel(new OpflowEngine.Operator() {
                 @Override
                 public AMQP.Queue.PurgeOk handleEvent(Channel _channel) throws IOException {
                     return _channel.queuePurge(queueName);
@@ -79,7 +79,7 @@ public class OpflowExecutor {
     
     public AMQP.Queue.DeleteOk deleteQueue(final String queueName) {
         try {
-            return broker.acquireChannel(new OpflowBroker.Operator() {
+            return engine.acquireChannel(new OpflowEngine.Operator() {
                 @Override
                 public Object handleEvent(Channel channel) throws IOException {
                     return channel.queueDelete(queueName, true, false);
