@@ -19,7 +19,7 @@ public class OpflowRpcWorker {
 
     final Logger logger = LoggerFactory.getLogger(OpflowRpcWorker.class);
 
-    private final OpflowBroker broker;
+    private final OpflowEngine engine;
     private final OpflowExecutor executor;
     private final String operatorName;
     private final String responseName;
@@ -32,8 +32,8 @@ public class OpflowRpcWorker {
         brokerParams.put("exchangeType", "direct");
         brokerParams.put("routingKey", params.get("routingKey"));
         brokerParams.put("applicationId", params.get("applicationId"));
-        broker = new OpflowBroker(brokerParams);
-        executor = new OpflowExecutor(broker);
+        engine = new OpflowEngine(brokerParams);
+        executor = new OpflowExecutor(engine);
         
         operatorName = (String) params.get("operatorName");
         if (operatorName == null) {
@@ -48,14 +48,14 @@ public class OpflowRpcWorker {
         }
     }
 
-    private OpflowBroker.ConsumerInfo consumerInfo;
+    private OpflowEngine.ConsumerInfo consumerInfo;
     private List<Middleware> middlewares = new LinkedList<Middleware>();
     
-    public OpflowBroker.ConsumerInfo process(final OpflowRpcListener listener) {
+    public OpflowEngine.ConsumerInfo process(final OpflowRpcListener listener) {
         return process(TRUE, listener);
     }
 
-    public OpflowBroker.ConsumerInfo process(final String routineId, final OpflowRpcListener listener) {
+    public OpflowEngine.ConsumerInfo process(final String routineId, final OpflowRpcListener listener) {
         return process(new Checker() {
             @Override
             public boolean match(String originRoutineId) {
@@ -64,7 +64,7 @@ public class OpflowRpcWorker {
         }, listener);
     };
     
-    public OpflowBroker.ConsumerInfo process(final String[] routineIds, final OpflowRpcListener listener) {
+    public OpflowEngine.ConsumerInfo process(final String[] routineIds, final OpflowRpcListener listener) {
         return process(new Checker() {
             @Override
             public boolean match(String originRoutineId) {
@@ -73,12 +73,12 @@ public class OpflowRpcWorker {
         }, listener);
     };
     
-    public OpflowBroker.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
+    public OpflowEngine.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
         if (checker != null && listener != null) {
             middlewares.add(new Middleware(checker, listener));
         }
         if (consumerInfo != null) return consumerInfo;
-        return consumerInfo = broker.consume(new OpflowListener() {
+        return consumerInfo = engine.consume(new OpflowListener() {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
@@ -105,21 +105,21 @@ public class OpflowRpcWorker {
         }));
     }
     
-    public class State extends OpflowBroker.State {
-        public State(OpflowBroker.State superState) {
+    public class State extends OpflowEngine.State {
+        public State(OpflowEngine.State superState) {
             super(superState);
         }
     }
     
     public State check() {
-        State state = new State(broker.check());
+        State state = new State(engine.check());
         return state;
     }
     
     public void close() {
-        if (broker != null) {
-            broker.cancelConsumer(consumerInfo);
-            broker.close();
+        if (engine != null) {
+            engine.cancelConsumer(consumerInfo);
+            engine.close();
         }
     }
 

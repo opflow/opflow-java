@@ -27,7 +27,7 @@ public class OpflowRpcMaster {
     private final Lock lock = new ReentrantLock();
     private final Condition idle = lock.newCondition();
     
-    private final OpflowBroker broker;
+    private final OpflowEngine engine;
     private final OpflowExecutor executor;
     
     private final String responseName;
@@ -45,8 +45,8 @@ public class OpflowRpcMaster {
         brokerParams.put("exchangeType", "direct");
         brokerParams.put("routingKey", params.get("routingKey"));
         brokerParams.put("applicationId", params.get("applicationId"));
-        broker = new OpflowBroker(brokerParams);
-        executor = new OpflowExecutor(broker);
+        engine = new OpflowEngine(brokerParams);
+        executor = new OpflowExecutor(engine);
         
         responseName = (String) params.get("responseName");
         if (responseName != null) {
@@ -76,11 +76,11 @@ public class OpflowRpcMaster {
 
     private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<String, OpflowRpcRequest>();
     
-    private OpflowBroker.ConsumerInfo responseConsumer;
+    private OpflowEngine.ConsumerInfo responseConsumer;
 
-    private OpflowBroker.ConsumerInfo initResponseConsumer(final boolean forked) {
+    private OpflowEngine.ConsumerInfo initResponseConsumer(final boolean forked) {
         if (logger.isTraceEnabled()) logger.trace("initResponseConsumer(forked:" + forked + ")");
-        return broker.consume(new OpflowListener() {
+        return engine.consume(new OpflowListener() {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
@@ -141,7 +141,7 @@ public class OpflowRpcMaster {
             timeoutMonitor = initTimeoutMonitor();
         }
         
-        final OpflowBroker.ConsumerInfo consumerInfo;
+        final OpflowEngine.ConsumerInfo consumerInfo;
         
         if (forked) {
             consumerInfo = initResponseConsumer(true);
@@ -161,7 +161,7 @@ public class OpflowRpcMaster {
                     tasks.remove(taskId);
                     if (tasks.isEmpty()) {
                         if (forked) {
-                            broker.cancelConsumer(consumerInfo);
+                            engine.cancelConsumer(consumerInfo);
                         }
                         idle.signal();
                     }
@@ -197,19 +197,19 @@ public class OpflowRpcMaster {
             builder.replyTo(consumerInfo.getQueueName());
         }
         
-        broker.produce(content, builder);
+        engine.produce(content, builder);
         
         return task;
     }
 
-    public class State extends OpflowBroker.State {
-        public State(OpflowBroker.State superState) {
+    public class State extends OpflowEngine.State {
+        public State(OpflowEngine.State superState) {
             super(superState);
         }
     }
     
     public State check() {
-        State state = new State(broker.check());
+        State state = new State(engine.check());
         return state;
     }
     
@@ -220,11 +220,11 @@ public class OpflowRpcMaster {
             if (logger.isTraceEnabled()) logger.trace("close() - check tasks.isEmpty()? and await...");
             while(!tasks.isEmpty()) idle.await();
             if (logger.isTraceEnabled()) logger.trace("close() - cancel responseConsumer");
-            if (responseConsumer != null) broker.cancelConsumer(responseConsumer);
+            if (responseConsumer != null) engine.cancelConsumer(responseConsumer);
             if (logger.isTraceEnabled()) logger.trace("close() - stop timeoutMonitor");
             if (timeoutMonitor != null) timeoutMonitor.stop();
             if (logger.isTraceEnabled()) logger.trace("close() - close broker/engine");
-            if (broker != null) broker.close();
+            if (engine != null) engine.close();
         } catch(InterruptedException ex) {
             if (logger.isErrorEnabled()) logger.error("close() - an exception has been thrown");
         } finally {

@@ -4,6 +4,9 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +18,51 @@ public class OpflowTask {
     
     public interface Listener {
         public void handleEvent();
+    }
+    
+    public static class Countdown {
+        private final Lock lock = new ReentrantLock();
+        private Condition idle = lock.newCondition();
+        private int total = 0;
+        private int count = 0;
+
+        public Countdown() {
+            this.reset(0);
+        }
+
+        public Countdown(int total) {
+            this.reset(total);
+        }
+
+        public final void reset(int total) {
+            this.idle = lock.newCondition();
+            this.total = total;
+            this.count = 0;
+        }
+
+        public void check() {
+            lock.lock();
+            try {
+                count++;
+                if (count >= total) idle.signal();
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public void bingo() {
+            lock.lock();
+            try {
+                while (count < total) idle.await();
+            } catch(InterruptedException ie) {
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        public int getCount() {
+            return count;
+        }
     }
     
     public interface Timeoutable {
