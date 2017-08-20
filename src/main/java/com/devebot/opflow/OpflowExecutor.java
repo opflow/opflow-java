@@ -30,13 +30,13 @@ public class OpflowExecutor {
     
     public int countQueue(final String queueName) {
         try {
-            return checkQueue(queueName).getMessageCount();
+            return declareQueue(queueName).getMessageCount();
         } catch (Exception exception) {
             throw new OpflowOperationException(exception);
         }
     }
     
-    public AMQP.Queue.DeclareOk checkQueue(final String queueName) {
+    public AMQP.Queue.DeclareOk defineQueue(final String queueName) {
         try {
             return declareQueue(queueName);
         } catch (Exception exception) {
@@ -83,6 +83,52 @@ public class OpflowExecutor {
                 @Override
                 public Object handleEvent(Channel channel) throws IOException {
                     return channel.queueDelete(queueName, true, false);
+                }
+            });
+        } catch (IOException exception) {
+            throw new OpflowOperationException(exception);
+        } catch (TimeoutException exception) {
+            throw new OpflowOperationException(exception);
+        }
+    }
+    
+    public AMQP.Exchange.DeclareOk defineExchange(final String exchangeName, final String exchangeType) {
+        try {
+            return declareExchange(exchangeName, exchangeType);
+        } catch (IOException ioe) {
+            throw new OpflowOperationException(ioe);
+        } catch (TimeoutException te) {
+            throw new OpflowOperationException(te);
+        }
+    }
+    
+    private AMQP.Exchange.DeclareOk declareExchange(final String exchangeName, final String exchangeType)
+            throws IOException, TimeoutException {
+        if (exchangeName == null) return null;
+        try {
+            return engine.acquireChannel(new OpflowEngine.Operator() {
+                @Override
+                public AMQP.Exchange.DeclareOk handleEvent(Channel _channel) throws IOException {
+                    return _channel.exchangeDeclarePassive(exchangeName);
+                }
+            });
+        } catch (IOException e1) {
+            final String _type = (exchangeType != null) ? exchangeType : "direct";
+            return engine.acquireChannel(new OpflowEngine.Operator() {
+                @Override
+                public AMQP.Exchange.DeclareOk handleEvent(Channel _channel) throws IOException {
+                    return _channel.exchangeDeclare(exchangeName, _type, true, false, null);
+                }
+            });
+        }
+    }
+    
+    public AMQP.Exchange.DeleteOk deleteExchange(final String exchangeName) {
+        try {
+            return engine.acquireChannel(new OpflowEngine.Operator() {
+                @Override
+                public Object handleEvent(Channel channel) throws IOException {
+                    return channel.exchangeDelete(exchangeName, true);
                 }
             });
         } catch (IOException exception) {

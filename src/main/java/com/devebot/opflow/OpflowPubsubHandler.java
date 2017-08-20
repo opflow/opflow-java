@@ -160,6 +160,10 @@ public class OpflowPubsubHandler {
     public String getRecyclebinName() {
         return recyclebinName;
     }
+
+    public int getRedeliveredLimit() {
+        return redeliveredLimit;
+    }
     
     private void sendToQueue(byte[] data, AMQP.BasicProperties replyProps, String queueName, Channel channel) {
         try {
