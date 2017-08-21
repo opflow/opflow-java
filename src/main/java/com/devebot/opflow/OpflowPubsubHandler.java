@@ -23,6 +23,7 @@ public class OpflowPubsubHandler {
     private final String subscriberName;
     private final String recyclebinName;
     private int redeliveredLimit = 0;
+    private OpflowPubsubListener listener;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowConstructorException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
@@ -93,7 +94,13 @@ public class OpflowPubsubHandler {
         engine.produce(data, propBuilder, override);
     }
     
-    public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener listener) {
+    public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener newListener) {
+        listener = (listener != null) ? listener : newListener;
+        if (listener == null) {
+            throw new IllegalArgumentException("PubsubListener should not be null");
+        } else if (listener != newListener) {
+            throw new OpflowOperationException("PubsubHandler only supports single PubsubListener");
+        }
         return engine.consume(new OpflowListener() {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
