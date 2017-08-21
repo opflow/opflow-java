@@ -37,14 +37,14 @@ public class OpflowPubsubSteps {
     @Given("a PubsubHandler named '$pubsubName'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName) throws OpflowConstructorException {
         pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler());
-        countdowns.put(pubsubName, new OpflowTask.Countdown());
+        countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
     }
     
     @Given("a PubsubHandler named '$pubsubName' with properties file: '$propFile'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName, 
             @Named("propFile") final String propFile) throws OpflowConstructorException {
         pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler(propFile));
-        countdowns.put(pubsubName, new OpflowTask.Countdown());
+        countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
     }
     
     @Given("a subscriber named '$names' in PubsubHandler named '$pubsubName'")

@@ -25,19 +25,29 @@ public class OpflowTask {
         private Condition idle = lock.newCondition();
         private int total = 0;
         private int count = 0;
-
+        private long waiting = 1000;
+        
         public Countdown() {
-            this.reset(0);
+            this(0);
         }
 
         public Countdown(int total) {
             this.reset(total);
         }
+        
+        public Countdown(int total, long waiting) {
+            this.reset(total, waiting);
+        }
 
         public final void reset(int total) {
             this.idle = lock.newCondition();
-            this.total = total;
             this.count = 0;
+            this.total = total;
+        }
+        
+        public final void reset(int total, long waiting) {
+            this.reset(total);
+            this.waiting = waiting;
         }
 
         public void check() {
@@ -57,6 +67,11 @@ public class OpflowTask {
             } catch(InterruptedException ie) {
             } finally {
                 lock.unlock();
+            }
+            if (waiting > 0) {
+                try {
+                    Thread.sleep(waiting);
+                } catch (InterruptedException ie) {}
             }
         }
 

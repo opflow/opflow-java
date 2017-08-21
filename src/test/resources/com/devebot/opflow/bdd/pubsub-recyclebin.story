@@ -1,7 +1,16 @@
-Scenario: Simple Publisher/Recyclebin
+Recyclebin story
 
+Lifecycle: 
+Before:
 Given a PubsubHandler named 'pubsub1' with properties file: 'pubsub-recyclebin.properties'
 Then the PubsubHandler named 'pubsub1' connection is 'opened'
+After:
+Outcome: ANY
+When I close PubsubHandler named 'pubsub1'
+Then the PubsubHandler named 'pubsub1' connection is 'closed'
+
+Scenario: Simple Publisher/Recyclebin
+
 When I purge subscriber in PubsubHandler named 'pubsub1'
 Then subscriber in PubsubHandler named 'pubsub1' has '0' messages
 When I purge recyclebin in PubsubHandler named 'pubsub1'
@@ -12,5 +21,4 @@ And waiting for subscriber of PubsubHandler(pubsub1) finish
 Then PubsubHandler named 'pubsub1' receives '1015' messages
 And subscriber in PubsubHandler named 'pubsub1' has '0' messages
 And recyclebin in PubsubHandler named 'pubsub1' has '5' messages
-When I close PubsubHandler named 'pubsub1'
-Then the PubsubHandler named 'pubsub1' connection is 'closed'
+
