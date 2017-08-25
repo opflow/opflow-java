@@ -42,10 +42,8 @@ public class OpflowPubsubHandlerTest {
     
     @Test
     public void testConstructorWithNullOperatorName() throws OpflowConstructorException {
-        thrown.expect(OpflowConstructorException.class);
-        thrown.expectMessage(CoreMatchers.is("subscriberName must not be null"));
         Map<String, Object> pars = new HashMap<String, Object>();
-        pars.put("uri", props.get("opflow.uri"));
+        pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
         pars.put("routingKey", "tdd-opflow-rpc");
         pubsub = new OpflowPubsubHandler(pars);
@@ -54,7 +52,7 @@ public class OpflowPubsubHandlerTest {
     @Test
     public void testConstructorAutoCreateQueues() throws OpflowConstructorException {
         Map<String, Object> pars = new HashMap<String, Object>();
-        pars.put("uri", props.get("opflow.uri"));
+        pars.put("uri", props.getProperty("opflow.uri"));
         OpflowEngine engine = new OpflowEngine(pars);
         OpflowExecutor executor = new OpflowExecutor(engine);
         executor.deleteQueue("tdd-opflow-subscriber");
@@ -67,12 +65,11 @@ public class OpflowPubsubHandlerTest {
     @Test
     public void testSubscribeWithNullListener() throws OpflowConstructorException {
         Map<String, Object> pars = new HashMap<String, Object>();
-        pars.put("uri", props.get("opflow.uri"));
+        pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
         pars.put("routingKey", "tdd-opflow-rpc");
         pars.put("subscriberName", "tdd-opflow-subscriber");
         pubsub = new OpflowPubsubHandler(pars);
-        
         thrown.expect(IllegalArgumentException.class);
         thrown.expectMessage(CoreMatchers.is("PubsubListener should not be null"));
         pubsub.subscribe(null);
@@ -81,7 +78,7 @@ public class OpflowPubsubHandlerTest {
     @Test
     public void testSubscribeWithDifferentListeners() throws OpflowConstructorException {
         Map<String, Object> pars = new HashMap<String, Object>();
-        pars.put("uri", props.get("opflow.uri"));
+        pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
         pars.put("routingKey", "tdd-opflow-rpc");
         pars.put("subscriberName", "tdd-opflow-subscriber");

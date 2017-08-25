@@ -32,7 +32,7 @@ public class OpflowRpcWorkerTest {
         thrown.expect(OpflowConstructorException.class);
         thrown.expectMessage(CoreMatchers.is("operatorName must not be null"));
         Map<String, Object> pars = new HashMap<String, Object>();
-        pars.put("uri", props.get("opflow.uri"));
+        pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
         pars.put("routingKey", "tdd-opflow-rpc");
         OpflowRpcWorker broker = new OpflowRpcWorker(pars);

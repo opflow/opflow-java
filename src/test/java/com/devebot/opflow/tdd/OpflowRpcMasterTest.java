@@ -40,7 +40,7 @@ public class OpflowRpcMasterTest {
         thrown.expectMessage(CoreMatchers.startsWith("consumerLimit exceed"));
         
         Map<String, Object> pars = new HashMap<String, Object>();
-        pars.put("uri", props.get("opflow.uri"));
+        pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
         pars.put("routingKey", "tdd-opflow-rpc");
         pars.put("operatorName", "tdd-opflow-queue");
@@ -54,7 +54,7 @@ public class OpflowRpcMasterTest {
         });
         
         Map<String, Object> par1 = new HashMap<String, Object>();
-        par1.put("uri", props.get("opflow.uri"));
+        par1.put("uri", props.getProperty("opflow.uri"));
         par1.put("exchangeName", "tdd-opflow-exchange");
         par1.put("routingKey", "tdd-opflow-rpc");
         par1.put("responseName", "tdd-opflow-feedback");

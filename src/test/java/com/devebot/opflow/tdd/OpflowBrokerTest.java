@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Properties;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -17,12 +18,14 @@ import org.junit.rules.ExpectedException;
  *
  * @author drupalex
  */
-public class OpflowBrokerTest {
-    Properties props;
+public class OpflowBrokerTest extends OpflowAbstractTest {
+    static Properties props;
     
-    @Before
-    public void beforeEach() throws OpflowConstructorException {
+    @BeforeClass
+    public static void before() throws OpflowConstructorException {
         props = OpflowHelper.loadProperties();
+        clearTestExchanges(props.getProperty("opflow.uri"));
+        clearTestQueues(props.getProperty("opflow.uri"));
     }
     
     @Rule
@@ -43,7 +46,7 @@ public class OpflowBrokerTest {
         thrown.expectCause(CoreMatchers.is(IOException.class));
         thrown.expectMessage(CoreMatchers.is("exchangeDeclare has been failed"));
         Map<String, Object> pars = new HashMap<String, Object>();
-        pars.put("uri", props.get("opflow.uri"));
+        pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
         pars.put("exchangeType", "nothing");
         OpflowEngine engine = new OpflowEngine(pars);
