@@ -87,6 +87,12 @@ public class OpflowUtil {
         return clonedParams;
     }
     
+    public static void copyParameters(Map<String, Object> target, Map<String, Object> source, String[] keys) {
+        for(String field: keys) {
+            target.put(field, source.get(field));
+        }
+    }
+    
     public static <T> boolean arrayContains(final T[] array, final T v) {
         if (v == null) {
             for (final T e : array) if (e == null) return true;
