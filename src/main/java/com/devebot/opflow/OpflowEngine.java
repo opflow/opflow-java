@@ -25,7 +25,12 @@ import com.devebot.opflow.exception.OpflowOperationException;
  */
 public class OpflowEngine {
 
-    final Logger logger = LoggerFactory.getLogger(OpflowEngine.class);
+    public static final String[] PARAMETER_NAMES = new String[] {
+        "uri", "host", "port", "virtualHost", "username", "password", "channelMax", "frameMax", "heartbeat",
+        "exchangeName", "exchangeType", "exchangeDurable", "routingKey", "otherKeys", "applicationId"
+    };
+
+    private final Logger logger = LoggerFactory.getLogger(OpflowEngine.class);
 
     private ConnectionFactory factory;
     private Connection connection;
@@ -45,27 +50,55 @@ public class OpflowEngine {
             String uri = (String) params.get("uri");
             if (uri != null) {
                 factory.setUri(uri);
+                if (logger.isTraceEnabled()) logger.trace("Connection using URI");
             } else {
                 String host = (String) params.get("host");
                 if (host == null) host = "localhost";
                 factory.setHost(host);
+                if (logger.isTraceEnabled()) logger.trace("ConnectionParam/host: " + host);
+
+                if (params.get("port") != null && params.get("port") instanceof Integer) {
+                    Integer port;
+                    factory.setPort(port = (Integer)params.get("port"));
+                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/port: " + port);
+                }
 
                 String virtualHost = (String) params.get("virtualHost");
                 if (virtualHost != null) {
                     factory.setVirtualHost(virtualHost);
+                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/virtualHost: " + virtualHost);
                 }
 
                 String username = (String) params.get("username");
                 if (username != null) {
                     factory.setUsername(username);
+                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/username: " + username);
                 }
 
                 String password = (String) params.get("password");
                 if (password != null) {
                     factory.setPassword(password);
+                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/password: ******");
+                }
+
+                if (params.get("channelMax") != null && params.get("channelMax") instanceof Integer) {
+                    Integer channelMax;
+                    factory.setRequestedChannelMax(channelMax = (Integer)params.get("channelMax"));
+                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/channelMax: " + channelMax);
+                }
+
+                if (params.get("frameMax") != null && params.get("frameMax") instanceof Integer) {
+                    Integer frameMax;
+                    factory.setRequestedFrameMax(frameMax = (Integer)params.get("frameMax"));
+                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/frameMax: " + frameMax);
+                }
+
+                if (params.get("heartbeat") != null && params.get("heartbeat") instanceof Integer) {
+                    Integer heartbeat;
+                    factory.setRequestedHeartbeat(heartbeat = (Integer)params.get("heartbeat"));
+                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/heartbeat: " + heartbeat);
                 }
             }
-
             connection = factory.newConnection();
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("newConnection() has been failed, exception: " + exception.getMessage());

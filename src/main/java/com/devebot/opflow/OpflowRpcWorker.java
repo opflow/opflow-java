@@ -26,12 +26,10 @@ public class OpflowRpcWorker {
     
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowConstructorException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
+        OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("mode", "rpc.worker");
-        brokerParams.put("uri", params.get("uri"));
-        brokerParams.put("exchangeName", params.get("exchangeName"));
         brokerParams.put("exchangeType", "direct");
-        brokerParams.put("routingKey", params.get("routingKey"));
-        brokerParams.put("applicationId", params.get("applicationId"));
+        
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         

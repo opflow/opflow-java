@@ -37,31 +37,11 @@ public class OpflowHelper {
         Properties props = loadProperties(propFile, defaultProps);
         Map<String, Object> params = new HashMap<String, Object>();
         
-        if (props.getProperty("opflow.master.uri") != null) {
-            params.put("uri", props.getProperty("opflow.master.uri"));
-        } else {
-            params.put("uri", props.getProperty("opflow.uri"));
-        }
-        
-        if (props.getProperty("opflow.master.exchangeName") != null) {
-            params.put("exchangeName", props.getProperty("opflow.master.exchangeName"));
-        } else {
-            params.put("exchangeName", props.getProperty("opflow.exchangeName"));
-        }
-        
-        if (props.getProperty("opflow.master.routingKey") != null) {
-            params.put("routingKey", props.getProperty("opflow.master.routingKey"));
-        } else {
-            params.put("routingKey", props.getProperty("opflow.routingKey"));
-        }
-        
-        if (props.getProperty("opflow.master.applicationId") != null) {
-            params.put("applicationId", props.getProperty("opflow.master.applicationId"));
-        } else {
-            params.put("applicationId", props.getProperty("opflow.applicationId"));
-        }
+        extractEngineParameters("master", params, props);
         
         params.put("responseName", props.getProperty("opflow.master.responseName"));
+        
+        transformParameters(params);
         
         if (LOG.isTraceEnabled()) LOG.trace("OpflowRpcMaster has been created successfully");
         
@@ -86,29 +66,7 @@ public class OpflowHelper {
         Properties props = loadProperties(propFile, defaultProps);
         Map<String, Object> params = new HashMap<String, Object>();
         
-        if (props.getProperty("opflow.worker.uri") != null) {
-            params.put("uri", props.getProperty("opflow.worker.uri"));
-        } else {
-            params.put("uri", props.getProperty("opflow.uri"));
-        }
-        
-        if (props.getProperty("opflow.worker.exchangeName") != null) {
-            params.put("exchangeName", props.getProperty("opflow.worker.exchangeName"));
-        } else {
-            params.put("exchangeName", props.getProperty("opflow.exchangeName"));
-        }
-        
-        if (props.getProperty("opflow.worker.routingKey") != null) {
-            params.put("routingKey", props.getProperty("opflow.worker.routingKey"));
-        } else {
-            params.put("routingKey", props.getProperty("opflow.routingKey"));
-        }
-        
-        if (props.getProperty("opflow.worker.applicationId") != null) {
-            params.put("applicationId", props.getProperty("opflow.worker.applicationId"));
-        } else {
-            params.put("applicationId", props.getProperty("opflow.applicationId"));
-        }
+        extractEngineParameters("worker", params, props);
         
         if (props.getProperty("opflow.worker.operatorName") != null) {
             params.put("operatorName", props.getProperty("opflow.worker.operatorName"));
@@ -117,6 +75,8 @@ public class OpflowHelper {
         }
         
         params.put("responseName", props.getProperty("opflow.worker.responseName"));
+        
+        transformParameters(params);
         
         if (LOG.isTraceEnabled()) LOG.trace("OpflowRpcWorker has been created successfully");
         
@@ -141,31 +101,7 @@ public class OpflowHelper {
         Properties props = loadProperties(propFile, defaultProps);
         Map<String, Object> params = new HashMap<String, Object>();
         
-        if (props.getProperty("opflow.pubsub.uri") != null) {
-            params.put("uri", props.getProperty("opflow.pubsub.uri"));
-        } else {
-            params.put("uri", props.getProperty("opflow.uri"));
-        }
-        
-        if (props.getProperty("opflow.pubsub.exchangeName") != null) {
-            params.put("exchangeName", props.getProperty("opflow.pubsub.exchangeName"));
-        } else {
-            params.put("exchangeName", props.getProperty("opflow.exchangeName"));
-        }
-        
-        if (props.getProperty("opflow.pubsub.routingKey") != null) {
-            params.put("routingKey", props.getProperty("opflow.pubsub.routingKey"));
-        } else {
-            params.put("routingKey", props.getProperty("opflow.routingKey"));
-        }
-        
-        if (props.getProperty("opflow.pubsub.applicationId") != null) {
-            params.put("applicationId", props.getProperty("opflow.pubsub.applicationId"));
-        } else {
-            params.put("applicationId", props.getProperty("opflow.applicationId"));
-        }
-        
-        params.put("otherKeys", props.getProperty("opflow.pubsub.otherKeys"));
+        extractEngineParameters("pubsub", params, props);
         
         if (props.getProperty("opflow.pubsub.subscriberName") != null) {
             params.put("subscriberName", props.getProperty("opflow.pubsub.subscriberName"));
@@ -175,14 +111,9 @@ public class OpflowHelper {
         
         params.put("recyclebinName", props.getProperty("opflow.pubsub.recyclebinName"));
         
-        String redeliveredLimit = props.getProperty("opflow.pubsub.redeliveredLimit");
-        if (redeliveredLimit != null) {
-            try {
-                params.put("redeliveredLimit", Integer.parseInt(redeliveredLimit));
-            } catch (NumberFormatException nfe) {
-                if (LOG.isTraceEnabled()) LOG.trace("createPubsubHandler() - redeliveredLimit is not a number");
-            }
-        }
+        params.put("redeliveredLimit", props.getProperty("opflow.pubsub.redeliveredLimit"));
+        
+        transformParameters(params);
         
         if (LOG.isTraceEnabled()) LOG.trace("OpflowPubsubHandler has been created successfully");
         
@@ -223,5 +154,43 @@ public class OpflowHelper {
         StringWriter writer = new StringWriter();
         prop.list(new PrintWriter(writer));
         return writer.getBuffer().toString();
+    }
+    
+    private static void extractEngineParameters(String mode, Map<String, Object> params, Properties props) {
+        for(String field: OpflowEngine.PARAMETER_NAMES) {
+            String keyLevel0 = "opflow." + field;
+            String keyLevel1 = "opflow." + mode + "." + field;
+            if (props.getProperty(keyLevel1) != null) {
+                params.put(field, props.getProperty(keyLevel1));
+            } else if (props.getProperty(keyLevel0) != null) {
+                params.put(field, props.getProperty(keyLevel0));
+            }
+        }
+    }
+    
+    private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };
+    
+    private static final String[] INTEGER_FIELDS = new String[] {
+        "port", "channelMax", "frameMax", "heartbeat", "redeliveredLimit"
+    };
+    
+    private static void transformParameters(Map<String, Object> params) {
+        for(String key: params.keySet()) {
+            if (OpflowUtil.arrayContains(STRING_ARRAY_FIELDS, key)) {
+                if (params.get(key) instanceof String) {
+                    params.put(key, OpflowUtil.splitByComma((String)params.get(key)));
+                }
+            }
+            if (OpflowUtil.arrayContains(INTEGER_FIELDS, key)) {
+                if (params.get(key) instanceof String) {
+                    try {
+                        params.put(key, Integer.parseInt(params.get(key).toString()));
+                    } catch (NumberFormatException nfe) {
+                        if (LOG.isTraceEnabled()) LOG.trace("transformParameters() - " + key + " field is not an integer");
+                        params.put(key, null);
+                    }
+                }
+            }
+        }
     }
 }

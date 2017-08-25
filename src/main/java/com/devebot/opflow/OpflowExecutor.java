@@ -128,7 +128,7 @@ public class OpflowExecutor {
             return engine.acquireChannel(new OpflowEngine.Operator() {
                 @Override
                 public Object handleEvent(Channel channel) throws IOException {
-                    return channel.exchangeDelete(exchangeName, true);
+                    return channel.exchangeDelete(exchangeName);
                 }
             });
         } catch (IOException exception) {

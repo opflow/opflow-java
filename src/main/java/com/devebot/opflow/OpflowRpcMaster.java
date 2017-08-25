@@ -21,8 +21,8 @@ import org.slf4j.LoggerFactory;
 public class OpflowRpcMaster {
 
     private final Logger logger = LoggerFactory.getLogger(OpflowRpcMaster.class);
-    final int PREFETCH_NUM = 1;
-    final int CONSUMER_MAX = 1;
+    private final int PREFETCH_NUM = 1;
+    private final int CONSUMER_MAX = 1;
     
     private final Lock lock = new ReentrantLock();
     private final Condition idle = lock.newCondition();
@@ -39,12 +39,10 @@ public class OpflowRpcMaster {
     
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowConstructorException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
+        OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("mode", "rpc.master");
-        brokerParams.put("uri", params.get("uri"));
-        brokerParams.put("exchangeName", params.get("exchangeName"));
         brokerParams.put("exchangeType", "direct");
-        brokerParams.put("routingKey", params.get("routingKey"));
-        brokerParams.put("applicationId", params.get("applicationId"));
+        
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         

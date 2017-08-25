@@ -6,6 +6,8 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,37 +24,32 @@ public class OpflowPubsubHandler {
     private final OpflowExecutor executor;
     private final String subscriberName;
     private final String recyclebinName;
+    private final List<OpflowEngine.ConsumerInfo> consumers = new LinkedList<OpflowEngine.ConsumerInfo>();
     private int redeliveredLimit = 0;
     private OpflowPubsubListener listener;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowConstructorException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
+        OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("mode", "pubsub");
-        brokerParams.put("uri", params.get("uri"));
-        brokerParams.put("exchangeName", params.get("exchangeName"));
         brokerParams.put("exchangeType", "direct");
-        brokerParams.put("routingKey", params.get("routingKey"));
-        if (params.get("otherKeys") instanceof String) {
-            brokerParams.put("otherKeys", OpflowUtil.splitByComma((String)params.get("otherKeys")));
-        }
-        brokerParams.put("applicationId", params.get("applicationId"));
+        
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         
         subscriberName = (String) params.get("subscriberName");
-        if (subscriberName == null) {
-            throw new OpflowConstructorException("subscriberName must not be null");
-        } else {
+        if (subscriberName != null) {
             executor.assertQueue(subscriberName);
         }
         
         recyclebinName = (String) params.get("recyclebinName");
         if (recyclebinName != null) {
             executor.assertQueue(recyclebinName);
-            if (params.get("redeliveredLimit") instanceof Integer) {
-                redeliveredLimit = (Integer) params.get("redeliveredLimit");
-                if (redeliveredLimit < 0) redeliveredLimit = 0;
-            }
+        }
+        
+        if (params.get("redeliveredLimit") instanceof Integer) {
+            redeliveredLimit = (Integer) params.get("redeliveredLimit");
+            if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
     }
 
@@ -91,6 +88,12 @@ public class OpflowPubsubHandler {
         if (routingKey != null) {
             override.put("routingKey", routingKey);
         }
+        
+        if (logger.isInfoEnabled()) {
+            String requestId = OpflowUtil.getRequestId(opts);
+            logger.info("Request["+requestId+"] is produced with overriden routingKey: ["+routingKey+"]");
+        }
+        
         engine.produce(data, propBuilder, override);
     }
     
@@ -101,7 +104,7 @@ public class OpflowPubsubHandler {
         } else if (listener != newListener) {
             throw new OpflowOperationException("PubsubHandler only supports single PubsubListener");
         }
-        return engine.consume(new OpflowListener() {
+        OpflowEngine.ConsumerInfo consumer = engine.consume(new OpflowListener() {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
@@ -133,14 +136,25 @@ public class OpflowPubsubHandler {
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
-                opts.put("autoAck", Boolean.FALSE);
+                opts.put("autoAck", Boolean.TRUE);
                 opts.put("queueName", subscriberName);
             }
         }));
+        consumers.add(consumer);
+        return consumer;
     }
     
     public void close() {
         if (engine != null) {
+            if (false) {
+                // TODO: SKIP THIS CODE
+                for(OpflowEngine.ConsumerInfo consumer:consumers) {
+                    if (consumer != null) {
+                        engine.cancelConsumer(consumer);
+                    }
+                }
+            }
+            consumers.clear();
             engine.close();
         }
     }
