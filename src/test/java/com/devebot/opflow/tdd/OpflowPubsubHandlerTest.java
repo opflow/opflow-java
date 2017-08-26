@@ -6,7 +6,7 @@ import com.devebot.opflow.OpflowHelper;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowPubsubHandler;
 import com.devebot.opflow.OpflowPubsubListener;
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import java.io.IOException;
 import java.util.HashMap;
@@ -28,7 +28,7 @@ public class OpflowPubsubHandlerTest {
     OpflowPubsubHandler pubsub;
     
     @Before
-    public void beforeEach() throws OpflowConstructorException {
+    public void beforeEach() throws OpflowBootstrapException {
         props = OpflowHelper.loadProperties();
     }
     
@@ -41,7 +41,7 @@ public class OpflowPubsubHandlerTest {
     public ExpectedException thrown = ExpectedException.none();
     
     @Test
-    public void testConstructorWithNullOperatorName() throws OpflowConstructorException {
+    public void testConstructorWithNullOperatorName() throws OpflowBootstrapException {
         Map<String, Object> pars = new HashMap<String, Object>();
         pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
@@ -50,7 +50,7 @@ public class OpflowPubsubHandlerTest {
     }
     
     @Test
-    public void testConstructorAutoCreateQueues() throws OpflowConstructorException {
+    public void testConstructorAutoCreateQueues() throws OpflowBootstrapException {
         Map<String, Object> pars = new HashMap<String, Object>();
         pars.put("uri", props.getProperty("opflow.uri"));
         OpflowEngine engine = new OpflowEngine(pars);
@@ -63,7 +63,7 @@ public class OpflowPubsubHandlerTest {
     }
     
     @Test
-    public void testSubscribeWithNullListener() throws OpflowConstructorException {
+    public void testSubscribeWithNullListener() throws OpflowBootstrapException {
         Map<String, Object> pars = new HashMap<String, Object>();
         pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");
@@ -76,7 +76,7 @@ public class OpflowPubsubHandlerTest {
     }
     
     @Test
-    public void testSubscribeWithDifferentListeners() throws OpflowConstructorException {
+    public void testSubscribeWithDifferentListeners() throws OpflowBootstrapException {
         Map<String, Object> pars = new HashMap<String, Object>();
         pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");

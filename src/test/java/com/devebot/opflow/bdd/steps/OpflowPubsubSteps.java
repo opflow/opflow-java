@@ -6,7 +6,7 @@ import com.devebot.opflow.OpflowPubsubHandler;
 import com.devebot.opflow.OpflowPubsubListener;
 import com.devebot.opflow.OpflowTask;
 import com.devebot.opflow.OpflowUtil;
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.google.common.collect.Lists;
 import java.io.IOException;
@@ -35,14 +35,14 @@ public class OpflowPubsubSteps {
     private final Integer[] rejected = new Integer[] { 15, 25, 35, 55, 95 };
     
     @Given("a PubsubHandler named '$pubsubName'")
-    public void createPubsubHandler(@Named("pubsubName") final String pubsubName) throws OpflowConstructorException {
+    public void createPubsubHandler(@Named("pubsubName") final String pubsubName) throws OpflowBootstrapException {
         pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler());
         countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
     }
     
     @Given("a PubsubHandler named '$pubsubName' with properties file: '$propFile'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName, 
-            @Named("propFile") final String propFile) throws OpflowConstructorException {
+            @Named("propFile") final String propFile) throws OpflowBootstrapException {
         pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler(propFile));
         countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
     }

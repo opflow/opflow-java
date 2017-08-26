@@ -16,7 +16,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
@@ -45,7 +45,7 @@ public class OpflowEngine {
     private String[] otherKeys;
     private String applicationId;
 
-    public OpflowEngine(Map<String, Object> params) throws OpflowConstructorException {
+    public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         try {
             factory = new ConnectionFactory();
 
@@ -139,7 +139,7 @@ public class OpflowEngine {
             }
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("exchangeDeclare has been failed, exception: " + exception.getMessage());
-            throw new OpflowConstructorException("exchangeDeclare has been failed", exception);
+            throw new OpflowBootstrapException("exchangeDeclare has been failed", exception);
         }
     }
     

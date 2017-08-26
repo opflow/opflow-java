@@ -7,7 +7,7 @@ import com.devebot.opflow.OpflowRpcMaster;
 import com.devebot.opflow.OpflowRpcResponse;
 import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.OpflowUtil;
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,7 +27,7 @@ public class OpflowRpcMasterTest {
     Properties props;
     
     @Before
-    public void beforeEach() throws OpflowConstructorException {
+    public void beforeEach() throws OpflowBootstrapException {
         props = OpflowHelper.loadProperties();
     }
     
@@ -35,7 +35,7 @@ public class OpflowRpcMasterTest {
     public ExpectedException thrown = ExpectedException.none();
     
     @Test
-    public void testExceedingLimitResponse() throws OpflowConstructorException {
+    public void testExceedingLimitResponse() throws OpflowBootstrapException {
         thrown.expect(OpflowConsumerOverLimitException.class);
         thrown.expectMessage(CoreMatchers.startsWith("consumerLimit exceed"));
         

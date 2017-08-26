@@ -1,6 +1,6 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -37,7 +37,7 @@ public class OpflowRpcMaster {
     private final int monitorInterval;
     private final long monitorTimeout;
     
-    public OpflowRpcMaster(Map<String, Object> params) throws OpflowConstructorException {
+    public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("mode", "rpc.master");

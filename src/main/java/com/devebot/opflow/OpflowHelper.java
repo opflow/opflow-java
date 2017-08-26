@@ -1,6 +1,6 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -23,19 +23,19 @@ public class OpflowHelper {
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowHelper.class);
     
-    public static OpflowRpcMaster createRpcMaster() throws OpflowConstructorException {
+    public static OpflowRpcMaster createRpcMaster() throws OpflowBootstrapException {
         return createRpcMaster(null, null, true);
     }
     
-    public static OpflowRpcMaster createRpcMaster(String propFile) throws OpflowConstructorException {
+    public static OpflowRpcMaster createRpcMaster(String propFile) throws OpflowBootstrapException {
         return createRpcMaster(propFile, null, true);
     }
     
-    public static OpflowRpcMaster createRpcMaster(Properties defaultProps) throws OpflowConstructorException {
+    public static OpflowRpcMaster createRpcMaster(Properties defaultProps) throws OpflowBootstrapException {
         return createRpcMaster(null, defaultProps, false);
     }
     
-    public static OpflowRpcMaster createRpcMaster(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowConstructorException {
+    public static OpflowRpcMaster createRpcMaster(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
         if (LOG.isTraceEnabled()) LOG.trace("Create new OpflowRpcMaster with properties file: " + propFile);
         
         Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
@@ -52,19 +52,19 @@ public class OpflowHelper {
         return new OpflowRpcMaster(params);
     }
     
-    public static OpflowRpcWorker createRpcWorker() throws OpflowConstructorException {
+    public static OpflowRpcWorker createRpcWorker() throws OpflowBootstrapException {
         return createRpcWorker(null, null, true);
     }
     
-    public static OpflowRpcWorker createRpcWorker(String propFile) throws OpflowConstructorException {
+    public static OpflowRpcWorker createRpcWorker(String propFile) throws OpflowBootstrapException {
         return createRpcWorker(propFile, null, true);
     }
     
-    public static OpflowRpcWorker createRpcWorker(Properties defaultProps) throws OpflowConstructorException {
+    public static OpflowRpcWorker createRpcWorker(Properties defaultProps) throws OpflowBootstrapException {
         return createRpcWorker(null, defaultProps, false);
     }
     
-    public static OpflowRpcWorker createRpcWorker(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowConstructorException {
+    public static OpflowRpcWorker createRpcWorker(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
         if (LOG.isTraceEnabled()) LOG.trace("Create new OpflowRpcWorker with properties file: " + propFile);
         
         Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
@@ -87,19 +87,19 @@ public class OpflowHelper {
         return new OpflowRpcWorker(params);
     }
     
-    public static OpflowPubsubHandler createPubsubHandler() throws OpflowConstructorException {
+    public static OpflowPubsubHandler createPubsubHandler() throws OpflowBootstrapException {
         return createPubsubHandler(null, null, true);
     }
     
-    public static OpflowPubsubHandler createPubsubHandler(String propFile) throws OpflowConstructorException {
+    public static OpflowPubsubHandler createPubsubHandler(String propFile) throws OpflowBootstrapException {
         return createPubsubHandler(propFile, null, true);
     }
     
-    public static OpflowPubsubHandler createPubsubHandler(Properties defaultProps) throws OpflowConstructorException {
+    public static OpflowPubsubHandler createPubsubHandler(Properties defaultProps) throws OpflowBootstrapException {
         return createPubsubHandler(null, defaultProps, false);
     }
     
-    public static OpflowPubsubHandler createPubsubHandler(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowConstructorException {
+    public static OpflowPubsubHandler createPubsubHandler(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
         if (LOG.isTraceEnabled()) LOG.trace("Create new OpflowPubsubHandler with properties file: " + propFile);
         
         Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
@@ -128,19 +128,19 @@ public class OpflowHelper {
         return new OpflowPubsubHandler(params);
     }
     
-    public static Properties loadProperties() throws OpflowConstructorException {
+    public static Properties loadProperties() throws OpflowBootstrapException {
         return loadProperties(null, null, true);
     }
     
-    public static Properties loadProperties(String propFile) throws OpflowConstructorException {
+    public static Properties loadProperties(String propFile) throws OpflowBootstrapException {
         return loadProperties(propFile, null, propFile == null);
     }
     
-    public static Properties loadProperties(String propFile, Properties props) throws OpflowConstructorException {
+    public static Properties loadProperties(String propFile, Properties props) throws OpflowBootstrapException {
         return loadProperties(propFile, props, propFile == null && props == null);
     }
     
-    public static Properties loadProperties(String propFile, Properties props, boolean useDefaultFile) throws OpflowConstructorException {
+    public static Properties loadProperties(String propFile, Properties props, boolean useDefaultFile) throws OpflowBootstrapException {
         try {
             if (props == null) {
                 props = new Properties();
@@ -159,7 +159,7 @@ public class OpflowHelper {
             if (LOG.isTraceEnabled()) LOG.trace("[-] Properties: " + getPropertyAsString(props));
             return props;
         } catch (IOException exception) {
-            throw new OpflowConstructorException(exception);
+            throw new OpflowBootstrapException(exception);
         }
     }
     

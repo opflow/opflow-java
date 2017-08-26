@@ -9,7 +9,7 @@ import com.devebot.opflow.OpflowRpcMaster;
 import com.devebot.opflow.OpflowRpcRequest;
 import com.devebot.opflow.OpflowRpcResult;
 import com.devebot.opflow.OpflowUtil;
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.lab.FibonacciGenerator;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
@@ -53,13 +53,13 @@ public class OpflowRpcMasterSteps {
     }
     
     @Given("a RPC master<$masterName>")
-    public void createRpcMaster(@Named("masterName") final String masterName) throws OpflowConstructorException {
+    public void createRpcMaster(@Named("masterName") final String masterName) throws OpflowBootstrapException {
         masters.put(masterName, OpflowHelper.createRpcMaster());
     }
     
     @Given("a RPC master<$masterName> with properties file: '$propFile'")
     public void createRpcMaster(@Named("masterName") final String masterName, 
-            @Named("propFile") final String propFile) throws OpflowConstructorException {
+            @Named("propFile") final String propFile) throws OpflowBootstrapException {
         masters.put(masterName, OpflowHelper.createRpcMaster(propFile));
     }
     

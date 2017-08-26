@@ -1,6 +1,6 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -30,7 +30,7 @@ public class OpflowPubsubHandler {
     private int redeliveredLimit = 0;
     private OpflowPubsubListener listener;
 
-    public OpflowPubsubHandler(Map<String, Object> params) throws OpflowConstructorException {
+    public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("mode", "pubsub");

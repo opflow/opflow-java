@@ -6,7 +6,7 @@ import com.devebot.opflow.OpflowRpcListener;
 import com.devebot.opflow.OpflowRpcResponse;
 import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.OpflowUtil;
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.lab.FibonacciGenerator;
 import com.google.common.collect.Lists;
@@ -43,13 +43,13 @@ public class OpflowRpcWorkerSteps {
     }
     
     @Given("a RPC worker<$string>")
-    public void createRpcWorker(@Named("workerName") String workerName) throws OpflowConstructorException {
+    public void createRpcWorker(@Named("workerName") String workerName) throws OpflowBootstrapException {
         workers.put(workerName, OpflowHelper.createRpcWorker());
     }
     
     @Given("a RPC worker<$workerName> with properties file: '$propFile'")
     public void createRpcMaster(@Named("workerName") final String workerName, 
-            @Named("propFile") final String propFile) throws OpflowConstructorException {
+            @Named("propFile") final String propFile) throws OpflowBootstrapException {
         workers.put(workerName, OpflowHelper.createRpcWorker(propFile));
     }
     

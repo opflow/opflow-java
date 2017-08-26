@@ -2,7 +2,7 @@ package com.devebot.opflow.tdd;
 
 import com.devebot.opflow.OpflowEngine;
 import com.devebot.opflow.OpflowHelper;
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +22,7 @@ public class OpflowBrokerTest extends OpflowAbstractTest {
     static Properties props;
     
     @BeforeClass
-    public static void before() throws OpflowConstructorException {
+    public static void before() throws OpflowBootstrapException {
         props = OpflowHelper.loadProperties();
         clearTestExchanges(props.getProperty("opflow.uri"));
         clearTestQueues(props.getProperty("opflow.uri"));
@@ -32,8 +32,8 @@ public class OpflowBrokerTest extends OpflowAbstractTest {
     public ExpectedException thrown = ExpectedException.none();
     
     @Test
-    public void testConstructor() throws OpflowConstructorException {
-        thrown.expect(OpflowConstructorException.class);
+    public void testConstructor() throws OpflowBootstrapException {
+        thrown.expect(OpflowBootstrapException.class);
         thrown.expectCause(CoreMatchers.is(IOException.class));
         thrown.expectMessage(CoreMatchers.is("connection refused, invalid connection parameters"));
         Map<String, Object> pars = new HashMap<String, Object>();
@@ -41,8 +41,8 @@ public class OpflowBrokerTest extends OpflowAbstractTest {
     }
     
     @Test
-    public void testConstructorWithInvalidExchangeType() throws OpflowConstructorException {
-        thrown.expect(OpflowConstructorException.class);
+    public void testConstructorWithInvalidExchangeType() throws OpflowBootstrapException {
+        thrown.expect(OpflowBootstrapException.class);
         thrown.expectCause(CoreMatchers.is(IOException.class));
         thrown.expectMessage(CoreMatchers.is("exchangeDeclare has been failed"));
         Map<String, Object> pars = new HashMap<String, Object>();
