@@ -12,16 +12,22 @@ public class OpflowRpcResult implements Serializable {
     private final String requestId;
     private final String workerTag;
     private final List<Step> progress;
+    private final boolean failed;
     private final byte[] error;
+    private final boolean completed;
     private final byte[] value;
     
     public OpflowRpcResult(String routineId, String requestId, String workerTag, 
-            List<Step> progress, byte[] error, byte[] value) {
+            List<Step> progress, 
+            boolean failed, byte[] error, 
+            boolean completed, byte[] value) {
         this.routineId = routineId;
         this.requestId = requestId;
         this.workerTag = workerTag;
         this.progress = progress;
+        this.failed = failed;
         this.error = error;
+        this.completed = completed;
         this.value = value;
     }
 
@@ -41,6 +47,10 @@ public class OpflowRpcResult implements Serializable {
         return error == null && value == null;
     }
     
+    public boolean isFailed() {
+        return failed;
+    }
+    
     public byte[] getError() {
         return error;
     }
@@ -48,6 +58,10 @@ public class OpflowRpcResult implements Serializable {
     public String getErrorAsString() {
         if (error == null) return null;
         return OpflowUtil.getString(error);
+    }
+    
+    public boolean isCompleted() {
+        return completed;
     }
     
     public byte[] getValue() {

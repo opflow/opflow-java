@@ -3,9 +3,10 @@ package com.devebot.opflow;
 import com.devebot.opflow.exception.OpflowConstructorException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -17,6 +18,9 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowHelper {
+    public final static String DEFAULT_CONFIGURATION_KEY = "opflow.configuration";
+    public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
+    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowHelper.class);
     
     public static OpflowRpcMaster createRpcMaster() throws OpflowConstructorException {
@@ -111,6 +115,10 @@ public class OpflowHelper {
         
         params.put("recyclebinName", props.getProperty("opflow.pubsub.recyclebinName"));
         
+        params.put("prefetch", props.getProperty("opflow.pubsub.prefetch"));
+        
+        params.put("subscriberLimit", props.getProperty("opflow.pubsub.subscriberLimit"));
+        
         params.put("redeliveredLimit", props.getProperty("opflow.pubsub.redeliveredLimit"));
         
         transformParameters(params);
@@ -127,27 +135,51 @@ public class OpflowHelper {
     public static Properties loadProperties(String propFile) throws OpflowConstructorException {
         return loadProperties(propFile, null);
     }
-            
+    
     public static Properties loadProperties(String propFile, Properties props) throws OpflowConstructorException {
         try {
+            boolean isDefault = false;
             if (props == null) {
-                if (propFile == null) propFile = "opflow.properties";
+                if (propFile == null) isDefault = true;
                 props = new Properties();
             } else {
                 props = new Properties(props);
             }
-            if (propFile != null) {
-                InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(propFile);
-                if (inputStream == null) {
+            if (propFile != null || isDefault) {
+                URL url = getConfigurationUrl(propFile);
+                if (url != null) {
+                    props.load(url.openStream());
+                } else {
+                    propFile = (propFile != null) ? propFile : DEFAULT_CONFIGURATION_FILE;
                     throw new FileNotFoundException("property file '" + propFile + "' not found in the classpath");
                 }
-                props.load(inputStream);
             }
             if (LOG.isTraceEnabled()) LOG.trace("[-] Properties: " + getPropertyAsString(props));
             return props;
         } catch (IOException exception) {
             throw new OpflowConstructorException(exception);
         }
+    }
+    
+    private static URL getConfigurationUrl(String configFile) {
+        URL url;
+        String cfgFromSystem = (configFile != null) ? configFile : 
+                OpflowUtil.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+        if (LOG.isTraceEnabled()) LOG.trace("[-] configuration file: " + cfgFromSystem);
+        if (cfgFromSystem == null) {
+            url = OpflowUtil.getResource(DEFAULT_CONFIGURATION_FILE);
+            if (LOG.isTraceEnabled()) LOG.trace("[-] default configuration: " + url);
+        } else {
+            try {
+                url = new URL(cfgFromSystem);
+            } catch (MalformedURLException ex) {
+                // woa, the cfgFromSystem string is not a URL,
+                // attempt to get the resource from the class path
+                url = OpflowUtil.getResource(cfgFromSystem);
+            }
+        }
+        if (LOG.isTraceEnabled()) LOG.trace("[-] final configuration path: " + url);
+        return url;
     }
     
     private static String getPropertyAsString(Properties prop) {
@@ -171,7 +203,7 @@ public class OpflowHelper {
     private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };
     
     private static final String[] INTEGER_FIELDS = new String[] {
-        "port", "channelMax", "frameMax", "heartbeat", "redeliveredLimit"
+        "port", "channelMax", "frameMax", "heartbeat", "prefetch", "subscriberLimit", "redeliveredLimit"
     };
     
     private static void transformParameters(Map<String, Object> params) {
