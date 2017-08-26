@@ -8,7 +8,7 @@ import com.devebot.opflow.OpflowRpcResponse;
 import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowConstructorException;
-import com.devebot.opflow.exception.OpflowConsumerLimitExceedException;
+import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +36,7 @@ public class OpflowRpcMasterTest {
     
     @Test
     public void testExceedingLimitResponse() throws OpflowConstructorException {
-        thrown.expect(OpflowConsumerLimitExceedException.class);
+        thrown.expect(OpflowConsumerOverLimitException.class);
         thrown.expectMessage(CoreMatchers.startsWith("consumerLimit exceed"));
         
         Map<String, Object> pars = new HashMap<String, Object>();

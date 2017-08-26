@@ -16,7 +16,8 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowConstructorException;
-import com.devebot.opflow.exception.OpflowConsumerLimitExceedException;
+import com.devebot.opflow.exception.OpflowConnectionException;
+import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
@@ -102,7 +103,7 @@ public class OpflowEngine {
             connection = factory.newConnection();
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("newConnection() has been failed, exception: " + exception.getMessage());
-            throw new OpflowConstructorException("connection refused, invalid connection parameters", exception);
+            throw new OpflowConnectionException("connection refused, invalid connection parameters", exception);
         }
         
         try {
@@ -207,7 +208,7 @@ public class OpflowEngine {
                 if (_declareOk.getConsumerCount() >= _consumerLimit) {
                     String errorMessage = "consumerLimit exceed: " + _declareOk.getConsumerCount() + "/" + _consumerLimit;
                     if (logger.isErrorEnabled()) logger.error("consume() - " + errorMessage);
-                    throw new OpflowConsumerLimitExceedException(errorMessage);
+                    throw new OpflowConsumerOverLimitException(errorMessage);
                 }
             }
             
