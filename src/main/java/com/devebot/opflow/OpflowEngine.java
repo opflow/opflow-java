@@ -13,10 +13,12 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.devebot.opflow.exception.OpflowConstructorException;
-import com.devebot.opflow.exception.OpflowConsumerLimitExceedException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowConnectionException;
+import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
@@ -43,66 +45,66 @@ public class OpflowEngine {
     private String[] otherKeys;
     private String applicationId;
 
-    public OpflowEngine(Map<String, Object> params) throws OpflowConstructorException {
+    public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         try {
             factory = new ConnectionFactory();
 
             String uri = (String) params.get("uri");
             if (uri != null) {
                 factory.setUri(uri);
-                if (logger.isTraceEnabled()) logger.trace("Connection using URI");
+                if (logger.isTraceEnabled()) logger.trace("Connection parameter/URI: " + hidePasswordInUri(uri));
             } else {
                 String host = (String) params.get("host");
                 if (host == null) host = "localhost";
                 factory.setHost(host);
-                if (logger.isTraceEnabled()) logger.trace("ConnectionParam/host: " + host);
+                if (logger.isTraceEnabled()) logger.trace("Connection parameter/host: " + host);
 
                 if (params.get("port") != null && params.get("port") instanceof Integer) {
                     Integer port;
                     factory.setPort(port = (Integer)params.get("port"));
-                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/port: " + port);
+                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/port: " + port);
                 }
 
                 String virtualHost = (String) params.get("virtualHost");
                 if (virtualHost != null) {
                     factory.setVirtualHost(virtualHost);
-                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/virtualHost: " + virtualHost);
+                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/virtualHost: " + virtualHost);
                 }
 
                 String username = (String) params.get("username");
                 if (username != null) {
                     factory.setUsername(username);
-                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/username: " + username);
+                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/username: " + username);
                 }
 
                 String password = (String) params.get("password");
                 if (password != null) {
                     factory.setPassword(password);
-                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/password: ******");
+                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/password: ******");
                 }
 
                 if (params.get("channelMax") != null && params.get("channelMax") instanceof Integer) {
                     Integer channelMax;
                     factory.setRequestedChannelMax(channelMax = (Integer)params.get("channelMax"));
-                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/channelMax: " + channelMax);
+                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/channelMax: " + channelMax);
                 }
 
                 if (params.get("frameMax") != null && params.get("frameMax") instanceof Integer) {
                     Integer frameMax;
                     factory.setRequestedFrameMax(frameMax = (Integer)params.get("frameMax"));
-                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/frameMax: " + frameMax);
+                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/frameMax: " + frameMax);
                 }
 
                 if (params.get("heartbeat") != null && params.get("heartbeat") instanceof Integer) {
                     Integer heartbeat;
                     factory.setRequestedHeartbeat(heartbeat = (Integer)params.get("heartbeat"));
-                    if (logger.isTraceEnabled()) logger.trace("ConnectionParam/heartbeat: " + heartbeat);
+                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/heartbeat: " + heartbeat);
                 }
             }
             connection = factory.newConnection();
         } catch (Exception exception) {
             if (logger.isErrorEnabled()) logger.error("newConnection() has been failed, exception: " + exception.getMessage());
-            throw new OpflowConstructorException("connection refused, invalid connection parameters", exception);
+            throw new OpflowConnectionException("connection refused, invalid connection parameters", exception);
         }
         
         try {
@@ -137,7 +139,7 @@ public class OpflowEngine {
             }
         } catch (IOException exception) {
             if (logger.isErrorEnabled()) logger.error("exchangeDeclare has been failed, exception: " + exception.getMessage());
-            throw new OpflowConstructorException("exchangeDeclare has been failed", exception);
+            throw new OpflowBootstrapException("exchangeDeclare has been failed", exception);
         }
     }
     
@@ -207,7 +209,7 @@ public class OpflowEngine {
                 if (_declareOk.getConsumerCount() >= _consumerLimit) {
                     String errorMessage = "consumerLimit exceed: " + _declareOk.getConsumerCount() + "/" + _consumerLimit;
                     if (logger.isErrorEnabled()) logger.error("consume() - " + errorMessage);
-                    throw new OpflowConsumerLimitExceedException(errorMessage);
+                    throw new OpflowConsumerOverLimitException(errorMessage);
                 }
             }
             
@@ -524,5 +526,11 @@ public class OpflowEngine {
                 }));
             }
         }
+    }
+    
+    private Pattern passwordPattern = Pattern.compile(":([^:]+)@");
+    
+    private String hidePasswordInUri(String uri) {
+        return passwordPattern.matcher(uri).replaceAll(":******@");
     }
 }

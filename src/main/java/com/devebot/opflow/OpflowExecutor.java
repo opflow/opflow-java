@@ -1,6 +1,6 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -18,13 +18,13 @@ public class OpflowExecutor {
         this.engine = engine;
     }
     
-    public void assertQueue(final String queueName) throws OpflowConstructorException {
+    public void assertQueue(final String queueName) throws OpflowBootstrapException {
         try {
             declareQueue(queueName);
         } catch (IOException ioe) {
-            throw new OpflowConstructorException(ioe);
+            throw new OpflowBootstrapException(ioe);
         } catch (TimeoutException te) {
-            throw new OpflowConstructorException(te);
+            throw new OpflowBootstrapException(te);
         }
     }
     

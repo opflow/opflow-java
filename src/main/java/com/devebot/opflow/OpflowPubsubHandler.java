@@ -1,6 +1,6 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -25,10 +25,12 @@ public class OpflowPubsubHandler {
     private final String subscriberName;
     private final String recyclebinName;
     private final List<OpflowEngine.ConsumerInfo> consumers = new LinkedList<OpflowEngine.ConsumerInfo>();
+    private int prefetch = 0;
+    private int subscriberLimit = 0;
     private int redeliveredLimit = 0;
     private OpflowPubsubListener listener;
 
-    public OpflowPubsubHandler(Map<String, Object> params) throws OpflowConstructorException {
+    public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("mode", "pubsub");
@@ -45,6 +47,16 @@ public class OpflowPubsubHandler {
         recyclebinName = (String) params.get("recyclebinName");
         if (recyclebinName != null) {
             executor.assertQueue(recyclebinName);
+        }
+        
+        if (params.get("prefetch") instanceof Integer) {
+            prefetch = (Integer) params.get("prefetch");
+            if (prefetch < 0) prefetch = 0;
+        }
+        
+        if (params.get("subscriberLimit") instanceof Integer) {
+            subscriberLimit = (Integer) params.get("subscriberLimit");
+            if (subscriberLimit < 0) subscriberLimit = 0;
         }
         
         if (params.get("redeliveredLimit") instanceof Integer) {
@@ -138,6 +150,8 @@ public class OpflowPubsubHandler {
             public void transform(Map<String, Object> opts) {
                 opts.put("autoAck", Boolean.TRUE);
                 opts.put("queueName", subscriberName);
+                if (prefetch > 0) opts.put("prefetch", prefetch);
+                if (subscriberLimit > 0) opts.put("consumerLimit", subscriberLimit);
             }
         }));
         consumers.add(consumer);

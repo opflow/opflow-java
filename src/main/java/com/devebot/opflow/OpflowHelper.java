@@ -1,11 +1,12 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -17,24 +18,27 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowHelper {
+    public final static String DEFAULT_CONFIGURATION_KEY = "opflow.configuration";
+    public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
+    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowHelper.class);
     
-    public static OpflowRpcMaster createRpcMaster() throws OpflowConstructorException {
-        return createRpcMaster(null, null);
+    public static OpflowRpcMaster createRpcMaster() throws OpflowBootstrapException {
+        return createRpcMaster(null, null, true);
     }
     
-    public static OpflowRpcMaster createRpcMaster(String propFile) throws OpflowConstructorException {
-        return createRpcMaster(propFile, null);
+    public static OpflowRpcMaster createRpcMaster(String propFile) throws OpflowBootstrapException {
+        return createRpcMaster(propFile, null, true);
     }
     
-    public static OpflowRpcMaster createRpcMaster(Properties defaultProps) throws OpflowConstructorException {
-        return createRpcMaster(null, defaultProps);
+    public static OpflowRpcMaster createRpcMaster(Properties defaultProps) throws OpflowBootstrapException {
+        return createRpcMaster(null, defaultProps, false);
     }
     
-    public static OpflowRpcMaster createRpcMaster(String propFile, Properties defaultProps) throws OpflowConstructorException {
+    public static OpflowRpcMaster createRpcMaster(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
         if (LOG.isTraceEnabled()) LOG.trace("Create new OpflowRpcMaster with properties file: " + propFile);
         
-        Properties props = loadProperties(propFile, defaultProps);
+        Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
         
         extractEngineParameters("master", params, props);
@@ -48,22 +52,22 @@ public class OpflowHelper {
         return new OpflowRpcMaster(params);
     }
     
-    public static OpflowRpcWorker createRpcWorker() throws OpflowConstructorException {
-        return createRpcWorker(null, null);
+    public static OpflowRpcWorker createRpcWorker() throws OpflowBootstrapException {
+        return createRpcWorker(null, null, true);
     }
     
-    public static OpflowRpcWorker createRpcWorker(String propFile) throws OpflowConstructorException {
-        return createRpcWorker(propFile, null);
+    public static OpflowRpcWorker createRpcWorker(String propFile) throws OpflowBootstrapException {
+        return createRpcWorker(propFile, null, true);
     }
     
-    public static OpflowRpcWorker createRpcWorker(Properties defaultProps) throws OpflowConstructorException {
-        return createRpcWorker(null, defaultProps);
+    public static OpflowRpcWorker createRpcWorker(Properties defaultProps) throws OpflowBootstrapException {
+        return createRpcWorker(null, defaultProps, false);
     }
     
-    public static OpflowRpcWorker createRpcWorker(String propFile, Properties defaultProps) throws OpflowConstructorException {
+    public static OpflowRpcWorker createRpcWorker(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
         if (LOG.isTraceEnabled()) LOG.trace("Create new OpflowRpcWorker with properties file: " + propFile);
         
-        Properties props = loadProperties(propFile, defaultProps);
+        Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
         
         extractEngineParameters("worker", params, props);
@@ -83,22 +87,22 @@ public class OpflowHelper {
         return new OpflowRpcWorker(params);
     }
     
-    public static OpflowPubsubHandler createPubsubHandler() throws OpflowConstructorException {
-        return createPubsubHandler(null, null);
+    public static OpflowPubsubHandler createPubsubHandler() throws OpflowBootstrapException {
+        return createPubsubHandler(null, null, true);
     }
     
-    public static OpflowPubsubHandler createPubsubHandler(String propFile) throws OpflowConstructorException {
-        return createPubsubHandler(propFile, null);
+    public static OpflowPubsubHandler createPubsubHandler(String propFile) throws OpflowBootstrapException {
+        return createPubsubHandler(propFile, null, true);
     }
     
-    public static OpflowPubsubHandler createPubsubHandler(Properties defaultProps) throws OpflowConstructorException {
-        return createPubsubHandler(null, defaultProps);
+    public static OpflowPubsubHandler createPubsubHandler(Properties defaultProps) throws OpflowBootstrapException {
+        return createPubsubHandler(null, defaultProps, false);
     }
     
-    public static OpflowPubsubHandler createPubsubHandler(String propFile, Properties defaultProps) throws OpflowConstructorException {
+    public static OpflowPubsubHandler createPubsubHandler(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
         if (LOG.isTraceEnabled()) LOG.trace("Create new OpflowPubsubHandler with properties file: " + propFile);
         
-        Properties props = loadProperties(propFile, defaultProps);
+        Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
         
         extractEngineParameters("pubsub", params, props);
@@ -111,6 +115,10 @@ public class OpflowHelper {
         
         params.put("recyclebinName", props.getProperty("opflow.pubsub.recyclebinName"));
         
+        params.put("prefetch", props.getProperty("opflow.pubsub.prefetch"));
+        
+        params.put("subscriberLimit", props.getProperty("opflow.pubsub.subscriberLimit"));
+        
         params.put("redeliveredLimit", props.getProperty("opflow.pubsub.redeliveredLimit"));
         
         transformParameters(params);
@@ -120,34 +128,60 @@ public class OpflowHelper {
         return new OpflowPubsubHandler(params);
     }
     
-    public static Properties loadProperties() throws OpflowConstructorException {
-        return loadProperties(null, null);
+    public static Properties loadProperties() throws OpflowBootstrapException {
+        return loadProperties(null, null, true);
     }
     
-    public static Properties loadProperties(String propFile) throws OpflowConstructorException {
-        return loadProperties(propFile, null);
+    public static Properties loadProperties(String propFile) throws OpflowBootstrapException {
+        return loadProperties(propFile, null, propFile == null);
     }
-            
-    public static Properties loadProperties(String propFile, Properties props) throws OpflowConstructorException {
+    
+    public static Properties loadProperties(String propFile, Properties props) throws OpflowBootstrapException {
+        return loadProperties(propFile, props, propFile == null && props == null);
+    }
+    
+    public static Properties loadProperties(String propFile, Properties props, boolean useDefaultFile) throws OpflowBootstrapException {
         try {
             if (props == null) {
-                if (propFile == null) propFile = "opflow.properties";
                 props = new Properties();
             } else {
                 props = new Properties(props);
             }
-            if (propFile != null) {
-                InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(propFile);
-                if (inputStream == null) {
+            if (propFile != null || useDefaultFile) {
+                URL url = getConfigurationUrl(propFile);
+                if (url != null) {
+                    props.load(url.openStream());
+                } else {
+                    propFile = (propFile != null) ? propFile : DEFAULT_CONFIGURATION_FILE;
                     throw new FileNotFoundException("property file '" + propFile + "' not found in the classpath");
                 }
-                props.load(inputStream);
             }
             if (LOG.isTraceEnabled()) LOG.trace("[-] Properties: " + getPropertyAsString(props));
             return props;
         } catch (IOException exception) {
-            throw new OpflowConstructorException(exception);
+            throw new OpflowBootstrapException(exception);
         }
+    }
+    
+    private static URL getConfigurationUrl(String configFile) {
+        URL url;
+        String cfgFromSystem = (configFile != null) ? configFile : 
+                OpflowUtil.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+        if (LOG.isTraceEnabled()) LOG.trace("[-] configuration file: " + cfgFromSystem);
+        if (cfgFromSystem == null) {
+            url = OpflowUtil.getResource(DEFAULT_CONFIGURATION_FILE);
+            if (LOG.isTraceEnabled()) LOG.trace("[-] default configuration: " + url);
+        } else {
+            try {
+                url = new URL(cfgFromSystem);
+            } catch (MalformedURLException ex) {
+                // woa, the cfgFromSystem string is not a URL,
+                // attempt to get the resource from the class path
+                url = OpflowUtil.getResource(cfgFromSystem);
+            }
+        }
+        if (LOG.isTraceEnabled()) LOG.trace("[-] final configuration path: " + url);
+        return url;
     }
     
     private static String getPropertyAsString(Properties prop) {
@@ -171,7 +205,7 @@ public class OpflowHelper {
     private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };
     
     private static final String[] INTEGER_FIELDS = new String[] {
-        "port", "channelMax", "frameMax", "heartbeat", "redeliveredLimit"
+        "port", "channelMax", "frameMax", "heartbeat", "prefetch", "subscriberLimit", "redeliveredLimit"
     };
     
     private static void transformParameters(Map<String, Object> params) {

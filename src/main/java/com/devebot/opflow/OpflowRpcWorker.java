@@ -1,6 +1,6 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.exception.OpflowConstructorException;
+import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -24,7 +24,7 @@ public class OpflowRpcWorker {
     private final String operatorName;
     private final String responseName;
     
-    public OpflowRpcWorker(Map<String, Object> params) throws OpflowConstructorException {
+    public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("mode", "rpc.worker");
@@ -35,7 +35,7 @@ public class OpflowRpcWorker {
         
         operatorName = (String) params.get("operatorName");
         if (operatorName == null) {
-            throw new OpflowConstructorException("operatorName must not be null");
+            throw new OpflowBootstrapException("operatorName must not be null");
         } else {
             executor.assertQueue(operatorName);
         }

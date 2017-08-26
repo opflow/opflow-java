@@ -5,12 +5,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Date;
-import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -199,7 +200,9 @@ public class OpflowUtil {
         Iterator<OpflowMessage> iter = request;
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw ...");
         String workerTag = null;
+        boolean failed = false;
         byte[] error = null;
+        boolean completed = false;
         byte[] value = null;
         List<OpflowRpcResult.Step> steps = new LinkedList<OpflowRpcResult.Step>();
         while(iter.hasNext()) {
@@ -225,16 +228,45 @@ public class OpflowUtil {
             } else
             if ("failed".equals(status)) {
                 workerTag = getMessageField(msg, "workerTag");
+                failed = true;
                 error = msg.getContent();
             } else
             if ("completed".equals(status)) {
                 workerTag = getMessageField(msg, "workerTag");
+                completed = true;
                 value = msg.getContent();
             }
         }
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw done");
         if (!includeProgress) steps = null;
-        return new OpflowRpcResult(routineId, requestId, workerTag, steps, error, value);
+        return new OpflowRpcResult(routineId, requestId, workerTag, steps, failed, error, completed, value);
+    }
+    
+    public static String getSystemProperty(String key, String def) {
+        try {
+            return System.getProperty(key, def);
+        } catch (Throwable t) {
+            if (LOG.isInfoEnabled()) LOG.info("Was not allowed to read system property [" + key + "].");
+            return def;
+        }
+    }
+    
+    public static URL getResource(String location) {
+        URL url = null;
+        if (url == null) {
+            // Attempt to load resource from the context class path of current thread
+            // may throw the SecurityException
+            try {
+                url = Thread.currentThread().getContextClassLoader().getResource(location);
+            } catch(Exception ex) {}
+        }
+        if (url == null) {
+            // Last attempt: get the resource from the class path.
+            try {
+                url = ClassLoader.getSystemResource(location);
+            } catch(Exception ex) {}
+        }
+        return url;
     }
     
     public static boolean isTestingEnv() {
