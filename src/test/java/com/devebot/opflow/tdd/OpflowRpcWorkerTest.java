@@ -28,9 +28,7 @@ public class OpflowRpcWorkerTest {
     public ExpectedException thrown = ExpectedException.none();
     
     @Test
-    public void testConstructorWithNullOperatorName() throws OpflowBootstrapException {
-        thrown.expect(OpflowBootstrapException.class);
-        thrown.expectMessage(CoreMatchers.is("operatorName must not be null"));
+    public void testConstructorWithNullConsumerNames() throws OpflowBootstrapException {
         Map<String, Object> pars = new HashMap<String, Object>();
         pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");

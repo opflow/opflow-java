@@ -34,9 +34,7 @@ public class OpflowRpcWorker {
         executor = new OpflowExecutor(engine);
         
         operatorName = (String) params.get("operatorName");
-        if (operatorName == null) {
-            throw new OpflowBootstrapException("operatorName must not be null");
-        } else {
+        if (operatorName != null) {
             executor.assertQueue(operatorName);
         }
         
