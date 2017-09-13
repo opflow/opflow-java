@@ -251,6 +251,18 @@ public class OpflowUtil {
         }
     }
     
+    public static String getEnvironVariable(String key, String def) {
+        if (key == null) return null;
+        try {
+            String value = System.getenv(key);
+            if (value != null) return value;
+            return def;
+        } catch (Throwable t) {
+            if (LOG.isInfoEnabled()) LOG.info("Was not allowed to read environment variable [" + key + "].");
+            return def;
+        }
+    }
+    
     public static URL getResource(String location) {
         URL url = null;
         if (url == null) {

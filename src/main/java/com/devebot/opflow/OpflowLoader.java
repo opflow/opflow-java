@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowLoader {
     public final static String DEFAULT_CONFIGURATION_KEY = "opflow.configuration";
+    public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowLoader.class);
@@ -207,6 +208,9 @@ public class OpflowLoader {
         URL url;
         String cfgFromSystem = (configFile != null) ? configFile : 
                 OpflowUtil.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+        if (cfgFromSystem == null) {
+            cfgFromSystem = OpflowUtil.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
+        }
         if (LOG.isTraceEnabled()) LOG.trace("[-] configuration file: " + cfgFromSystem);
         if (cfgFromSystem == null) {
             url = OpflowUtil.getResource(DEFAULT_CONFIGURATION_FILE);
