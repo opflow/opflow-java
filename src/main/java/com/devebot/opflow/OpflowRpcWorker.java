@@ -30,15 +30,21 @@ public class OpflowRpcWorker {
         brokerParams.put("mode", "rpc.worker");
         brokerParams.put("exchangeType", "direct");
         
+        operatorName = (String) params.get("operatorName");
+        responseName = (String) params.get("responseName");
+        
+        if (operatorName != null && responseName != null && 
+                operatorName.equals(responseName)) {
+            throw new OpflowBootstrapException("operatorName should be different with responseName");
+        }
+        
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         
-        operatorName = (String) params.get("operatorName");
         if (operatorName != null) {
             executor.assertQueue(operatorName);
         }
         
-        responseName = (String) params.get("responseName");
         if (responseName != null) {
             executor.assertQueue(responseName);
         }
