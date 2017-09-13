@@ -1,6 +1,6 @@
 package com.devebot.opflow.bdd.steps;
 
-import com.devebot.opflow.OpflowHelper;
+import com.devebot.opflow.OpflowLoader;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowRpcListener;
 import com.devebot.opflow.OpflowRpcResponse;
@@ -44,13 +44,13 @@ public class OpflowRpcWorkerSteps {
     
     @Given("a RPC worker<$string>")
     public void createRpcWorker(@Named("workerName") String workerName) throws OpflowBootstrapException {
-        workers.put(workerName, OpflowHelper.createRpcWorker());
+        workers.put(workerName, OpflowLoader.createRpcWorker());
     }
     
     @Given("a RPC worker<$workerName> with properties file: '$propFile'")
     public void createRpcMaster(@Named("workerName") final String workerName, 
             @Named("propFile") final String propFile) throws OpflowBootstrapException {
-        workers.put(workerName, OpflowHelper.createRpcWorker(propFile));
+        workers.put(workerName, OpflowLoader.createRpcWorker(propFile));
     }
     
     @Given("a counter consumer in worker<$workerName>")

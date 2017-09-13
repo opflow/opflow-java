@@ -1,7 +1,7 @@
 package com.devebot.opflow.tdd;
 
 import com.devebot.opflow.OpflowEngine;
-import com.devebot.opflow.OpflowHelper;
+import com.devebot.opflow.OpflowLoader;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,7 +23,7 @@ public class OpflowBrokerTest extends OpflowAbstractTest {
     
     @BeforeClass
     public static void before() throws OpflowBootstrapException {
-        props = OpflowHelper.loadProperties();
+        props = OpflowLoader.loadProperties();
         clearTestExchanges(props.getProperty("opflow.uri"));
         clearTestQueues(props.getProperty("opflow.uri"));
     }

@@ -1,6 +1,6 @@
 package com.devebot.opflow.bdd.steps;
 
-import com.devebot.opflow.OpflowHelper;
+import com.devebot.opflow.OpflowLoader;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowPubsubHandler;
 import com.devebot.opflow.OpflowPubsubListener;
@@ -36,14 +36,14 @@ public class OpflowPubsubSteps {
     
     @Given("a PubsubHandler named '$pubsubName'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName) throws OpflowBootstrapException {
-        pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler());
+        pubsubs.put(pubsubName, OpflowLoader.createPubsubHandler());
         countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
     }
     
     @Given("a PubsubHandler named '$pubsubName' with properties file: '$propFile'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName, 
             @Named("propFile") final String propFile) throws OpflowBootstrapException {
-        pubsubs.put(pubsubName, OpflowHelper.createPubsubHandler(propFile));
+        pubsubs.put(pubsubName, OpflowLoader.createPubsubHandler(propFile));
         countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
     }
     

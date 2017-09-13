@@ -1,6 +1,6 @@
 package com.devebot.opflow.tdd;
 
-import com.devebot.opflow.OpflowHelper;
+import com.devebot.opflow.OpflowLoader;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowPubsubListener;
 import com.devebot.opflow.OpflowRpcListener;
@@ -28,7 +28,7 @@ public class OpflowServerletTest {
     
     @Before
     public void beforeEach() throws OpflowBootstrapException {
-        props = OpflowHelper.loadProperties();
+        props = OpflowLoader.loadProperties();
     }
     
     @After
@@ -65,6 +65,89 @@ public class OpflowServerletTest {
             public void processMessage(OpflowMessage message) throws IOException {
                 throw new UnsupportedOperationException("Not supported yet.");
             }
+        }, new OpflowPubsubListener() {
+            @Override
+            public void processMessage(OpflowMessage message) throws IOException {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+        }), params);
+    }
+    
+    @Test
+    public void testDuplicated_Subscriber_RecyclebinName1() throws OpflowBootstrapException {
+        Map<String, Object> params = new HashMap<String, Object>();
+        
+        Map<String, Object> configurerCfg = new HashMap<String, Object>();
+        configurerCfg.put("uri", props.getProperty("opflow.uri"));
+        configurerCfg.put("exchangeName", "tdd-opflow-publisher");
+        configurerCfg.put("routingKey", "tdd-opflow-configurer");
+        params.put("configurer", configurerCfg);
+        
+        Map<String, Object> subscriberCfg = new HashMap<String, Object>();
+        subscriberCfg.put("uri", props.getProperty("opflow.uri"));
+        subscriberCfg.put("exchangeName", "tdd-opflow-publisher");
+        subscriberCfg.put("routingKey", "tdd-opflow-pubsub-public");
+        subscriberCfg.put("subscriberName", "tdd-opflow-subscriber");
+        subscriberCfg.put("recyclebinName", "tdd-opflow-subscriber");
+        params.put("subscriber", subscriberCfg);
+        
+        thrown.expect(OpflowBootstrapException.class);
+        thrown.expectMessage(CoreMatchers.startsWith("Invalid recyclebinName (duplicated with some queueNames)"));
+        
+        serverlet = new OpflowServerlet(new OpflowServerlet.ListenerMap(new OpflowPubsubListener() {
+            @Override
+            public void processMessage(OpflowMessage message) throws IOException {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+        }, new OpflowPubsubListener() {
+            @Override
+            public void processMessage(OpflowMessage message) throws IOException {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+        }), params);
+    }
+    
+    @Test
+    public void testDuplicated_Subscriber_RecyclebinName2() throws OpflowBootstrapException {
+        Map<String, Object> params = new HashMap<String, Object>();
+        
+        Map<String, Object> configurerCfg = new HashMap<String, Object>();
+        configurerCfg.put("uri", props.getProperty("opflow.uri"));
+        configurerCfg.put("exchangeName", "tdd-opflow-publisher");
+        configurerCfg.put("routingKey", "tdd-opflow-configurer");
+        params.put("configurer", configurerCfg);
+        
+        Map<String, Object> rpcWorkerCfg = new HashMap<String, Object>();
+        rpcWorkerCfg.put("uri", props.getProperty("opflow.uri"));
+        rpcWorkerCfg.put("exchangeName", "tdd-opflow-exchange");
+        rpcWorkerCfg.put("routingKey", "tdd-opflow-rpc");
+        rpcWorkerCfg.put("operatorName", "tdd-opflow-operator");
+        rpcWorkerCfg.put("responseName", "tdd-opflow-response");
+        params.put("rpcWorker", rpcWorkerCfg);
+        
+        Map<String, Object> subscriberCfg = new HashMap<String, Object>();
+        subscriberCfg.put("uri", props.getProperty("opflow.uri"));
+        subscriberCfg.put("exchangeName", "tdd-opflow-publisher");
+        subscriberCfg.put("routingKey", "tdd-opflow-pubsub-public");
+        subscriberCfg.put("subscriberName", "tdd-opflow-subscriber");
+        subscriberCfg.put("recyclebinName", "tdd-opflow-response");
+        params.put("subscriber", subscriberCfg);
+        
+        thrown.expect(OpflowBootstrapException.class);
+        thrown.expectMessage(CoreMatchers.startsWith("Invalid recyclebinName (duplicated with some queueNames)"));
+        
+        serverlet = new OpflowServerlet(new OpflowServerlet.ListenerMap(new OpflowPubsubListener() {
+            @Override
+            public void processMessage(OpflowMessage message) throws IOException {
+                throw new UnsupportedOperationException("Not supported yet.");
+            }
+        }, new OpflowServerlet.RpcWorkerEntry[] {
+            new OpflowServerlet.RpcWorkerEntry("fibonacci", new OpflowRpcListener() {
+                @Override
+                public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+                    throw new UnsupportedOperationException("Not supported yet.");
+                }
+            })
         }, new OpflowPubsubListener() {
             @Override
             public void processMessage(OpflowMessage message) throws IOException {

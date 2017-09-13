@@ -97,8 +97,9 @@ public class OpflowServerlet {
             if (subscriberCfg != null && listenerMap.getSubscriber() != null) {
                 subscriber = new OpflowPubsubHandler(subscriberCfg);
             }
-        } finally {
+        } catch(OpflowBootstrapException exception) {
             this.stop();
+            throw exception;
         }
     }
     
@@ -188,7 +189,7 @@ public class OpflowServerlet {
         }
 
         public RpcWorkerEntry[] getWorkerEntries() {
-            return rpcWorkerEntries;
+            return rpcWorkerEntries.clone();
         }
 
         public OpflowPubsubListener getSubscriber() {
