@@ -36,15 +36,21 @@ public class OpflowPubsubHandler {
         brokerParams.put("mode", "pubsub");
         brokerParams.put("exchangeType", "direct");
         
+        subscriberName = (String) params.get("subscriberName");
+        recyclebinName = (String) params.get("recyclebinName");
+        
+        if (subscriberName != null && recyclebinName != null && 
+                subscriberName.equals(recyclebinName)) {
+            throw new OpflowBootstrapException("subscriberName should be different with recyclebinName");
+        }
+        
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         
-        subscriberName = (String) params.get("subscriberName");
         if (subscriberName != null) {
             executor.assertQueue(subscriberName);
         }
         
-        recyclebinName = (String) params.get("recyclebinName");
         if (recyclebinName != null) {
             executor.assertQueue(recyclebinName);
         }

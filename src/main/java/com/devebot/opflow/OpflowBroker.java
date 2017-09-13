@@ -6,7 +6,10 @@ import java.util.Map;
 /**
  *
  * @author drupalex
+ * 
+ * @deprecated  As of release 0.1.8, replaced by {@link #OpflowEngine}
  */
+@Deprecated
 public class OpflowBroker extends OpflowEngine {
     public OpflowBroker(Map<String, Object> params) throws OpflowBootstrapException {
         super(params);
