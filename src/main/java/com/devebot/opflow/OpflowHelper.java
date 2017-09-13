@@ -41,7 +41,7 @@ public class OpflowHelper {
         Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
         
-        extractEngineParameters("master", params, props);
+        extractEngineParameters(params, props, "master");
         
         params.put("responseName", props.getProperty("opflow.master.responseName"));
         
@@ -70,7 +70,7 @@ public class OpflowHelper {
         Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
         
-        extractEngineParameters("worker", params, props);
+        extractEngineParameters(params, props, "worker");
         
         if (props.getProperty("opflow.worker.operatorName") != null) {
             params.put("operatorName", props.getProperty("opflow.worker.operatorName"));
@@ -105,7 +105,7 @@ public class OpflowHelper {
         Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
         
-        extractEngineParameters("pubsub", params, props);
+        extractEngineParameters(params, props, "pubsub");
         
         if (props.getProperty("opflow.pubsub.subscriberName") != null) {
             params.put("subscriberName", props.getProperty("opflow.pubsub.subscriberName"));
@@ -114,11 +114,8 @@ public class OpflowHelper {
         }
         
         params.put("recyclebinName", props.getProperty("opflow.pubsub.recyclebinName"));
-        
         params.put("prefetch", props.getProperty("opflow.pubsub.prefetch"));
-        
         params.put("subscriberLimit", props.getProperty("opflow.pubsub.subscriberLimit"));
-        
         params.put("redeliveredLimit", props.getProperty("opflow.pubsub.redeliveredLimit"));
         
         transformParameters(params);
@@ -126,6 +123,49 @@ public class OpflowHelper {
         if (LOG.isTraceEnabled()) LOG.trace("OpflowPubsubHandler has been created successfully");
         
         return new OpflowPubsubHandler(params);
+    }
+    
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners)
+            throws OpflowBootstrapException {
+        return createServerlet(listeners, null, null, true);
+    }
+    
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners, 
+            String propFile) throws OpflowBootstrapException {
+        return createServerlet(listeners, propFile, null, true);
+    }
+    
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners,
+            Properties defaultProps) throws OpflowBootstrapException {
+        return createServerlet(listeners, null, defaultProps, false);
+    }
+    
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners, 
+            String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
+        Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
+        
+        Map<String, Object> configurerCfg = new HashMap<String, Object>();
+        extractEngineParameters(configurerCfg, props, "serverlet", "configurer");
+        transformParameters(configurerCfg);
+        
+        Map<String, Object> rpcWorkerCfg = new HashMap<String, Object>();
+        extractEngineParameters(rpcWorkerCfg, props, "serverlet", "rpcWorker");
+        rpcWorkerCfg.put("operatorName", props.getProperty("opflow.serverlet.rpcWorker.operatorName"));
+        rpcWorkerCfg.put("responseName", props.getProperty("opflow.serverlet.rpcWorker.responseName"));
+        transformParameters(rpcWorkerCfg);
+        
+        Map<String, Object> subscriberCfg = new HashMap<String, Object>();
+        extractEngineParameters(subscriberCfg, props, "serverlet", "subscriber");
+        subscriberCfg.put("subscriberName", props.getProperty("opflow.serverlet.subscriber.subscriberName"));
+        subscriberCfg.put("recyclebinName", props.getProperty("opflow.serverlet.subscriber.recyclebinName"));
+        transformParameters(subscriberCfg);
+        
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("configurer", configurerCfg);
+        params.put("rpcWorker", rpcWorkerCfg);
+        params.put("subscriber", subscriberCfg);
+        
+        return new OpflowServerlet(listeners, params);
     }
     
     public static Properties loadProperties() throws OpflowBootstrapException {
@@ -190,11 +230,18 @@ public class OpflowHelper {
         return writer.getBuffer().toString();
     }
     
-    private static void extractEngineParameters(String mode, Map<String, Object> params, Properties props) {
+    private static void extractEngineParameters(Map<String, Object> params, Properties props, String level1) {
+        extractEngineParameters(params, props, level1, null);
+    }
+    
+    private static void extractEngineParameters(Map<String, Object> params, Properties props, String level1, String level2) {
         for(String field: OpflowEngine.PARAMETER_NAMES) {
             String keyLevel0 = "opflow." + field;
-            String keyLevel1 = "opflow." + mode + "." + field;
-            if (props.getProperty(keyLevel1) != null) {
+            String keyLevel1 = "opflow." + level1 + "." + field;
+            String keyLevel2 = (level2 != null) ? "opflow." + level1 + "." + level2 + "." + field : null;
+            if (keyLevel2 != null && props.getProperty(keyLevel2) != null) {
+                params.put(field, props.getProperty(keyLevel2));
+            } else if (props.getProperty(keyLevel1) != null) {
                 params.put(field, props.getProperty(keyLevel1));
             } else if (props.getProperty(keyLevel0) != null) {
                 params.put(field, props.getProperty(keyLevel0));
