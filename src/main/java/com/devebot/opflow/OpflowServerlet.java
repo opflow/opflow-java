@@ -32,6 +32,7 @@ public class OpflowServerlet {
         
         HashSet<String> checkExchange = new HashSet<String>();
         HashSet<String> checkQueue = new HashSet<String>();
+        HashSet<String> checkRecyclebin = new HashSet<String>();
         
         if (configurerCfg != null) {
             if (configurerCfg.get("exchangeName") == null || configurerCfg.get("routingKey") == null) {
@@ -42,8 +43,9 @@ public class OpflowServerlet {
                 }
             }
             if (configurerCfg.get("subscriberName") != null && !checkQueue.add(configurerCfg.get("subscriberName").toString())) {
-                throw new OpflowBootstrapException("Configurer[subscriberName] must be unique");
+                throw new OpflowBootstrapException("Configurer[subscriberName] must not be duplicated");
             }
+            if (configurerCfg.get("recyclebinName") != null) checkRecyclebin.add(configurerCfg.get("recyclebinName").toString());
         }
 
         if (rpcWorkerCfg != null) {
@@ -55,7 +57,10 @@ public class OpflowServerlet {
                 }
             }
             if (rpcWorkerCfg.get("operatorName") != null && !checkQueue.add(rpcWorkerCfg.get("operatorName").toString())) {
-                throw new OpflowBootstrapException("RpcWorker[operatorName] must be unique");
+                throw new OpflowBootstrapException("RpcWorker[operatorName] must not be duplicated");
+            }
+            if (rpcWorkerCfg.get("responseName") != null && !checkQueue.add(rpcWorkerCfg.get("responseName").toString())) {
+                throw new OpflowBootstrapException("RpcWorker[responseName] must not be duplicated");
             }
         }
         
@@ -68,8 +73,14 @@ public class OpflowServerlet {
                 }
             }
             if (subscriberCfg.get("subscriberName") != null && !checkQueue.add(subscriberCfg.get("subscriberName").toString())) {
-                throw new OpflowBootstrapException("Subscriber[subscriberName] must be unique");
+                throw new OpflowBootstrapException("Subscriber[subscriberName] must not be duplicated");
             }
+            if (subscriberCfg.get("recyclebinName") != null) checkRecyclebin.add(subscriberCfg.get("recyclebinName").toString());
+        }
+        
+        checkRecyclebin.retainAll(checkQueue);
+        if (!checkRecyclebin.isEmpty()) {
+            throw new OpflowBootstrapException("Invalid recyclebinName (duplicated with some queueNames)");
         }
         
         try {
