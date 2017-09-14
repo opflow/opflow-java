@@ -166,14 +166,11 @@ public class OpflowPubsubHandler {
     
     public void close() {
         if (engine != null) {
-            if (false) {
-                // TODO: SKIP THIS CODE
-                for(OpflowEngine.ConsumerInfo consumer:consumers) {
-                    if (consumer != null) {
-                        engine.cancelConsumer(consumer);
-                    }
-                }
-            }
+//            for(OpflowEngine.ConsumerInfo consumer:consumers) {
+//                if (consumer != null) {
+//                    engine.cancelConsumer(consumer);
+//                }
+//            }
             consumers.clear();
             engine.close();
         }

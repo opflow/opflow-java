@@ -44,7 +44,7 @@ public class OpflowBrokerTest extends OpflowAbstractTest {
     public void testConstructorWithInvalidExchangeType() throws OpflowBootstrapException {
         thrown.expect(OpflowBootstrapException.class);
         thrown.expectCause(CoreMatchers.is(IOException.class));
-        thrown.expectMessage(CoreMatchers.is("exchangeDeclare has been failed"));
+        thrown.expectMessage(CoreMatchers.is("exchangeDeclare has failed"));
         Map<String, Object> pars = new HashMap<String, Object>();
         pars.put("uri", props.getProperty("opflow.uri"));
         pars.put("exchangeName", "tdd-opflow-exchange");

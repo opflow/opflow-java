@@ -11,6 +11,8 @@ import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
@@ -34,10 +36,14 @@ public class OpflowEngine {
 
     private final Logger logger = LoggerFactory.getLogger(OpflowEngine.class);
 
+    private String mode;
     private ConnectionFactory factory;
-    private Connection connection;
-    private Channel channel;
-
+    private Connection producingConnection;
+    private Channel producingChannel;
+    private Connection consumingConnection;
+    private Channel consumingChannel;
+    private List<ConsumerInfo> consumerInfos = new LinkedList<ConsumerInfo>();
+    
     private String exchangeName;
     private String exchangeType;
     private Boolean exchangeDurable;
@@ -46,6 +52,7 @@ public class OpflowEngine {
     private String applicationId;
 
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
+        mode = params.containsKey("mode") ? params.get("mode").toString() : "engine";
         try {
             factory = new ConnectionFactory();
 
@@ -101,9 +108,9 @@ public class OpflowEngine {
                     if (logger.isTraceEnabled()) logger.trace("Connection parameter/heartbeat: " + heartbeat);
                 }
             }
-            connection = factory.newConnection();
+            this.assertConnection();
         } catch (Exception exception) {
-            if (logger.isErrorEnabled()) logger.error("newConnection() has been failed, exception: " + exception.getMessage());
+            if (logger.isErrorEnabled()) logger.error("newConnection() has failed, exception: " + exception.getMessage());
             throw new OpflowConnectionException("connection refused, invalid connection parameters", exception);
         }
         
@@ -123,7 +130,7 @@ public class OpflowEngine {
             if (exchangeDurable == null) exchangeDurable = true;
             
             if (exchangeName != null) {
-                getChannel().exchangeDeclare(exchangeName, exchangeType, exchangeDurable);
+                getProducingChannel().exchangeDeclare(exchangeName, exchangeType, exchangeDurable);
             }
             
             if (params.get("routingKey") instanceof String) {
@@ -138,8 +145,11 @@ public class OpflowEngine {
                 applicationId = (String) params.get("applicationId");
             }
         } catch (IOException exception) {
-            if (logger.isErrorEnabled()) logger.error("exchangeDeclare has been failed, exception: " + exception.getMessage());
-            throw new OpflowBootstrapException("exchangeDeclare has been failed", exception);
+            if (logger.isErrorEnabled()) logger.error("exchangeDeclare has failed, exception: " + exception.getMessage());
+            throw new OpflowBootstrapException("exchangeDeclare has failed", exception);
+        } catch (TimeoutException exception) {
+            if (logger.isErrorEnabled()) logger.error("connection is timeout, exception: " + exception.getMessage());
+            throw new OpflowBootstrapException("it maybe too slow or unstable network", exception);
         }
     }
     
@@ -158,13 +168,16 @@ public class OpflowEngine {
                 appId = (String) override.get("applicationId");
             }
             propBuilder.appId(appId);
-            Channel _channel = getChannel();
+            Channel _channel = getProducingChannel();
             if (_channel == null || !_channel.isOpen()) {
                 throw new OpflowOperationException("Channel is null or has been closed");
             }
             _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), content);
         } catch (IOException exception) {
-            if (logger.isErrorEnabled()) logger.error("produce() has been failed, exception: " + exception.getMessage());
+            if (logger.isErrorEnabled()) logger.error("produce() has failed, exception: " + exception.getMessage());
+            throw new OpflowOperationException(exception);
+        } catch (TimeoutException exception) {
+            if (logger.isErrorEnabled()) logger.error("produce() is timeout, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
         }
     }
@@ -172,14 +185,10 @@ public class OpflowEngine {
     public ConsumerInfo consume(final OpflowListener listener, final Map<String, Object> options) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         try {
-            final Channel _channel;
-            
-            final Boolean _forceNewChannel = (Boolean) opts.get("forceNewChannel");
-            if (!Boolean.FALSE.equals(_forceNewChannel)) {
-                _channel = this.connection.createChannel();
-            } else {
-                _channel = getChannel();
-            }
+            final boolean _forceNewConnection = Boolean.TRUE.equals(opts.get("forceNewConnection"));
+            final Boolean _forceNewChannel = Boolean.TRUE.equals(opts.get("forceNewChannel"));
+            final Channel _channel = getConsumingChannel(_forceNewConnection, _forceNewChannel);
+            final Connection _connection = _channel.getConnection();
             
             Integer _prefetch = null;
             if (opts.get("prefetch") instanceof Integer) {
@@ -365,9 +374,14 @@ public class OpflowEngine {
             if (logger.isInfoEnabled()) {
                 logger.info("[*] Consume Channel[" + _channel.getChannelNumber() + "]/Queue[" + _queueName + "] -> consumerTag: " + _consumerTag);
             }
-            return new ConsumerInfo(_channel, _queueName, _fixedQueue, _consumer, _consumerTag);
+            ConsumerInfo info = new ConsumerInfo(_connection, !_forceNewConnection, _channel, !_forceNewChannel, _queueName, _fixedQueue, _consumer, _consumerTag);
+            if ("engine".equals(mode)) consumerInfos.add(info);
+            return info;
         } catch(IOException exception) {
-            if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
+            if (logger.isErrorEnabled()) logger.error("consume() has failed, exception: " + exception.getMessage());
+            throw new OpflowOperationException(exception);
+        } catch(TimeoutException exception) {
+            if (logger.isErrorEnabled()) logger.error("consume() is timeout, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
         }
     }
@@ -378,11 +392,15 @@ public class OpflowEngine {
     
     public <T> T acquireChannel(Operator listener) throws IOException, TimeoutException {
         T output = null;
-        Channel _channel = connection.createChannel();
+        Connection _connection = null;
+        Channel _channel = null;
         try {
+            _connection = factory.newConnection();
+            _channel = _connection.createChannel();
             if (listener != null) output = (T) listener.handleEvent(_channel);
         } finally {
             if (_channel != null && _channel.isOpen()) _channel.close();
+            if (_connection != null && _connection.isOpen()) _connection.close();
         }
         return output;
     }
@@ -397,30 +415,63 @@ public class OpflowEngine {
             if (logger.isDebugEnabled()) {
                 logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] has been cancelled");
             }
+            if (!consumerInfo.isSharedConnection() || !consumerInfo.isSharedChannel()) {
+                if (consumerInfo.getChannel() != null && consumerInfo.getChannel().isOpen()) {
+                    consumerInfo.getChannel().close();
+                }
+            }
+            if (!consumerInfo.isSharedConnection()) {
+                if (consumerInfo.getConnection() != null && consumerInfo.getConnection().isOpen()) {
+                    consumerInfo.getConnection().close();
+                }
+            }
         } catch (IOException ex) {
             if (logger.isErrorEnabled()) {
-                logger.error("cancel consumer[" + consumerInfo.getConsumerTag() + "] failed, IOException: " + ex.getMessage());
+                logger.error("cancel consumer[" + consumerInfo.getConsumerTag() + "] has failed, error: " + ex.getMessage());
+            }
+        } catch (TimeoutException ex) {
+            if (logger.isErrorEnabled()) {
+                logger.error("cancel consumer[" + consumerInfo.getConsumerTag() + "] is timeout, error: " + ex.getMessage());
             }
         }
     }
     
     public class ConsumerInfo {
+        private final Connection connection;
+        private final boolean sharedConnection;
         private final Channel channel;
+        private final boolean sharedChannel;
         private final String queueName;
         private final boolean fixedQueue;
         private final Consumer consumer;
         private final String consumerTag;
         
-        public ConsumerInfo(Channel channel, String queueName, boolean fixedQueue, Consumer consumer, String consumerTag) {
+        public ConsumerInfo(Connection connection, boolean sharedConnection, Channel channel, boolean sharedChannel, 
+                String queueName, boolean fixedQueue, Consumer consumer, String consumerTag) {
+            this.connection = connection;
+            this.sharedConnection = sharedConnection;
             this.channel = channel;
+            this.sharedChannel = sharedChannel;
             this.queueName = queueName;
             this.fixedQueue = fixedQueue;
             this.consumer = consumer;
             this.consumerTag = consumerTag;
         }
 
+        public Connection getConnection() {
+            return connection;
+        }
+
+        public boolean isSharedConnection() {
+            return sharedConnection;
+        }
+
         public Channel getChannel() {
             return channel;
+        }
+
+        public boolean isSharedChannel() {
+            return sharedChannel;
         }
 
         public String getQueueName() {
@@ -470,7 +521,7 @@ public class OpflowEngine {
     }
     
     public State check() {
-        int conn = connection.isOpen() ? State.CONNECTION_OPENED : State.CONNECTION_CLOSED;
+        int conn = producingConnection.isOpen() ? State.CONNECTION_OPENED : State.CONNECTION_CLOSED;
         State state = new State(conn);
         return state;
     }
@@ -483,23 +534,53 @@ public class OpflowEngine {
     public void close() {
         try {
             if (logger.isInfoEnabled()) logger.info("[*] Cancel consumers, close channels, close connection.");
-            if (channel != null && channel.isOpen()) channel.close();
-            if (connection != null && connection.isOpen()) connection.close();
-        } catch (Exception exception) {
-            if (logger.isErrorEnabled()) logger.error("close() has been failed, exception: " + exception.getMessage());
+            
+            if (producingChannel != null && producingChannel.isOpen()) producingChannel.close();
+            if (producingConnection != null && producingConnection.isOpen()) producingConnection.close();
+            
+            if ("engine".equals(mode)) {
+                for(ConsumerInfo consumerInfo: consumerInfos) {
+                    this.cancelConsumer(consumerInfo);
+                }
+                consumerInfos.clear();
+            }
+            
+            if (consumingChannel != null && consumingChannel.isOpen()) consumingChannel.close();
+            if (consumingConnection != null && consumingConnection.isOpen()) consumingConnection.close();
+        } catch (IOException exception) {
+            if (logger.isErrorEnabled()) logger.error("close() has failed, exception: " + exception.getMessage());
+            throw new OpflowOperationException(exception);
+        } catch (TimeoutException exception) {
+            if (logger.isErrorEnabled()) logger.error("close() is timeout, exception: " + exception.getMessage());
             throw new OpflowOperationException(exception);
         }
     }
     
-    private Channel getChannel() throws IOException {
-        if (channel == null) {
+    private void assertConnection() throws IOException, TimeoutException {
+        this.acquireChannel(new Operator() {
+            @Override
+            public Object handleEvent(Channel channel) throws IOException {
+                return null; // try to connection
+            }
+        });
+    }
+    
+    private Connection getProducingConnection() throws IOException, TimeoutException {
+        if (producingConnection == null || !producingConnection.isOpen()) {
+            producingConnection = factory.newConnection();
+        }
+        return producingConnection;
+    }
+    
+    private Channel getProducingChannel() throws IOException, TimeoutException {
+        if (producingChannel == null || !producingChannel.isOpen()) {
             try {
-                channel = connection.createChannel();
-                channel.addShutdownListener(new ShutdownListener() {
+                producingChannel = getProducingConnection().createChannel();
+                producingChannel.addShutdownListener(new ShutdownListener() {
                     @Override
                     public void shutdownCompleted(ShutdownSignalException sse) {
                         if (logger.isInfoEnabled()) {
-                            logger.info("Main channel[" + channel.getChannelNumber() + "] has been shutdown");
+                            logger.info("Main channel[" + producingChannel.getChannelNumber() + "] has been shutdown");
                         }
                     }
                 });
@@ -508,7 +589,30 @@ public class OpflowEngine {
                 throw exception;
             }
         }
-        return channel;
+        return producingChannel;
+    }
+    
+    private Connection getConsumingConnection(boolean forceNewConnection) throws IOException, TimeoutException {
+        if (forceNewConnection) {
+            return factory.newConnection();
+        }
+        if (consumingConnection == null || !consumingConnection.isOpen()) {
+            consumingConnection = factory.newConnection();
+        }
+        return consumingConnection;
+    }
+    
+    private Channel getConsumingChannel(boolean forceNewConnection, boolean forceNewChannel) throws IOException, TimeoutException {
+        if (forceNewConnection) {
+            return getConsumingConnection(forceNewConnection).createChannel();
+        }
+        if (forceNewChannel) {
+            return getConsumingConnection(false).createChannel();
+        }
+        if (consumingChannel == null || !consumingChannel.isOpen()) {
+            consumingChannel = getConsumingConnection(false).createChannel();
+        }
+        return consumingChannel;
     }
     
     private void bindExchange(Channel _channel, String _exchangeName, String _queueName, String _routingKey) throws IOException {
