@@ -33,7 +33,7 @@ public class OpflowServerletTest {
     
     @After
     public void afterEach() {
-        if (serverlet != null) serverlet.stop();
+        if (serverlet != null) serverlet.close();
     }
     
     @Rule

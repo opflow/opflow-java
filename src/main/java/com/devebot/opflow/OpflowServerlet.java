@@ -37,10 +37,9 @@ public class OpflowServerlet {
         if (configurerCfg != null) {
             if (configurerCfg.get("exchangeName") == null || configurerCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
-            } else {
-                if (!checkExchange.add(configurerCfg.get("exchangeName").toString() + configurerCfg.get("routingKey").toString())) {
-                    throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
-                }
+            } 
+            if (!checkExchange.add(configurerCfg.get("exchangeName").toString() + configurerCfg.get("routingKey").toString())) {
+                throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
             }
             if (configurerCfg.get("subscriberName") != null && !checkQueue.add(configurerCfg.get("subscriberName").toString())) {
                 throw new OpflowBootstrapException("Configurer[subscriberName] must not be duplicated");
@@ -51,10 +50,9 @@ public class OpflowServerlet {
         if (rpcWorkerCfg != null) {
             if (rpcWorkerCfg.get("exchangeName") == null || rpcWorkerCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid RpcWorker connection parameters");
-            } else {
-                if (!checkExchange.add(rpcWorkerCfg.get("exchangeName").toString() + rpcWorkerCfg.get("routingKey").toString())) {
-                    throw new OpflowBootstrapException("Duplicated RpcWorker connection parameters");
-                }
+            }
+            if (!checkExchange.add(rpcWorkerCfg.get("exchangeName").toString() + rpcWorkerCfg.get("routingKey").toString())) {
+                throw new OpflowBootstrapException("Duplicated RpcWorker connection parameters");
             }
             if (rpcWorkerCfg.get("operatorName") != null && !checkQueue.add(rpcWorkerCfg.get("operatorName").toString())) {
                 throw new OpflowBootstrapException("RpcWorker[operatorName] must not be duplicated");
@@ -67,10 +65,9 @@ public class OpflowServerlet {
         if (subscriberCfg != null) {
             if (subscriberCfg.get("exchangeName") == null || subscriberCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid Subscriber connection parameters");
-            } else {
-                if (!checkExchange.add(subscriberCfg.get("exchangeName").toString() + subscriberCfg.get("routingKey").toString())) {
-                    throw new OpflowBootstrapException("Duplicated Subscriber connection parameters");
-                }
+            }
+            if (!checkExchange.add(subscriberCfg.get("exchangeName").toString() + subscriberCfg.get("routingKey").toString())) {
+                throw new OpflowBootstrapException("Duplicated Subscriber connection parameters");
             }
             if (subscriberCfg.get("subscriberName") != null && !checkQueue.add(subscriberCfg.get("subscriberName").toString())) {
                 throw new OpflowBootstrapException("Subscriber[subscriberName] must not be duplicated");
@@ -98,7 +95,7 @@ public class OpflowServerlet {
                 subscriber = new OpflowPubsubHandler(subscriberCfg);
             }
         } catch(OpflowBootstrapException exception) {
-            this.stop();
+            this.close();
             throw exception;
         }
     }
@@ -117,7 +114,7 @@ public class OpflowServerlet {
         }
     }
     
-    public final void stop() {
+    public final void close() {
         if (configurer != null) configurer.close();
         if (rpcWorker != null) rpcWorker.close();
         if (subscriber != null) subscriber.close();
