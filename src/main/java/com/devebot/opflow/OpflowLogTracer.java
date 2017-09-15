@@ -2,7 +2,6 @@ package com.devebot.opflow;
 
 import com.google.gson.Gson;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -89,19 +88,6 @@ public class OpflowLogTracer {
                 Attributes attributes = manifest.getMainAttributes();
                 return attributes.getValue("Implementation-Version");
             }
-        } catch (Exception ioe) {}
-        return OPFLOW_VERSION;
-    }
-    
-    private String getVersionNameFromManifestBackup() {
-        Class clazz = OpflowLogTracer.class;
-        String className = clazz.getSimpleName() + ".class";
-        String classPath = clazz.getResource(className).toString();
-        String manifestPath = classPath.replace("com/devebot/opflow/OpflowLogTracer.class", "META-INF/MANIFEST.MF");
-        try {
-            Manifest manifest = new Manifest(new URL(manifestPath).openStream());
-            Attributes attributes = manifest.getMainAttributes();
-            return attributes.getValue("Implementation-Version");
         } catch (Exception ioe) {}
         return OPFLOW_VERSION;
     }
