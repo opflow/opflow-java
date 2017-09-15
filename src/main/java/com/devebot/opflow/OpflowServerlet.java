@@ -3,12 +3,16 @@ package com.devebot.opflow;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.util.HashSet;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author drupalex
  */
 public class OpflowServerlet {
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
+    private final OpflowLogTracer logTracer = new OpflowLogTracer();
     
     private OpflowPubsubHandler configurer;
     private OpflowRpcWorker rpcWorker;
@@ -20,6 +24,12 @@ public class OpflowServerlet {
     
     public OpflowServerlet(ListenerMap listeners, Map<String, Object> kwargs) throws OpflowBootstrapException {
         this.kwargs = kwargs;
+
+        logTracer.put("serverletId", OpflowUtil.getOptionField(this.kwargs, "serverletId", true));
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet.new()")
+                .toString());
         
         if (listeners == null) {
             throw new OpflowBootstrapException("Listener definitions must not be null");
@@ -77,6 +87,8 @@ public class OpflowServerlet {
         
         checkRecyclebin.retainAll(checkQueue);
         if (!checkRecyclebin.isEmpty()) {
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.copy()
+                .put("message", "duplicated_recyclebin_queue_name").toString());
             throw new OpflowBootstrapException("Invalid recyclebinName (duplicated with some queueNames)");
         }
         
@@ -96,9 +108,17 @@ public class OpflowServerlet {
             this.close();
             throw exception;
         }
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet.new() end!")
+                .toString());
     }
     
     public final void start() {
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet start()")
+                .toString());
+        
         if (configurer != null) {
             configurer.subscribe(listenerMap.getConfigurer());
         }
@@ -110,12 +130,24 @@ public class OpflowServerlet {
         if (subscriber != null) {
             subscriber.subscribe(listenerMap.getSubscriber());
         }
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet start() has done!")
+                .toString());
     }
     
     public final void close() {
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet stop()")
+                .toString());
+        
         if (configurer != null) configurer.close();
         if (rpcWorker != null) rpcWorker.close();
         if (subscriber != null) subscriber.close();
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet stop() has done!")
+                .toString());
     }
     
     public static class RpcWorkerEntry {
