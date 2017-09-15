@@ -15,7 +15,7 @@ import com.devebot.opflow.exception.OpflowOperationException;
  */
 public class OpflowRpcResponse {
 
-    final Logger logger = LoggerFactory.getLogger(OpflowRpcResponse.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcResponse.class);
     
     private final Channel channel;
     private final AMQP.BasicProperties properties;
@@ -35,16 +35,16 @@ public class OpflowRpcResponse {
             this.replyQueueName = replyQueueName;
         }
         
-        if (logger.isTraceEnabled()) {
-            logger.trace("Request[" + this.requestId + "] will reply to: " + this.replyQueueName);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Request[" + this.requestId + "] will reply to: " + this.replyQueueName);
         }
         
         this.requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
         
         this.progressEnabled = (Boolean) OpflowUtil.getOptionField(properties.getHeaders(), "progressEnabled", null);
         
-        if (logger.isTraceEnabled()) {
-            logger.trace("Request[" + this.requestId + "] progressEnabled: " + this.progressEnabled);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Request[" + this.requestId + "] progressEnabled: " + this.progressEnabled);
         }
     }
     
@@ -53,8 +53,8 @@ public class OpflowRpcResponse {
     }
     
     public void emitStarted(String content) {
-        if (logger.isTraceEnabled()) {
-            logger.trace("Request[" + this.requestId + "] emitStarted() - parameter: " + content);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Request[" + this.requestId + "] emitStarted() - parameter: " + content);
         }
         emitStarted(OpflowUtil.getBytes(content));
     }
@@ -62,8 +62,8 @@ public class OpflowRpcResponse {
     public void emitStarted(byte[] info) {
         if (info == null) info = new byte[0];
         basicPublish(info, createProperties(properties, createHeaders("started")).build());
-        if (logger.isTraceEnabled()) {
-            logger.trace("Request[" + this.requestId + "] emitStarted() - byte[].length: " + info.length);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Request[" + this.requestId + "] emitStarted() - byte[].length: " + info.length);
         }
     }
     
@@ -84,8 +84,8 @@ public class OpflowRpcResponse {
             result = "{ \"percent\": " + percent + ", \"data\": " + jsonData + "}";
         }
         basicPublish(OpflowUtil.getBytes(result), createProperties(properties, createHeaders("progress")).build());
-        if (logger.isTraceEnabled()) {
-            logger.trace("Request[" + this.requestId + "] emitProgress(): " + result);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Request[" + this.requestId + "] emitProgress(): " + result);
         }
     }
     
@@ -96,8 +96,8 @@ public class OpflowRpcResponse {
     public void emitFailed(byte[] error) {
         if (error == null) error = new byte[0];
         basicPublish(error, createProperties(properties, createHeaders("failed", true)).build());
-        if (logger.isTraceEnabled()) {
-            logger.trace("Request[" + this.requestId + "] emitFailed() - byte[].length: " + error.length);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Request[" + this.requestId + "] emitFailed() - byte[].length: " + error.length);
         }
     }
     
@@ -108,8 +108,8 @@ public class OpflowRpcResponse {
     public void emitCompleted(byte[] result) {
         if (result == null) result = new byte[0];
         basicPublish(result, createProperties(properties, createHeaders("completed", true)).build());
-        if (logger.isTraceEnabled()) {
-            logger.trace("Request[" + this.requestId + "] emitCompleted() - byte[].length: " + result.length);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Request[" + this.requestId + "] emitCompleted() - byte[].length: " + result.length);
         }
     }
 

@@ -87,7 +87,7 @@ public class OpflowTask {
     }
     
     public static class TimeoutMonitor {
-        final Logger logger = LoggerFactory.getLogger(TimeoutMonitor.class);
+        private final static Logger LOG = LoggerFactory.getLogger(TimeoutMonitor.class);
         
         private long timeout;
         private final String monitorId;
@@ -99,9 +99,9 @@ public class OpflowTask {
             public void run() {
                 if (tasks == null || tasks.isEmpty()) return;
                 long current = OpflowUtil.getCurrentTime();
-                if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].run() is invoked, current time: " + current);
+                if (LOG.isDebugEnabled()) LOG.debug("Monitor[" + monitorId + "].run() is invoked, current time: " + current);
                 for (String key : tasks.keySet()) {
-                    if (logger.isTraceEnabled()) logger.trace("Monitor[" + monitorId + "].run() examine task[" + key + "]");
+                    if (LOG.isTraceEnabled()) LOG.trace("Monitor[" + monitorId + "].run() examine task[" + key + "]");
                     Timeoutable task = tasks.get(key);
                     if (task == null) continue;
                     long _timeout = task.getTimeout();
@@ -111,12 +111,12 @@ public class OpflowTask {
                         if (diff > _timeout) {
                             tasks.remove(key);
                             task.raiseTimeout();
-                            if (logger.isTraceEnabled()) {
-                                logger.trace("Monitor[" + monitorId + "].run() - task[" + key + "] has been timeout, will be removed");
+                            if (LOG.isTraceEnabled()) {
+                                LOG.trace("Monitor[" + monitorId + "].run() - task[" + key + "] has been timeout, will be removed");
                             }
                         } else {
-                            if (logger.isTraceEnabled()) {
-                                logger.trace("Monitor[" + monitorId + "].run() - task[" + key + "] is good, keep running");
+                            if (LOG.isTraceEnabled()) {
+                                LOG.trace("Monitor[" + monitorId + "].run() - task[" + key + "] is good, keep running");
                             }
                         }
                     }
@@ -145,25 +145,25 @@ public class OpflowTask {
             } else {
                 this.monitorId = UUID.randomUUID().toString();
             }
-            if (logger.isDebugEnabled()) logger.debug("Monitor[" + this.monitorId + "] has been created");
+            if (LOG.isDebugEnabled()) LOG.debug("Monitor[" + this.monitorId + "] has been created");
         }
         
         public void start() {
-            if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].start()");
+            if (LOG.isDebugEnabled()) LOG.debug("Monitor[" + monitorId + "].start()");
             if (interval > 0) {
                 timer.scheduleAtFixedRate(timerTask, 0, interval);
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Monitor[" + monitorId + "] has been started, with interval: " + this.interval);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Monitor[" + monitorId + "] has been started, with interval: " + this.interval);
                 }
             } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Monitor[" + monitorId + "] is not available, because interval: " + this.interval);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Monitor[" + monitorId + "] is not available, because interval: " + this.interval);
                 }
             }
         }
         
         public void stop() {
-            if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].stop()");
+            if (LOG.isDebugEnabled()) LOG.debug("Monitor[" + monitorId + "].stop()");
             timer.cancel();
             timer.purge();
         }
@@ -171,7 +171,7 @@ public class OpflowTask {
     
     public static class TimeoutWatcher extends Thread {
 
-        final Logger logger = LoggerFactory.getLogger(TimeoutWatcher.class);
+        private final static Logger LOG = LoggerFactory.getLogger(TimeoutWatcher.class);
         
         public TimeoutWatcher(long max, Listener listener) {
             if (max > 0) {
@@ -199,12 +199,12 @@ public class OpflowTask {
                 try {
                     Thread.sleep(interval);
                     count += interval;
-                    if (logger.isTraceEnabled()) logger.trace("Check " + count + "/" + max);
+                    if (LOG.isTraceEnabled()) LOG.trace("Check " + count + "/" + max);
                     if (count >= max) {
                         if (this.listener != null) {
                             listener.handleEvent();
                         }
-                        if (logger.isTraceEnabled()) logger.trace("Thread interrupted");
+                        if (LOG.isTraceEnabled()) LOG.trace("Thread interrupted");
                         this.interrupt();
                     }
                 } catch(InterruptedException ie) {}
@@ -217,7 +217,7 @@ public class OpflowTask {
 
         public void close() {
             this.done = true;
-            if (logger.isTraceEnabled()) logger.trace("Thread is closed gracefully");
+            if (LOG.isTraceEnabled()) LOG.trace("Thread is closed gracefully");
         }
     }
 }

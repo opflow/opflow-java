@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcWorker {
 
-    final Logger logger = LoggerFactory.getLogger(OpflowRpcWorker.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcWorker.class);
 
     private final OpflowEngine engine;
     private final OpflowExecutor executor;

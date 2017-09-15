@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
 
-    private final Logger logger = LoggerFactory.getLogger(OpflowRpcRequest.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final String requestId;
     private final String routineId;
     private final long timeout;
@@ -41,9 +41,9 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
             timeoutWatcher = new OpflowTask.TimeoutWatcher(this.timeout, new OpflowTask.Listener() {
                 @Override
                 public void handleEvent() {
-                    if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] timeout event has been raised");
+                    if (LOG.isDebugEnabled()) LOG.debug("Request[" + requestId + "] timeout event has been raised");
                     list.add(OpflowMessage.ERROR);
-                    if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] raise completeListener (timeout)");
+                    if (LOG.isDebugEnabled()) LOG.debug("Request[" + requestId + "] raise completeListener (timeout)");
                     completeListener.handleEvent();
                 }
             });
@@ -105,10 +105,10 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         }
         checkTimestamp();
         if(isDone(message)) {
-            if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] completed/failed message");
+            if (LOG.isDebugEnabled()) LOG.debug("Request[" + requestId + "] completed/failed message");
             list.add(OpflowMessage.EMPTY);
             if (completeListener != null) {
-                if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] raise completeListener (completed)");
+                if (LOG.isDebugEnabled()) LOG.debug("Request[" + requestId + "] raise completeListener (completed)");
                 completeListener.handleEvent();
             }
             if (timeoutWatcher != null) {

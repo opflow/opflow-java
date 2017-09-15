@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowPubsubHandler {
     
-    final Logger logger = LoggerFactory.getLogger(OpflowPubsubHandler.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
@@ -106,9 +106,9 @@ public class OpflowPubsubHandler {
             override.put("routingKey", routingKey);
         }
         
-        if (logger.isInfoEnabled()) {
+        if (LOG.isInfoEnabled()) {
             String requestId = OpflowUtil.getRequestId(opts);
-            logger.info("Request["+requestId+"] is produced with overriden routingKey: ["+routingKey+"]");
+            LOG.info("Request["+requestId+"] is produced with overriden routingKey: ["+routingKey+"]");
         }
         
         engine.produce(data, propBuilder, override);

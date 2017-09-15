@@ -41,7 +41,7 @@ public class OpflowPubsubSteps {
         countdowns.clear();
     }
     
-    @Given("a PubsubHandler named '$pubsubName'")
+    @Given("a PubsubHandler named '$pubsubName' with default config")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName) throws OpflowBootstrapException {
         pubsubs.put(pubsubName, OpflowLoader.createPubsubHandler());
         countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
@@ -53,6 +53,7 @@ public class OpflowPubsubSteps {
             @Named("propFile") final String propFile) throws OpflowBootstrapException {
         pubsubs.put(pubsubName, OpflowLoader.createPubsubHandler(propFile));
         countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
+        if (LOG.isDebugEnabled()) LOG.debug("PubsubHandler[" + pubsubName + "] has been created");
     }
     
     @Given("a subscriber named '$names' in PubsubHandler named '$pubsubName'")

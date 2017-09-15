@@ -43,7 +43,7 @@ public class OpflowLogTracer {
         return target;
     }
     
-    public OpflowLogTracer put(String key, String value) {
+    public OpflowLogTracer put(String key, Object value) {
         fields.put(key, value);
         return this;
     }
