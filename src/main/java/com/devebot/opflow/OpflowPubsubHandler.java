@@ -24,7 +24,7 @@ public class OpflowPubsubHandler {
     private final OpflowExecutor executor;
     private final String subscriberName;
     private final String recyclebinName;
-    private final List<OpflowEngine.ConsumerInfo> consumers = new LinkedList<OpflowEngine.ConsumerInfo>();
+    private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<OpflowEngine.ConsumerInfo>();
     private int prefetch = 0;
     private int subscriberLimit = 0;
     private int redeliveredLimit = 0;
@@ -39,8 +39,7 @@ public class OpflowPubsubHandler {
         subscriberName = (String) params.get("subscriberName");
         recyclebinName = (String) params.get("recyclebinName");
         
-        if (subscriberName != null && recyclebinName != null && 
-                subscriberName.equals(recyclebinName)) {
+        if (subscriberName != null && recyclebinName != null && subscriberName.equals(recyclebinName)) {
             throw new OpflowBootstrapException("subscriberName should be different with recyclebinName");
         }
         
@@ -160,18 +159,18 @@ public class OpflowPubsubHandler {
                 if (subscriberLimit > 0) opts.put("consumerLimit", subscriberLimit);
             }
         }));
-        consumers.add(consumer);
+        consumerInfos.add(consumer);
         return consumer;
     }
     
     public void close() {
         if (engine != null) {
-//            for(OpflowEngine.ConsumerInfo consumer:consumers) {
-//                if (consumer != null) {
-//                    engine.cancelConsumer(consumer);
-//                }
-//            }
-            consumers.clear();
+            for(OpflowEngine.ConsumerInfo consumerInfo:consumerInfos) {
+                if (consumerInfo != null) {
+                    engine.cancelConsumer(consumerInfo);
+                }
+            }
+            consumerInfos.clear();
             engine.close();
         }
     }

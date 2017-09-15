@@ -18,7 +18,7 @@ import org.junit.rules.ExpectedException;
  *
  * @author drupalex
  */
-public class OpflowBrokerTest extends OpflowAbstractTest {
+public class OpflowEngineTest extends OpflowAbstractTest {
     static Properties props;
     
     @BeforeClass

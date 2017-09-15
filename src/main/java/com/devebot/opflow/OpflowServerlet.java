@@ -85,9 +85,7 @@ public class OpflowServerlet {
                 configurer = new OpflowPubsubHandler(configurerCfg);
             }
 
-            if (rpcWorkerCfg != null && 
-                    listenerMap.getWorkerEntries() != null && 
-                    listenerMap.getWorkerEntries().length > 0) {
+            if (rpcWorkerCfg != null && listenerMap.getWorkerEntries() != null && listenerMap.getWorkerEntries().length > 0) {
                 rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
             }
 

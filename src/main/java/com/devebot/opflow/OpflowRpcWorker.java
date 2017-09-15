@@ -33,8 +33,7 @@ public class OpflowRpcWorker {
         operatorName = (String) params.get("operatorName");
         responseName = (String) params.get("responseName");
         
-        if (operatorName != null && responseName != null && 
-                operatorName.equals(responseName)) {
+        if (operatorName != null && responseName != null && operatorName.equals(responseName)) {
             throw new OpflowBootstrapException("operatorName should be different with responseName");
         }
         

@@ -151,7 +151,9 @@ public class OpflowPubsubSteps {
     public void checkPubsubHandler(@Named("pubsubName") String pubsubName, @Named("status") String status) {
         OpflowPubsubHandler.State state = pubsubs.get(pubsubName).check();
         List<String> collection = Lists.newArrayList("opened", "closed");
+        if (LOG.isDebugEnabled()) LOG.debug("PubsubHandler[" + pubsubName + "] should have status: " + status);
         assertThat(collection, hasItem(status));
+        if (LOG.isDebugEnabled()) LOG.debug("PubsubHandler[" + pubsubName + "] current state: " + state.getConnectionState());
         if ("opened".equals(status)) {
             assertThat(OpflowPubsubHandler.State.CONNECTION_OPENED, equalTo(state.getConnectionState()));
         } else if ("closed".equals(status)) {
