@@ -58,7 +58,7 @@ public class OpflowRpcWorkerSteps {
         workers.get(workerName).process(new OpflowRpcListener() {
             @Override
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
-                if (LOG.isTraceEnabled()) LOG.trace("[+] Routine input: " + message.getContentAsString());
+                if (LOG.isTraceEnabled()) LOG.trace("[+] Routine input: " + message.getBodyAsString());
                 return OpflowRpcListener.NEXT;
             }
         });
@@ -70,7 +70,7 @@ public class OpflowRpcWorkerSteps {
             @Override
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 try {
-                    String msg = message.getContentAsString();
+                    String msg = message.getBodyAsString();
                     if (LOG.isTraceEnabled()) LOG.trace("[+] EchoJsonObject received: '" + msg + "'");
                     
                     String result = msg;
@@ -103,7 +103,7 @@ public class OpflowRpcWorkerSteps {
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
                 try {
                     fibonacciState.checkPerformed();
-                    String msg = message.getContentAsString();
+                    String msg = message.getBodyAsString();
                     if (LOG.isTraceEnabled()) LOG.trace("[+] Fibonacci received: '" + msg + "'");
 
                     // OPTIONAL

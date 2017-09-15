@@ -8,29 +8,29 @@ import java.util.Map;
  */
 public class OpflowMessage {
 
-    private final byte[] content;
+    private final byte[] body;
     private final Map<String, Object> info;
     
     public final static OpflowMessage EMPTY = new OpflowMessage();
     public final static OpflowMessage ERROR = new OpflowMessage();
     
     private OpflowMessage() {
-        content = null;
+        body = null;
         info = null;
     }
     
-    public OpflowMessage(byte[] content, Map<String, Object> info) {
-        this.content = content;
+    public OpflowMessage(byte[] body, Map<String, Object> info) {
+        this.body = body;
         this.info = info;
     }
 
-    public byte[] getContent() {
-        return content;
+    public byte[] getBody() {
+        return body;
     }
     
-    public String getContentAsString() {
-        if (content == null) return null;
-        return OpflowUtil.getString(content);
+    public String getBodyAsString() {
+        if (body == null) return null;
+        return OpflowUtil.getString(body);
     }
 
     public Map<String, Object> getInfo() {

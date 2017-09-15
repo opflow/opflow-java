@@ -55,7 +55,7 @@ public class OpflowPubsubSteps {
             listener = new OpflowPubsubListener() {
                 @Override
                 public void processMessage(OpflowMessage message) throws IOException {
-                    String msg = message.getContentAsString();
+                    String msg = message.getBodyAsString();
                     if (LOG.isTraceEnabled()) LOG.trace("[+] EchoJsonObject received: '" + msg + "'");
                     countdowns.get(pubsubName).check();
                 }
@@ -66,7 +66,7 @@ public class OpflowPubsubSteps {
             listener = new OpflowPubsubListener() {
                 @Override
                 public void processMessage(OpflowMessage message) throws IOException {
-                    String msg = message.getContentAsString();
+                    String msg = message.getBodyAsString();
                     if (LOG.isTraceEnabled()) LOG.trace("[+] EchoRandomError received: '" + msg + "'" +
                             " #" + countdowns.get(pubsubName).getCount());
                     Map<String, Object> msgObj = OpflowUtil.jsonStringToMap(msg);

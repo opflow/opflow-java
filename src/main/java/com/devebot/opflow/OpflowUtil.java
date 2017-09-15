@@ -217,7 +217,7 @@ public class OpflowUtil {
             if ("progress".equals(status)) {
                 if (includeProgress) {
                     try {
-                        int percent = Integer.parseInt(extractSingleField(msg.getContentAsString(), "percent"));
+                        int percent = Integer.parseInt(extractSingleField(msg.getBodyAsString(), "percent"));
                         steps.add(new OpflowRpcResult.Step(percent));
                     } catch (JsonSyntaxException jse) {
                         steps.add(new OpflowRpcResult.Step());
@@ -229,12 +229,12 @@ public class OpflowUtil {
             if ("failed".equals(status)) {
                 workerTag = getMessageField(msg, "workerTag");
                 failed = true;
-                error = msg.getContent();
+                error = msg.getBody();
             } else
             if ("completed".equals(status)) {
                 workerTag = getMessageField(msg, "workerTag");
                 completed = true;
-                value = msg.getContent();
+                value = msg.getBody();
             }
         }
         if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw done");
