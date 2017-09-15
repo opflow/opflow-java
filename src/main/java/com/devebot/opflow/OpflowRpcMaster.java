@@ -183,6 +183,9 @@ public class OpflowRpcMaster {
         headers.put("requestId", task.getRequestId());
         headers.put("routineId", task.getRoutineId());
         
+        Boolean progressEnabled = opts.get("progressEnabled") instanceof Boolean ? (Boolean) opts.get("progressEnabled") : null;
+        if (progressEnabled != null) headers.put("progressEnabled", progressEnabled);
+        
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties
                 .Builder()
                 .headers(headers)

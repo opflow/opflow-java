@@ -22,6 +22,7 @@ public class OpflowRpcResponse {
     private final String workerTag;
     private final String replyQueueName;
     private final String requestId;
+    private final Boolean progressEnabled;
     
     public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String workerTag, String replyQueueName) {
         this.channel = channel;
@@ -34,10 +35,16 @@ public class OpflowRpcResponse {
             this.replyQueueName = replyQueueName;
         }
         
-        this.requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
-        
         if (logger.isTraceEnabled()) {
             logger.trace("Request[" + this.requestId + "] will reply to: " + this.replyQueueName);
+        }
+        
+        this.requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
+        
+        this.progressEnabled = (Boolean) OpflowUtil.getOptionField(properties.getHeaders(), "progressEnabled", null);
+        
+        if (logger.isTraceEnabled()) {
+            logger.trace("Request[" + this.requestId + "] progressEnabled: " + this.progressEnabled);
         }
     }
     
@@ -65,6 +72,7 @@ public class OpflowRpcResponse {
     }
     
     public void emitProgress(int completed, int total, String jsonData) {
+        if (progressEnabled != null && Boolean.FALSE.equals(progressEnabled)) return;
         int percent = -1;
         if (total > 0 && completed >= 0 && completed <= total) {
             percent = (total == 100) ? completed : Math.round((completed * 100) / total);

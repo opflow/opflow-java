@@ -16,6 +16,7 @@ import java.util.Map;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
+import org.jbehave.core.annotations.BeforeScenario;
 import org.jbehave.core.annotations.Given;
 import org.jbehave.core.annotations.Named;
 import org.jbehave.core.annotations.Then;
@@ -34,10 +35,17 @@ public class OpflowPubsubSteps {
     private final Map<String, OpflowTask.Countdown> countdowns =  new HashMap<String, OpflowTask.Countdown>();
     private final Integer[] rejected = new Integer[] { 15, 25, 35, 55, 95 };
     
+    @BeforeScenario
+    public void beforeEachScenario() {
+        pubsubs.clear();
+        countdowns.clear();
+    }
+    
     @Given("a PubsubHandler named '$pubsubName'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName) throws OpflowBootstrapException {
         pubsubs.put(pubsubName, OpflowLoader.createPubsubHandler());
         countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
+        if (LOG.isDebugEnabled()) LOG.debug("PubsubHandler[" + pubsubName + "] has been created");
     }
     
     @Given("a PubsubHandler named '$pubsubName' with properties file: '$propFile'")

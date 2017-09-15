@@ -148,16 +148,14 @@ public class OpflowUtil {
     }
     
     public static String getOptionField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
+        Object value = getOptionField(options, fieldName, uuidIfNotFound ? UUID.randomUUID() : null);
+        return value != null ? value.toString() : null;
+    }
+    
+    public static Object getOptionField(Map<String, Object> options, String fieldName, Object defval) {
         Object value = null;
         if (options != null) value = options.get(fieldName);
-        if (value == null) {
-            if (uuidIfNotFound) {
-                value = UUID.randomUUID();
-            } else {
-                return null;
-            }
-        }
-        return value.toString();
+        return (value == null) ? defval : value;
     }
     
     public static String[] splitByComma(String source) {
