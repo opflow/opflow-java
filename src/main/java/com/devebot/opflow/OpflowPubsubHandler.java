@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowPubsubHandler {
-    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
+    private final OpflowLogTracer logTracer = new OpflowLogTracer();
 
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
@@ -31,8 +31,16 @@ public class OpflowPubsubHandler {
     private OpflowPubsubListener listener;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
+        final String pubsubHandlerId = OpflowUtil.getOptionField(params, "pubsubHandlerId", true);
+        logTracer.put("pubsubHandlerId", pubsubHandlerId);
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "PubsubHandler.new()")
+                .toString());
+        
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
+        brokerParams.put("engineId", pubsubHandlerId);
         brokerParams.put("mode", "pubsub");
         brokerParams.put("exchangeType", "direct");
         
@@ -68,6 +76,19 @@ public class OpflowPubsubHandler {
             redeliveredLimit = (Integer) params.get("redeliveredLimit");
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.copy()
+                .put("subscriberName", subscriberName)
+                .put("recyclebinName", recyclebinName)
+                .put("prefetch", prefetch)
+                .put("subscriberLimit", subscriberLimit)
+                .put("redeliveredLimit", redeliveredLimit)
+                .put("message", "PubsubHandler.new() parameters")
+                .toString());
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "PubsubHandler.new() end!")
+                .toString());
     }
 
     public void publish(String data) {
@@ -106,12 +127,20 @@ public class OpflowPubsubHandler {
             override.put("routingKey", routingKey);
         }
         
-        if (LOG.isInfoEnabled()) {
-            String requestId = OpflowUtil.getRequestId(opts);
-            LOG.info("Request["+requestId+"] is produced with overriden routingKey: ["+routingKey+"]");
-        }
+        OpflowLogTracer logPublish = null;
+        if (LOG.isInfoEnabled()) logPublish = logTracer.copy()
+                .put("requestId", OpflowUtil.getRequestId(opts))
+                .put("routingKey", routingKey);
+
+        if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish
+                .put("message", "publish() - Request is produced with overriden routingKey")
+                .toString());
         
         engine.produce(data, propBuilder, override);
+        
+        if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish
+                .put("message", "publish() - Request has completed")
+                .toString());
     }
     
     public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener newListener) {

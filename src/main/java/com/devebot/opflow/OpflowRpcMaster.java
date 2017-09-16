@@ -19,8 +19,9 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowRpcMaster {
-
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
+    private final OpflowLogTracer logTracer = new OpflowLogTracer();
+    
     private final int PREFETCH_NUM = 1;
     private final int CONSUMER_MAX = 1;
     
@@ -38,9 +39,17 @@ public class OpflowRpcMaster {
     private final long monitorTimeout;
     
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
+        final String rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
+        logTracer.put("rpcMasterId", rpcMasterId);
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "RpcMaster.new()")
+                .toString());
+        
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put("mode", "rpc.master");
+        brokerParams.put("engineId", rpcMasterId);
+        brokerParams.put("mode", "rpc_master");
         brokerParams.put("exchangeType", "direct");
         
         engine = new OpflowEngine(brokerParams);
@@ -70,6 +79,15 @@ public class OpflowRpcMaster {
         } else {
             monitorTimeout = 0;
         }
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.copy()
+                .put("responseName", responseName)
+                .put("message", "RpcMaster.new() parameters")
+                .toString());
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "RpcMaster.new() end!")
+                .toString());
     }
 
     private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<String, OpflowRpcRequest>();

@@ -16,18 +16,26 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowRpcWorker {
-
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcWorker.class);
-
+    private final OpflowLogTracer logTracer = new OpflowLogTracer();
+    
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
     private final String operatorName;
     private final String responseName;
     
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
+        final String rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
+        logTracer.put("rpcWorkerId", rpcWorkerId);
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "RpcWorker.new()")
+                .toString());
+        
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put("mode", "rpc.worker");
+        brokerParams.put("engineId", rpcWorkerId);
+        brokerParams.put("mode", "rpc_worker");
         brokerParams.put("exchangeType", "direct");
         
         operatorName = (String) params.get("operatorName");
@@ -47,6 +55,16 @@ public class OpflowRpcWorker {
         if (responseName != null) {
             executor.assertQueue(responseName);
         }
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.copy()
+                .put("operatorName", operatorName)
+                .put("responseName", responseName)
+                .put("message", "RpcWorker.new() parameters")
+                .toString());
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "RpcWorker.new() end!")
+                .toString());
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
@@ -81,11 +99,21 @@ public class OpflowRpcWorker {
         if (consumerInfo != null) return consumerInfo;
         return consumerInfo = engine.consume(new OpflowListener() {
             @Override
-            public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
+            public boolean processMessage(byte[] body, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
-                OpflowMessage request = new OpflowMessage(content, properties.getHeaders());
+                OpflowMessage request = new OpflowMessage(body, properties.getHeaders());
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, workerTag, queueName);
                 String routineId = OpflowUtil.getRoutineId(properties.getHeaders(), false);
+                String requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
+
+                OpflowLogTracer logProcess = null;
+                if (LOG.isInfoEnabled()) logProcess = logTracer.copy()
+                        .put("requestId", requestId)
+                        .put("routineId", routineId);
+
+                if (LOG.isInfoEnabled() && logProcess != null) LOG.info(logProcess
+                        .put("message", "process() - receives a new RPC request")
+                        .toString());
                 int count = 0;
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
@@ -94,6 +122,9 @@ public class OpflowRpcWorker {
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
+                if (LOG.isInfoEnabled() && logProcess != null) LOG.info(logProcess
+                        .put("message", "process() - RPC processing has completed")
+                        .toString());
                 return count > 0;
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
