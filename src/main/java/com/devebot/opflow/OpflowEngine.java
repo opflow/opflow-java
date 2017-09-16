@@ -35,7 +35,7 @@ public class OpflowEngine {
     };
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
-    private final OpflowLogTracer logTracer = new OpflowLogTracer();
+    private final OpflowLogTracer logTracer;
     
     private String mode;
     private ConnectionFactory factory;
@@ -54,7 +54,7 @@ public class OpflowEngine {
 
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         final String engineId = OpflowUtil.getOptionField(params, "engineId", true);
-        logTracer.put("engineId", engineId);
+        logTracer = OpflowLogTracer.ROOT.branch("engineId", engineId);
         
         if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("message", "Engine.new()")
@@ -153,14 +153,14 @@ public class OpflowEngine {
                 applicationId = (String) params.get("applicationId");
             }
         } catch (IOException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logTracer.copy()
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .put("message", "exchangeDeclare has failed")
                     .toString());
             throw new OpflowBootstrapException("exchangeDeclare has failed", exception);
         } catch (TimeoutException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logTracer.copy()
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .put("message", "exchangeDeclare is timeout")
@@ -179,7 +179,6 @@ public class OpflowEngine {
     
     public void produce(final byte[] content, final AMQP.BasicProperties.Builder propBuilder, final Map<String, Object> override) {
         OpflowLogTracer logProduce = null;
-        if (LOG.isErrorEnabled()) logProduce = logTracer.copy();
         
         try {
             String customKey = this.routingKey;
@@ -193,24 +192,30 @@ public class OpflowEngine {
             }
             propBuilder.appId(appId);
             
+            String requestId = null;
+            if (override != null && override.get("requestId") != null) {
+                requestId = (String) override.get("requestId");
+            }
+            
             AMQP.BasicProperties properties = propBuilder.build();
-            if (mode == null || "engine".equals(mode)) {
+            if (requestId == null) {
                 Map<String, Object> headers = properties.getHeaders();
-                String requestId = OpflowUtil.getRequestId(headers, false);
+                requestId = OpflowUtil.getRequestId(headers, false);
                 if (requestId == null) {
                     requestId = OpflowUtil.getUUID();
                     headers.put("requestId", requestId);
                     propBuilder.headers(headers);
                     properties = propBuilder.build();
                 }
-
-                if (LOG.isInfoEnabled() && logProduce != null) LOG.info(logProduce
+            }
+            
+            if (LOG.isInfoEnabled()) logProduce = logTracer.branch("requestId", requestId);
+            
+            if (LOG.isInfoEnabled() && logProduce != null) LOG.info(logProduce
                     .put("appId", appId)
-                    .put("requestId", requestId)
                     .put("customKey", customKey)
                     .put("message", "produce() is invoked")
                     .toString());
-            }
             
             Channel _channel = getProducingChannel();
             if (_channel == null || !_channel.isOpen()) {
@@ -218,14 +223,14 @@ public class OpflowEngine {
             }
             _channel.basicPublish(this.exchangeName, customKey, properties, content);
         } catch (IOException exception) {
-            if (LOG.isErrorEnabled() && logProduce != null) LOG.error(logProduce.copy()
+            if (LOG.isErrorEnabled() && logProduce != null) LOG.error(logProduce.reset()
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .put("message", "produce() has failed")
                     .toString());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (LOG.isErrorEnabled() && logProduce != null) LOG.error(logProduce.copy()
+            if (LOG.isErrorEnabled() && logProduce != null) LOG.error(logProduce.reset()
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .put("message", "produce() is timeout")
@@ -236,8 +241,8 @@ public class OpflowEngine {
     
     public ConsumerInfo consume(final OpflowListener listener, final Map<String, Object> options) {
         final Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
-        final OpflowLogTracer logConsume = logTracer.copy()
-                .put("consumerId", OpflowUtil.getOptionField(opts, "consumerId", true));
+        final String consumerId = OpflowUtil.getOptionField(opts, "consumerId", true);
+        final OpflowLogTracer logConsume = logTracer.branch("consumerId", consumerId);
         
         if (LOG.isInfoEnabled()) LOG.info(logConsume
                 .put("message", "consume() is invoked")
@@ -269,14 +274,14 @@ public class OpflowEngine {
             }
             _queueName = _declareOk.getQueue();
             final Integer _consumerLimit = (Integer) opts.get("consumerLimit");
-            if (LOG.isTraceEnabled()) LOG.trace(logConsume.copy()
+            if (LOG.isTraceEnabled()) LOG.trace(logConsume.reset()
                     .put("consumerCount", _declareOk.getConsumerCount())
                     .put("consumerLimit", _consumerLimit)
                     .put("message", "consume() - consumerCount/consumerLimit")
                     .toString());
             if (_consumerLimit != null && _consumerLimit > 0) {
                 if (_declareOk.getConsumerCount() >= _consumerLimit) {
-                    if (LOG.isErrorEnabled()) LOG.error(logConsume.copy()
+                    if (LOG.isErrorEnabled()) LOG.error(logConsume.reset()
                             .put("consumerCount", _declareOk.getConsumerCount())
                             .put("consumerLimit", _consumerLimit)
                             .put("message", "consume() - consumerCount exceed limit")
@@ -317,11 +322,10 @@ public class OpflowEngine {
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
                     final String requestID = OpflowUtil.getRequestId(properties.getHeaders(), false);
                     
-                    final OpflowLogTracer logRequest = logConsume.copy()
-                            .put("appId", properties.getAppId())
-                            .put("requestId", requestID);
+                    final OpflowLogTracer logRequest = logConsume.branch("requestId", requestID);
                     
-                    if (LOG.isInfoEnabled()) LOG.info(logRequest.copy()
+                    if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
+                            .put("appId", properties.getAppId())
                             .put("deliveryTag", envelope.getDeliveryTag())
                             .put("consumerTag", consumerTag)
                             .put("message", "consumer received a message")
@@ -329,13 +333,13 @@ public class OpflowEngine {
                     
                     if (LOG.isTraceEnabled()) {
                         if (body.length <= 4096) {
-                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.copy()
+                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
                                     .put("bodyHead", new String(body, "UTF-8"))
                                     .put("bodyLength", body.length)
                                     .put("message", "Body head (4096 bytes)")
                                     .toString());
                         } else {
-                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.copy()
+                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
                                     .put("bodyLength", body.length)
                                     .put("message", "Body size too large (>4KB)")
                                     .toString());
@@ -344,23 +348,23 @@ public class OpflowEngine {
                     
                     try {
                         if (applicationId == null || applicationId.equals(properties.getAppId())) {
-                            if (LOG.isTraceEnabled()) LOG.trace(logRequest
+                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
                                     .put("message", "Request invoke listener.processMessage()")
                                     .toString());
                             
                             boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
                             
                             if (captured) {
-                                if (LOG.isInfoEnabled()) LOG.info(logRequest
+                                if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
                                         .put("message", "Request has finished successfully")
                                         .toString());
                             } else {
-                                if (LOG.isInfoEnabled()) LOG.info(logRequest
+                                if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
                                         .put("message", "Request has not matched the criteria, skipped")
                                         .toString());
                             }
                             
-                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.copy()
+                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
                                     .put("deliveryTag", envelope.getDeliveryTag())
                                     .put("consumerTag", consumerTag)
                                     .put("message", "Request invoke ACK")
@@ -368,7 +372,7 @@ public class OpflowEngine {
                             
                             if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
                         } else {
-                            if (LOG.isInfoEnabled()) LOG.info(logRequest
+                            if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
                                     .put("message", "Request has been rejected, mismatched applicationId")
                                     .put("applicationId", applicationId)
                                     .toString());
@@ -376,7 +380,7 @@ public class OpflowEngine {
                         }
                     } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
-                        if (LOG.isErrorEnabled()) LOG.error(logRequest.copy()
+                        if (LOG.isErrorEnabled()) LOG.error(logRequest.reset()
                                 .put("deliveryTag", envelope.getDeliveryTag())
                                 .put("consumerTag", consumerTag)
                                 .put("exceptionClass", ex.getClass().getName())
@@ -384,12 +388,12 @@ public class OpflowEngine {
                                 .put("message", "Request has been failed. Service still alive")
                                 .toString());
                         if (_autoAck) {
-                            if (LOG.isInfoEnabled()) LOG.info(logRequest
+                            if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
                                     .put("message", "Request has failed. AutoAck => request is rejected")
                                     .toString());
                         } else {
                             _channel.basicNack(envelope.getDeliveryTag(), false, true);
-                            if (LOG.isInfoEnabled()) LOG.info(logRequest
+                            if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
                                     .put("message", "Request has failed. No AutoAck => request is requeued")
                                     .toString());
                         }
@@ -398,7 +402,7 @@ public class OpflowEngine {
                 
                 @Override
                 public void handleCancelOk(String consumerTag) {
-                    if (LOG.isInfoEnabled()) LOG.info(logConsume.copy()
+                    if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
                             .put("consumerTag", consumerTag)
                             .put("message", "consume() - handle CancelOk event")
                             .toString());
@@ -406,7 +410,7 @@ public class OpflowEngine {
                 
                 @Override
                 public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
-                    if (LOG.isInfoEnabled()) LOG.info(logConsume.copy()
+                    if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
                             .put("consumerTag", consumerTag)
                             .put("message", "consume() - handle ShutdownSignal event")
                             .toString());
@@ -418,7 +422,7 @@ public class OpflowEngine {
             _channel.addShutdownListener(new ShutdownListener() {
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (LOG.isInfoEnabled()) LOG.info(logConsume.copy()
+                    if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
                             .put("queueName", _queueName)
                             .put("consumerTag", _consumerTag)
                             .put("channelNumber", _channel.getChannelNumber())
@@ -427,7 +431,7 @@ public class OpflowEngine {
                 }
             });
             
-            if (LOG.isInfoEnabled()) LOG.info(logConsume.copy()
+            if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
                     .put("queueName", _queueName)
                     .put("consumerTag", _consumerTag)
                     .put("channelNumber", _channel.getChannelNumber())
@@ -438,14 +442,14 @@ public class OpflowEngine {
             if ("engine".equals(mode)) consumerInfos.add(info);
             return info;
         } catch(IOException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logConsume
+            if (LOG.isErrorEnabled()) LOG.error(logConsume.reset()
                     .put("message", "consume() - has failed")
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .toString());
             throw new OpflowOperationException(exception);
         } catch(TimeoutException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logConsume
+            if (LOG.isErrorEnabled()) LOG.error(logConsume.reset()
                     .put("message", "consume() - is timeout")
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
@@ -475,23 +479,22 @@ public class OpflowEngine {
     
     public void cancelConsumer(OpflowEngine.ConsumerInfo consumerInfo) {
         if (consumerInfo == null) return;
-        final OpflowLogTracer logRequest = logTracer.copy()
-                .put("queueName", consumerInfo.getQueueName())
-                .put("consumerTag", consumerInfo.getConsumerTag());
+        final OpflowLogTracer logCancel = logTracer.branch("consumerTag", consumerInfo.getConsumerTag());
         try {
-            if (LOG.isDebugEnabled()) LOG.debug(logRequest
+            if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
+                    .put("queueName", consumerInfo.getQueueName())
                     .put("message", "cancelConsumer() - consumer will be cancelled")
                     .toString());
 
             consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
 
-            if (LOG.isDebugEnabled()) LOG.debug(logRequest
+            if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
                     .put("message", "cancelConsumer() - consumer has been cancelled")
                     .toString());
 
             if (!consumerInfo.isSharedConnection() || !consumerInfo.isSharedChannel()) {
                 if (consumerInfo.getChannel() != null && consumerInfo.getChannel().isOpen()) {
-                    if (LOG.isDebugEnabled()) LOG.debug(logRequest
+                    if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
                             .put("message", "cancelConsumer() - close private channel")
                             .toString());
                     consumerInfo.getChannel().close();
@@ -500,20 +503,20 @@ public class OpflowEngine {
 
             if (!consumerInfo.isSharedConnection()) {
                 if (consumerInfo.getConnection() != null && consumerInfo.getConnection().isOpen()) {
-                    if (LOG.isDebugEnabled()) LOG.debug(logRequest
+                    if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
                             .put("message", "cancelConsumer() - close private connection")
                             .toString());
                     consumerInfo.getConnection().close();
                 }
             }
         } catch (IOException ex) {
-            if (LOG.isErrorEnabled()) LOG.error(logRequest
+            if (LOG.isErrorEnabled()) LOG.error(logCancel.reset()
                     .put("message", "cancelConsumer() - has failed")
                     .put("exceptionClass", ex.getClass().getName())
                     .put("exceptionMessage", ex.getMessage())
                     .toString());
         } catch (TimeoutException ex) {
-            if (LOG.isErrorEnabled()) LOG.error(logRequest
+            if (LOG.isErrorEnabled()) LOG.error(logCancel.reset()
                     .put("message", "cancelConsumer() - is timeout")
                     .put("exceptionClass", ex.getClass().getName())
                     .put("exceptionMessage", ex.getMessage())
@@ -617,16 +620,15 @@ public class OpflowEngine {
      * @throws OpflowOperationException if an error is encountered
      */
     public void close() {
-        OpflowLogTracer logClose = logTracer.copy();
         try {
-            if (LOG.isInfoEnabled()) LOG.info(logClose
+            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                 .put("message", "close() - close producingChannel, producingConnection")
                 .toString());
             if (producingChannel != null && producingChannel.isOpen()) producingChannel.close();
             if (producingConnection != null && producingConnection.isOpen()) producingConnection.close();
             
             if ("engine".equals(mode)) {
-                if (LOG.isInfoEnabled()) LOG.info(logClose
+                if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                         .put("mode", mode)
                         .put("message", "close() - cancel consumers")
                         .toString());
@@ -636,19 +638,19 @@ public class OpflowEngine {
                 consumerInfos.clear();
             }
             
-            if (LOG.isInfoEnabled()) LOG.info(logClose
+            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                 .put("message", "close() - close consumingChannel, consumingConnection")
                 .toString());
             if (consumingChannel != null && consumingChannel.isOpen()) consumingChannel.close();
             if (consumingConnection != null && consumingConnection.isOpen()) consumingConnection.close();
 
         } catch (IOException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logClose
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
                     .put("message", "close() has failed")
                     .toString());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logClose
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
                     .put("message", "close() is timeout")
                     .toString());
             throw new OpflowOperationException(exception);

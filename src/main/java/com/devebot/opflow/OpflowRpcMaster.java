@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcMaster {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
-    private final OpflowLogTracer logTracer = new OpflowLogTracer();
+    private final OpflowLogTracer logTracer;
     
     private final int PREFETCH_NUM = 1;
     private final int CONSUMER_MAX = 1;
@@ -40,7 +40,7 @@ public class OpflowRpcMaster {
     
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         final String rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
-        logTracer.put("rpcMasterId", rpcMasterId);
+        logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", rpcMasterId);
         
         if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("message", "RpcMaster.new()")
@@ -80,12 +80,12 @@ public class OpflowRpcMaster {
             monitorTimeout = 0;
         }
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.copy()
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("responseName", responseName)
                 .put("message", "RpcMaster.new() parameters")
                 .toString());
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                 .put("message", "RpcMaster.new() end!")
                 .toString());
     }

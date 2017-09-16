@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcWorker {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcWorker.class);
-    private final OpflowLogTracer logTracer = new OpflowLogTracer();
+    private final OpflowLogTracer logTracer;
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
@@ -26,7 +26,7 @@ public class OpflowRpcWorker {
     
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
         final String rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
-        logTracer.put("rpcWorkerId", rpcWorkerId);
+        logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", rpcWorkerId);
         
         if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("message", "RpcWorker.new()")
@@ -56,13 +56,13 @@ public class OpflowRpcWorker {
             executor.assertQueue(responseName);
         }
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.copy()
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("operatorName", operatorName)
                 .put("responseName", responseName)
                 .put("message", "RpcWorker.new() parameters")
                 .toString());
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                 .put("message", "RpcWorker.new() end!")
                 .toString());
     }
@@ -107,11 +107,10 @@ public class OpflowRpcWorker {
                 String requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
 
                 OpflowLogTracer logProcess = null;
-                if (LOG.isInfoEnabled()) logProcess = logTracer.copy()
-                        .put("requestId", requestId)
-                        .put("routineId", routineId);
+                if (LOG.isInfoEnabled()) logProcess = logTracer.branch("requestId", requestId);
 
                 if (LOG.isInfoEnabled() && logProcess != null) LOG.info(logProcess
+                        .put("routineId", routineId)
                         .put("message", "process() - receives a new RPC request")
                         .toString());
                 int count = 0;
@@ -122,7 +121,7 @@ public class OpflowRpcWorker {
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
-                if (LOG.isInfoEnabled() && logProcess != null) LOG.info(logProcess
+                if (LOG.isInfoEnabled() && logProcess != null) LOG.info(logProcess.reset()
                         .put("message", "process() - RPC processing has completed")
                         .toString());
                 return count > 0;

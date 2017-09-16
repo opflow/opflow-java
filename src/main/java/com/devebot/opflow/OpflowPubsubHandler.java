@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowPubsubHandler {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
-    private final OpflowLogTracer logTracer = new OpflowLogTracer();
+    private final OpflowLogTracer logTracer;
 
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
@@ -32,7 +32,7 @@ public class OpflowPubsubHandler {
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         final String pubsubHandlerId = OpflowUtil.getOptionField(params, "pubsubHandlerId", true);
-        logTracer.put("pubsubHandlerId", pubsubHandlerId);
+        logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", pubsubHandlerId);
         
         if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("message", "PubsubHandler.new()")
@@ -77,7 +77,7 @@ public class OpflowPubsubHandler {
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.copy()
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                 .put("subscriberName", subscriberName)
                 .put("recyclebinName", recyclebinName)
                 .put("prefetch", prefetch)
@@ -86,7 +86,7 @@ public class OpflowPubsubHandler {
                 .put("message", "PubsubHandler.new() parameters")
                 .toString());
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                 .put("message", "PubsubHandler.new() end!")
                 .toString());
     }
@@ -128,17 +128,16 @@ public class OpflowPubsubHandler {
         }
         
         OpflowLogTracer logPublish = null;
-        if (LOG.isInfoEnabled()) logPublish = logTracer.copy()
-                .put("requestId", OpflowUtil.getRequestId(opts))
-                .put("routingKey", routingKey);
+        if (LOG.isInfoEnabled()) logPublish = logTracer.branch("requestId", OpflowUtil.getRequestId(opts));
 
         if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish
+                .put("routingKey", routingKey)
                 .put("message", "publish() - Request is produced with overriden routingKey")
                 .toString());
         
         engine.produce(data, propBuilder, override);
         
-        if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish
+        if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish.reset()
                 .put("message", "publish() - Request has completed")
                 .toString());
     }

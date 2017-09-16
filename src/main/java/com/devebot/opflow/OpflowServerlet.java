@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowServerlet {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
-    private final OpflowLogTracer logTracer = new OpflowLogTracer();
+    private final OpflowLogTracer logTracer;
     
     private OpflowPubsubHandler configurer;
     private OpflowRpcWorker rpcWorker;
@@ -25,7 +25,7 @@ public class OpflowServerlet {
     public OpflowServerlet(ListenerMap listeners, Map<String, Object> kwargs) throws OpflowBootstrapException {
         this.kwargs = kwargs;
 
-        logTracer.put("serverletId", OpflowUtil.getOptionField(this.kwargs, "serverletId", true));
+        logTracer = OpflowLogTracer.ROOT.branch("serverletId", OpflowUtil.getOptionField(this.kwargs, "serverletId", true));
         
         if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("message", "Serverlet.new()")
@@ -87,7 +87,7 @@ public class OpflowServerlet {
         
         checkRecyclebin.retainAll(checkQueue);
         if (!checkRecyclebin.isEmpty()) {
-            if (LOG.isErrorEnabled()) LOG.error(logTracer.copy()
+            if (LOG.isErrorEnabled()) LOG.error(logTracer
                 .put("message", "duplicated_recyclebin_queue_name").toString());
             throw new OpflowBootstrapException("Invalid recyclebinName (duplicated with some queueNames)");
         }
