@@ -19,32 +19,29 @@ public class OpflowLogTracerTest {
     
     @Test
     public void testCopyMethod() {
+        System.setProperty("OPFLOW_INSTANCE_ID", "demo");
         
+        OpflowLogTracer logTracer = new OpflowLogTracer().branch("rootId", "1234567890");
         
-        OpflowLogTracer logTracer = new OpflowLogTracer();
-        logTracer.put("instanceId", "demo");
-        logTracer.put("rootId", "1234567890");
-        
-        String empty = logTracer.copy()
-                .toString();
+        String empty = logTracer.toString();
         
         assertThat(empty, equalTo("{\"instanceId\":\"demo\",\"rootId\":\"1234567890\"}"));
         
-        String logmsg = logTracer.copy()
+        String logmsg = logTracer
                 .put("message", "Hello Opflow")
                 .toString();
         
         assertThat(logmsg, equalTo("{\"message\":\"Hello Opflow\",\"instanceId\":\"demo\",\"rootId\":\"1234567890\"}"));
         
-        OpflowLogTracer subTracer1 = logTracer.copy()
+        OpflowLogTracer subTracer1 = logTracer.reset()
                 .put("appId", "app1");
-        
-        OpflowLogTracer subTracer2 = logTracer.copy()
-                .put("appId", "app2");
         
         String logmsg1 = subTracer1
                 .put("message", "Hello App1")
                 .toString();
+        
+        OpflowLogTracer subTracer2 = logTracer.reset()
+                .put("appId", "app2");
         
         String logmsg2 = subTracer2
                 .put("message", "Hello App2")
@@ -55,6 +52,30 @@ public class OpflowLogTracerTest {
         
         LOG.debug("logmsg1: " + logmsg1);
         LOG.debug("logmsg2: " + logmsg2);
+    }
+
+    @Test
+    public void testBranchAndReset1Method() {
+        System.setProperty("OPFLOW_INSTANCE_ID", "demo");
+        
+        OpflowLogTracer logTracer = new OpflowLogTracer();
+        
+        OpflowLogTracer logEngine = logTracer.branch("engineId", "engine-demo");
+        String msgEngine = logEngine.toString();
+        assertThat(msgEngine, equalTo("{\"instanceId\":\"demo\",\"engineId\":\"engine-demo\"}"));
+        LOG.debug("msgEngine: " + msgEngine);
+        
+        OpflowLogTracer logApp1 = logEngine
+                .put("appId", "app1")
+                .put("message", "Hello App1");
+        String msgApp1 = logApp1.toString();
+        assertThat(msgApp1, equalTo("{\"message\":\"Hello App1\",\"instanceId\":\"demo\",\"engineId\":\"engine-demo\",\"appId\":\"app1\"}"));
+        
+        OpflowLogTracer logApp2 = logEngine.reset()
+                .put("appID", "app2")
+                .put("content", "Hello App2");
+        String msgApp2 = logApp2.toString();
+        assertThat(msgApp2, equalTo("{\"instanceId\":\"demo\",\"engineId\":\"engine-demo\",\"appID\":\"app2\",\"content\":\"Hello App2\"}"));
     }
     
     @Test

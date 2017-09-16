@@ -20,11 +20,53 @@ public class OpflowLogTracer {
     private final static String INSTANCE_ID = OpflowUtil.getUUID();
     private final static Gson GSON = new Gson();
     
+    private final OpflowLogTracer parent;
+    private final String key;
+    private final Object value;
     private final Map<String, Object> fields = new LinkedHashMap<String, Object>();
     
+    public final static OpflowLogTracer ROOT = new OpflowLogTracer();
+    
     public OpflowLogTracer() {
-        fields.put("message", null);
-        fields.put("instanceId", INSTANCE_ID);
+        this(null, "instanceId", OpflowUtil.getSystemProperty("OPFLOW_INSTANCE_ID", INSTANCE_ID));
+    }
+    
+    private OpflowLogTracer(OpflowLogTracer ref, String key, Object value) {
+        this.parent = ref;
+        this.key = key;
+        this.value = value;
+        this.reset();
+    }
+    
+    public OpflowLogTracer branch(String key, Object value) {
+        return new OpflowLogTracer(this, key, value);
+    }
+    
+    public final OpflowLogTracer reset(int mode) {
+        this.fields.clear();
+        this.fields.put("message", null);
+        if (mode > 0) {
+            if (mode == 1) {
+                if (this.parent != null) {
+                    this.fields.put(this.parent.key, this.parent.value);
+                }
+            } else {
+                OpflowLogTracer ref = this.parent;
+                while(ref != null) {
+                    this.fields.put(ref.key, ref.value);
+                    ref = ref.parent;
+                }
+            }
+        }
+        this.fields.put(key, value);
+        return this;
+    }
+    
+    public final OpflowLogTracer reset() {
+        String treepath = OpflowUtil.getSystemProperty("OPFLOW_LOGTREEPATH", null);
+        if ("parent".equals(treepath)) return this.reset(1);
+        if ("full".equals(treepath)) return this.reset(2);
+        return this.reset(2);
     }
     
     public OpflowLogTracer copy() {
