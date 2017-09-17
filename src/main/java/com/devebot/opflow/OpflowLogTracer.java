@@ -69,22 +69,6 @@ public class OpflowLogTracer {
         return this.reset(2);
     }
     
-    public OpflowLogTracer copy() {
-        OpflowLogTracer target = new OpflowLogTracer();
-        target.fields.putAll(fields);
-        return target;
-    }
-    
-    public OpflowLogTracer copy(String[] copied) {
-        OpflowLogTracer target = copy();
-        for(String key: target.fields.keySet()) {
-            if (!OpflowUtil.arrayContains(copied, key)) {
-                target.fields.remove(key);
-            }
-        }
-        return target;
-    }
-    
     public OpflowLogTracer put(String key, Object value) {
         fields.put(key, value);
         return this;

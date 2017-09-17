@@ -10,7 +10,6 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -241,8 +240,8 @@ public class OpflowEngine {
     
     public ConsumerInfo consume(final OpflowListener listener, final Map<String, Object> options) {
         final Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
-        final String consumerId = OpflowUtil.getOptionField(opts, "consumerId", true);
-        final OpflowLogTracer logConsume = logTracer.branch("consumerId", consumerId);
+        final String _consumerId = OpflowUtil.getOptionField(opts, "consumerId", true);
+        final OpflowLogTracer logConsume = logTracer.branch("consumerId", _consumerId);
         
         if (LOG.isInfoEnabled()) LOG.info(logConsume
                 .put("message", "consume() is invoked")
@@ -438,7 +437,7 @@ public class OpflowEngine {
                     .put("message", "consume() consume the queue")
                     .toString());
             ConsumerInfo info = new ConsumerInfo(_connection, !_forceNewConnection, 
-                    _channel, !_forceNewChannel, _queueName, _fixedQueue, _consumer, _consumerTag);
+                    _channel, !_forceNewChannel, _queueName, _fixedQueue, _consumerId, _consumerTag);
             if ("engine".equals(mode)) consumerInfos.add(info);
             return info;
         } catch(IOException exception) {
@@ -479,7 +478,7 @@ public class OpflowEngine {
     
     public void cancelConsumer(OpflowEngine.ConsumerInfo consumerInfo) {
         if (consumerInfo == null) return;
-        final OpflowLogTracer logCancel = logTracer.branch("consumerTag", consumerInfo.getConsumerTag());
+        final OpflowLogTracer logCancel = logTracer.branch("consumerId", consumerInfo.getConsumerId());
         try {
             if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
                     .put("queueName", consumerInfo.getQueueName())
@@ -531,18 +530,18 @@ public class OpflowEngine {
         private final boolean sharedChannel;
         private final String queueName;
         private final boolean fixedQueue;
-        private final Consumer consumer;
+        private final String consumerId;
         private final String consumerTag;
         
         public ConsumerInfo(Connection connection, boolean sharedConnection, Channel channel, boolean sharedChannel, 
-                String queueName, boolean fixedQueue, Consumer consumer, String consumerTag) {
+                String queueName, boolean fixedQueue, String consumerId, String consumerTag) {
             this.connection = connection;
             this.sharedConnection = sharedConnection;
             this.channel = channel;
             this.sharedChannel = sharedChannel;
             this.queueName = queueName;
             this.fixedQueue = fixedQueue;
-            this.consumer = consumer;
+            this.consumerId = consumerId;
             this.consumerTag = consumerTag;
         }
 
@@ -570,8 +569,8 @@ public class OpflowEngine {
             return fixedQueue;
         }
         
-        public Consumer getConsumer() {
-            return consumer;
+        public String getConsumerId() {
+            return consumerId;
         }
 
         public String getConsumerTag() {
@@ -679,9 +678,10 @@ public class OpflowEngine {
             producingChannel.addShutdownListener(new ShutdownListener() {
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (LOG.isInfoEnabled()) {
-                        LOG.info("Main channel[" + producingChannel.getChannelNumber() + "] has been shutdown");
-                    }
+                    if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                            .put("channelNumber", producingChannel.getChannelNumber())
+                            .put("message", "producingChannel has been shutdown")
+                            .toString());
                 }
             });
         }
@@ -707,6 +707,15 @@ public class OpflowEngine {
         }
         if (consumingChannel == null || !consumingChannel.isOpen()) {
             consumingChannel = getConsumingConnection(false).createChannel();
+            consumingChannel.addShutdownListener(new ShutdownListener() {
+                @Override
+                public void shutdownCompleted(ShutdownSignalException sse) {
+                    if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                            .put("channelNumber", consumingChannel.getChannelNumber())
+                            .put("message", "consumingChannel has been shutdown")
+                            .toString());
+                }
+            });
         }
         return consumingChannel;
     }
@@ -720,11 +729,12 @@ public class OpflowEngine {
         _channel.queueDeclarePassive(_queueName);
         for (String _routingKey : keys) {
             _channel.queueBind(_queueName, _exchangeName, _routingKey);
-            if (LOG.isTraceEnabled()) {
-                LOG.trace(MessageFormat.format("Exchange[{0}] binded to Queue[{1}] with key[{2}]", new Object[] {
-                    _exchangeName, _queueName, _routingKey
-                }));
-            }
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                    .put("exchangeName", _exchangeName)
+                    .put("queueName", _queueName)
+                    .put("routingKey", _routingKey)
+                    .put("message", "Binds Exchange to Queue")
+                    .toString());
         }
     }
     
