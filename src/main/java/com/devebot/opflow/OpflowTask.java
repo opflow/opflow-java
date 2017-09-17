@@ -88,7 +88,7 @@ public class OpflowTask {
     
     public static class TimeoutMonitor {
         private final static Logger LOG = LoggerFactory.getLogger(TimeoutMonitor.class);
-        
+        private final OpflowLogTracer logTracer;
         private long timeout;
         private final String monitorId;
         private final Map<String, ? extends Timeoutable> tasks;
@@ -140,30 +140,35 @@ public class OpflowTask {
             this.tasks = tasks;
             this.interval = interval;
             this.timeout = timeout;
-            if (monitorId != null) {
-                this.monitorId = monitorId;
-            } else {
-                this.monitorId = UUID.randomUUID().toString();
-            }
-            if (LOG.isDebugEnabled()) LOG.debug("Monitor[" + this.monitorId + "] has been created");
+            this.monitorId = (monitorId != null) ? monitorId : UUID.randomUUID().toString();
+            logTracer = OpflowLogTracer.ROOT.branch("monitorId", this.monitorId);
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer
+                    .put("message", "Monitor has been created")
+                    .toString());
         }
         
         public void start() {
-            if (LOG.isDebugEnabled()) LOG.debug("Monitor[" + monitorId + "].start()");
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                    .put("message", "Monitor.start()")
+                    .toString());
             if (interval > 0) {
                 timer.scheduleAtFixedRate(timerTask, 0, interval);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Monitor[" + monitorId + "] has been started, with interval: " + this.interval);
-                }
+                if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                        .put("interval", interval)
+                        .put("message", "Monitor has been started")
+                        .toString());
             } else {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Monitor[" + monitorId + "] is not available, because interval: " + this.interval);
-                }
+                if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                        .put("interval", interval)
+                        .put("message", "Monitor available. invalid interval")
+                        .toString());
             }
         }
         
         public void stop() {
-            if (LOG.isDebugEnabled()) LOG.debug("Monitor[" + monitorId + "].stop()");
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                    .put("message", "Monitor.stop()")
+                    .toString());
             timer.cancel();
             timer.purge();
         }

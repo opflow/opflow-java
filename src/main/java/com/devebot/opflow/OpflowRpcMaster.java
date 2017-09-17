@@ -95,26 +95,53 @@ public class OpflowRpcMaster {
     private OpflowEngine.ConsumerInfo responseConsumer;
 
     private OpflowEngine.ConsumerInfo initResponseConsumer(final boolean forked) {
-        if (LOG.isTraceEnabled()) LOG.trace("initResponseConsumer(forked:" + forked + ")");
+        final String _consumerId = OpflowUtil.getUUID();
+        final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
+        if (LOG.isInfoEnabled()) LOG.info(logSession
+                .put("forked", forked)
+                .put("message", "initResponseConsumer() is invoked")
+                .toString());
         return engine.consume(new OpflowListener() {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
                 String taskId = properties.getCorrelationId();
-                if (LOG.isDebugEnabled()) LOG.debug("task[" + taskId + "] received data, size: " + (content != null ? content.length : -1));
+                Map<String, Object> headers = properties.getHeaders();
+
+                String requestId = OpflowUtil.getRequestId(headers, true);
+                OpflowLogTracer logResult = null;
+                if (LOG.isInfoEnabled()) logResult = logSession.branch("requestId", requestId);
+
+                if (LOG.isInfoEnabled() && logResult != null) LOG.info(logResult
+                        .put("correlationId", taskId)
+                        .put("message", "initResponseConsumer() - receives a result")
+                        .toString());
+
+                if (LOG.isDebugEnabled() && logResult != null) LOG.debug(logResult.reset()
+                        .put("bodyLength", (content != null ? content.length : -1))
+                        .put("message", "initResponseConsumer() - result body length")
+                        .toString());
+
                 OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
-                    if (LOG.isDebugEnabled()) LOG.debug("task[" + taskId + "] not found, skipped");
+                    if (LOG.isDebugEnabled() && logResult != null) LOG.debug(logResult.reset()
+                        .put("correlationId", taskId)
+                        .put("message", "initResponseConsumer() - task not found, skipped")
+                        .toString());
                 } else {
                     OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                     task.push(message);
-                    if (LOG.isDebugEnabled()) LOG.debug("task[" + taskId + "] - returned value has been pushed");
+                    if (LOG.isDebugEnabled() && logResult != null) LOG.debug(logResult.reset()
+                        .put("correlationId", taskId)
+                        .put("message", "initResponseConsumer() - returned value has been pushed")
+                        .toString());
                 }
                 return true;
             }
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
+                opts.put("consumerId", _consumerId);
                 if (!forked) {
                     opts.put("queueName", responseName);
                     opts.put("consumerLimit", CONSUMER_MAX);
@@ -241,21 +268,38 @@ public class OpflowRpcMaster {
     
     public void close() {
         lock.lock();
-        if (LOG.isTraceEnabled()) LOG.trace("close() - obtain the lock");
+        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "close() - obtain the lock")
+                .toString());
         try {
-            if (LOG.isTraceEnabled()) LOG.trace("close() - check tasks.isEmpty()? and await...");
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "close() - check tasks.isEmpty()? and await...")
+                .toString());
             while(!tasks.isEmpty()) idle.await();
-            if (LOG.isTraceEnabled()) LOG.trace("close() - cancel responseConsumer");
+            
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "close() - cancel responseConsumer")
+                .toString());
             if (responseConsumer != null) engine.cancelConsumer(responseConsumer);
-            if (LOG.isTraceEnabled()) LOG.trace("close() - stop timeoutMonitor");
+            
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "close() - stop timeoutMonitor")
+                .toString());
             if (timeoutMonitor != null) timeoutMonitor.stop();
-            if (LOG.isTraceEnabled()) LOG.trace("close() - close broker/engine");
+            
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "close() - close broker/engine")
+                .toString());
             if (engine != null) engine.close();
         } catch(InterruptedException ex) {
-            if (LOG.isErrorEnabled()) LOG.error("close() - an exception has been thrown");
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
+                .put("message", "close() - an interruption has been raised")
+                .toString());
         } finally {
             lock.unlock();
-            if (LOG.isTraceEnabled()) LOG.trace("close() - lock has been released");
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "close() - lock has been released")
+                .toString());
         }
     }
     
