@@ -15,10 +15,19 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowLogTracer {
+    private final static Gson GSON = new Gson();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowLogTracer.class);
     private final static String OPFLOW_VERSION = "0.1.x";
-    private final static String INSTANCE_ID = OpflowUtil.getUUID();
-    private final static Gson GSON = new Gson();
+    private final static String OPFLOW_INSTANCE_ID = OpflowUtil.getUUID();
+    
+    private final static int RESET_MODE;
+    static {
+        String treepath = OpflowUtil.getSystemProperty("OPFLOW_LOGTREEPATH", null);
+        if ("none".equals(treepath)) RESET_MODE = 0;
+        else if ("parent".equals(treepath)) RESET_MODE = 1;
+        else if ("full".equals(treepath)) RESET_MODE = 2;
+        else RESET_MODE = 2;
+    }
     
     private final OpflowLogTracer parent;
     private final String key;
@@ -28,7 +37,7 @@ public class OpflowLogTracer {
     public final static OpflowLogTracer ROOT = new OpflowLogTracer();
     
     public OpflowLogTracer() {
-        this(null, "instanceId", OpflowUtil.getSystemProperty("OPFLOW_INSTANCE_ID", INSTANCE_ID));
+        this(null, "instanceId", OpflowUtil.getSystemProperty("OPFLOW_INSTANCE_ID", OPFLOW_INSTANCE_ID));
     }
     
     private OpflowLogTracer(OpflowLogTracer ref, String key, Object value) {
@@ -63,10 +72,7 @@ public class OpflowLogTracer {
     }
     
     public final OpflowLogTracer reset() {
-        String treepath = OpflowUtil.getSystemProperty("OPFLOW_LOGTREEPATH", null);
-        if ("parent".equals(treepath)) return this.reset(1);
-        if ("full".equals(treepath)) return this.reset(2);
-        return this.reset(2);
+        return this.reset(RESET_MODE);
     }
     
     public OpflowLogTracer put(String key, Object value) {
