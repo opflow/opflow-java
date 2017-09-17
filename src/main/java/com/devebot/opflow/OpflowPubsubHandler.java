@@ -143,21 +143,42 @@ public class OpflowPubsubHandler {
     }
     
     public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener newListener) {
+        final String _consumerId = OpflowUtil.getUUID();
+        final OpflowLogTracer logSubscribe = logTracer.branch("consumerId", _consumerId);
+        if (LOG.isInfoEnabled()) LOG.info(logSubscribe
+                .put("message", "subscribe() is invoked")
+                .toString());
+        
         listener = (listener != null) ? listener : newListener;
         if (listener == null) {
+            if (LOG.isInfoEnabled()) LOG.info(logSubscribe
+                    .put("message", "subscribe() - PubsubListener should not be null")
+                    .toString());
             throw new IllegalArgumentException("PubsubListener should not be null");
         } else if (listener != newListener) {
-            throw new OpflowOperationException("PubsubHandler only supports single PubsubListener");
+            if (LOG.isInfoEnabled()) LOG.info(logSubscribe
+                    .put("message", "subscribe() - PubsubHandler supports only single PubsubListener")
+                    .toString());
+            throw new OpflowOperationException("PubsubHandler supports only single PubsubListener");
         }
+        
         OpflowEngine.ConsumerInfo consumer = engine.consume(new OpflowListener() {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
+                Map<String, Object> headers = properties.getHeaders();
+                String requestId = OpflowUtil.getRequestId(headers, true);
+                OpflowLogTracer logRequest = null;
+                if (LOG.isInfoEnabled()) logRequest = logSubscribe.branch("requestId", requestId);
+                if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest
+                        .put("message", "subscribe() - receives a new request")
+                        .toString());
                 try {
-                    listener.processMessage(new OpflowMessage(content, properties.getHeaders()));
+                    listener.processMessage(new OpflowMessage(content, headers));
+                    if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                            .put("message", "subscribe() - request processing has completed")
+                            .toString());
                 } catch (Exception exception) {
-                    Map<String, Object> headers = properties.getHeaders();
-                    
                     int redeliveredCount = 0;
                     if (headers.get("redeliveredCount") instanceof Integer) {
                         redeliveredCount = (Integer) headers.get("redeliveredCount");
@@ -168,11 +189,28 @@ public class OpflowPubsubHandler {
                     AMQP.BasicProperties.Builder propBuilder = copyBasicProperties(properties);
                     AMQP.BasicProperties props = propBuilder.headers(headers).build();
                     
+                    if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                            .put("redeliveredCount", redeliveredCount)
+                            .put("redeliveredLimit", redeliveredLimit)
+                            .put("message", "subscribe() - recycling failed request")
+                            .toString());
+                    
                     if (redeliveredCount <= redeliveredLimit) {
+                        if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                                .put("message", "subscribe() - requeue failed request")
+                                .toString());
                         sendToQueue(content, props, subscriberName, channel);
                     } else {
                         if (recyclebinName != null) {
                             sendToQueue(content, props, recyclebinName, channel);
+                            if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                                    .put("recyclebinName", recyclebinName)
+                                    .put("message", "subscribe() - enqueue failed request to recyclebin")
+                                    .toString());
+                        } else {
+                            if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                                    .put("message", "subscribe() - recyclebin not found, discard failed request")
+                                    .toString());
                         }
                     }
                 }
@@ -181,6 +219,7 @@ public class OpflowPubsubHandler {
         }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
+                opts.put("consumerId", _consumerId);
                 opts.put("autoAck", Boolean.TRUE);
                 opts.put("queueName", subscriberName);
                 if (prefetch > 0) opts.put("prefetch", prefetch);
@@ -188,10 +227,16 @@ public class OpflowPubsubHandler {
             }
         }));
         consumerInfos.add(consumer);
+        if (LOG.isInfoEnabled()) LOG.info(logSubscribe.reset()
+                .put("message", "subscribe() has completed")
+                .toString());
         return consumer;
     }
     
     public void close() {
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                .put("message", "close()")
+                .toString());
         if (engine != null) {
             for(OpflowEngine.ConsumerInfo consumerInfo:consumerInfos) {
                 if (consumerInfo != null) {
@@ -201,6 +246,9 @@ public class OpflowPubsubHandler {
             consumerInfos.clear();
             engine.close();
         }
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                .put("message", "close() has completed")
+                .toString());
     }
     
     public State check() {

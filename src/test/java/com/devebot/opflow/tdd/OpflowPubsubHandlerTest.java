@@ -85,7 +85,7 @@ public class OpflowPubsubHandlerTest {
         pubsub = new OpflowPubsubHandler(pars);
         
         thrown.expect(OpflowOperationException.class);
-        thrown.expectMessage(CoreMatchers.is("PubsubHandler only supports single PubsubListener"));
+        thrown.expectMessage(CoreMatchers.is("PubsubHandler supports only single PubsubListener"));
         pubsub.subscribe(new OpflowPubsubListener() {
             @Override
             public void processMessage(OpflowMessage message) throws IOException {
