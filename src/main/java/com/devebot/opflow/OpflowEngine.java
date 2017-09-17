@@ -172,11 +172,20 @@ public class OpflowEngine {
                 .toString());
     }
     
-    public void produce(final byte[] content, final AMQP.BasicProperties.Builder propBuilder) {
-        produce(content, propBuilder, null);
+    public void produce(final byte[] body, final Map<String, Object> headers) {
+        produce(body, headers, null, null);
     }
     
-    public void produce(final byte[] content, final AMQP.BasicProperties.Builder propBuilder, final Map<String, Object> override) {
+    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder) {
+        produce(body, headers, propBuilder, null);
+    }
+    
+    public void produce(final byte[] body, final Map<String, Object> headers, Map<String, Object> override) {
+        produce(body, headers, null, override);
+    }
+    
+    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, Map<String, Object> override) {
+        propBuilder = (propBuilder == null) ? new AMQP.BasicProperties.Builder() : propBuilder;
         OpflowLogTracer logProduce = null;
         
         try {
@@ -191,22 +200,19 @@ public class OpflowEngine {
             }
             propBuilder.appId(appId);
             
-            String requestId = null;
-            if (override != null && override.get("requestId") != null) {
-                requestId = (String) override.get("requestId");
+            if (override != null && override.get("correlationId") != null) {
+                propBuilder.correlationId(override.get("correlationId").toString());
             }
             
-            AMQP.BasicProperties properties = propBuilder.build();
-            if (requestId == null) {
-                Map<String, Object> headers = properties.getHeaders();
-                requestId = OpflowUtil.getRequestId(headers, false);
-                if (requestId == null) {
-                    requestId = OpflowUtil.getUUID();
-                    headers.put("requestId", requestId);
-                    propBuilder.headers(headers);
-                    properties = propBuilder.build();
-                }
+            if (override != null && override.get("replyTo") != null) {
+                propBuilder.replyTo(override.get("replyTo").toString());
             }
+            
+            String requestId = OpflowUtil.getRequestId(headers, false);
+            if (requestId == null) {
+                headers.put("requestId", requestId = OpflowUtil.getUUID());
+            }
+            propBuilder.headers(headers);
             
             if (LOG.isInfoEnabled()) logProduce = logTracer.branch("requestId", requestId);
             
@@ -220,7 +226,7 @@ public class OpflowEngine {
             if (_channel == null || !_channel.isOpen()) {
                 throw new OpflowOperationException("Channel is null or has been closed");
             }
-            _channel.basicPublish(this.exchangeName, customKey, properties, content);
+            _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), body);
         } catch (IOException exception) {
             if (LOG.isErrorEnabled() && logProduce != null) LOG.error(logProduce.reset()
                     .put("exceptionClass", exception.getClass().getName())

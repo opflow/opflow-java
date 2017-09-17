@@ -91,36 +91,36 @@ public class OpflowPubsubHandler {
                 .toString());
     }
 
-    public void publish(String data) {
-        publish(data, null);
+    public void publish(String body) {
+        publish(body, null);
     }
     
-    public void publish(String data, Map<String, Object> opts) {
-        publish(data, opts, null);
+    public void publish(String body, Map<String, Object> opts) {
+        publish(body, opts, null);
     }
     
-    public void publish(String data, Map<String, Object> opts, String routingKey) {
-        publish(OpflowUtil.getBytes(data), opts, routingKey);
+    public void publish(String body, Map<String, Object> opts, String routingKey) {
+        publish(OpflowUtil.getBytes(body), opts, routingKey);
     }
     
-    public void publish(byte[] data) {
-        publish(data, null);
+    public void publish(byte[] body) {
+        publish(body, null);
     }
     
-    public void publish(byte[] data, Map<String, Object> opts) {
-        publish(data, opts, null);
+    public void publish(byte[] body, Map<String, Object> options) {
+        publish(body, options, null);
     }
     
-    public void publish(byte[] data, Map<String, Object> opts, String routingKey) {
+    public void publish(byte[] body, Map<String, Object> options, String routingKey) {
         AMQP.BasicProperties.Builder propBuilder = new AMQP.BasicProperties.Builder();
         
-        if (opts == null) {
-            opts = new HashMap<String, Object>();
+        if (options == null) {
+            options = new HashMap<String, Object>();
         }
-        if (opts.get("requestId") == null) {
-            opts.put("requestId", OpflowUtil.getUUID());
+        Object requestId = options.get("requestId");
+        if (requestId == null) {
+            options.put("requestId", requestId = OpflowUtil.getUUID());
         }
-        propBuilder.headers(opts);
         
         Map<String, Object> override = new HashMap<String, Object>();
         if (routingKey != null) {
@@ -128,14 +128,14 @@ public class OpflowPubsubHandler {
         }
         
         OpflowLogTracer logPublish = null;
-        if (LOG.isInfoEnabled()) logPublish = logTracer.branch("requestId", OpflowUtil.getRequestId(opts));
+        if (LOG.isInfoEnabled()) logPublish = logTracer.branch("requestId", requestId);
 
         if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish
                 .put("routingKey", routingKey)
                 .put("message", "publish() - Request is produced with overriden routingKey")
                 .toString());
         
-        engine.produce(data, propBuilder, override);
+        engine.produce(body, options, override);
         
         if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish.reset()
                 .put("message", "publish() - Request has completed")
