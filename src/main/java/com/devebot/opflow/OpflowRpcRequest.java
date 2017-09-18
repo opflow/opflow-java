@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
-
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
+    private final OpflowLogTracer logTracer;
     private final String requestId;
     private final String routineId;
     private final long timeout;
@@ -36,14 +36,20 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         } else {
             this.timeout = 0;
         }
+        logTracer = OpflowLogTracer.ROOT.branch("requestId", requestId);
         this.completeListener = completeListener;
         if (Boolean.TRUE.equals(opts.get("watcherEnabled")) && completeListener != null && this.timeout > 0) {
-            timeoutWatcher = new OpflowTask.TimeoutWatcher(this.timeout, new OpflowTask.Listener() {
+            timeoutWatcher = new OpflowTask.TimeoutWatcher(requestId, this.timeout, new OpflowTask.Listener() {
                 @Override
                 public void handleEvent() {
-                    if (LOG.isDebugEnabled()) LOG.debug("Request[" + requestId + "] timeout event has been raised");
+                    OpflowLogTracer logWatcher = logTracer.copy();
+                    if (LOG.isDebugEnabled()) LOG.debug(logWatcher
+                            .put("message", "Request timeout event has been raised")
+                            .toString());
                     list.add(OpflowMessage.ERROR);
-                    if (LOG.isDebugEnabled()) LOG.debug("Request[" + requestId + "] raise completeListener (timeout)");
+                    if (LOG.isDebugEnabled()) LOG.debug(logWatcher
+                            .put("message", "Request raise completeListener (timeout)")
+                            .toString());
                     completeListener.handleEvent();
                 }
             });
@@ -105,10 +111,14 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         }
         checkTimestamp();
         if(isDone(message)) {
-            if (LOG.isDebugEnabled()) LOG.debug("Request[" + requestId + "] completed/failed message");
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer
+                    .put("message", "Request has completed/failed message")
+                    .toString());
             list.add(OpflowMessage.EMPTY);
             if (completeListener != null) {
-                if (LOG.isDebugEnabled()) LOG.debug("Request[" + requestId + "] raise completeListener (completed)");
+                if (LOG.isDebugEnabled()) LOG.debug(logTracer
+                        .put("message", "Request raises completeListener (completed)")
+                        .toString());
                 completeListener.handleEvent();
             }
             if (timeoutWatcher != null) {

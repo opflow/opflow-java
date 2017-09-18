@@ -66,7 +66,7 @@ public class OpflowRpcMaster {
             monitorEnabled = true;
         }
         
-        monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId"): null;
+        monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId") : rpcMasterId;
         
         if (params.get("monitorInterval") != null && params.get("monitorInterval") instanceof Integer) {
             monitorInterval = (Integer) params.get("monitorInterval");
@@ -207,6 +207,7 @@ public class OpflowRpcMaster {
         
         final String taskId = UUID.randomUUID().toString();
         OpflowTask.Listener listener = new OpflowTask.Listener() {
+            private OpflowLogTracer logTask = logRequest.copy();
             @Override
             public void handleEvent() {
                 lock.lock();
@@ -218,9 +219,10 @@ public class OpflowRpcMaster {
                         }
                         idle.signal();
                     }
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("tasks.size(): " + tasks.size());
-                    }
+                    if (LOG.isDebugEnabled()) LOG.debug(logTask
+                            .put("taskListSize", tasks.size())
+                            .put("message", "Check tasks size after removing a task")
+                            .toString());
                 } finally {
                     lock.unlock();
                 }

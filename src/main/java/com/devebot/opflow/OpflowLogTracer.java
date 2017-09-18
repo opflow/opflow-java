@@ -47,6 +47,10 @@ public class OpflowLogTracer {
         this.reset();
     }
     
+    public OpflowLogTracer copy() {
+        return new OpflowLogTracer(this.parent, this.key, this.value);
+    }
+    
     public OpflowLogTracer branch(String key, Object value) {
         return new OpflowLogTracer(this, key, value);
     }
