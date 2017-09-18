@@ -6,15 +6,11 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
@@ -27,6 +23,7 @@ import com.devebot.opflow.exception.OpflowRestrictedTestingException;
  */
 public class OpflowUtil {
     private static final Logger LOG = LoggerFactory.getLogger(OpflowUtil.class);
+    private final OpflowLogTracer logTracer = OpflowLogTracer.ROOT.copy();
     
     private static final Gson GSON = new Gson();
     private static final JsonParser JSON_PARSER = new JsonParser();
@@ -48,9 +45,13 @@ public class OpflowUtil {
         }
     }
     
-    private static String extractSingleField(String json, String fieldName) {
-        JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
-        return jsonObject.get(fieldName).toString();
+    public static String extractSingleField(String json, String fieldName) {
+        try {
+            JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
+            return jsonObject.get(fieldName).toString();
+        } catch (JsonSyntaxException e) {
+            throw new OpflowJsonTransformationException(e);
+        }
     }
     
     public static long getCurrentTime() {
@@ -105,6 +106,32 @@ public class OpflowUtil {
     
     public interface MapListener {
         public void transform(Map<String, Object> opts);
+    }
+    
+    public static class MapObject {
+        private final Map<String, Object> fields = new HashMap<String, Object>();
+        
+        public MapObject put(String key, Object value) {
+            fields.put(key, value);
+            return this;
+        }
+
+        public Object get(String key) {
+            return fields.get(key);
+        }
+
+        public Map<String, Object> toMap() {
+            return fields;
+        }
+        
+        @Override
+        public String toString() {
+            return GSON.toJson(fields);
+        }
+    }
+    
+    public static MapObject buildMap() {
+        return new MapObject();
     }
     
     public static String buildJson(MapListener listener) {
@@ -180,64 +207,6 @@ public class OpflowUtil {
     
     public static String getStatus(OpflowMessage message) {
         return getMessageField(message, "status");
-    }
-    
-    public static List<OpflowMessage> iterateRequest(OpflowRpcRequest request) {
-        List<OpflowMessage> buff = new LinkedList<OpflowMessage>();
-        while(request.hasNext()) buff.add(request.next());
-        return buff;
-    }
-    
-    public static OpflowRpcResult exhaustRequest(OpflowRpcRequest request) {
-        return exhaustRequest(request, true);
-    }
-    
-    public static OpflowRpcResult exhaustRequest(OpflowRpcRequest request, final boolean includeProgress) {
-        String routineId = request.getRoutineId();
-        String requestId = request.getRequestId();
-        Iterator<OpflowMessage> iter = request;
-        if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw ...");
-        String workerTag = null;
-        boolean failed = false;
-        byte[] error = null;
-        boolean completed = false;
-        byte[] value = null;
-        List<OpflowRpcResult.Step> steps = new LinkedList<OpflowRpcResult.Step>();
-        while(iter.hasNext()) {
-            OpflowMessage msg = iter.next();
-            String status = getStatus(msg);
-            if (LOG.isTraceEnabled()) {
-                LOG.trace(MessageFormat.format("Request[{0}] receive message with status: {1}", new Object[] {
-                    requestId, status
-                }));
-            }
-            if (status == null) continue;
-            if ("progress".equals(status)) {
-                if (includeProgress) {
-                    try {
-                        int percent = Integer.parseInt(extractSingleField(msg.getBodyAsString(), "percent"));
-                        steps.add(new OpflowRpcResult.Step(percent));
-                    } catch (JsonSyntaxException jse) {
-                        steps.add(new OpflowRpcResult.Step());
-                    } catch (NumberFormatException nfe) {
-                        steps.add(new OpflowRpcResult.Step());
-                    }
-                }
-            } else
-            if ("failed".equals(status)) {
-                workerTag = getMessageField(msg, "workerTag");
-                failed = true;
-                error = msg.getBody();
-            } else
-            if ("completed".equals(status)) {
-                workerTag = getMessageField(msg, "workerTag");
-                completed = true;
-                value = msg.getBody();
-            }
-        }
-        if (LOG.isTraceEnabled()) LOG.trace("Request[" + requestId + "] withdraw done");
-        if (!includeProgress) steps = null;
-        return new OpflowRpcResult(routineId, requestId, workerTag, steps, failed, error, completed, value);
     }
     
     public static String getSystemProperty(String key, String def) {

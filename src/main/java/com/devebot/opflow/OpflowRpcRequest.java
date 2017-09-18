@@ -1,7 +1,10 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowJsonTransformationException;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -125,6 +128,66 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
                 timeoutWatcher.close();
             }
         }
+    }
+    
+    public List<OpflowMessage> iterateRequest() {
+        List<OpflowMessage> buff = new LinkedList<OpflowMessage>();
+        while(this.hasNext()) buff.add(this.next());
+        return buff;
+    }
+    
+    public OpflowRpcResult exhaustRequest() {
+        return exhaustRequest(true);
+    }
+    
+    public OpflowRpcResult exhaustRequest(final boolean includeProgress) {
+        OpflowRpcRequest request = this;
+        Iterator<OpflowMessage> iter = request;
+        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "Extracting result is running")
+                .toString());
+        String workerTag = null;
+        boolean failed = false;
+        byte[] error = null;
+        boolean completed = false;
+        byte[] value = null;
+        List<OpflowRpcResult.Step> steps = new LinkedList<OpflowRpcResult.Step>();
+        while(iter.hasNext()) {
+            OpflowMessage msg = iter.next();
+            String status = OpflowUtil.getStatus(msg);
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                    .put("status", status)
+                    .put("message", "Extracting result receives a message")
+                    .toString());
+            if (status == null) continue;
+            if ("progress".equals(status)) {
+                if (includeProgress) {
+                    try {
+                        int percent = Integer.parseInt(OpflowUtil.extractSingleField(msg.getBodyAsString(), "percent"));
+                        steps.add(new OpflowRpcResult.Step(percent));
+                    } catch (OpflowJsonTransformationException jse) {
+                        steps.add(new OpflowRpcResult.Step());
+                    } catch (NumberFormatException nfe) {
+                        steps.add(new OpflowRpcResult.Step());
+                    }
+                }
+            } else
+            if ("failed".equals(status)) {
+                workerTag = OpflowUtil.getMessageField(msg, "workerTag");
+                failed = true;
+                error = msg.getBody();
+            } else
+            if ("completed".equals(status)) {
+                workerTag = OpflowUtil.getMessageField(msg, "workerTag");
+                completed = true;
+                value = msg.getBody();
+            }
+        }
+        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "Extracting result has completed")
+                .toString());
+        if (!includeProgress) steps = null;
+        return new OpflowRpcResult(routineId, requestId, workerTag, steps, failed, error, completed, value);
     }
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });

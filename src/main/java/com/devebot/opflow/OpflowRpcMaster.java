@@ -207,10 +207,11 @@ public class OpflowRpcMaster {
         
         final String taskId = UUID.randomUUID().toString();
         OpflowTask.Listener listener = new OpflowTask.Listener() {
-            private OpflowLogTracer logTask = logRequest.copy();
+            private OpflowLogTracer logTask = null;
             @Override
             public void handleEvent() {
                 lock.lock();
+                if (LOG.isDebugEnabled()) logTask = logRequest.copy();
                 try {
                     tasks.remove(taskId);
                     if (tasks.isEmpty()) {
@@ -219,7 +220,7 @@ public class OpflowRpcMaster {
                         }
                         idle.signal();
                     }
-                    if (LOG.isDebugEnabled()) LOG.debug(logTask
+                    if (logTask != null && LOG.isDebugEnabled()) LOG.debug(logTask
                             .put("taskListSize", tasks.size())
                             .put("message", "Check tasks size after removing a task")
                             .toString());
