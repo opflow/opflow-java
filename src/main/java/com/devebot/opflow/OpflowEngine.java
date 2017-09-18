@@ -10,6 +10,7 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -62,58 +63,64 @@ public class OpflowEngine {
         mode = params.containsKey("mode") ? params.get("mode").toString() : "engine";
         try {
             factory = new ConnectionFactory();
-
             String uri = (String) params.get("uri");
             if (uri != null) {
                 factory.setUri(uri);
-                if (LOG.isTraceEnabled()) LOG.trace("Connection parameter/URI: " + hidePasswordInUri(uri));
+                if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                        .put("uri", hidePasswordInUri(uri))
+                        .put("message", "Connection URI")
+                        .toString());
             } else {
                 String host = (String) params.get("host");
                 if (host == null) host = "localhost";
                 factory.setHost(host);
-                if (LOG.isTraceEnabled()) LOG.trace("Connection parameter/host: " + host);
-
+                
+                Integer port = null;
                 if (params.get("port") != null && params.get("port") instanceof Integer) {
-                    Integer port;
                     factory.setPort(port = (Integer)params.get("port"));
-                    if (LOG.isTraceEnabled()) LOG.trace("Connection parameter/port: " + port);
                 }
-
+                
                 String virtualHost = (String) params.get("virtualHost");
                 if (virtualHost != null) {
                     factory.setVirtualHost(virtualHost);
-                    if (LOG.isTraceEnabled()) LOG.trace("Connection parameter/virtualHost: " + virtualHost);
                 }
-
+                
                 String username = (String) params.get("username");
                 if (username != null) {
                     factory.setUsername(username);
-                    if (LOG.isTraceEnabled()) LOG.trace("Connection parameter/username: " + username);
                 }
-
+                
                 String password = (String) params.get("password");
                 if (password != null) {
                     factory.setPassword(password);
-                    if (LOG.isTraceEnabled()) LOG.trace("Connection parameter/password: ******");
                 }
-
+                
+                Integer channelMax = null;
                 if (params.get("channelMax") != null && params.get("channelMax") instanceof Integer) {
-                    Integer channelMax;
                     factory.setRequestedChannelMax(channelMax = (Integer)params.get("channelMax"));
-                    if (LOG.isTraceEnabled()) LOG.trace("Connection parameter/channelMax: " + channelMax);
                 }
-
+                
+                Integer frameMax = null;
                 if (params.get("frameMax") != null && params.get("frameMax") instanceof Integer) {
-                    Integer frameMax;
                     factory.setRequestedFrameMax(frameMax = (Integer)params.get("frameMax"));
-                    if (LOG.isTraceEnabled()) LOG.trace("Connection parameter/frameMax: " + frameMax);
                 }
-
+                
+                Integer heartbeat = null;
                 if (params.get("heartbeat") != null && params.get("heartbeat") instanceof Integer) {
-                    Integer heartbeat;
                     factory.setRequestedHeartbeat(heartbeat = (Integer)params.get("heartbeat"));
-                    if (LOG.isTraceEnabled()) LOG.trace("Connection parameter/heartbeat: " + heartbeat);
                 }
+                
+                if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                        .put("host", host)
+                        .put("port", port)
+                        .put("virtualHost", virtualHost)
+                        .put("username", username)
+                        .put("password", maskPassword(password))
+                        .put("channelMax", channelMax)
+                        .put("frameMax", frameMax)
+                        .put("heartbeat", heartbeat)
+                        .put("message", "Connection Parameters")
+                        .toString());
             }
             this.assertConnection();
         } catch (Exception exception) {
@@ -151,6 +158,16 @@ public class OpflowEngine {
             if (params.get("applicationId") instanceof String) {
                 applicationId = (String) params.get("applicationId");
             }
+            
+            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                        .put("exchangeName", exchangeName)
+                        .put("exchangeType", exchangeType)
+                        .put("exchangeDurable", exchangeDurable)
+                        .put("routingKey", routingKey)
+                        .put("otherKeys", otherKeys)
+                        .put("applicationId", applicationId)
+                        .put("message", "Exchange & routing keys")
+                        .toString());
         } catch (IOException exception) {
             if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
                     .put("exceptionClass", exception.getClass().getName())
@@ -745,6 +762,13 @@ public class OpflowEngine {
     }
     
     private Pattern passwordPattern = Pattern.compile(":([^:]+)@");
+    
+    private String maskPassword(String password) {
+        if (password == null) return null;
+        char[] charArray = new char[password.length()];
+        Arrays.fill(charArray, '*');
+        return new String(charArray);
+    }
     
     private String hidePasswordInUri(String uri) {
         return passwordPattern.matcher(uri).replaceAll(":******@");
