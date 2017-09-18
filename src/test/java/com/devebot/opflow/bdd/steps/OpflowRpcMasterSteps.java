@@ -96,7 +96,7 @@ public class OpflowRpcMasterSteps {
     @Then("the request<$requestName> should finished successfully")
     public void checkRequestOutput(@Named("requestName") final String requestName) {
         String routineId = requests.get(requestName).getRoutineId();
-        OpflowRpcResult output = requests.get(requestName).exhaustRequest();
+        OpflowRpcResult output = requests.get(requestName).extractResult();
         JsonObject jsonOutput = (JsonObject)jsonParser.parse(output.getValueAsString());
         
         int number = Integer.parseInt(jsonOutput.get("number").toString());
@@ -119,7 +119,7 @@ public class OpflowRpcMasterSteps {
     
     @Then("the request<$requestName> should be timeout")
     public void requestShouldBeTimeout(@Named("requestName") final String requestName) {
-        OpflowRpcResult output = requests.get(requestName).exhaustRequest();
+        OpflowRpcResult output = requests.get(requestName).extractResult();
         assertThat(output.isTimeout(), equalTo(true));
     }
     

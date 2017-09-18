@@ -23,6 +23,7 @@ public class OpflowLoader {
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowLoader.class);
+    private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
     public static OpflowRpcMaster createRpcMaster() throws OpflowBootstrapException {
         return createRpcMaster(null, null, true);
@@ -37,7 +38,10 @@ public class OpflowLoader {
     }
     
     public static OpflowRpcMaster createRpcMaster(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (LOG.isTraceEnabled()) LOG.trace("Create new OpflowRpcMaster with properties file: " + propFile);
+        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
+                .put("propFile", propFile)
+                .put("message", "Create new OpflowRpcMaster with properties file")
+                .toString());
         
         Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
@@ -48,7 +52,9 @@ public class OpflowLoader {
         
         transformParameters(params);
         
-        if (LOG.isTraceEnabled()) LOG.trace("OpflowRpcMaster has been created successfully");
+        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
+                .put("message", "OpflowRpcMaster has been created successfully")
+                .toString());
         
         return new OpflowRpcMaster(params);
     }
@@ -66,7 +72,10 @@ public class OpflowLoader {
     }
     
     public static OpflowRpcWorker createRpcWorker(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (LOG.isTraceEnabled()) LOG.trace("Create new OpflowRpcWorker with properties file: " + propFile);
+        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
+                .put("propFile", propFile)
+                .put("message", "Create new OpflowRpcWorker with properties file")
+                .toString());
         
         Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
@@ -83,7 +92,9 @@ public class OpflowLoader {
         
         transformParameters(params);
         
-        if (LOG.isTraceEnabled()) LOG.trace("OpflowRpcWorker has been created successfully");
+        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
+                .put("message", "OpflowRpcWorker has been created successfully")
+                .toString());
         
         return new OpflowRpcWorker(params);
     }
@@ -101,7 +112,10 @@ public class OpflowLoader {
     }
     
     public static OpflowPubsubHandler createPubsubHandler(String propFile, Properties defaultProps, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (LOG.isTraceEnabled()) LOG.trace("Create new OpflowPubsubHandler with properties file: " + propFile);
+        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
+                .put("propFile", propFile)
+                .put("message", "Create new OpflowPubsubHandler with properties file")
+                .toString());
         
         Properties props = loadProperties(propFile, defaultProps, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
@@ -121,7 +135,9 @@ public class OpflowLoader {
         
         transformParameters(params);
         
-        if (LOG.isTraceEnabled()) LOG.trace("OpflowPubsubHandler has been created successfully");
+        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
+                .put("message", "OpflowPubsubHandler has been created successfully")
+                .toString());
         
         return new OpflowPubsubHandler(params);
     }

@@ -170,7 +170,7 @@ public class OpflowTask {
             } else {
                 if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
                         .put("interval", interval)
-                        .put("message", "Monitor available. invalid interval")
+                        .put("message", "Monitor is not available. undefined interval")
                         .toString());
             }
         }

@@ -130,17 +130,17 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         }
     }
     
-    public List<OpflowMessage> iterateRequest() {
+    public List<OpflowMessage> iterateResult() {
         List<OpflowMessage> buff = new LinkedList<OpflowMessage>();
         while(this.hasNext()) buff.add(this.next());
         return buff;
     }
     
-    public OpflowRpcResult exhaustRequest() {
-        return exhaustRequest(true);
+    public OpflowRpcResult extractResult() {
+        return extractResult(true);
     }
     
-    public OpflowRpcResult exhaustRequest(final boolean includeProgress) {
+    public OpflowRpcResult extractResult(final boolean includeProgress) {
         OpflowRpcRequest request = this;
         Iterator<OpflowMessage> iter = request;
         if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()

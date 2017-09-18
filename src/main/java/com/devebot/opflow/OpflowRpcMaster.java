@@ -211,7 +211,7 @@ public class OpflowRpcMaster {
             @Override
             public void handleEvent() {
                 lock.lock();
-                if (LOG.isDebugEnabled()) logTask = logRequest.copy();
+                if (LOG.isDebugEnabled() && logRequest != null) logTask = logRequest.copy();
                 try {
                     tasks.remove(taskId);
                     if (tasks.isEmpty()) {
