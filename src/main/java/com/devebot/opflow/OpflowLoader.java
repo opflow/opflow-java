@@ -213,7 +213,10 @@ public class OpflowLoader {
                     throw new FileNotFoundException("property file '" + propFile + "' not found in the classpath");
                 }
             }
-            if (LOG.isTraceEnabled()) LOG.trace("[-] Properties: " + getPropertyAsString(props));
+            if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+                    .put("properties", getPropertyAsString(props))
+                    .put("message", "loaded properties content")
+                    .toString());
             return props;
         } catch (IOException exception) {
             throw new OpflowBootstrapException(exception);
@@ -227,10 +230,16 @@ public class OpflowLoader {
         if (cfgFromSystem == null) {
             cfgFromSystem = OpflowUtil.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
         }
-        if (LOG.isTraceEnabled()) LOG.trace("[-] configuration file: " + cfgFromSystem);
+        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+                .put("configFile", cfgFromSystem)
+                .put("message", "detected configuration file")
+                .toString());
         if (cfgFromSystem == null) {
             url = OpflowUtil.getResource(DEFAULT_CONFIGURATION_FILE);
-            if (LOG.isTraceEnabled()) LOG.trace("[-] default configuration: " + url);
+            if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+                .put("configFile", url)
+                .put("message", "default configuration url")
+                .toString());
         } else {
             try {
                 url = new URL(cfgFromSystem);
@@ -240,7 +249,10 @@ public class OpflowLoader {
                 url = OpflowUtil.getResource(cfgFromSystem);
             }
         }
-        if (LOG.isTraceEnabled()) LOG.trace("[-] final configuration path: " + url);
+        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+                .put("configFile", url)
+                .put("message", "final configuration url")
+                .toString());
         return url;
     }
     
@@ -287,7 +299,10 @@ public class OpflowLoader {
                     try {
                         params.put(key, Integer.parseInt(params.get(key).toString()));
                     } catch (NumberFormatException nfe) {
-                        if (LOG.isTraceEnabled()) LOG.trace("transformParameters() - " + key + " field is not an integer");
+                        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+                                .put("fieldName", key)
+                                .put("message", "transformParameters() - field is not an integer")
+                                .toString());
                         params.put(key, null);
                     }
                 }
