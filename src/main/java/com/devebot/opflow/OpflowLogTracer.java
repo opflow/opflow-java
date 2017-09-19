@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.google.gson.Gson;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -21,18 +22,21 @@ public class OpflowLogTracer {
     private final static String OPFLOW_INSTANCE_ID = OpflowUtil.getUUID();
     
     private final static int RESET_MODE;
+    private final static boolean KEEP_ORDER;
     static {
         String treepath = OpflowUtil.getSystemProperty("OPFLOW_LOGTREEPATH", null);
         if ("none".equals(treepath)) RESET_MODE = 0;
         else if ("parent".equals(treepath)) RESET_MODE = 1;
         else if ("full".equals(treepath)) RESET_MODE = 2;
         else RESET_MODE = 2;
+
+        KEEP_ORDER = (OpflowUtil.getSystemProperty("OPFLOW_LOGKEEPORDER", null) == null);
     }
     
     private final OpflowLogTracer parent;
     private final String key;
     private final Object value;
-    private final Map<String, Object> fields = new LinkedHashMap<String, Object>();
+    private final Map<String, Object> fields;
     
     public final static OpflowLogTracer ROOT = new OpflowLogTracer();
     
@@ -44,6 +48,7 @@ public class OpflowLogTracer {
         this.parent = ref;
         this.key = key;
         this.value = value;
+        this.fields = KEEP_ORDER ? new LinkedHashMap<String, Object>() : new HashMap<String, Object>();
         this.reset();
     }
     
