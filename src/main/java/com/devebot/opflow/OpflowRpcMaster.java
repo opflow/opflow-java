@@ -138,7 +138,7 @@ public class OpflowRpcMaster {
                 }
                 return true;
             }
-        }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
+        }, OpflowUtil.buildMap(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("consumerId", _consumerId);
@@ -150,7 +150,7 @@ public class OpflowRpcMaster {
                 opts.put("binding", Boolean.FALSE);
                 opts.put("prefetch", PREFETCH_NUM);
             }
-        }));
+        }).toMap());
     }
     
     private OpflowTask.TimeoutMonitor timeoutMonitor = null;

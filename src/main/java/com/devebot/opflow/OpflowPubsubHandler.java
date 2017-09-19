@@ -216,7 +216,7 @@ public class OpflowPubsubHandler {
                 }
                 return true;
             }
-        }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
+        }, OpflowUtil.buildMap(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("consumerId", _consumerId);
@@ -225,7 +225,7 @@ public class OpflowPubsubHandler {
                 if (prefetch > 0) opts.put("prefetch", prefetch);
                 if (subscriberLimit > 0) opts.put("consumerLimit", subscriberLimit);
             }
-        }));
+        }).toMap());
         consumerInfos.add(consumer);
         if (LOG.isInfoEnabled()) LOG.info(logSubscribe.reset()
                 .put("message", "subscribe() has completed")

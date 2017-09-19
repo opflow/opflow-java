@@ -1,7 +1,6 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -154,7 +153,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         List<OpflowRpcResult.Step> steps = new LinkedList<OpflowRpcResult.Step>();
         while(iter.hasNext()) {
             OpflowMessage msg = iter.next();
-            String status = OpflowUtil.getStatus(msg);
+            String status = getStatus(msg);
             if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
                     .put("status", status)
                     .put("message", "Extracting result receives a message")
@@ -193,12 +192,16 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
     
     private boolean isDone(OpflowMessage message) {
-        String status = OpflowUtil.getStatus(message);
+        String status = getStatus(message);
         if (status == null) return false;
         return STATUS.indexOf(status) >= 0;
     }
     
     private void checkTimestamp() {
         timestamp = OpflowUtil.getCurrentTime();
+    }
+    
+    public static String getStatus(OpflowMessage message) {
+        return OpflowUtil.getMessageField(message, "status");
     }
 }

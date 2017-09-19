@@ -105,12 +105,7 @@ public class OpflowPubsubSteps {
         }
         for(int i = 0; i < total; i++) {
             final int number = i;
-            pubsubs.get(pubsubName).publish(OpflowUtil.buildJson(new OpflowUtil.MapListener() {
-                @Override
-                public void transform(Map<String, Object> opts) {
-                    opts.put("number", number);
-                }
-            }));
+            pubsubs.get(pubsubName).publish(OpflowUtil.buildMap().put("number", number).toString());
         }
     }
     

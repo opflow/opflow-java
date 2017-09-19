@@ -58,12 +58,7 @@ public class OpflowRpcMasterTest {
         par1.put("exchangeName", "tdd-opflow-exchange");
         par1.put("routingKey", "tdd-opflow-rpc");
         par1.put("responseName", "tdd-opflow-feedback");
-        String input = OpflowUtil.buildJson(new OpflowUtil.MapListener() {
-            @Override
-            public void transform(Map<String, Object> opts) {
-                opts.put("number", 25);
-            }
-        });
+        String input = OpflowUtil.buildMap().put("number", 25).toString();
         OpflowRpcMaster m1 = new OpflowRpcMaster(par1);
         OpflowRpcMaster m2 = new OpflowRpcMaster(par1);
         m1.request("fib", input);

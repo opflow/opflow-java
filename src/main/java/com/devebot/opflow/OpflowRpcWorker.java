@@ -132,7 +132,7 @@ public class OpflowRpcWorker {
                         .toString());
                 return count > 0;
             }
-        }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
+        }, OpflowUtil.buildMap(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("consumerId", _consumerId);
@@ -140,7 +140,7 @@ public class OpflowRpcWorker {
                 opts.put("replyTo", responseName);
                 opts.put("binding", Boolean.TRUE);
             }
-        }));
+        }).toMap());
         if (LOG.isInfoEnabled()) LOG.info(logProcess.reset()
                 .put("message", "process() has completed")
                 .toString());

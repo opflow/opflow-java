@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import com.devebot.opflow.exception.OpflowOperationException;
-import com.devebot.opflow.exception.OpflowRestrictedTestingException;
 
 /**
  *
@@ -28,8 +27,12 @@ public class OpflowUtil {
     private static final Gson GSON = new Gson();
     private static final JsonParser JSON_PARSER = new JsonParser();
     
-    public static String jsonObjToString(Object jsonObj) {
+    public static String jsonObjectToString(Object jsonObj) {
         return GSON.toJson(jsonObj);
+    }
+    
+    public static <T> T jsonStringToObject(String json, Class<T> type) {
+        return GSON.fromJson(json, type);
     }
     
     public static String jsonMapToString(Map<String, Object> jsonMap) {
@@ -80,15 +83,6 @@ public class OpflowUtil {
         }
     }
     
-    public static Map<String, Object> cloneParameters(Map<String, Object> params) {
-        Map<String, Object> clonedParams = new HashMap<String, Object>();
-        for (String i : params.keySet()) {
-            Object value = params.get(i);
-            clonedParams.put(i, value);
-        }
-        return clonedParams;
-    }
-    
     public static void copyParameters(Map<String, Object> target, Map<String, Object> source, String[] keys) {
         for(String field: keys) {
             target.put(field, source.get(field));
@@ -108,10 +102,21 @@ public class OpflowUtil {
         public void transform(Map<String, Object> opts);
     }
     
-    public static class MapObject {
-        private final Map<String, Object> fields = new HashMap<String, Object>();
+    public static class MapBuilder {
+        private final Map<String, Object> fields;
+
+        public MapBuilder() {
+            this(null);
+        }
         
-        public MapObject put(String key, Object value) {
+        public MapBuilder(Map<String, Object> source) {
+            if (source == null) {
+                source = new HashMap<String, Object>();
+            }
+            fields = source;
+        }
+        
+        public MapBuilder put(String key, Object value) {
             fields.put(key, value);
             return this;
         }
@@ -130,28 +135,23 @@ public class OpflowUtil {
         }
     }
     
-    public static MapObject buildMap() {
-        return new MapObject();
+    public static MapBuilder buildMap() {
+        return buildMap(null);
     }
     
-    public static String buildJson(MapListener listener) {
-        Map<String, Object> jsonMap = new HashMap<String, Object>();
-        if (listener != null) {
-            listener.transform(jsonMap);
+    public static MapBuilder buildMap(MapListener listener) {
+        return buildMap(listener, null);
+    }
+    
+    public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts) {
+        Map<String, Object> source = new HashMap<String, Object>();
+        if (defaultOpts != null) {
+            source.putAll(defaultOpts);
         }
-        return jsonMapToString(jsonMap);
-    }
-    
-    public static Map<String, Object> buildOptions(MapListener listener) {
-        return buildOptions(listener, null);
-    }
-    
-    public static Map<String, Object> buildOptions(MapListener listener, Map<String, Object> defaultOpts) {
-        Map<String, Object> jsonMap = new HashMap<String, Object>();
         if (listener != null) {
-            listener.transform(jsonMap);
+            listener.transform(source);
         }
-        return jsonMap;
+        return new MapBuilder(source);
     }
     
     public static Map<String, Object> ensureNotNull(Map<String, Object> opts) {
@@ -205,10 +205,6 @@ public class OpflowUtil {
         return null;
     }
     
-    public static String getStatus(OpflowMessage message) {
-        return getMessageField(message, "status");
-    }
-    
     public static String getSystemProperty(String key, String def) {
         try {
             return System.getProperty(key, def);
@@ -246,13 +242,5 @@ public class OpflowUtil {
             } catch(Exception ex) {}
         }
         return url;
-    }
-    
-    public static boolean isTestingEnv() {
-        return "test".equals(System.getProperty("opflow.mode"));
-    }
-    
-    public static void assertTestingEnv() {
-        if (!OpflowUtil.isTestingEnv()) throw new OpflowRestrictedTestingException();
     }
 }

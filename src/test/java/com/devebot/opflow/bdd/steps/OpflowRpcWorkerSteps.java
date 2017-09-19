@@ -78,13 +78,10 @@ public class OpflowRpcWorkerSteps {
                     // MANDATORY
                     response.emitCompleted(result);
                 } catch (final Exception ex) {
-                    String errmsg = OpflowUtil.buildJson(new OpflowUtil.MapListener() {
-                        @Override
-                        public void transform(Map<String, Object> opts) {
-                            opts.put("exceptionClass", ex.getClass().getName());
-                            opts.put("exceptionMessage", ex.getMessage());
-                        }
-                    });
+                    String errmsg = OpflowUtil.buildMap()
+                            .put("exceptionClass", ex.getClass().getName())
+                            .put("exceptionMessage", ex.getMessage())
+                            .toString();
                     if (LOG.isErrorEnabled()) LOG.error("[-] EchoJsonObject error message: " + errmsg);
                     
                     // MANDATORY
@@ -122,20 +119,17 @@ public class OpflowRpcWorkerSteps {
                         response.emitProgress(r.getStep(), r.getNumber());
                     }
 
-                    String result = OpflowUtil.jsonObjToString(fibonacci.result());
+                    String result = OpflowUtil.jsonObjectToString(fibonacci.result());
                     if (LOG.isTraceEnabled()) LOG.trace("[-] Fibonacci finished with: '" + result + "'");
 
                     // MANDATORY
                     response.emitCompleted(result);
                     fibonacciState.checkCompleted();
                 } catch (final Exception ex) {
-                    String errmsg = OpflowUtil.buildJson(new OpflowUtil.MapListener() {
-                        @Override
-                        public void transform(Map<String, Object> opts) {
-                            opts.put("exceptionClass", ex.getClass().getName());
-                            opts.put("exceptionMessage", ex.getMessage());
-                        }
-                    });
+                    String errmsg = OpflowUtil.buildMap()
+                            .put("exceptionClass", ex.getClass().getName())
+                            .put("exceptionMessage", ex.getMessage())
+                            .toString();
                     if (LOG.isErrorEnabled()) LOG.error("[-] Error message: " + errmsg);
                     
                     // MANDATORY

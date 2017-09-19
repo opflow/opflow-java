@@ -79,17 +79,11 @@ public class OpflowRpcMasterSteps {
             @Named("timeout") final long timeout) {
         inputs.put(requestName, number);
         getRoutineState(routineId).checkPublished();
-        OpflowRpcRequest request = masters.get(masterName).request(routineId, OpflowUtil.buildJson(new OpflowUtil.MapListener() {
-            @Override
-            public void transform(Map<String, Object> opts) {
-                opts.put("number", number);
-            }
-        }), OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
-            @Override
-            public void transform(Map<String, Object> opts) {
-                opts.put("timeout", timeout);
-            }
-        }));
+        OpflowRpcRequest request = masters.get(masterName).request(routineId,
+                OpflowUtil.buildMap()
+                        .put("number", number).toString(),
+                OpflowUtil.buildMap()
+                        .put("timeout", timeout).toMap());
         requests.put(requestName, request);
     }
     
