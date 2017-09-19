@@ -23,7 +23,7 @@ public class OpflowServerlet {
     private final Map<String, Object> kwargs;
     
     public OpflowServerlet(ListenerMap listeners, Map<String, Object> kwargs) throws OpflowBootstrapException {
-        this.kwargs = kwargs;
+        this.kwargs = OpflowUtil.ensureNotNull(kwargs);
 
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", OpflowUtil.getOptionField(this.kwargs, "serverletId", true));
         

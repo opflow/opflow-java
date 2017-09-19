@@ -48,10 +48,23 @@ public class OpflowUtil {
         }
     }
     
-    public static String extractSingleField(String json, String fieldName) {
+    public static <T> T jsonMessageToObject(OpflowMessage message, Class<T> type) {
+        return GSON.fromJson(message.getBodyAsString(), type);
+    }
+    
+    public static <T> T jsonExtractField(String json, String fieldName, Class<T> type) {
         try {
             JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
-            return jsonObject.get(fieldName).toString();
+            return type.cast(jsonObject.get(fieldName));
+        } catch (JsonSyntaxException e) {
+            throw new OpflowJsonTransformationException(e);
+        }
+    }
+    
+    public static int jsonExtractFieldAsInt(String json, String fieldName) {
+        try {
+            JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
+            return jsonObject.get(fieldName).getAsInt();
         } catch (JsonSyntaxException e) {
             throw new OpflowJsonTransformationException(e);
         }
@@ -110,10 +123,7 @@ public class OpflowUtil {
         }
         
         public MapBuilder(Map<String, Object> source) {
-            if (source == null) {
-                source = new HashMap<String, Object>();
-            }
-            fields = source;
+            fields = ensureNotNull(source);
         }
         
         public MapBuilder put(String key, Object value) {

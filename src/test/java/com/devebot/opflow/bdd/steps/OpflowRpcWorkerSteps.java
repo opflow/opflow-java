@@ -42,7 +42,7 @@ public class OpflowRpcWorkerSteps {
         fibonacciState.clear();
     }
     
-    @Given("a RPC worker<$string>")
+    @Given("a RPC worker<$string> with default properties file")
     public void createRpcWorker(@Named("workerName") String workerName) throws OpflowBootstrapException {
         workers.put(workerName, OpflowLoader.createRpcWorker());
     }

@@ -53,6 +53,8 @@ public class OpflowEngine {
     private String applicationId;
 
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
+        params = OpflowUtil.ensureNotNull(params);
+        
         final String engineId = OpflowUtil.getOptionField(params, "engineId", true);
         logTracer = OpflowLogTracer.ROOT.branch("engineId", engineId);
         

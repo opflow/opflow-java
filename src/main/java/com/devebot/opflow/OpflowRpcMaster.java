@@ -39,6 +39,8 @@ public class OpflowRpcMaster {
     private final long monitorTimeout;
     
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
+        params = OpflowUtil.ensureNotNull(params);
+        
         final String rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", rpcMasterId);
         

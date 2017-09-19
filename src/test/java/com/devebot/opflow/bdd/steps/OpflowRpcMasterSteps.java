@@ -52,7 +52,7 @@ public class OpflowRpcMasterSteps {
         routineStates.clear();
     }
     
-    @Given("a RPC master<$masterName>")
+    @Given("a RPC master<$masterName> with default properties file")
     public void createRpcMaster(@Named("masterName") final String masterName) throws OpflowBootstrapException {
         masters.put(masterName, OpflowLoader.createRpcMaster());
     }

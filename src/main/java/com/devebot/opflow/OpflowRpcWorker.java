@@ -25,6 +25,8 @@ public class OpflowRpcWorker {
     private final String responseName;
     
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
+        params = OpflowUtil.ensureNotNull(params);
+        
         final String rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", rpcWorkerId);
         

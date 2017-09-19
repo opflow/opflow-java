@@ -162,11 +162,9 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
             if ("progress".equals(status)) {
                 if (includeProgress) {
                     try {
-                        int percent = Integer.parseInt(OpflowUtil.extractSingleField(msg.getBodyAsString(), "percent"));
+                        int percent = OpflowUtil.jsonExtractFieldAsInt(msg.getBodyAsString(), "percent");
                         steps.add(new OpflowRpcResult.Step(percent));
                     } catch (OpflowJsonTransformationException jse) {
-                        steps.add(new OpflowRpcResult.Step());
-                    } catch (NumberFormatException nfe) {
                         steps.add(new OpflowRpcResult.Step());
                     }
                 }

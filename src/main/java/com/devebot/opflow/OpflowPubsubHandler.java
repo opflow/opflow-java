@@ -31,6 +31,8 @@ public class OpflowPubsubHandler {
     private OpflowPubsubListener listener;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
+        params = OpflowUtil.ensureNotNull(params);
+        
         final String pubsubHandlerId = OpflowUtil.getOptionField(params, "pubsubHandlerId", true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", pubsubHandlerId);
         
@@ -112,11 +114,8 @@ public class OpflowPubsubHandler {
     }
     
     public void publish(byte[] body, Map<String, Object> options, String routingKey) {
-        AMQP.BasicProperties.Builder propBuilder = new AMQP.BasicProperties.Builder();
+        options = OpflowUtil.ensureNotNull(options);
         
-        if (options == null) {
-            options = new HashMap<String, Object>();
-        }
         Object requestId = options.get("requestId");
         if (requestId == null) {
             options.put("requestId", requestId = OpflowUtil.getUUID());

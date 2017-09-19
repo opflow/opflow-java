@@ -4,7 +4,7 @@ Given a RPC master<demo1> with properties file: 'opflow.properties'
 Then the RPC master<demo1> connection is 'opened'
 When I purge responseQueue in RpcMaster named 'demo1'
 Then responseQueue in RpcMaster named 'demo1' has '0' messages
-Given a RPC worker<demo1>
+Given a RPC worker<demo1> with default properties file
 Then the RPC worker<demo1> connection is 'opened'
 When I purge operatorQueue in RpcWorker named 'demo1'
 Then operatorQueue in RpcWorker named 'demo1' has '0' messages
@@ -28,9 +28,9 @@ Given a waiting time in 1 seconds
 
 Scenario: Request to an invalid consumer
 
-Given a RPC master<demo2>
+Given a RPC master<demo2> with default properties file
 Then the RPC master<demo2> connection is 'opened'
-Given a RPC worker<demo2>
+Given a RPC worker<demo2> with default properties file
 Then the RPC worker<demo2> connection is 'opened'
 Given a FibonacciGenerator consumer with names 'fibonacci,fib' in worker<demo2>
 When I make a request<fib25> to routine<fibonacci> in master<demo2> with input number: 25
@@ -49,9 +49,9 @@ Given a waiting time in 1 seconds
 
 Scenario: Request to a delay consumer
 
-Given a RPC master<demo3>
+Given a RPC master<demo3> with default properties file
 Then the RPC master<demo3> connection is 'opened'
-Given a RPC worker<demo3>
+Given a RPC worker<demo3> with default properties file
 Then the RPC worker<demo3> connection is 'opened'
 Given a FibonacciGenerator consumer with names 'fibonacci,fib' in worker<demo3>
 When I make a request<fib25> to routine<fibonacci> in master<demo3> with input number: 25
