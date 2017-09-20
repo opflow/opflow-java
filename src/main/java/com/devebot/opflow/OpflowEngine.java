@@ -168,7 +168,7 @@ public class OpflowEngine {
                         .put("routingKey", routingKey)
                         .put("otherKeys", otherKeys)
                         .put("applicationId", applicationId)
-                        .put("message", "Exchange & routing keys")
+                        .put("message", "exchangeName and routingKeys")
                         .toString());
         } catch (IOException exception) {
             if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
