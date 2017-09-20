@@ -7,7 +7,7 @@ import java.util.Map;
  *
  * @author drupalex
  * 
- * @deprecated  As of release 0.1.8, replaced by {@link #OpflowEngine}
+ * @deprecated  As of release 0.1.8, replaced by OpflowEngine
  */
 @Deprecated
 public class OpflowBroker extends OpflowEngine {

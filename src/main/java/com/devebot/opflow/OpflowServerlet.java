@@ -3,12 +3,16 @@ package com.devebot.opflow;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.util.HashSet;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author drupalex
  */
 public class OpflowServerlet {
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
+    private final OpflowLogTracer logTracer;
     
     private OpflowPubsubHandler configurer;
     private OpflowRpcWorker rpcWorker;
@@ -19,7 +23,13 @@ public class OpflowServerlet {
     private final Map<String, Object> kwargs;
     
     public OpflowServerlet(ListenerMap listeners, Map<String, Object> kwargs) throws OpflowBootstrapException {
-        this.kwargs = kwargs;
+        this.kwargs = OpflowUtil.ensureNotNull(kwargs);
+
+        logTracer = OpflowLogTracer.ROOT.branch("serverletId", OpflowUtil.getOptionField(this.kwargs, "serverletId", true));
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet.new()")
+                .toString());
         
         if (listeners == null) {
             throw new OpflowBootstrapException("Listener definitions must not be null");
@@ -37,10 +47,9 @@ public class OpflowServerlet {
         if (configurerCfg != null) {
             if (configurerCfg.get("exchangeName") == null || configurerCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
-            } else {
-                if (!checkExchange.add(configurerCfg.get("exchangeName").toString() + configurerCfg.get("routingKey").toString())) {
-                    throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
-                }
+            } 
+            if (!checkExchange.add(configurerCfg.get("exchangeName").toString() + configurerCfg.get("routingKey").toString())) {
+                throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
             }
             if (configurerCfg.get("subscriberName") != null && !checkQueue.add(configurerCfg.get("subscriberName").toString())) {
                 throw new OpflowBootstrapException("Configurer[subscriberName] must not be duplicated");
@@ -51,10 +60,9 @@ public class OpflowServerlet {
         if (rpcWorkerCfg != null) {
             if (rpcWorkerCfg.get("exchangeName") == null || rpcWorkerCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid RpcWorker connection parameters");
-            } else {
-                if (!checkExchange.add(rpcWorkerCfg.get("exchangeName").toString() + rpcWorkerCfg.get("routingKey").toString())) {
-                    throw new OpflowBootstrapException("Duplicated RpcWorker connection parameters");
-                }
+            }
+            if (!checkExchange.add(rpcWorkerCfg.get("exchangeName").toString() + rpcWorkerCfg.get("routingKey").toString())) {
+                throw new OpflowBootstrapException("Duplicated RpcWorker connection parameters");
             }
             if (rpcWorkerCfg.get("operatorName") != null && !checkQueue.add(rpcWorkerCfg.get("operatorName").toString())) {
                 throw new OpflowBootstrapException("RpcWorker[operatorName] must not be duplicated");
@@ -67,10 +75,9 @@ public class OpflowServerlet {
         if (subscriberCfg != null) {
             if (subscriberCfg.get("exchangeName") == null || subscriberCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid Subscriber connection parameters");
-            } else {
-                if (!checkExchange.add(subscriberCfg.get("exchangeName").toString() + subscriberCfg.get("routingKey").toString())) {
-                    throw new OpflowBootstrapException("Duplicated Subscriber connection parameters");
-                }
+            }
+            if (!checkExchange.add(subscriberCfg.get("exchangeName").toString() + subscriberCfg.get("routingKey").toString())) {
+                throw new OpflowBootstrapException("Duplicated Subscriber connection parameters");
             }
             if (subscriberCfg.get("subscriberName") != null && !checkQueue.add(subscriberCfg.get("subscriberName").toString())) {
                 throw new OpflowBootstrapException("Subscriber[subscriberName] must not be duplicated");
@@ -80,6 +87,8 @@ public class OpflowServerlet {
         
         checkRecyclebin.retainAll(checkQueue);
         if (!checkRecyclebin.isEmpty()) {
+            if (LOG.isErrorEnabled()) LOG.error(logTracer
+                .put("message", "duplicated_recyclebin_queue_name").toString());
             throw new OpflowBootstrapException("Invalid recyclebinName (duplicated with some queueNames)");
         }
         
@@ -88,9 +97,7 @@ public class OpflowServerlet {
                 configurer = new OpflowPubsubHandler(configurerCfg);
             }
 
-            if (rpcWorkerCfg != null && 
-                    listenerMap.getWorkerEntries() != null && 
-                    listenerMap.getWorkerEntries().length > 0) {
+            if (rpcWorkerCfg != null && listenerMap.getWorkerEntries() != null && listenerMap.getWorkerEntries().length > 0) {
                 rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
             }
 
@@ -98,12 +105,20 @@ public class OpflowServerlet {
                 subscriber = new OpflowPubsubHandler(subscriberCfg);
             }
         } catch(OpflowBootstrapException exception) {
-            this.stop();
+            this.close();
             throw exception;
         }
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet.new() end!")
+                .toString());
     }
     
     public final void start() {
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet start()")
+                .toString());
+        
         if (configurer != null) {
             configurer.subscribe(listenerMap.getConfigurer());
         }
@@ -115,12 +130,24 @@ public class OpflowServerlet {
         if (subscriber != null) {
             subscriber.subscribe(listenerMap.getSubscriber());
         }
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet start() has done!")
+                .toString());
     }
     
-    public final void stop() {
+    public final void close() {
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet stop()")
+                .toString());
+        
         if (configurer != null) configurer.close();
         if (rpcWorker != null) rpcWorker.close();
         if (subscriber != null) subscriber.close();
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Serverlet stop() has done!")
+                .toString());
     }
     
     public static class RpcWorkerEntry {

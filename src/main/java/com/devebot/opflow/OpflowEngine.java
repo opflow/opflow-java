@@ -10,7 +10,9 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import java.io.IOException;
-import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
@@ -32,12 +34,17 @@ public class OpflowEngine {
         "exchangeName", "exchangeType", "exchangeDurable", "routingKey", "otherKeys", "applicationId"
     };
 
-    private final Logger logger = LoggerFactory.getLogger(OpflowEngine.class);
-
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
+    private final OpflowLogTracer logTracer;
+    
+    private String mode;
     private ConnectionFactory factory;
-    private Connection connection;
-    private Channel channel;
-
+    private Connection producingConnection;
+    private Channel producingChannel;
+    private Connection consumingConnection;
+    private Channel consumingChannel;
+    private List<ConsumerInfo> consumerInfos = new LinkedList<ConsumerInfo>();
+    
     private String exchangeName;
     private String exchangeType;
     private Boolean exchangeDurable;
@@ -46,64 +53,80 @@ public class OpflowEngine {
     private String applicationId;
 
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
+        params = OpflowUtil.ensureNotNull(params);
+        
+        final String engineId = OpflowUtil.getOptionField(params, "engineId", true);
+        logTracer = OpflowLogTracer.ROOT.branch("engineId", engineId);
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Engine.new()")
+                .toString());
+        
+        mode = params.containsKey("mode") ? params.get("mode").toString() : "engine";
         try {
             factory = new ConnectionFactory();
-
             String uri = (String) params.get("uri");
             if (uri != null) {
                 factory.setUri(uri);
-                if (logger.isTraceEnabled()) logger.trace("Connection parameter/URI: " + hidePasswordInUri(uri));
+                if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                        .put("uri", hidePasswordInUri(uri))
+                        .put("message", "Connection URI")
+                        .toString());
             } else {
                 String host = (String) params.get("host");
                 if (host == null) host = "localhost";
                 factory.setHost(host);
-                if (logger.isTraceEnabled()) logger.trace("Connection parameter/host: " + host);
-
+                
+                Integer port = null;
                 if (params.get("port") != null && params.get("port") instanceof Integer) {
-                    Integer port;
                     factory.setPort(port = (Integer)params.get("port"));
-                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/port: " + port);
                 }
-
+                
                 String virtualHost = (String) params.get("virtualHost");
                 if (virtualHost != null) {
                     factory.setVirtualHost(virtualHost);
-                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/virtualHost: " + virtualHost);
                 }
-
+                
                 String username = (String) params.get("username");
                 if (username != null) {
                     factory.setUsername(username);
-                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/username: " + username);
                 }
-
+                
                 String password = (String) params.get("password");
                 if (password != null) {
                     factory.setPassword(password);
-                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/password: ******");
                 }
-
+                
+                Integer channelMax = null;
                 if (params.get("channelMax") != null && params.get("channelMax") instanceof Integer) {
-                    Integer channelMax;
                     factory.setRequestedChannelMax(channelMax = (Integer)params.get("channelMax"));
-                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/channelMax: " + channelMax);
                 }
-
+                
+                Integer frameMax = null;
                 if (params.get("frameMax") != null && params.get("frameMax") instanceof Integer) {
-                    Integer frameMax;
                     factory.setRequestedFrameMax(frameMax = (Integer)params.get("frameMax"));
-                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/frameMax: " + frameMax);
                 }
-
+                
+                Integer heartbeat = null;
                 if (params.get("heartbeat") != null && params.get("heartbeat") instanceof Integer) {
-                    Integer heartbeat;
                     factory.setRequestedHeartbeat(heartbeat = (Integer)params.get("heartbeat"));
-                    if (logger.isTraceEnabled()) logger.trace("Connection parameter/heartbeat: " + heartbeat);
                 }
+                
+                if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                        .put("host", host)
+                        .put("port", port)
+                        .put("virtualHost", virtualHost)
+                        .put("username", username)
+                        .put("password", maskPassword(password))
+                        .put("channelMax", channelMax)
+                        .put("frameMax", frameMax)
+                        .put("heartbeat", heartbeat)
+                        .put("message", "Connection Parameters")
+                        .toString());
             }
-            connection = factory.newConnection();
+            this.assertConnection();
         } catch (Exception exception) {
-            if (logger.isErrorEnabled()) logger.error("newConnection() has been failed, exception: " + exception.getMessage());
+            if (LOG.isErrorEnabled()) LOG.error("newConnection() has failed, exception: " + exception.getMessage());
             throw new OpflowConnectionException("connection refused, invalid connection parameters", exception);
         }
         
@@ -123,7 +146,7 @@ public class OpflowEngine {
             if (exchangeDurable == null) exchangeDurable = true;
             
             if (exchangeName != null) {
-                getChannel().exchangeDeclare(exchangeName, exchangeType, exchangeDurable);
+                getProducingChannel().exchangeDeclare(exchangeName, exchangeType, exchangeDurable);
             }
             
             if (params.get("routingKey") instanceof String) {
@@ -137,49 +160,122 @@ public class OpflowEngine {
             if (params.get("applicationId") instanceof String) {
                 applicationId = (String) params.get("applicationId");
             }
+            
+            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                        .put("exchangeName", exchangeName)
+                        .put("exchangeType", exchangeType)
+                        .put("exchangeDurable", exchangeDurable)
+                        .put("routingKey", routingKey)
+                        .put("otherKeys", otherKeys)
+                        .put("applicationId", applicationId)
+                        .put("message", "exchangeName and routingKeys")
+                        .toString());
         } catch (IOException exception) {
-            if (logger.isErrorEnabled()) logger.error("exchangeDeclare has been failed, exception: " + exception.getMessage());
-            throw new OpflowBootstrapException("exchangeDeclare has been failed", exception);
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
+                    .put("exceptionClass", exception.getClass().getName())
+                    .put("exceptionMessage", exception.getMessage())
+                    .put("message", "exchangeDeclare has failed")
+                    .toString());
+            throw new OpflowBootstrapException("exchangeDeclare has failed", exception);
+        } catch (TimeoutException exception) {
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
+                    .put("exceptionClass", exception.getClass().getName())
+                    .put("exceptionMessage", exception.getMessage())
+                    .put("message", "exchangeDeclare is timeout")
+                    .toString());
+            throw new OpflowBootstrapException("it maybe too slow or unstable network", exception);
         }
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "Engine.new() end!")
+                .toString());
     }
     
-    public void produce(final byte[] content, final AMQP.BasicProperties.Builder propBuilder) {
-        produce(content, propBuilder, null);
+    public void produce(final byte[] body, final Map<String, Object> headers) {
+        produce(body, headers, null, null);
     }
     
-    public void produce(final byte[] content, final AMQP.BasicProperties.Builder propBuilder, final Map<String, Object> override) {
+    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder) {
+        produce(body, headers, propBuilder, null);
+    }
+    
+    public void produce(final byte[] body, final Map<String, Object> headers, Map<String, Object> override) {
+        produce(body, headers, null, override);
+    }
+    
+    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, Map<String, Object> override) {
+        propBuilder = (propBuilder == null) ? new AMQP.BasicProperties.Builder() : propBuilder;
+        OpflowLogTracer logProduce = null;
+        
         try {
             String customKey = this.routingKey;
             if (override != null && override.get("routingKey") != null) {
                 customKey = (String) override.get("routingKey");
             }
+            
             String appId = this.applicationId;
             if (override != null && override.get("applicationId") != null) {
                 appId = (String) override.get("applicationId");
             }
             propBuilder.appId(appId);
-            Channel _channel = getChannel();
+            
+            if (override != null && override.get("correlationId") != null) {
+                propBuilder.correlationId(override.get("correlationId").toString());
+            }
+            
+            if (override != null && override.get("replyTo") != null) {
+                propBuilder.replyTo(override.get("replyTo").toString());
+            }
+            
+            String requestId = OpflowUtil.getRequestId(headers, false);
+            if (requestId == null) {
+                headers.put("requestId", requestId = OpflowUtil.getUUID());
+            }
+            propBuilder.headers(headers);
+            
+            if (LOG.isInfoEnabled()) logProduce = logTracer.branch("requestId", requestId);
+            
+            if (LOG.isInfoEnabled() && logProduce != null) LOG.info(logProduce
+                    .put("appId", appId)
+                    .put("customKey", customKey)
+                    .put("message", "produce() is invoked")
+                    .toString());
+            
+            Channel _channel = getProducingChannel();
             if (_channel == null || !_channel.isOpen()) {
                 throw new OpflowOperationException("Channel is null or has been closed");
             }
-            _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), content);
+            _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), body);
         } catch (IOException exception) {
-            if (logger.isErrorEnabled()) logger.error("produce() has been failed, exception: " + exception.getMessage());
+            if (LOG.isErrorEnabled() && logProduce != null) LOG.error(logProduce.reset()
+                    .put("exceptionClass", exception.getClass().getName())
+                    .put("exceptionMessage", exception.getMessage())
+                    .put("message", "produce() has failed")
+                    .toString());
+            throw new OpflowOperationException(exception);
+        } catch (TimeoutException exception) {
+            if (LOG.isErrorEnabled() && logProduce != null) LOG.error(logProduce.reset()
+                    .put("exceptionClass", exception.getClass().getName())
+                    .put("exceptionMessage", exception.getMessage())
+                    .put("message", "produce() is timeout")
+                    .toString());
             throw new OpflowOperationException(exception);
         }
     }
     
     public ConsumerInfo consume(final OpflowListener listener, final Map<String, Object> options) {
-        Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
+        final Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
+        final String _consumerId = OpflowUtil.getOptionField(opts, "consumerId", true);
+        final OpflowLogTracer logConsume = logTracer.branch("consumerId", _consumerId);
+        
+        if (LOG.isInfoEnabled()) LOG.info(logConsume
+                .put("message", "consume() is invoked")
+                .toString());
         try {
-            final Channel _channel;
-            
-            final Boolean _forceNewChannel = (Boolean) opts.get("forceNewChannel");
-            if (!Boolean.FALSE.equals(_forceNewChannel)) {
-                _channel = this.connection.createChannel();
-            } else {
-                _channel = getChannel();
-            }
+            final boolean _forceNewConnection = Boolean.TRUE.equals(opts.get("forceNewConnection"));
+            final Boolean _forceNewChannel = Boolean.TRUE.equals(opts.get("forceNewChannel"));
+            final Channel _channel = getConsumingChannel(_forceNewConnection, _forceNewChannel);
+            final Connection _connection = _channel.getConnection();
             
             Integer _prefetch = null;
             if (opts.get("prefetch") instanceof Integer) {
@@ -202,13 +298,19 @@ public class OpflowEngine {
             }
             _queueName = _declareOk.getQueue();
             final Integer _consumerLimit = (Integer) opts.get("consumerLimit");
-            if (logger.isTraceEnabled()) {
-                logger.trace("consume() - consumerCount/consumerLimit: " + _declareOk.getConsumerCount() + "/" + _consumerLimit);
-            }
+            if (LOG.isTraceEnabled()) LOG.trace(logConsume.reset()
+                    .put("consumerCount", _declareOk.getConsumerCount())
+                    .put("consumerLimit", _consumerLimit)
+                    .put("message", "consume() - consumerCount/consumerLimit")
+                    .toString());
             if (_consumerLimit != null && _consumerLimit > 0) {
                 if (_declareOk.getConsumerCount() >= _consumerLimit) {
+                    if (LOG.isErrorEnabled()) LOG.error(logConsume.reset()
+                            .put("consumerCount", _declareOk.getConsumerCount())
+                            .put("consumerLimit", _consumerLimit)
+                            .put("message", "consume() - consumerCount exceed limit")
+                            .toString());
                     String errorMessage = "consumerLimit exceed: " + _declareOk.getConsumerCount() + "/" + _consumerLimit;
-                    if (logger.isErrorEnabled()) logger.error("consume() - " + errorMessage);
                     throw new OpflowConsumerOverLimitException(errorMessage);
                 }
             }
@@ -242,110 +344,100 @@ public class OpflowEngine {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
-                    String requestID = OpflowUtil.getRequestId(properties.getHeaders(), false);
-
-                    if (logger.isInfoEnabled()) {
-                        logger.info("Request["+requestID+"] / DeliveryTag["+envelope.getDeliveryTag()+"] / ConsumerTag["+consumerTag+"]");
-                    }
-
-                    if (logger.isTraceEnabled()) {
+                    final String requestID = OpflowUtil.getRequestId(properties.getHeaders(), false);
+                    
+                    final OpflowLogTracer logRequest = logConsume.branch("requestId", requestID);
+                    
+                    if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
+                            .put("appId", properties.getAppId())
+                            .put("deliveryTag", envelope.getDeliveryTag())
+                            .put("consumerTag", consumerTag)
+                            .put("message", "consumer received a message")
+                            .toString());
+                    
+                    if (LOG.isTraceEnabled()) {
                         if (body.length <= 4096) {
-                            logger.trace("Request[" + requestID + "] - Message: " + new String(body, "UTF-8"));
+                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
+                                    .put("bodyHead", new String(body, "UTF-8"))
+                                    .put("bodyLength", body.length)
+                                    .put("message", "Body head (4096 bytes)")
+                                    .toString());
                         } else {
-                            logger.trace("Request[" + requestID + "] - Message size too large (>4KB): " + body.length);
+                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
+                                    .put("bodyLength", body.length)
+                                    .put("message", "Body size too large (>4KB)")
+                                    .toString());
                         }
                     }
                     
                     try {
                         if (applicationId == null || applicationId.equals(properties.getAppId())) {
-                            if (logger.isTraceEnabled()) {
-                                logger.trace(MessageFormat.format("Request[{0}] invoke listener.processMessage()", new Object[] {
-                                    requestID
-                                }));
-                            }
-
+                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
+                                    .put("message", "Request invoke listener.processMessage()")
+                                    .toString());
+                            
                             boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
-
+                            
                             if (captured) {
-                                if (logger.isInfoEnabled()) {
-                                    logger.info("Request[" + requestID + "] has finished successfully");
-                                }
+                                if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
+                                        .put("message", "Request has finished successfully")
+                                        .toString());
                             } else {
-                                if (logger.isInfoEnabled()) {
-                                    logger.info("Request[" + requestID + "] has not matched the criteria, skipped");
-                                }
+                                if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
+                                        .put("message", "Request has not matched the criteria, skipped")
+                                        .toString());
                             }
                             
-                            if (logger.isTraceEnabled()) {
-                                logger.trace(MessageFormat.format("Request[{0}] invoke Ack({1}, false)) / ConsumerTag[{2}]", new Object[] {
-                                    requestID, envelope.getDeliveryTag(), consumerTag
-                                }));
-                            }
-
+                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
+                                    .put("deliveryTag", envelope.getDeliveryTag())
+                                    .put("consumerTag", consumerTag)
+                                    .put("message", "Request invoke ACK")
+                                    .toString());
+                            
                             if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
                         } else {
-                            if (logger.isInfoEnabled()) {
-                                logger.info(MessageFormat.format("Request[{0}]/AppId:{1} - but received AppId:{2}, rejected", new Object[] {
-                                    requestID, applicationId, properties.getAppId()
-                                }));
-                            }
+                            if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
+                                    .put("message", "Request has been rejected, mismatched applicationId")
+                                    .put("applicationId", applicationId)
+                                    .toString());
                             if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
                         }
                     } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
-                        if (logger.isErrorEnabled()) {
-                            logger.error(MessageFormat.format("Request[{0}]/DeliveryTag[{1}]/ConsumerTag[{2}] has been failed. " +
-                                    "Exception.Class: {3} / message: {4}. Service still alive", new Object[] {
-                                requestID, envelope.getDeliveryTag(), consumerTag, ex.getClass().getName(), ex.getMessage()
-                            }));
-                        }
+                        if (LOG.isErrorEnabled()) LOG.error(logRequest.reset()
+                                .put("deliveryTag", envelope.getDeliveryTag())
+                                .put("consumerTag", consumerTag)
+                                .put("exceptionClass", ex.getClass().getName())
+                                .put("exceptionMessage", ex.getMessage())
+                                .put("message", "Request has been failed. Service still alive")
+                                .toString());
                         if (_autoAck) {
-                            if (logger.isInfoEnabled()) {
-                                logger.info("Request[" + requestID + "] has been failed. AutoAck => request is rejected");
-                            }
+                            if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
+                                    .put("message", "Request has failed. AutoAck => request is rejected")
+                                    .toString());
                         } else {
                             _channel.basicNack(envelope.getDeliveryTag(), false, true);
-                            if (logger.isInfoEnabled()) {
-                                logger.info("Request[" + requestID + "] has been failed. No AutoAck => request is requeued");
-                            }
+                            if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
+                                    .put("message", "Request has failed. No AutoAck => request is requeued")
+                                    .toString());
                         }
                     }
                 }
                 
                 @Override
                 public void handleCancelOk(String consumerTag) {
-                    if (!Boolean.FALSE.equals(_forceNewChannel)) {
-                        try {
-                            if (_channel != null && _channel.isOpen()) _channel.close();
-                        } catch (IOException ex) {
-                            if (logger.isErrorEnabled()) {
-                                logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, IOException: {1}", new Object[] {
-                                    consumerTag, ex.getMessage()
-                                }));
-                            }
-                        } catch (TimeoutException ex) {
-                            if (logger.isErrorEnabled()) {
-                                logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, TimeoutException: {1}", new Object[] {
-                                    consumerTag, ex.getMessage()
-                                }));
-                            }
-                        } catch (ShutdownSignalException sig) {
-                            if (logger.isErrorEnabled()) {
-                                logger.error(MessageFormat.format("ConsumerTag[{0}] handleCancelOk failed, ShutdownSignalException: {1}", new Object[] {
-                                    consumerTag, sig.getMessage()
-                                }));
-                            }
-                        }
-                    }
+                    if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
+                            .put("consumerTag", consumerTag)
+                            .put("message", "consume() - handle CancelOk event")
+                            .toString());
                 }
                 
                 @Override
                 public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
-                    if (logger.isInfoEnabled()) {
-                        logger.info(MessageFormat.format("ConsumerTag[{0}] handle shutdown signal", new Object[] {
-                            consumerTag
-                        }));
-                    }
+                    if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
+                            .put("consumerTag", consumerTag)
+                            .put("message", "consume() - handle ShutdownSignal event")
+                            .toString());
                 }
             };
             
@@ -354,20 +446,38 @@ public class OpflowEngine {
             _channel.addShutdownListener(new ShutdownListener() {
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (logger.isInfoEnabled()) {
-                        logger.info(MessageFormat.format("Channel[{0}] contains Queue[{1}]/ConsumerTag[{2}] has been shutdown", new Object[] {
-                            _channel.getChannelNumber(), _queueName, _consumerTag
-                        }));
-                    }
+                    if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
+                            .put("queueName", _queueName)
+                            .put("consumerTag", _consumerTag)
+                            .put("channelNumber", _channel.getChannelNumber())
+                            .put("message", "consume() channel has been shutdown successfully")
+                            .toString());
                 }
             });
             
-            if (logger.isInfoEnabled()) {
-                logger.info("[*] Consume Channel[" + _channel.getChannelNumber() + "]/Queue[" + _queueName + "] -> consumerTag: " + _consumerTag);
-            }
-            return new ConsumerInfo(_channel, _queueName, _fixedQueue, _consumer, _consumerTag);
+            if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
+                    .put("queueName", _queueName)
+                    .put("consumerTag", _consumerTag)
+                    .put("channelNumber", _channel.getChannelNumber())
+                    .put("message", "consume() consume the queue")
+                    .toString());
+            ConsumerInfo info = new ConsumerInfo(_connection, !_forceNewConnection, 
+                    _channel, !_forceNewChannel, _queueName, _fixedQueue, _consumerId, _consumerTag);
+            if ("engine".equals(mode)) consumerInfos.add(info);
+            return info;
         } catch(IOException exception) {
-            if (logger.isErrorEnabled()) logger.error("consume() has been failed, exception: " + exception.getMessage());
+            if (LOG.isErrorEnabled()) LOG.error(logConsume.reset()
+                    .put("message", "consume() - has failed")
+                    .put("exceptionClass", exception.getClass().getName())
+                    .put("exceptionMessage", exception.getMessage())
+                    .toString());
+            throw new OpflowOperationException(exception);
+        } catch(TimeoutException exception) {
+            if (LOG.isErrorEnabled()) LOG.error(logConsume.reset()
+                    .put("message", "consume() - is timeout")
+                    .put("exceptionClass", exception.getClass().getName())
+                    .put("exceptionMessage", exception.getMessage())
+                    .toString());
             throw new OpflowOperationException(exception);
         }
     }
@@ -378,49 +488,102 @@ public class OpflowEngine {
     
     public <T> T acquireChannel(Operator listener) throws IOException, TimeoutException {
         T output = null;
-        Channel _channel = connection.createChannel();
+        Connection _connection = null;
+        Channel _channel = null;
         try {
+            _connection = factory.newConnection();
+            _channel = _connection.createChannel();
             if (listener != null) output = (T) listener.handleEvent(_channel);
         } finally {
             if (_channel != null && _channel.isOpen()) _channel.close();
+            if (_connection != null && _connection.isOpen()) _connection.close();
         }
         return output;
     }
     
     public void cancelConsumer(OpflowEngine.ConsumerInfo consumerInfo) {
         if (consumerInfo == null) return;
+        final OpflowLogTracer logCancel = logTracer.branch("consumerId", consumerInfo.getConsumerId());
         try {
-            if (logger.isDebugEnabled()) {
-                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] will be cancelled");
-            }
+            if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
+                    .put("queueName", consumerInfo.getQueueName())
+                    .put("message", "cancelConsumer() - consumer will be cancelled")
+                    .toString());
+
             consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
-            if (logger.isDebugEnabled()) {
-                logger.debug("Queue[" + consumerInfo.getQueueName() + "]/ConsumerTag[" + consumerInfo.getConsumerTag() + "] has been cancelled");
+
+            if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
+                    .put("message", "cancelConsumer() - consumer has been cancelled")
+                    .toString());
+
+            if (!consumerInfo.isSharedConnection() || !consumerInfo.isSharedChannel()) {
+                if (consumerInfo.getChannel() != null && consumerInfo.getChannel().isOpen()) {
+                    if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
+                            .put("message", "cancelConsumer() - close private channel")
+                            .toString());
+                    consumerInfo.getChannel().close();
+                }
+            }
+
+            if (!consumerInfo.isSharedConnection()) {
+                if (consumerInfo.getConnection() != null && consumerInfo.getConnection().isOpen()) {
+                    if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
+                            .put("message", "cancelConsumer() - close private connection")
+                            .toString());
+                    consumerInfo.getConnection().close();
+                }
             }
         } catch (IOException ex) {
-            if (logger.isErrorEnabled()) {
-                logger.error("cancel consumer[" + consumerInfo.getConsumerTag() + "] failed, IOException: " + ex.getMessage());
-            }
+            if (LOG.isErrorEnabled()) LOG.error(logCancel.reset()
+                    .put("message", "cancelConsumer() - has failed")
+                    .put("exceptionClass", ex.getClass().getName())
+                    .put("exceptionMessage", ex.getMessage())
+                    .toString());
+        } catch (TimeoutException ex) {
+            if (LOG.isErrorEnabled()) LOG.error(logCancel.reset()
+                    .put("message", "cancelConsumer() - is timeout")
+                    .put("exceptionClass", ex.getClass().getName())
+                    .put("exceptionMessage", ex.getMessage())
+                    .toString());
         }
     }
     
     public class ConsumerInfo {
+        private final Connection connection;
+        private final boolean sharedConnection;
         private final Channel channel;
+        private final boolean sharedChannel;
         private final String queueName;
         private final boolean fixedQueue;
-        private final Consumer consumer;
+        private final String consumerId;
         private final String consumerTag;
         
-        public ConsumerInfo(Channel channel, String queueName, boolean fixedQueue, Consumer consumer, String consumerTag) {
+        public ConsumerInfo(Connection connection, boolean sharedConnection, Channel channel, boolean sharedChannel, 
+                String queueName, boolean fixedQueue, String consumerId, String consumerTag) {
+            this.connection = connection;
+            this.sharedConnection = sharedConnection;
             this.channel = channel;
+            this.sharedChannel = sharedChannel;
             this.queueName = queueName;
             this.fixedQueue = fixedQueue;
-            this.consumer = consumer;
+            this.consumerId = consumerId;
             this.consumerTag = consumerTag;
+        }
+
+        public Connection getConnection() {
+            return connection;
+        }
+
+        public boolean isSharedConnection() {
+            return sharedConnection;
         }
 
         public Channel getChannel() {
             return channel;
+        }
+
+        public boolean isSharedChannel() {
+            return sharedChannel;
         }
 
         public String getQueueName() {
@@ -431,8 +594,8 @@ public class OpflowEngine {
             return fixedQueue;
         }
         
-        public Consumer getConsumer() {
-            return consumer;
+        public String getConsumerId() {
+            return consumerId;
         }
 
         public String getConsumerTag() {
@@ -470,7 +633,7 @@ public class OpflowEngine {
     }
     
     public State check() {
-        int conn = connection.isOpen() ? State.CONNECTION_OPENED : State.CONNECTION_CLOSED;
+        int conn = producingConnection.isOpen() ? State.CONNECTION_OPENED : State.CONNECTION_CLOSED;
         State state = new State(conn);
         return state;
     }
@@ -482,33 +645,104 @@ public class OpflowEngine {
      */
     public void close() {
         try {
-            if (logger.isInfoEnabled()) logger.info("[*] Cancel consumers, close channels, close connection.");
-            if (channel != null && channel.isOpen()) channel.close();
-            if (connection != null && connection.isOpen()) connection.close();
-        } catch (Exception exception) {
-            if (logger.isErrorEnabled()) logger.error("close() has been failed, exception: " + exception.getMessage());
+            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                .put("message", "close() - close producingChannel, producingConnection")
+                .toString());
+            if (producingChannel != null && producingChannel.isOpen()) producingChannel.close();
+            if (producingConnection != null && producingConnection.isOpen()) producingConnection.close();
+            
+            if ("engine".equals(mode)) {
+                if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                        .put("mode", mode)
+                        .put("message", "close() - cancel consumers")
+                        .toString());
+                for(ConsumerInfo consumerInfo: consumerInfos) {
+                    this.cancelConsumer(consumerInfo);
+                }
+                consumerInfos.clear();
+            }
+            
+            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                .put("message", "close() - close consumingChannel, consumingConnection")
+                .toString());
+            if (consumingChannel != null && consumingChannel.isOpen()) consumingChannel.close();
+            if (consumingConnection != null && consumingConnection.isOpen()) consumingConnection.close();
+
+        } catch (IOException exception) {
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
+                    .put("message", "close() has failed")
+                    .toString());
+            throw new OpflowOperationException(exception);
+        } catch (TimeoutException exception) {
+            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
+                    .put("message", "close() is timeout")
+                    .toString());
             throw new OpflowOperationException(exception);
         }
     }
     
-    private Channel getChannel() throws IOException {
-        if (channel == null) {
-            try {
-                channel = connection.createChannel();
-                channel.addShutdownListener(new ShutdownListener() {
-                    @Override
-                    public void shutdownCompleted(ShutdownSignalException sse) {
-                        if (logger.isInfoEnabled()) {
-                            logger.info("Main channel[" + channel.getChannelNumber() + "] has been shutdown");
-                        }
-                    }
-                });
-            } catch (IOException exception) {
-                if (logger.isErrorEnabled()) logger.error("getChannel() has been failed, exception: " + exception.getMessage());
-                throw exception;
+    private void assertConnection() throws IOException, TimeoutException {
+        this.acquireChannel(new Operator() {
+            @Override
+            public Object handleEvent(Channel channel) throws IOException {
+                return null; // try to connection
             }
+        });
+    }
+    
+    private Connection getProducingConnection() throws IOException, TimeoutException {
+        if (producingConnection == null || !producingConnection.isOpen()) {
+            producingConnection = factory.newConnection();
         }
-        return channel;
+        return producingConnection;
+    }
+    
+    private Channel getProducingChannel() throws IOException, TimeoutException {
+        if (producingChannel == null || !producingChannel.isOpen()) {
+            producingChannel = getProducingConnection().createChannel();
+            producingChannel.addShutdownListener(new ShutdownListener() {
+                @Override
+                public void shutdownCompleted(ShutdownSignalException sse) {
+                    if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                            .put("channelNumber", producingChannel.getChannelNumber())
+                            .put("message", "producingChannel has been shutdown")
+                            .toString());
+                }
+            });
+        }
+        return producingChannel;
+    }
+    
+    private Connection getConsumingConnection(boolean forceNewConnection) throws IOException, TimeoutException {
+        if (forceNewConnection) {
+            return factory.newConnection();
+        }
+        if (consumingConnection == null || !consumingConnection.isOpen()) {
+            consumingConnection = factory.newConnection();
+        }
+        return consumingConnection;
+    }
+    
+    private Channel getConsumingChannel(boolean forceNewConnection, boolean forceNewChannel) throws IOException, TimeoutException {
+        if (forceNewConnection) {
+            return getConsumingConnection(forceNewConnection).createChannel();
+        }
+        if (forceNewChannel) {
+            return getConsumingConnection(false).createChannel();
+        }
+        if (consumingChannel == null || !consumingChannel.isOpen()) {
+            consumingChannel = getConsumingConnection(false).createChannel();
+            consumingChannel.addShutdownListener(new ShutdownListener() {
+                @Override
+                public void shutdownCompleted(ShutdownSignalException sse) {
+                    if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                            .put("channelNumber", consumingChannel.getChannelNumber())
+                            .put("message", "consumingChannel has been shutdown")
+                            .toString());
+                }
+            });
+        }
+        return consumingChannel;
     }
     
     private void bindExchange(Channel _channel, String _exchangeName, String _queueName, String _routingKey) throws IOException {
@@ -520,15 +754,23 @@ public class OpflowEngine {
         _channel.queueDeclarePassive(_queueName);
         for (String _routingKey : keys) {
             _channel.queueBind(_queueName, _exchangeName, _routingKey);
-            if (logger.isTraceEnabled()) {
-                logger.trace(MessageFormat.format("Exchange[{0}] binded to Queue[{1}] with key[{2}]", new Object[] {
-                    _exchangeName, _queueName, _routingKey
-                }));
-            }
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                    .put("exchangeName", _exchangeName)
+                    .put("queueName", _queueName)
+                    .put("routingKey", _routingKey)
+                    .put("message", "Binds Exchange to Queue")
+                    .toString());
         }
     }
     
     private Pattern passwordPattern = Pattern.compile(":([^:]+)@");
+    
+    private String maskPassword(String password) {
+        if (password == null) return null;
+        char[] charArray = new char[password.length()];
+        Arrays.fill(charArray, '*');
+        return new String(charArray);
+    }
     
     private String hidePasswordInUri(String uri) {
         return passwordPattern.matcher(uri).replaceAll(":******@");

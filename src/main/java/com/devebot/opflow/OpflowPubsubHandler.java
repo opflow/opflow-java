@@ -17,30 +17,39 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowPubsubHandler {
-    
-    final Logger logger = LoggerFactory.getLogger(OpflowPubsubHandler.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
+    private final OpflowLogTracer logTracer;
 
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
     private final String subscriberName;
     private final String recyclebinName;
-    private final List<OpflowEngine.ConsumerInfo> consumers = new LinkedList<OpflowEngine.ConsumerInfo>();
+    private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<OpflowEngine.ConsumerInfo>();
     private int prefetch = 0;
     private int subscriberLimit = 0;
     private int redeliveredLimit = 0;
     private OpflowPubsubListener listener;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
+        params = OpflowUtil.ensureNotNull(params);
+        
+        final String pubsubHandlerId = OpflowUtil.getOptionField(params, "pubsubHandlerId", true);
+        logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", pubsubHandlerId);
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer
+                .put("message", "PubsubHandler.new()")
+                .toString());
+        
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
+        brokerParams.put("engineId", pubsubHandlerId);
         brokerParams.put("mode", "pubsub");
         brokerParams.put("exchangeType", "direct");
         
         subscriberName = (String) params.get("subscriberName");
         recyclebinName = (String) params.get("recyclebinName");
         
-        if (subscriberName != null && recyclebinName != null && 
-                subscriberName.equals(recyclebinName)) {
+        if (subscriberName != null && recyclebinName != null && subscriberName.equals(recyclebinName)) {
             throw new OpflowBootstrapException("subscriberName should be different with recyclebinName");
         }
         
@@ -69,68 +78,106 @@ public class OpflowPubsubHandler {
             redeliveredLimit = (Integer) params.get("redeliveredLimit");
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                .put("subscriberName", subscriberName)
+                .put("recyclebinName", recyclebinName)
+                .put("prefetch", prefetch)
+                .put("subscriberLimit", subscriberLimit)
+                .put("redeliveredLimit", redeliveredLimit)
+                .put("message", "PubsubHandler.new() parameters")
+                .toString());
+        
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                .put("message", "PubsubHandler.new() end!")
+                .toString());
     }
 
-    public void publish(String data) {
-        publish(data, null);
+    public void publish(String body) {
+        publish(body, null);
     }
     
-    public void publish(String data, Map<String, Object> opts) {
-        publish(data, opts, null);
+    public void publish(String body, Map<String, Object> opts) {
+        publish(body, opts, null);
     }
     
-    public void publish(String data, Map<String, Object> opts, String routingKey) {
-        publish(OpflowUtil.getBytes(data), opts, routingKey);
+    public void publish(String body, Map<String, Object> opts, String routingKey) {
+        publish(OpflowUtil.getBytes(body), opts, routingKey);
     }
     
-    public void publish(byte[] data) {
-        publish(data, null);
+    public void publish(byte[] body) {
+        publish(body, null);
     }
     
-    public void publish(byte[] data, Map<String, Object> opts) {
-        publish(data, opts, null);
+    public void publish(byte[] body, Map<String, Object> options) {
+        publish(body, options, null);
     }
     
-    public void publish(byte[] data, Map<String, Object> opts, String routingKey) {
-        AMQP.BasicProperties.Builder propBuilder = new AMQP.BasicProperties.Builder();
+    public void publish(byte[] body, Map<String, Object> options, String routingKey) {
+        options = OpflowUtil.ensureNotNull(options);
         
-        if (opts == null) {
-            opts = new HashMap<String, Object>();
+        Object requestId = options.get("requestId");
+        if (requestId == null) {
+            options.put("requestId", requestId = OpflowUtil.getUUID());
         }
-        if (opts.get("requestId") == null) {
-            opts.put("requestId", OpflowUtil.getUUID());
-        }
-        propBuilder.headers(opts);
         
         Map<String, Object> override = new HashMap<String, Object>();
         if (routingKey != null) {
             override.put("routingKey", routingKey);
         }
         
-        if (logger.isInfoEnabled()) {
-            String requestId = OpflowUtil.getRequestId(opts);
-            logger.info("Request["+requestId+"] is produced with overriden routingKey: ["+routingKey+"]");
-        }
+        OpflowLogTracer logPublish = null;
+        if (LOG.isInfoEnabled()) logPublish = logTracer.branch("requestId", requestId);
+
+        if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish
+                .put("routingKey", routingKey)
+                .put("message", "publish() - Request is produced with overriden routingKey")
+                .toString());
         
-        engine.produce(data, propBuilder, override);
+        engine.produce(body, options, override);
+        
+        if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish.reset()
+                .put("message", "publish() - Request has completed")
+                .toString());
     }
     
     public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener newListener) {
+        final String _consumerId = OpflowUtil.getUUID();
+        final OpflowLogTracer logSubscribe = logTracer.branch("consumerId", _consumerId);
+        if (LOG.isInfoEnabled()) LOG.info(logSubscribe
+                .put("message", "subscribe() is invoked")
+                .toString());
+        
         listener = (listener != null) ? listener : newListener;
         if (listener == null) {
+            if (LOG.isInfoEnabled()) LOG.info(logSubscribe
+                    .put("message", "subscribe() - PubsubListener should not be null")
+                    .toString());
             throw new IllegalArgumentException("PubsubListener should not be null");
         } else if (listener != newListener) {
-            throw new OpflowOperationException("PubsubHandler only supports single PubsubListener");
+            if (LOG.isInfoEnabled()) LOG.info(logSubscribe
+                    .put("message", "subscribe() - PubsubHandler supports only single PubsubListener")
+                    .toString());
+            throw new OpflowOperationException("PubsubHandler supports only single PubsubListener");
         }
+        
         OpflowEngine.ConsumerInfo consumer = engine.consume(new OpflowListener() {
             @Override
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String workerTag) throws IOException {
+                Map<String, Object> headers = properties.getHeaders();
+                String requestId = OpflowUtil.getRequestId(headers, true);
+                OpflowLogTracer logRequest = null;
+                if (LOG.isInfoEnabled()) logRequest = logSubscribe.branch("requestId", requestId);
+                if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest
+                        .put("message", "subscribe() - receives a new request")
+                        .toString());
                 try {
-                    listener.processMessage(new OpflowMessage(content, properties.getHeaders()));
+                    listener.processMessage(new OpflowMessage(content, headers));
+                    if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                            .put("message", "subscribe() - request processing has completed")
+                            .toString());
                 } catch (Exception exception) {
-                    Map<String, Object> headers = properties.getHeaders();
-                    
                     int redeliveredCount = 0;
                     if (headers.get("redeliveredCount") instanceof Integer) {
                         redeliveredCount = (Integer) headers.get("redeliveredCount");
@@ -141,42 +188,66 @@ public class OpflowPubsubHandler {
                     AMQP.BasicProperties.Builder propBuilder = copyBasicProperties(properties);
                     AMQP.BasicProperties props = propBuilder.headers(headers).build();
                     
+                    if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                            .put("redeliveredCount", redeliveredCount)
+                            .put("redeliveredLimit", redeliveredLimit)
+                            .put("message", "subscribe() - recycling failed request")
+                            .toString());
+                    
                     if (redeliveredCount <= redeliveredLimit) {
+                        if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                                .put("message", "subscribe() - requeue failed request")
+                                .toString());
                         sendToQueue(content, props, subscriberName, channel);
                     } else {
                         if (recyclebinName != null) {
                             sendToQueue(content, props, recyclebinName, channel);
+                            if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                                    .put("recyclebinName", recyclebinName)
+                                    .put("message", "subscribe() - enqueue failed request to recyclebin")
+                                    .toString());
+                        } else {
+                            if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                                    .put("message", "subscribe() - recyclebin not found, discard failed request")
+                                    .toString());
                         }
                     }
                 }
                 return true;
             }
-        }, OpflowUtil.buildOptions(new OpflowUtil.MapListener() {
+        }, OpflowUtil.buildMap(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
+                opts.put("consumerId", _consumerId);
                 opts.put("autoAck", Boolean.TRUE);
                 opts.put("queueName", subscriberName);
                 if (prefetch > 0) opts.put("prefetch", prefetch);
                 if (subscriberLimit > 0) opts.put("consumerLimit", subscriberLimit);
             }
-        }));
-        consumers.add(consumer);
+        }).toMap());
+        consumerInfos.add(consumer);
+        if (LOG.isInfoEnabled()) LOG.info(logSubscribe.reset()
+                .put("message", "subscribe() has completed")
+                .toString());
         return consumer;
     }
     
     public void close() {
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                .put("message", "close()")
+                .toString());
         if (engine != null) {
-            if (false) {
-                // TODO: SKIP THIS CODE
-                for(OpflowEngine.ConsumerInfo consumer:consumers) {
-                    if (consumer != null) {
-                        engine.cancelConsumer(consumer);
-                    }
+            for(OpflowEngine.ConsumerInfo consumerInfo:consumerInfos) {
+                if (consumerInfo != null) {
+                    engine.cancelConsumer(consumerInfo);
                 }
             }
-            consumers.clear();
+            consumerInfos.clear();
             engine.close();
         }
+        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                .put("message", "close() has completed")
+                .toString());
     }
     
     public State check() {

@@ -1,7 +1,9 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -14,8 +16,8 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
-
-    private final Logger logger = LoggerFactory.getLogger(OpflowRpcRequest.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
+    private final OpflowLogTracer logTracer;
     private final String requestId;
     private final String routineId;
     private final long timeout;
@@ -36,14 +38,20 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         } else {
             this.timeout = 0;
         }
+        logTracer = OpflowLogTracer.ROOT.branch("requestId", requestId);
         this.completeListener = completeListener;
         if (Boolean.TRUE.equals(opts.get("watcherEnabled")) && completeListener != null && this.timeout > 0) {
-            timeoutWatcher = new OpflowTask.TimeoutWatcher(this.timeout, new OpflowTask.Listener() {
+            timeoutWatcher = new OpflowTask.TimeoutWatcher(requestId, this.timeout, new OpflowTask.Listener() {
                 @Override
                 public void handleEvent() {
-                    if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] timeout event has been raised");
+                    OpflowLogTracer logWatcher = logTracer.copy();
+                    if (LOG.isDebugEnabled()) LOG.debug(logWatcher
+                            .put("message", "Request timeout event has been raised")
+                            .toString());
                     list.add(OpflowMessage.ERROR);
-                    if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] raise completeListener (timeout)");
+                    if (LOG.isDebugEnabled()) LOG.debug(logWatcher
+                            .put("message", "Request raise completeListener (timeout)")
+                            .toString());
                     completeListener.handleEvent();
                 }
             });
@@ -105,10 +113,14 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         }
         checkTimestamp();
         if(isDone(message)) {
-            if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] completed/failed message");
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer
+                    .put("message", "Request has completed/failed message")
+                    .toString());
             list.add(OpflowMessage.EMPTY);
             if (completeListener != null) {
-                if (logger.isDebugEnabled()) logger.debug("Request[" + requestId + "] raise completeListener (completed)");
+                if (LOG.isDebugEnabled()) LOG.debug(logTracer
+                        .put("message", "Request raises completeListener (completed)")
+                        .toString());
                 completeListener.handleEvent();
             }
             if (timeoutWatcher != null) {
@@ -117,15 +129,77 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         }
     }
     
+    public List<OpflowMessage> iterateResult() {
+        List<OpflowMessage> buff = new LinkedList<OpflowMessage>();
+        while(this.hasNext()) buff.add(this.next());
+        return buff;
+    }
+    
+    public OpflowRpcResult extractResult() {
+        return extractResult(true);
+    }
+    
+    public OpflowRpcResult extractResult(final boolean includeProgress) {
+        OpflowRpcRequest request = this;
+        Iterator<OpflowMessage> iter = request;
+        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "Extracting result is running")
+                .toString());
+        String workerTag = null;
+        boolean failed = false;
+        byte[] error = null;
+        boolean completed = false;
+        byte[] value = null;
+        List<OpflowRpcResult.Step> steps = new LinkedList<OpflowRpcResult.Step>();
+        while(iter.hasNext()) {
+            OpflowMessage msg = iter.next();
+            String status = getStatus(msg);
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                    .put("status", status)
+                    .put("message", "Extracting result receives a message")
+                    .toString());
+            if (status == null) continue;
+            if ("progress".equals(status)) {
+                if (includeProgress) {
+                    try {
+                        int percent = OpflowUtil.jsonExtractFieldAsInt(msg.getBodyAsString(), "percent");
+                        steps.add(new OpflowRpcResult.Step(percent));
+                    } catch (OpflowJsonTransformationException jse) {
+                        steps.add(new OpflowRpcResult.Step());
+                    }
+                }
+            } else
+            if ("failed".equals(status)) {
+                workerTag = OpflowUtil.getMessageField(msg, "workerTag");
+                failed = true;
+                error = msg.getBody();
+            } else
+            if ("completed".equals(status)) {
+                workerTag = OpflowUtil.getMessageField(msg, "workerTag");
+                completed = true;
+                value = msg.getBody();
+            }
+        }
+        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                .put("message", "Extracting result has completed")
+                .toString());
+        if (!includeProgress) steps = null;
+        return new OpflowRpcResult(routineId, requestId, workerTag, steps, failed, error, completed, value);
+    }
+    
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
     
     private boolean isDone(OpflowMessage message) {
-        String status = OpflowUtil.getStatus(message);
+        String status = getStatus(message);
         if (status == null) return false;
         return STATUS.indexOf(status) >= 0;
     }
     
     private void checkTimestamp() {
         timestamp = OpflowUtil.getCurrentTime();
+    }
+    
+    public static String getStatus(OpflowMessage message) {
+        return OpflowUtil.getMessageField(message, "status");
     }
 }

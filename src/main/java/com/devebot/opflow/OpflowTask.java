@@ -87,8 +87,8 @@ public class OpflowTask {
     }
     
     public static class TimeoutMonitor {
-        final Logger logger = LoggerFactory.getLogger(TimeoutMonitor.class);
-        
+        private final static Logger LOG = LoggerFactory.getLogger(TimeoutMonitor.class);
+        private final OpflowLogTracer logTracer;
         private long timeout;
         private final String monitorId;
         private final Map<String, ? extends Timeoutable> tasks;
@@ -99,9 +99,17 @@ public class OpflowTask {
             public void run() {
                 if (tasks == null || tasks.isEmpty()) return;
                 long current = OpflowUtil.getCurrentTime();
-                if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].run() is invoked, current time: " + current);
+                OpflowLogTracer logTask = logTracer.branch("timestamp", current);
+                if (LOG.isDebugEnabled()) LOG.debug(logTask
+                        .put("taskListSize", tasks.size())
+                        .put("message", "run() is invoked")
+                        .toString());
+                logTask.reset();
                 for (String key : tasks.keySet()) {
-                    if (logger.isTraceEnabled()) logger.trace("Monitor[" + monitorId + "].run() examine task[" + key + "]");
+                    if (LOG.isTraceEnabled()) LOG.trace(logTask
+                            .put("taskId", key)
+                            .put("message", "run() examine a task")
+                            .toString());
                     Timeoutable task = tasks.get(key);
                     if (task == null) continue;
                     long _timeout = task.getTimeout();
@@ -111,13 +119,15 @@ public class OpflowTask {
                         if (diff > _timeout) {
                             tasks.remove(key);
                             task.raiseTimeout();
-                            if (logger.isTraceEnabled()) {
-                                logger.trace("Monitor[" + monitorId + "].run() - task[" + key + "] has been timeout, will be removed");
-                            }
+                            if (LOG.isTraceEnabled()) LOG.trace(logTask
+                                    .put("taskId", key)
+                                    .put("message", "run() task is timeout, will be removed")
+                                    .toString());
                         } else {
-                            if (logger.isTraceEnabled()) {
-                                logger.trace("Monitor[" + monitorId + "].run() - task[" + key + "] is good, keep running");
-                            }
+                            if (LOG.isTraceEnabled()) LOG.trace(logTask
+                                    .put("taskId", key)
+                                    .put("message", "run() task is good, keep running")
+                                    .toString());
                         }
                     }
                 }
@@ -140,53 +150,61 @@ public class OpflowTask {
             this.tasks = tasks;
             this.interval = interval;
             this.timeout = timeout;
-            if (monitorId != null) {
-                this.monitorId = monitorId;
-            } else {
-                this.monitorId = UUID.randomUUID().toString();
-            }
-            if (logger.isDebugEnabled()) logger.debug("Monitor[" + this.monitorId + "] has been created");
+            this.monitorId = (monitorId != null) ? monitorId : UUID.randomUUID().toString();
+            logTracer = OpflowLogTracer.ROOT.branch("monitorId", this.monitorId);
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer
+                    .put("message", "Monitor has been created")
+                    .toString());
         }
         
         public void start() {
-            if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].start()");
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                    .put("message", "Monitor.start()")
+                    .toString());
             if (interval > 0) {
                 timer.scheduleAtFixedRate(timerTask, 0, interval);
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Monitor[" + monitorId + "] has been started, with interval: " + this.interval);
-                }
+                if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                        .put("interval", interval)
+                        .put("message", "Monitor has been started")
+                        .toString());
             } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Monitor[" + monitorId + "] is not available, because interval: " + this.interval);
-                }
+                if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                        .put("interval", interval)
+                        .put("message", "Monitor is not available. undefined interval")
+                        .toString());
             }
         }
         
         public void stop() {
-            if (logger.isDebugEnabled()) logger.debug("Monitor[" + monitorId + "].stop()");
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                    .put("message", "Monitor.stop()")
+                    .toString());
             timer.cancel();
             timer.purge();
         }
     }
     
     public static class TimeoutWatcher extends Thread {
-
-        final Logger logger = LoggerFactory.getLogger(TimeoutWatcher.class);
+        private final static Logger LOG = LoggerFactory.getLogger(TimeoutWatcher.class);
+        private final OpflowLogTracer logTracer;
         
-        public TimeoutWatcher(long max, Listener listener) {
+        public TimeoutWatcher(String requestId, long max, Listener listener) {
+            this.requestId = requestId;
+            logTracer = OpflowLogTracer.ROOT.branch("requestId", this.requestId);
             if (max > 0) {
                 this.max = max;
             }
             this.listener = listener;
         }
 
-        public TimeoutWatcher(long interval, long max, Listener listener) {
-            this(max, listener);
+        public TimeoutWatcher(String taskId, long interval, long max, Listener listener) {
+            this(taskId, max, listener);
             if (interval > 0) {
                 this.interval = interval;
             }
         }
 
+        private String requestId;
         private Listener listener;
         private long interval = 1000;
         private long max = 0;
@@ -199,12 +217,21 @@ public class OpflowTask {
                 try {
                     Thread.sleep(interval);
                     count += interval;
-                    if (logger.isTraceEnabled()) logger.trace("Check " + count + "/" + max);
+                    if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                            .put("message", "TimeoutWatcher is interrupted")
+                            .toString());
+                    if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                            .put("count", count)
+                            .put("max", max)
+                            .put("message", "TimeoutWatcher.listener is requested")
+                            .toString());
                     if (count >= max) {
                         if (this.listener != null) {
                             listener.handleEvent();
                         }
-                        if (logger.isTraceEnabled()) logger.trace("Thread interrupted");
+                        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                                .put("message", "TimeoutWatcher.listener is requested")
+                                .toString());
                         this.interrupt();
                     }
                 } catch(InterruptedException ie) {}
@@ -217,7 +244,9 @@ public class OpflowTask {
 
         public void close() {
             this.done = true;
-            if (logger.isTraceEnabled()) logger.trace("Thread is closed gracefully");
+            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+                    .put("message", "TimeoutWatcher is closed gracefully")
+                    .toString());
         }
     }
 }
