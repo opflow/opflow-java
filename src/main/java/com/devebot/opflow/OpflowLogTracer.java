@@ -2,8 +2,10 @@ package com.devebot.opflow;
 
 import com.google.gson.Gson;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.jar.Attributes;
@@ -95,20 +97,68 @@ public class OpflowLogTracer {
     
     @Override
     public String toString() {
-        return GSON.toJson(fields);
+        return stringify();
     }
     
-    public static void bootstrap() {
-        if (LOG.isInfoEnabled()) {
-            LOG.info(new OpflowLogTracer()
+    public String stringify() {
+        return stringify(false);
+    }
+    
+    public String stringify(boolean reset) {
+        return stringify(reset, RESET_MODE);
+    }
+    
+    public String stringify(boolean reset, int mode) {
+        String jsonStr = GSON.toJson(fields);
+        if (INTERCEPTOR_ENABLED && !interceptors.isEmpty()) {
+            Map<String, Object> cloned = new HashMap<String, Object>();
+            cloned.putAll(fields);
+            for(StringifyInterceptor interceptor:interceptors) {
+                interceptor.intercept(cloned);
+            }
+        }
+        if (reset) this.reset(mode);
+        return jsonStr;
+    }
+    
+    
+    private final static boolean INTERCEPTOR_ENABLED;
+    static {
+        INTERCEPTOR_ENABLED = !"false".equals(OpflowUtil.getSystemProperty("OPFLOW_DEBUGLOG", null));
+    }
+    
+    public interface StringifyInterceptor {
+        public void intercept(Map<String, Object> logdata);
+    }
+    
+    private static List<StringifyInterceptor> interceptors = new ArrayList<StringifyInterceptor>();
+    
+    public static boolean addStringifyInterceptor(StringifyInterceptor interceptor) {
+        if (interceptor != null && interceptors.indexOf(interceptor) < 0) {
+            interceptors.add(interceptor);
+            return true;
+        }
+        return false;
+    }
+    
+    public static boolean removeStringifyInterceptor(StringifyInterceptor interceptor) {
+        return interceptors.remove(interceptor);
+    }
+    
+    private static String libraryInfo = null;;
+    
+    public static String getLibraryInfo() {
+        if (libraryInfo == null) {
+            libraryInfo = new OpflowLogTracer()
                     .put("message", "Opflow Library Information")
                     .put("lib_name", "opflow-java")
                     .put("lib_version", getVersionNameFromManifest())
                     .put("os_name", System.getProperty("os.name"))
                     .put("os_version", System.getProperty("os.version"))
                     .put("os_arch", System.getProperty("os.arch"))
-                    .toString());
+                    .toString();
         }
+        return libraryInfo;
     }
     
     private static String getVersionNameFromPOM() {
@@ -134,6 +184,6 @@ public class OpflowLogTracer {
     }
     
     static {
-        bootstrap();
+        if (LOG.isInfoEnabled()) LOG.info(getLibraryInfo());
     }
 }
