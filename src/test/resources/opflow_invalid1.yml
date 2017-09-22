@@ -1,0 +1,31 @@
+## Opflow configuration
+---
+
+opflow!!!!
+    # Common parameters
+    uri: amqp://master:zaq123edcx@192.168.56.56?frameMax=0x1000
+    exchangeName: tdd-opflow-exchange
+    routingKey: tdd-opflow-rpc
+    queueName: tdd-opflow-queue
+
+    # Opflow RPC Master
+    master:
+        exchangeName: tdd-opflow-exchange
+        routingKey: tdd-opflow-rpc
+        responseName: tdd-opflow-feedback
+    
+    # Opflow RPC Worker
+    worker:
+        exchangeName: tdd-opflow-exchange
+        routingKey: tdd-opflow-rpc
+        operatorName: tdd-opflow-queue
+        responseName: tdd-opflow-feedback
+    
+    # Opflow Pub/Sub Handler
+    pubsub:
+        exchangeName: tdd-opflow-publisher
+        routingKey: tdd-opflow-pubsub-public
+        otherKeys: tdd-opflow-pubsub-group,tdd-opflow-pubsub-private
+        subscriberName: tdd-opflow-subscriber
+
+
