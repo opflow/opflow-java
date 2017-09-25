@@ -21,7 +21,7 @@ public class OpflowLogTracer {
     private final static Gson GSON = new Gson();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowLogTracer.class);
     private final static String OPFLOW_VERSION = "0.1.x";
-    private final static String OPFLOW_INSTANCE_ID = OpflowUtil.getUUID();
+    private final static String OPFLOW_INSTANCE_ID = OpflowUtil.getLogID();
     
     private final static int RESET_MODE;
     private final static boolean KEEP_ORDER;

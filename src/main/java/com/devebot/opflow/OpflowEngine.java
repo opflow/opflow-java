@@ -229,7 +229,7 @@ public class OpflowEngine {
             
             String requestId = OpflowUtil.getRequestId(headers, false);
             if (requestId == null) {
-                headers.put("requestId", requestId = OpflowUtil.getUUID());
+                headers.put("requestId", requestId = OpflowUtil.getLogID());
             }
             propBuilder.headers(headers);
             

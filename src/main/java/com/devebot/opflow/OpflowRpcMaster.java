@@ -6,7 +6,6 @@ import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -97,7 +96,7 @@ public class OpflowRpcMaster {
     private OpflowEngine.ConsumerInfo responseConsumer;
 
     private OpflowEngine.ConsumerInfo initResponseConsumer(final boolean forked) {
-        final String _consumerId = OpflowUtil.getUUID();
+        final String _consumerId = OpflowUtil.getLogID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
         if (LOG.isInfoEnabled()) LOG.info(logSession
                 .put("forked", forked)
@@ -183,7 +182,7 @@ public class OpflowRpcMaster {
         
         Object requestId = options.get("requestId");
         if (requestId == null) {
-            options.put("requestId", requestId = OpflowUtil.getUUID());
+            options.put("requestId", requestId = OpflowUtil.getLogID());
         }
         
         final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
@@ -207,7 +206,7 @@ public class OpflowRpcMaster {
             consumerInfo = responseConsumer;
         }
         
-        final String taskId = UUID.randomUUID().toString();
+        final String taskId = OpflowUtil.getLogID();
         OpflowTask.Listener listener = new OpflowTask.Listener() {
             private OpflowLogTracer logTask = null;
             @Override

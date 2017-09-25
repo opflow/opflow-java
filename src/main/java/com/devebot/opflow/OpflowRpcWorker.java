@@ -95,7 +95,7 @@ public class OpflowRpcWorker {
     };
     
     public OpflowEngine.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
-        final String _consumerId = OpflowUtil.getUUID();
+        final String _consumerId = OpflowUtil.getLogID();
         final OpflowLogTracer logProcess = logTracer.branch("consumerId", _consumerId);
         if (LOG.isInfoEnabled()) LOG.info(logProcess
                 .put("message", "process() is invoked")

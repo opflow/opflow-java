@@ -17,12 +17,22 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  *
  * @author drupalex
  */
 public class OpflowUtilTest {
+    
+    @Test
+    public void test_getLogID() {
+        String uuid1 = "f487fbcf-3606-4f35-a23d-5ac3af6de754";
+        String logId1 = OpflowUtil.getLogID(uuid1);
+        System.out.println("logId1: " + uuid1 + " / " + logId1);
+        assertThat(logId1, equalTo("9If7zzYGTzWiPVrDr23nVA"));
+    }
     
     @Test
     public void testFromJson() {
