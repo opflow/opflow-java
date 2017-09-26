@@ -11,6 +11,7 @@ import com.devebot.opflow.OpflowRpcResult;
 import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.lab.FibonacciGenerator;
+import com.devebot.opflow.lab.FibonacciResult;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -98,7 +99,7 @@ public class OpflowRpcMasterSteps {
         
         if (!"echo".equals(requestName)) {
             FibonacciGenerator fibGen = new FibonacciGenerator(number);
-            FibonacciGenerator.Result fibResult = fibGen.finish();
+            FibonacciResult fibResult = fibGen.finish();
 
             int step = Integer.parseInt(jsonOutput.get("step").toString());
             assertThat(step, equalTo(fibResult.getStep()));

@@ -60,17 +60,20 @@ public class OpflowServerletTest {
         thrown.expect(OpflowBootstrapException.class);
         thrown.expectMessage(CoreMatchers.startsWith("Duplicated Subscriber connection parameters"));
         
-        serverlet = new OpflowServerlet(new OpflowServerlet.ListenerMap(new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }, new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }), params);
+        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+                .setConfigurer(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .setSubscriber(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .build(), params);
     }
     
     @Test
@@ -94,17 +97,20 @@ public class OpflowServerletTest {
         thrown.expect(OpflowBootstrapException.class);
         thrown.expectMessage(CoreMatchers.startsWith("Invalid recyclebinName (duplicated with some queueNames)"));
         
-        serverlet = new OpflowServerlet(new OpflowServerlet.ListenerMap(new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }, new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }), params);
+        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+                .setConfigurer(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .setSubscriber(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .build(), params);
     }
     
     @Test
@@ -136,24 +142,26 @@ public class OpflowServerletTest {
         thrown.expect(OpflowBootstrapException.class);
         thrown.expectMessage(CoreMatchers.startsWith("Invalid recyclebinName (duplicated with some queueNames)"));
         
-        serverlet = new OpflowServerlet(new OpflowServerlet.ListenerMap(new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }, new OpflowServerlet.RpcWorkerEntry[] {
-            new OpflowServerlet.RpcWorkerEntry("fibonacci", new OpflowRpcListener() {
-                @Override
-                public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
-                    throw new UnsupportedOperationException("Not supported yet.");
-                }
-            })
-        }, new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }), params);
+        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+                .setConfigurer(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .setSubscriber(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .addRpcListener("fibonacci", new OpflowRpcListener() {
+                    @Override
+                    public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .build(), params);
     }
     
     @Test
@@ -174,17 +182,20 @@ public class OpflowServerletTest {
         subscriberCfg.put("recyclebinName", "tdd-opflow-recyclebin");
         params.put("subscriber", subscriberCfg);
         
-        serverlet = new OpflowServerlet(new OpflowServerlet.ListenerMap(new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }, new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }), params);
+        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+                .setConfigurer(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .setSubscriber(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .build(), params);
     }
     
     @Test
@@ -205,19 +216,20 @@ public class OpflowServerletTest {
         rpcWorkerCfg.put("responseName", "tdd-opflow-response");
         params.put("rpcWorker", rpcWorkerCfg);
         
-        serverlet = new OpflowServerlet(new OpflowServerlet.ListenerMap(new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }, new OpflowServerlet.RpcWorkerEntry[] {
-            new OpflowServerlet.RpcWorkerEntry("fibonacci", new OpflowRpcListener() {
-                @Override
-                public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
-                    throw new UnsupportedOperationException("Not supported yet.");
-                }
-            })
-        }), params);
+        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+                .setConfigurer(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .addRpcListener("fibonacci", new OpflowRpcListener() {
+                    @Override
+                    public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .build(), params);
     }
     
     @Test
@@ -246,23 +258,25 @@ public class OpflowServerletTest {
         subscriberCfg.put("recyclebinName", "tdd-opflow-recyclebin");
         params.put("subscriber", subscriberCfg);
         
-        serverlet = new OpflowServerlet(new OpflowServerlet.ListenerMap(new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }, new OpflowServerlet.RpcWorkerEntry[] {
-            new OpflowServerlet.RpcWorkerEntry("fibonacci", new OpflowRpcListener() {
-                @Override
-                public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
-                    throw new UnsupportedOperationException("Not supported yet.");
-                }
-            })
-        }, new OpflowPubsubListener() {
-            @Override
-            public void processMessage(OpflowMessage message) throws IOException {
-                throw new UnsupportedOperationException("Not supported yet.");
-            }
-        }), params);
+        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+                .setConfigurer(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .setSubscriber(new OpflowPubsubListener() {
+                    @Override
+                    public void processMessage(OpflowMessage message) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .addRpcListener("fibonacci", new OpflowRpcListener() {
+                    @Override
+                    public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+                        throw new UnsupportedOperationException("Not supported yet.");
+                    }
+                })
+                .build(), params);
     }
 }

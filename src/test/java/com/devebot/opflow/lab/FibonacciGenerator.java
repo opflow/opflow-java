@@ -45,37 +45,13 @@ public class FibonacciGenerator {
         return true;
     }
     
-    public Result result() {
-        return new Result(f, c, n);
+    public FibonacciResult result() {
+        return new FibonacciResult(f, c, n);
     }
     
-    public Result finish() {
+    public FibonacciResult finish() {
         while(next()) {}
         return result();
-    }
-    
-    public class Result {
-        private final long value;
-        private final int step;
-        private final int number;
-
-        public Result(long value, int step, int number) {
-            this.value = value;
-            this.step = step;
-            this.number = number;
-        }
-
-        public long getValue() {
-            return value;
-        }
-
-        public int getStep() {
-            return step;
-        }
-
-        public int getNumber() {
-            return number;
-        }
     }
     
     private static final Random RANDOM = new Random();

@@ -9,6 +9,7 @@ import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.lab.FibonacciGenerator;
+import com.devebot.opflow.lab.FibonacciResult;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.HashMap;
@@ -115,7 +116,7 @@ public class OpflowRpcWorkerSteps {
 
                     // OPTIONAL
                     while(fibonacci.next()) {
-                        FibonacciGenerator.Result r = fibonacci.result();
+                        FibonacciResult r = fibonacci.result();
                         response.emitProgress(r.getStep(), r.getNumber());
                     }
 
