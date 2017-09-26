@@ -1,7 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
-import com.devebot.opflow.exception.OpflowInterceptorException;
+import com.devebot.opflow.exception.OpflowInterceptionException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -35,7 +35,7 @@ public class OpflowInterface {
         
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws InvocationTargetException {
-            String routineId = clazz.getName() + "/" + method.toString();
+            String routineId = method.toString();
             if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                     .put("routineId", routineId)
                     .put("message", "MasterInvocationHandler.invoke()")
@@ -66,7 +66,7 @@ public class OpflowInterface {
         handlers.remove(clazzName);
     }
     
-    public <T> T registerInterface(Class<T> type) {
+    public <T> T registerType(Class<T> type) {
         try {
             return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class[] {type}, getInvocationHandler(type));
         } catch (IllegalArgumentException exception) {
@@ -75,11 +75,11 @@ public class OpflowInterface {
                     .put("exceptionMessage", exception.getMessage())
                     .put("message", "newProxyInstance() has failed")
                     .toString());
-            throw new OpflowInterceptorException(exception);
+            throw new OpflowInterceptionException(exception);
         }
     }
     
-    public <T> void unregisterInterface(Class<T> type) {
+    public <T> void unregisterType(Class<T> type) {
         removeInvocationHandler(type);
     }
     

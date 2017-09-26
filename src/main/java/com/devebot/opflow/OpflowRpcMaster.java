@@ -130,6 +130,10 @@ public class OpflowRpcMaster {
                         .put("message", "initResponseConsumer() - task not found, skipped")
                         .toString());
                 } else {
+                    if (LOG.isDebugEnabled() && logResult != null) LOG.debug(logResult.reset()
+                        .put("correlationId", taskId)
+                        .put("message", "initResponseConsumer() - push Message object to Task")
+                        .toString());
                     OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                     task.push(message);
                     if (LOG.isDebugEnabled() && logResult != null) LOG.debug(logResult.reset()

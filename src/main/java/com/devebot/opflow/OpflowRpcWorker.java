@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +91,15 @@ public class OpflowRpcWorker {
             @Override
             public boolean match(String originRoutineId) {
                 return routineIds != null && OpflowUtil.arrayContains(routineIds, originRoutineId);
+            }
+        }, listener);
+    };
+    
+    public OpflowEngine.ConsumerInfo process(final Set<String> routineIds, final OpflowRpcListener listener) {
+        return process(new Checker() {
+            @Override
+            public boolean match(String originRoutineId) {
+                return routineIds != null && routineIds.contains(originRoutineId);
             }
         }, listener);
     };
