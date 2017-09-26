@@ -1,8 +1,18 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowInterceptionException;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +27,7 @@ public class OpflowServerlet {
     private OpflowPubsubHandler configurer;
     private OpflowRpcWorker rpcWorker;
     private OpflowPubsubHandler subscriber;
+    private Instantiator instantiator;
     
     private final ListenerMap listenerMap;
     
@@ -97,8 +108,9 @@ public class OpflowServerlet {
                 configurer = new OpflowPubsubHandler(configurerCfg);
             }
 
-            if (rpcWorkerCfg != null && listenerMap.getWorkerEntries() != null && listenerMap.getWorkerEntries().length > 0) {
+            if (rpcWorkerCfg != null) {
                 rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
+                instantiator = new Instantiator(rpcWorker);
             }
 
             if (subscriberCfg != null && listenerMap.getSubscriber() != null) {
@@ -123,9 +135,13 @@ public class OpflowServerlet {
             configurer.subscribe(listenerMap.getConfigurer());
         }
         if (rpcWorker != null) {
-            for(RpcWorkerEntry entry: listenerMap.getWorkerEntries()) {
-                rpcWorker.process(entry.getRoutineId(), entry.getListener());
+            Map<String, OpflowRpcListener> rpcListeners = listenerMap.getRpcListeners();
+            for(Map.Entry<String, OpflowRpcListener> entry:rpcListeners.entrySet()) {
+                rpcWorker.process(entry.getKey(), entry.getValue());
             }
+        }
+        if (instantiator != null) {
+            instantiator.process();
         }
         if (subscriber != null) {
             subscriber.subscribe(listenerMap.getSubscriber());
@@ -134,6 +150,14 @@ public class OpflowServerlet {
         if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("message", "Serverlet start() has done!")
                 .toString());
+    }
+    
+    public void instantiateType(Class type) {
+        if (instantiator != null) {
+            instantiator.instantiateType(type);
+        } else {
+            throw new UnsupportedOperationException("instantiator is nulls");
+        }
     }
     
     public final void close() {
@@ -150,77 +174,144 @@ public class OpflowServerlet {
                 .toString());
     }
     
-    public static class RpcWorkerEntry {
-        private final String routineId;
-        private final OpflowRpcListener listener;
-
-        public RpcWorkerEntry(String routineId, OpflowRpcListener listener) {
-            this.routineId = routineId;
-            this.listener = listener;
+    public static ListenerMapBuilder getListenerBuilder() {
+        return new ListenerMapBuilder();
+    }
+    
+    public static class ListenerMapBuilder {
+        private ListenerMapBuilder() {}
+        
+        private ListenerMap map = new ListenerMap();
+        
+        public ListenerMapBuilder setConfigurer(OpflowPubsubListener configurer) {
+            map.configurer = configurer;
+            return this;
         }
-
-        public String getRoutineId() {
-            return routineId;
+        
+        public ListenerMapBuilder setSubscriber(OpflowPubsubListener subscriber) {
+            map.subscriber = subscriber;
+            return this;
         }
-
-        public OpflowRpcListener getListener() {
-            return listener;
+        
+        public ListenerMapBuilder addRpcListener(String routineId, OpflowRpcListener listener) {
+            map.rpcListeners.put(routineId, listener);
+            return this;
+        }
+        
+        public ListenerMap build() {
+            return map;
         }
     }
     
     public static class ListenerMap {
-        private final OpflowPubsubListener configurer;
-        private final RpcWorkerEntry[] rpcWorkerEntries;
-        private final OpflowPubsubListener subscriber;
+        private OpflowPubsubListener configurer;
+        private Map<String, OpflowRpcListener> rpcListeners = new HashMap<String, OpflowRpcListener>();
+        private OpflowPubsubListener subscriber;
         
-        public ListenerMap(OpflowPubsubListener configurer, 
-                RpcWorkerEntry[] rpcWorkerEntries, 
-                OpflowPubsubListener subscriber) throws OpflowBootstrapException {
-            if (configurer == null && subscriber == null &&
-                    (rpcWorkerEntries == null || rpcWorkerEntries.length == 0)) {
-                throw new OpflowBootstrapException("At least one listener must be not null");
-            }
-            this.configurer = configurer;
-            if (rpcWorkerEntries != null) {
-                this.rpcWorkerEntries = rpcWorkerEntries;
-            } else {
-                this.rpcWorkerEntries = new RpcWorkerEntry[0];
-            }
-            this.subscriber = subscriber;
-        }
-        
-        public ListenerMap(OpflowPubsubListener configurer,
-                RpcWorkerEntry[] rpcWorkerEntries) throws OpflowBootstrapException {
-            this(configurer, rpcWorkerEntries, null);
-            if (configurer == null) {
-                throw new OpflowBootstrapException("Configurer should be defined");
-            }
-            if (rpcWorkerEntries == null || rpcWorkerEntries.length == 0) {
-                throw new OpflowBootstrapException("RpcWorkers should be defined");
-            }
-        }
-        
-        public ListenerMap(OpflowPubsubListener configurer, 
-                OpflowPubsubListener subscriber) throws OpflowBootstrapException {
-            this(configurer, null, subscriber);
-            if (configurer == null) {
-                throw new OpflowBootstrapException("Configurer should be defined");
-            }
-            if (subscriber == null) {
-                throw new OpflowBootstrapException("Subscriber should be defined");
-            }
-        }
+        private ListenerMap() {}
         
         public OpflowPubsubListener getConfigurer() {
             return configurer;
         }
 
-        public RpcWorkerEntry[] getWorkerEntries() {
-            return rpcWorkerEntries.clone();
+        public Map<String, OpflowRpcListener> getRpcListeners() {
+            Map<String, OpflowRpcListener> cloned = new HashMap<String, OpflowRpcListener>();
+            cloned.putAll(rpcListeners);
+            return cloned;
         }
 
         public OpflowPubsubListener getSubscriber() {
             return subscriber;
+        }
+    }
+    
+    public static class Instantiator {
+        private static final Logger LOG = LoggerFactory.getLogger(Instantiator.class);
+        private final OpflowRpcWorker rpcWorker;
+        private final OpflowRpcListener listener;
+        private final Set<String> routineIds = new HashSet<String>();
+        private final Map<String, Method> methodRef = new HashMap<String, Method>();
+        private final Map<String, Object> targetRef = new HashMap<String, Object>();
+        private boolean processing = false;
+        
+        public Instantiator(OpflowRpcWorker worker) throws OpflowBootstrapException {
+            this(worker, false);
+        }
+        
+        public Instantiator(OpflowRpcWorker worker, boolean autorun) throws OpflowBootstrapException {
+            if (worker == null) {
+                throw new OpflowBootstrapException("RpcWorker should not be null");
+            }
+            rpcWorker = worker;
+            listener = new OpflowRpcListener() {
+                @Override
+                public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+                    String routineId = OpflowUtil.getRoutineId(message.getInfo());
+                    if (LOG.isDebugEnabled()) LOG.debug(" - Request routineId: " + routineId);
+                    String json = message.getBodyAsString();
+                    if (LOG.isDebugEnabled()) LOG.debug(" - Request body: " + json);
+                    Object[] args = OpflowUtil.jsonStringToArray(json, methodRef.get(routineId).getParameterTypes());
+                    try {
+                        Object result = methodRef.get(routineId).invoke(targetRef.get(routineId), args);
+                        if (LOG.isDebugEnabled()) LOG.debug(" - Output: " + result);
+                        response.emitCompleted(OpflowUtil.jsonObjectToString(result));
+                    } catch (IllegalAccessException ex) {
+                        LOG.error(null, ex);
+                    } catch (IllegalArgumentException ex) {
+                        LOG.error(null, ex);
+                    } catch (InvocationTargetException ex) {
+                        LOG.error(null, ex);
+                    }
+                    return null;
+                }
+            };
+            if (autorun) {
+                process();
+            }
+        }
+        
+        public final void process() {
+            if (!processing) {
+                rpcWorker.process(routineIds, listener);
+                processing = true;
+            }
+        }
+        
+        public void instantiateType(Class type) {
+            if (Modifier.isAbstract(type.getModifiers())) {
+                throw new OpflowInterceptionException("Class should not be an abstract type");
+            }
+            try {
+                List<Class> clazzes = new LinkedList<Class>();
+                clazzes.add(type);
+                Class[] interfaces = type.getInterfaces();
+                clazzes.addAll(Arrays.asList(interfaces));
+
+                Object target = type.newInstance();
+                for(Class clz: clazzes) {
+                    Method[] methods = clz.getDeclaredMethods();
+                    for (Method method : methods) {
+                        String routineId = method.toString();
+                        if (LOG.isTraceEnabled()) LOG.trace(" - Attach method: " + routineId);
+                        routineIds.add(routineId);
+                        methodRef.put(routineId, method);
+                        targetRef.put(routineId, target);
+                    }
+                }
+            } catch (InstantiationException except) {
+                throw new OpflowInterceptionException("Could not instantiate the class", except);
+            } catch (IllegalAccessException except) {
+                throw new OpflowInterceptionException("Constructor is not accessible", except);
+            } catch (SecurityException except) {
+                throw new OpflowInterceptionException("Class loaders is not the same or denies access", except);
+            } catch (Exception except) {
+                throw new OpflowInterceptionException(OpflowUtil.buildMap()
+                        .put("errorType", except.getClass().getName())
+                        .put("errorMessage", except.getMessage())
+                        .put("message", "Unknown exception")
+                        .toString(), except);
+            }
+            process();
         }
     }
 }
