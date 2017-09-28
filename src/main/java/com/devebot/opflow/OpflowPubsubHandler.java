@@ -118,7 +118,7 @@ public class OpflowPubsubHandler {
         
         Object requestId = options.get("requestId");
         if (requestId == null) {
-            options.put("requestId", requestId = OpflowUtil.getUUID());
+            options.put("requestId", requestId = OpflowUtil.getLogID());
         }
         
         Map<String, Object> override = new HashMap<String, Object>();
@@ -142,7 +142,7 @@ public class OpflowPubsubHandler {
     }
     
     public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener newListener) {
-        final String _consumerId = OpflowUtil.getUUID();
+        final String _consumerId = OpflowUtil.getLogID();
         final OpflowLogTracer logSubscribe = logTracer.branch("consumerId", _consumerId);
         if (LOG.isInfoEnabled()) LOG.info(logSubscribe
                 .put("message", "subscribe() is invoked")

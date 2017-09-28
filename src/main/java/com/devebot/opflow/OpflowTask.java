@@ -3,7 +3,6 @@ package com.devebot.opflow;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -150,7 +149,7 @@ public class OpflowTask {
             this.tasks = tasks;
             this.interval = interval;
             this.timeout = timeout;
-            this.monitorId = (monitorId != null) ? monitorId : UUID.randomUUID().toString();
+            this.monitorId = (monitorId != null) ? monitorId : OpflowUtil.getLogID();
             logTracer = OpflowLogTracer.ROOT.branch("monitorId", this.monitorId);
             if (LOG.isDebugEnabled()) LOG.debug(logTracer
                     .put("message", "Monitor has been created")

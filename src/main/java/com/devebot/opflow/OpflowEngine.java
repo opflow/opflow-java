@@ -229,7 +229,7 @@ public class OpflowEngine {
             
             String requestId = OpflowUtil.getRequestId(headers, false);
             if (requestId == null) {
-                headers.put("requestId", requestId = OpflowUtil.getUUID());
+                headers.put("requestId", requestId = OpflowUtil.getLogID());
             }
             propBuilder.headers(headers);
             
@@ -340,7 +340,27 @@ public class OpflowEngine {
                 _autoAck = Boolean.TRUE;
             }
             
+            final Boolean _requeueFailure;
+            if (opts.get("requeueFailure") != null && opts.get("requeueFailure") instanceof Boolean) {
+                _requeueFailure = (Boolean) opts.get("requeueFailure");
+            } else {
+                _requeueFailure = Boolean.FALSE;
+            }
+            
             final Consumer _consumer = new DefaultConsumer(_channel) {
+                private void invokeAck(Envelope envelope, boolean success) throws IOException {
+                    if (!_autoAck) {
+                        if (success) {
+                            _channel.basicAck(envelope.getDeliveryTag(), false);
+                        } else {
+                            if (!_requeueFailure) {
+                                _channel.basicAck(envelope.getDeliveryTag(), false);
+                            } else {
+                                _channel.basicNack(envelope.getDeliveryTag(), false, true);
+                            }
+                        }
+                    }
+                }
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
@@ -394,13 +414,13 @@ public class OpflowEngine {
                                     .put("message", "Request invoke ACK")
                                     .toString());
                             
-                            if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
+                            invokeAck(envelope, true);
                         } else {
                             if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
                                     .put("message", "Request has been rejected, mismatched applicationId")
                                     .put("applicationId", applicationId)
                                     .toString());
-                            if (!_autoAck) _channel.basicAck(envelope.getDeliveryTag(), false);
+                            invokeAck(envelope, false);
                         }
                     } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
@@ -409,18 +429,11 @@ public class OpflowEngine {
                                 .put("consumerTag", consumerTag)
                                 .put("exceptionClass", ex.getClass().getName())
                                 .put("exceptionMessage", ex.getMessage())
+                                .put("autoAck", _autoAck)
+                                .put("requeueFailure", _requeueFailure)
                                 .put("message", "Request has been failed. Service still alive")
                                 .toString());
-                        if (_autoAck) {
-                            if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
-                                    .put("message", "Request has failed. AutoAck => request is rejected")
-                                    .toString());
-                        } else {
-                            _channel.basicNack(envelope.getDeliveryTag(), false, true);
-                            if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
-                                    .put("message", "Request has failed. No AutoAck => request is requeued")
-                                    .toString());
-                        }
+                        invokeAck(envelope, false);
                     }
                 }
                 
@@ -442,18 +455,6 @@ public class OpflowEngine {
             };
             
             final String _consumerTag = _channel.basicConsume(_queueName, _autoAck, _consumer);
-            
-            _channel.addShutdownListener(new ShutdownListener() {
-                @Override
-                public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
-                            .put("queueName", _queueName)
-                            .put("consumerTag", _consumerTag)
-                            .put("channelNumber", _channel.getChannelNumber())
-                            .put("message", "consume() channel has been shutdown successfully")
-                            .toString());
-                }
-            });
             
             if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
                     .put("queueName", _queueName)

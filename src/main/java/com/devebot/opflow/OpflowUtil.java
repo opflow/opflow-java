@@ -6,15 +6,18 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Date;
+import javax.xml.bind.DatatypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.google.gson.JsonArray;
 
 /**
  *
@@ -26,6 +29,12 @@ public class OpflowUtil {
     
     private static final Gson GSON = new Gson();
     private static final JsonParser JSON_PARSER = new JsonParser();
+    
+    private final static boolean OPFLOW_BASE64UUID;
+    static {
+        OPFLOW_BASE64UUID = !"false".equals(OpflowUtil.getSystemProperty("OPFLOW_BASE64UUID", null)) &&
+                !"false".equals(OpflowUtil.getEnvironVariable("OPFLOW_BASE64UUID", null));
+    }
     
     public static String jsonObjectToString(Object jsonObj) {
         return GSON.toJson(jsonObj);
@@ -50,6 +59,16 @@ public class OpflowUtil {
     
     public static <T> T jsonMessageToObject(OpflowMessage message, Class<T> type) {
         return GSON.fromJson(message.getBodyAsString(), type);
+    }
+    
+    public static Object[] jsonStringToArray(String arrayString, Class[] types) {
+        if (arrayString == null) return new Object[0];
+        JsonArray array = JSON_PARSER.parse(arrayString).getAsJsonArray();
+        Object[] args = new Object[types.length];
+        for(int i=0; i<types.length; i++) {
+            args[i] = GSON.fromJson(array.get(i), types[i]);
+        }
+        return args;
     }
     
     public static <T> T jsonExtractField(String json, String fieldName, Class<T> type) {
@@ -78,6 +97,27 @@ public class OpflowUtil {
         return UUID.randomUUID().toString();
     }
     
+    public static String getLogID() {
+        if (!OPFLOW_BASE64UUID) getUUID();
+        return convertUUIDToBase64(UUID.randomUUID());
+    }
+    
+    public static String getLogID(String uuid) {
+        if (!OPFLOW_BASE64UUID) return uuid;
+        if (uuid == null) return getLogID();
+        return convertUUIDToBase64(UUID.fromString(uuid));
+    }
+    
+    private static String convertUUIDToBase64(UUID uuid) {
+        // Create byte[] for base64 from uuid
+        byte[] src = ByteBuffer.wrap(new byte[16])
+                .putLong(uuid.getMostSignificantBits())
+                .putLong(uuid.getLeastSignificantBits())
+                .array();
+        // Encode to Base64 and remove trailing ==
+        return DatatypeConverter.printBase64Binary(src).substring(0, 22);
+    }
+    
     public static byte[] getBytes(String data) {
         if (data == null) return null;
         try {
@@ -94,6 +134,16 @@ public class OpflowUtil {
         } catch (UnsupportedEncodingException exception) {
             throw new OpflowOperationException(exception);
         }
+    }
+    
+    public static String truncate(String source) {
+        return truncate(source, 512);
+    }
+    
+    public static String truncate(String source, int limit) {
+        if (source == null) return source;
+        if (source.length() <= limit) return source;
+        return source.substring(0, limit);
     }
     
     public static void copyParameters(Map<String, Object> target, Map<String, Object> source, String[] keys) {
@@ -185,7 +235,7 @@ public class OpflowUtil {
     }
     
     public static String getOptionField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
-        Object value = getOptionField(options, fieldName, uuidIfNotFound ? UUID.randomUUID() : null);
+        Object value = getOptionField(options, fieldName, uuidIfNotFound ? getLogID() : null);
         return value != null ? value.toString() : null;
     }
     
