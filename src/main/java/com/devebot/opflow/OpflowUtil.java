@@ -136,6 +136,16 @@ public class OpflowUtil {
         }
     }
     
+    public static String truncate(String source) {
+        return truncate(source, 512);
+    }
+    
+    public static String truncate(String source, int limit) {
+        if (source == null) return source;
+        if (source.length() <= limit) return source;
+        return source.substring(0, limit);
+    }
+    
     public static void copyParameters(Map<String, Object> target, Map<String, Object> source, String[] keys) {
         for(String field: keys) {
             target.put(field, source.get(field));

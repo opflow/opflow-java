@@ -2,6 +2,8 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.devebot.opflow.exception.OpflowRequestFailedException;
+import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -132,6 +134,14 @@ public class OpflowCommander {
             OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, OpflowUtil.buildMap()
                     .put("progressEnabled", false).toMap());
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
+            
+            if (rpcResult.isTimeout()) {
+                throw new OpflowRequestTimeoutException();
+            }
+            
+            if (rpcResult.isFailed()) {
+                throw new OpflowRequestFailedException(rpcResult.getErrorAsString());
+            }
             
             if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
                     .put("returnType", method.getReturnType().getName())
