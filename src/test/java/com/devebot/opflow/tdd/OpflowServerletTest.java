@@ -60,7 +60,7 @@ public class OpflowServerletTest {
         thrown.expect(OpflowBootstrapException.class);
         thrown.expectMessage(CoreMatchers.startsWith("Duplicated Subscriber connection parameters"));
         
-        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+        serverlet = new OpflowServerlet(OpflowServerlet.getDescriptorBuilder()
                 .setConfigurer(new OpflowPubsubListener() {
                     @Override
                     public void processMessage(OpflowMessage message) throws IOException {
@@ -97,7 +97,7 @@ public class OpflowServerletTest {
         thrown.expect(OpflowBootstrapException.class);
         thrown.expectMessage(CoreMatchers.startsWith("Invalid recyclebinName (duplicated with some queueNames)"));
         
-        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+        serverlet = new OpflowServerlet(OpflowServerlet.getDescriptorBuilder()
                 .setConfigurer(new OpflowPubsubListener() {
                     @Override
                     public void processMessage(OpflowMessage message) throws IOException {
@@ -142,7 +142,7 @@ public class OpflowServerletTest {
         thrown.expect(OpflowBootstrapException.class);
         thrown.expectMessage(CoreMatchers.startsWith("Invalid recyclebinName (duplicated with some queueNames)"));
         
-        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+        serverlet = new OpflowServerlet(OpflowServerlet.getDescriptorBuilder()
                 .setConfigurer(new OpflowPubsubListener() {
                     @Override
                     public void processMessage(OpflowMessage message) throws IOException {
@@ -182,7 +182,7 @@ public class OpflowServerletTest {
         subscriberCfg.put("recyclebinName", "tdd-opflow-recyclebin");
         params.put("subscriber", subscriberCfg);
         
-        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+        serverlet = new OpflowServerlet(OpflowServerlet.getDescriptorBuilder()
                 .setConfigurer(new OpflowPubsubListener() {
                     @Override
                     public void processMessage(OpflowMessage message) throws IOException {
@@ -216,7 +216,7 @@ public class OpflowServerletTest {
         rpcWorkerCfg.put("responseName", "tdd-opflow-response");
         params.put("rpcWorker", rpcWorkerCfg);
         
-        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+        serverlet = new OpflowServerlet(OpflowServerlet.getDescriptorBuilder()
                 .setConfigurer(new OpflowPubsubListener() {
                     @Override
                     public void processMessage(OpflowMessage message) throws IOException {
@@ -258,7 +258,7 @@ public class OpflowServerletTest {
         subscriberCfg.put("recyclebinName", "tdd-opflow-recyclebin");
         params.put("subscriber", subscriberCfg);
         
-        serverlet = new OpflowServerlet(OpflowServerlet.getListenerBuilder()
+        serverlet = new OpflowServerlet(OpflowServerlet.getDescriptorBuilder()
                 .setConfigurer(new OpflowPubsubListener() {
                     @Override
                     public void processMessage(OpflowMessage message) throws IOException {

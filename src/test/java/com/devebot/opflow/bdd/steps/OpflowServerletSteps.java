@@ -28,14 +28,14 @@ public class OpflowServerletSteps {
     
     @Given("a Serverlet named '$serverletName' with default properties file")
     public void createServerlet(@Named("serverletName") final String serverletName) throws OpflowBootstrapException {
-        serverlets.put(serverletName, OpflowLoader.createServerlet(OpflowServerlet.getListenerBuilder().build()));
+        serverlets.put(serverletName, OpflowLoader.createServerlet());
         if (LOG.isDebugEnabled()) LOG.debug("Serverlet[" + serverletName + "] has been created");
     }
     
     @Given("a Serverlet named '$serverletName' with properties file: '$propFile'")
     public void createServerlet(@Named("serverletName") final String serverletName, 
             @Named("propFile") final String propFile) throws OpflowBootstrapException {
-        serverlets.put(serverletName, OpflowLoader.createServerlet(OpflowServerlet.getListenerBuilder().build(), propFile));
+        serverlets.put(serverletName, OpflowLoader.createServerlet(propFile));
         if (LOG.isDebugEnabled()) LOG.debug("Serverlet[" + serverletName + "] has been created");
     }
     
