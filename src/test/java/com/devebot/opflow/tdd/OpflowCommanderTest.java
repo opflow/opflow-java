@@ -1,6 +1,5 @@
 package com.devebot.opflow.tdd;
 
-import com.devebot.opflow.OpflowInterface;
 import com.devebot.opflow.OpflowLoader;
 import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.OpflowServerlet;
@@ -15,8 +14,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowInterfaceTest {
-    private static final Logger LOG = LoggerFactory.getLogger(OpflowInterfaceTest.class);
+public class OpflowCommanderTest {
+    private static final Logger LOG = LoggerFactory.getLogger(OpflowCommanderTest.class);
     private OpflowRpcWorker rpcWorker;
     private OpflowServerlet.Instantiator serverlet;
     
@@ -36,11 +35,19 @@ public class OpflowInterfaceTest {
     }
     
     public interface Calculator {
+        Integer tick();
         Integer add(Integer a);
         Integer add(Integer a, Integer b);
+        void printInfo();
     }
     
     public static class CalculatorImpl implements Calculator {
+        int count = 0;
+        
+        @Override
+        public Integer tick() {
+            return ++count;
+        }
         
         @Override
         public Integer add(Integer a) {
@@ -51,15 +58,24 @@ public class OpflowInterfaceTest {
         public Integer add(Integer a, Integer b) {
             return a + b;
         }
+        
+        @Override
+        public void printInfo() {
+            System.out.println("Hello world");
+        }
     }
     
     @Test
     public void testCreateRpcMaster() throws OpflowBootstrapException {
-        Calculator calc = OpflowInterface.getInstance().registerType(Calculator.class);
+        Calculator calc = OpflowLoader.createCommander("commander.properties").registerType(Calculator.class);
         serverlet.instantiateType(CalculatorImpl.class);
-        for(int k=0; k<1000; k++) {
+        for(int k=0; k<100; k++) {
             System.out.println("Result: " + calc.add(100, k));
         }
-        System.out.println("Result: " + calc.add(500));
+        System.out.println("Result: " + calc.tick());
+        System.out.println("Result: " + calc.tick());
+        System.out.println("Result: " + calc.tick());
+        
+        calc.printInfo();
     }
 }
