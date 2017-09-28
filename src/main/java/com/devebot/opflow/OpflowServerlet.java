@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -224,6 +225,7 @@ public class OpflowServerlet {
     }
     
     public static class ListenerMap {
+        public static final ListenerMap EMPTY = new ListenerMap();
         private OpflowPubsubListener configurer;
         private Map<String, OpflowRpcListener> rpcListeners = new HashMap<String, OpflowRpcListener>();
         private OpflowPubsubListener subscriber;
@@ -321,8 +323,8 @@ public class OpflowServerlet {
                         response.emitFailed(OpflowUtil.buildMap()
                                 .put("exceptionClass", catched.getClass().getName())
                                 .put("exceptionPayload", OpflowUtil.jsonObjectToString(catched))
-                                .put("type", ex.getClass().getName())
-                                .put("message", ex.getMessage())
+                                .put("type", catched.getClass().getName())
+                                .put("message", catched.getMessage())
                                 .toString());
                     } catch (Exception ex) {
                         response.emitFailed(OpflowUtil.buildMap()
@@ -402,6 +404,20 @@ public class OpflowServerlet {
                 throw new OpflowInterceptionException("Unknown exception", except);
             }
             process();
+        }
+        
+        public void instantiateTypes(Class[] types) {
+            instantiateTypes(Arrays.asList(types));
+        }
+        
+        public void instantiateTypes(Collection<Class> types) {
+            Set<Class> typeSet = new HashSet<Class>();
+            typeSet.addAll(types);
+            for(Class type:typeSet) {
+                if (!Modifier.isAbstract(type.getModifiers())) {
+                    instantiateType(type);
+                }
+            }
         }
     }
 }
