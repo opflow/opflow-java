@@ -3,6 +3,7 @@ package com.devebot.opflow.tdd;
 import com.devebot.opflow.OpflowLoader;
 import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.OpflowServerlet;
+import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import org.junit.After;
 import org.junit.Before;
@@ -22,7 +23,8 @@ public class OpflowCommanderTest {
     @Before
     public void beforeEach() throws OpflowBootstrapException {
         rpcWorker = OpflowLoader.createRpcWorker();
-        serverlet = new OpflowServerlet.Instantiator(rpcWorker, true);
+        serverlet = new OpflowServerlet.Instantiator(rpcWorker, OpflowUtil.buildMap()
+                .put("autorun", true).toMap());
     }
     
     @After
