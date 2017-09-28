@@ -31,11 +31,11 @@ public class OpflowServerlet {
     private OpflowPubsubHandler subscriber;
     private Instantiator instantiator;
     
-    private final ListenerMap listenerMap;
+    private final ListenerDescriptor listenerMap;
     
     private final Map<String, Object> kwargs;
     
-    public OpflowServerlet(ListenerMap listeners, Map<String, Object> kwargs) throws OpflowBootstrapException {
+    public OpflowServerlet(ListenerDescriptor listeners, Map<String, Object> kwargs) throws OpflowBootstrapException {
         this.kwargs = OpflowUtil.ensureNotNull(kwargs);
 
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", OpflowUtil.getOptionField(this.kwargs, "serverletId", true));
@@ -152,9 +152,10 @@ public class OpflowServerlet {
                 .put("message", "Serverlet start()")
                 .toString());
         
-        if (configurer != null) {
+        if (configurer != null && listenerMap.getConfigurer() != null) {
             configurer.subscribe(listenerMap.getConfigurer());
         }
+        
         if (rpcWorker != null) {
             Map<String, OpflowRpcListener> rpcListeners = listenerMap.getRpcListeners();
             for(Map.Entry<String, OpflowRpcListener> entry:rpcListeners.entrySet()) {
@@ -164,7 +165,8 @@ public class OpflowServerlet {
         if (instantiator != null) {
             instantiator.process();
         }
-        if (subscriber != null) {
+        
+        if (subscriber != null && listenerMap.getSubscriber() != null) {
             subscriber.subscribe(listenerMap.getSubscriber());
         }
         
@@ -195,42 +197,42 @@ public class OpflowServerlet {
                 .toString());
     }
     
-    public static ListenerMapBuilder getListenerBuilder() {
-        return new ListenerMapBuilder();
+    public static DescriptorBuilder getDescriptorBuilder() {
+        return new DescriptorBuilder();
     }
     
-    public static class ListenerMapBuilder {
-        private ListenerMapBuilder() {}
+    public static class DescriptorBuilder {
+        private DescriptorBuilder() {}
         
-        private ListenerMap map = new ListenerMap();
+        private ListenerDescriptor map = new ListenerDescriptor();
         
-        public ListenerMapBuilder setConfigurer(OpflowPubsubListener configurer) {
+        public DescriptorBuilder setConfigurer(OpflowPubsubListener configurer) {
             map.configurer = configurer;
             return this;
         }
         
-        public ListenerMapBuilder setSubscriber(OpflowPubsubListener subscriber) {
+        public DescriptorBuilder setSubscriber(OpflowPubsubListener subscriber) {
             map.subscriber = subscriber;
             return this;
         }
         
-        public ListenerMapBuilder addRpcListener(String routineId, OpflowRpcListener listener) {
+        public DescriptorBuilder addRpcListener(String routineId, OpflowRpcListener listener) {
             map.rpcListeners.put(routineId, listener);
             return this;
         }
         
-        public ListenerMap build() {
+        public ListenerDescriptor build() {
             return map;
         }
     }
     
-    public static class ListenerMap {
-        public static final ListenerMap EMPTY = new ListenerMap();
+    public static class ListenerDescriptor {
+        public static final ListenerDescriptor EMPTY = new ListenerDescriptor();
         private OpflowPubsubListener configurer;
         private Map<String, OpflowRpcListener> rpcListeners = new HashMap<String, OpflowRpcListener>();
         private OpflowPubsubListener subscriber;
         
-        private ListenerMap() {}
+        private ListenerDescriptor() {}
         
         public OpflowPubsubListener getConfigurer() {
             return configurer;

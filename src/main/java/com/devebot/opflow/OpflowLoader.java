@@ -194,23 +194,43 @@ public class OpflowLoader {
         return new OpflowCommander(params);
     }
     
-    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners)
+    public static OpflowServerlet createServerlet()
             throws OpflowBootstrapException {
-        return createServerlet(listeners, null, null, true);
+        return createServerlet(null, null, true, OpflowServerlet.ListenerDescriptor.EMPTY);
     }
     
-    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners, 
-            String propFile) throws OpflowBootstrapException {
-        return createServerlet(listeners, null, propFile, true);
+    public static OpflowServerlet createServerlet(String propFile)
+            throws OpflowBootstrapException {
+        return createServerlet(null, propFile, true, OpflowServerlet.ListenerDescriptor.EMPTY);
     }
     
-    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners,
-            Map<String, Object> config) throws OpflowBootstrapException {
-        return createServerlet(listeners, config, null, false);
+    public static OpflowServerlet createServerlet(Map<String, Object> config)
+            throws OpflowBootstrapException {
+        return createServerlet(config, null, false, OpflowServerlet.ListenerDescriptor.EMPTY);
     }
     
-    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners, 
-            Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
+    public static OpflowServerlet createServerlet(Map<String, Object> config, String configFile, boolean useDefaultFile)
+            throws OpflowBootstrapException {
+        return createServerlet(config, configFile, useDefaultFile, OpflowServerlet.ListenerDescriptor.EMPTY);
+    }
+    
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners)
+            throws OpflowBootstrapException {
+        return createServerlet(null, null, true, listeners);
+    }
+    
+    public static OpflowServerlet createServerlet(String propFile,
+            OpflowServerlet.ListenerDescriptor listeners) throws OpflowBootstrapException {
+        return createServerlet(null, propFile, true, listeners);
+    }
+    
+    public static OpflowServerlet createServerlet(Map<String, Object> config,
+            OpflowServerlet.ListenerDescriptor listeners) throws OpflowBootstrapException {
+        return createServerlet(config, null, false, listeners);
+    }
+    
+    public static OpflowServerlet createServerlet(Map<String, Object> config, String configFile, boolean useDefaultFile,
+            OpflowServerlet.ListenerDescriptor listeners) throws OpflowBootstrapException {
         config = loadConfiguration(config, configFile, useDefaultFile);
         
         Map<String, Object> params = new HashMap<String, Object>();
