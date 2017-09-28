@@ -37,7 +37,7 @@ public class OpflowCommanderTest {
     }
     
     public interface Calculator {
-        Integer tick();
+        Integer tick() throws CalculatorException;
         Integer add(Integer a);
         Integer add(Integer a, Integer b);
         void printInfo();
@@ -47,8 +47,10 @@ public class OpflowCommanderTest {
         int count = 0;
         
         @Override
-        public Integer tick() {
-            return ++count;
+        public Integer tick() throws CalculatorException {
+            ++count;
+            if (count > 1) throw new CalculatorException("demo");
+            return count;
         }
         
         @Override
@@ -67,6 +69,24 @@ public class OpflowCommanderTest {
         }
     }
     
+    public static class CalculatorException extends Exception {
+
+        public CalculatorException() {
+        }
+
+        public CalculatorException(String message) {
+            super(message);
+        }
+
+        public CalculatorException(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        public CalculatorException(Throwable cause) {
+            super(cause);
+        }
+    }
+    
     @Test
     public void testCreateRpcMaster() throws OpflowBootstrapException {
         Calculator calc = OpflowLoader.createCommander("commander.properties").registerType(Calculator.class);
@@ -74,9 +94,14 @@ public class OpflowCommanderTest {
         for(int k=0; k<100; k++) {
             System.out.println("Result: " + calc.add(100, k));
         }
-        System.out.println("Result: " + calc.tick());
-        System.out.println("Result: " + calc.tick());
-        System.out.println("Result: " + calc.tick());
+        try {
+            System.out.println("Result: " + calc.tick());
+            System.out.println("Result: " + calc.tick());
+            System.out.println("Result: " + calc.tick());
+        } catch (CalculatorException exception) {
+            System.out.println("Exception: " + exception.getClass().getName() + "/" + exception.getMessage());
+            exception.printStackTrace();
+        }
         
         calc.printInfo();
     }
