@@ -287,8 +287,8 @@ public class OpflowServerlet {
                         args = OpflowUtil.jsonStringToArray(json, methodRef.get(routineId).getParameterTypes());
                     } catch (JsonSyntaxException error) {
                         response.emitFailed(OpflowUtil.buildMap()
-                                .put("errorType", error.getClass().getName())
-                                .put("errorMessage", error.getMessage())
+                                .put("type", error.getClass().getName())
+                                .put("message", error.getMessage())
                                 .toString());
                         throw error;
                     }
@@ -306,25 +306,28 @@ public class OpflowServerlet {
                     } catch (IllegalAccessException ex) {
                         LOG.error(null, ex);
                         response.emitFailed(OpflowUtil.buildMap()
-                                .put("errorType", ex.getClass().getName())
-                                .put("errorMessage", ex.getMessage())
+                                .put("type", ex.getClass().getName())
+                                .put("message", ex.getMessage())
                                 .toString());
                     } catch (IllegalArgumentException ex) {
                         LOG.error(null, ex);
                         response.emitFailed(OpflowUtil.buildMap()
-                                .put("errorType", ex.getClass().getName())
-                                .put("errorMessage", ex.getMessage())
+                                .put("type", ex.getClass().getName())
+                                .put("message", ex.getMessage())
                                 .toString());
                     } catch (InvocationTargetException ex) {
-                        LOG.error(null, ex);
+                        Throwable catched = (Exception) ex.getCause();
+                        catched.getStackTrace();
                         response.emitFailed(OpflowUtil.buildMap()
-                                .put("errorType", ex.getClass().getName())
-                                .put("errorMessage", ex.getMessage())
+                                .put("exceptionClass", catched.getClass().getName())
+                                .put("exceptionPayload", OpflowUtil.jsonObjectToString(catched))
+                                .put("type", ex.getClass().getName())
+                                .put("message", ex.getMessage())
                                 .toString());
                     } catch (Exception ex) {
                         response.emitFailed(OpflowUtil.buildMap()
-                                .put("errorType", ex.getClass().getName())
-                                .put("errorMessage", ex.getMessage())
+                                .put("type", ex.getClass().getName())
+                                .put("message", ex.getMessage())
                                 .toString());
                     }
                     return null;

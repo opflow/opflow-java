@@ -2,10 +2,9 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
-import com.devebot.opflow.exception.OpflowRequestFailedException;
+import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
@@ -115,7 +114,7 @@ public class OpflowCommander {
         }
         
         @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws InvocationTargetException {
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             String routineId = method.toString();
             if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                     .put("routineId", routineId)
@@ -140,7 +139,8 @@ public class OpflowCommander {
             }
             
             if (rpcResult.isFailed()) {
-                throw new OpflowRequestFailedException(rpcResult.getErrorAsString());
+                Map<String, Object> errorMap = OpflowUtil.jsonStringToMap(rpcResult.getErrorAsString());
+                throw rebuildInvokerException(errorMap);
             }
             
             if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
@@ -152,6 +152,27 @@ public class OpflowCommander {
             if (method.getReturnType() == void.class) return null;
             
             return OpflowUtil.jsonStringToObject(rpcResult.getValueAsString(), method.getReturnType());
+        }
+        
+        private Throwable rebuildInvokerException(Map<String, Object> errorMap) {
+            Object exceptionName = errorMap.get("exceptionClass");
+            Object exceptionPayload = errorMap.get("exceptionPayload");
+            if (exceptionName != null && exceptionPayload != null) {
+                try {
+                    Class exceptionClass = Class.forName(exceptionName.toString());
+                    return (Throwable) OpflowUtil.jsonStringToObject(exceptionPayload.toString(), exceptionClass);
+                } catch (ClassNotFoundException ex) {
+                    return rebuildFailureException(errorMap);
+                }
+            }
+            return rebuildFailureException(errorMap);
+        }
+        
+        private Throwable rebuildFailureException(Map<String, Object> errorMap) {
+            if (errorMap.get("message") != null) {
+                return new OpflowRequestFailureException(errorMap.get("message").toString());
+            }
+            return new OpflowRequestFailureException();
         }
     }
     
