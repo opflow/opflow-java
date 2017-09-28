@@ -62,6 +62,7 @@ public class OpflowUtil {
     }
     
     public static Object[] jsonStringToArray(String arrayString, Class[] types) {
+        if (arrayString == null) return new Object[0];
         JsonArray array = JSON_PARSER.parse(arrayString).getAsJsonArray();
         Object[] args = new Object[types.length];
         for(int i=0; i<types.length; i++) {

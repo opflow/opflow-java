@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -55,7 +56,7 @@ public class OpflowServerlet {
         HashSet<String> checkQueue = new HashSet<String>();
         HashSet<String> checkRecyclebin = new HashSet<String>();
         
-        if (configurerCfg != null) {
+        if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
             if (configurerCfg.get("exchangeName") == null || configurerCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
             } 
@@ -68,7 +69,7 @@ public class OpflowServerlet {
             if (configurerCfg.get("recyclebinName") != null) checkRecyclebin.add(configurerCfg.get("recyclebinName").toString());
         }
 
-        if (rpcWorkerCfg != null) {
+        if (rpcWorkerCfg != null && !Boolean.FALSE.equals(rpcWorkerCfg.get("enabled"))) {
             if (rpcWorkerCfg.get("exchangeName") == null || rpcWorkerCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid RpcWorker connection parameters");
             }
@@ -83,7 +84,7 @@ public class OpflowServerlet {
             }
         }
         
-        if (subscriberCfg != null) {
+        if (subscriberCfg != null && !Boolean.FALSE.equals(subscriberCfg.get("enabled"))) {
             if (subscriberCfg.get("exchangeName") == null || subscriberCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid Subscriber connection parameters");
             }
@@ -104,16 +105,16 @@ public class OpflowServerlet {
         }
         
         try {
-            if (configurerCfg != null && listenerMap.getConfigurer() != null) {
+            if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
                 configurer = new OpflowPubsubHandler(configurerCfg);
             }
 
-            if (rpcWorkerCfg != null) {
+            if (rpcWorkerCfg != null && !Boolean.FALSE.equals(rpcWorkerCfg.get("enabled"))) {
                 rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
                 instantiator = new Instantiator(rpcWorker);
             }
 
-            if (subscriberCfg != null && listenerMap.getSubscriber() != null) {
+            if (subscriberCfg != null && !Boolean.FALSE.equals(subscriberCfg.get("enabled"))) {
                 subscriber = new OpflowPubsubHandler(subscriberCfg);
             }
         } catch(OpflowBootstrapException exception) {
@@ -227,6 +228,7 @@ public class OpflowServerlet {
     
     public static class Instantiator {
         private static final Logger LOG = LoggerFactory.getLogger(Instantiator.class);
+        private static final Object[] EMPTY_ARGS = new Object[0];
         private final OpflowRpcWorker rpcWorker;
         private final OpflowRpcListener listener;
         private final Set<String> routineIds = new HashSet<String>();
@@ -250,17 +252,36 @@ public class OpflowServerlet {
                     if (LOG.isDebugEnabled()) LOG.debug(" - Request routineId: " + routineId);
                     String json = message.getBodyAsString();
                     if (LOG.isDebugEnabled()) LOG.debug(" - Request body: " + json);
-                    Object[] args = OpflowUtil.jsonStringToArray(json, methodRef.get(routineId).getParameterTypes());
+                    Object[] args = EMPTY_ARGS;
+                    try {
+                        args = OpflowUtil.jsonStringToArray(json, methodRef.get(routineId).getParameterTypes());
+                    } catch (JsonSyntaxException except) {
+                        
+                    }
                     try {
                         Object result = methodRef.get(routineId).invoke(targetRef.get(routineId), args);
                         if (LOG.isDebugEnabled()) LOG.debug(" - Output: " + result);
                         response.emitCompleted(OpflowUtil.jsonObjectToString(result));
                     } catch (IllegalAccessException ex) {
                         LOG.error(null, ex);
+                        response.emitFailed(OpflowUtil.buildMap()
+                                .put("errorType", ex.getClass().getName())
+                                .put("errorMessage", ex.getMessage())
+                                .toString());
                     } catch (IllegalArgumentException ex) {
                         LOG.error(null, ex);
+                        response.emitFailed(OpflowUtil.buildMap()
+                                .put("errorType", ex.getClass().getName())
+                                .put("errorMessage", ex.getMessage())
+                                .toString());
                     } catch (InvocationTargetException ex) {
                         LOG.error(null, ex);
+                        response.emitFailed(OpflowUtil.buildMap()
+                                .put("errorType", ex.getClass().getName())
+                                .put("errorMessage", ex.getMessage())
+                                .toString());
+                    } catch (Exception ex) {
+                        
                     }
                     return null;
                 }

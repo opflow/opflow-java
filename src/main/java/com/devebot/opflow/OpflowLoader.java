@@ -159,6 +159,41 @@ public class OpflowLoader {
         return new OpflowPubsubHandler(params);
     }
     
+    public static OpflowCommander createCommander() throws OpflowBootstrapException {
+        return createCommander(null, null, true);
+    }
+    
+    public static OpflowCommander createCommander(String propFile) throws OpflowBootstrapException {
+        return createCommander(null, propFile, true);
+    }
+    
+    public static OpflowCommander createCommander(Map<String, Object> config) throws OpflowBootstrapException {
+        return createCommander(config, null, false);
+    }
+    
+    public static OpflowCommander createCommander(Map<String, Object> config,
+            String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
+        config = loadConfiguration(config, configFile, useDefaultFile);
+        
+        Map<String, Object> params = new HashMap<String, Object>();
+        String[] componentNames = new String[] {"configurer", "rpcMaster", "publisher"};
+        String[] componentPath = new String[] {"opflow", "commander", ""};
+        for(String componentName:componentNames) {
+            componentPath[2] = componentName;
+            Map<String, Object> componentCfg = new HashMap<String, Object>();
+            extractEngineParameters(componentCfg, config, componentPath);
+            Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
+            componentCfg.put("enabled", componentNode.get("enabled"));
+            if ("rpcMaster".equals(componentName)) {
+                componentCfg.put("responseName", componentNode.get("responseName"));
+            }
+            transformParameters(componentCfg);
+            params.put(componentName, componentCfg);
+        }
+        
+        return new OpflowCommander(params);
+    }
+    
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners)
             throws OpflowBootstrapException {
         return createServerlet(listeners, null, null, true);
@@ -178,31 +213,26 @@ public class OpflowLoader {
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
         config = loadConfiguration(config, configFile, useDefaultFile);
         
-        String[] configurerPath = new String[] {"opflow", "serverlet", "configurer"};
-        Map<String, Object> configurerCfg = new HashMap<String, Object>();
-        extractEngineParameters(configurerCfg, config, configurerPath);
-        transformParameters(configurerCfg);
-        
-        String[] rpcWorkerPath = new String[] {"opflow", "serverlet", "rpcWorker"};
-        Map<String, Object> rpcWorkerCfg = new HashMap<String, Object>();
-        extractEngineParameters(rpcWorkerCfg, config, rpcWorkerPath);
-        Map<String, Object> rpcWorkerNode = getChildMapByPath(config, rpcWorkerPath);
-        rpcWorkerCfg.put("operatorName", rpcWorkerNode.get("operatorName"));
-        rpcWorkerCfg.put("responseName", rpcWorkerNode.get("responseName"));
-        transformParameters(rpcWorkerCfg);
-        
-        String[] subscriberPath = new String[] {"opflow", "serverlet", "subscriber"};
-        Map<String, Object> subscriberCfg = new HashMap<String, Object>();
-        extractEngineParameters(subscriberCfg, config, subscriberPath);
-        Map<String, Object> subscriberNode = getChildMapByPath(config, subscriberPath);
-        subscriberCfg.put("subscriberName", subscriberNode.get("subscriberName"));
-        subscriberCfg.put("recyclebinName", subscriberNode.get("recyclebinName"));
-        transformParameters(subscriberCfg);
-        
         Map<String, Object> params = new HashMap<String, Object>();
-        params.put("configurer", configurerCfg);
-        params.put("rpcWorker", rpcWorkerCfg);
-        params.put("subscriber", subscriberCfg);
+        String[] componentNames = new String[] {"configurer", "rpcWorker", "subscriber"};
+        String[] componentPath = new String[] {"opflow", "serverlet", ""};
+        for(String componentName:componentNames) {
+            componentPath[2] = componentName;
+            Map<String, Object> componentCfg = new HashMap<String, Object>();
+            extractEngineParameters(componentCfg, config, componentPath);
+            Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
+            componentCfg.put("enabled", componentNode.get("enabled"));
+            if ("rpcWorker".equals(componentName)) {
+                componentCfg.put("operatorName", componentNode.get("operatorName"));
+                componentCfg.put("responseName", componentNode.get("responseName"));
+            }
+            if ("subscriber".equals(componentName)) {
+                componentCfg.put("subscriberName", componentNode.get("subscriberName"));
+                componentCfg.put("recyclebinName", componentNode.get("recyclebinName"));
+            }
+            transformParameters(componentCfg);
+            params.put(componentName, componentCfg);
+        }
         
         return new OpflowServerlet(listeners, params);
     }
@@ -370,7 +400,9 @@ public class OpflowLoader {
         if(sourceObject != null && sourceObject instanceof Map) {
             return (Map<String, Object>) sourceObject;
         }
-        return new HashMap<String, Object>();
+        Map<String, Object> blank = new HashMap<String, Object>();
+        blank.put("enabled", false);
+        return blank;
     }
     
     private static void extractEngineParameters(Map<String, Object> target, Map<String, Object> source, String[] path) {
@@ -394,6 +426,8 @@ public class OpflowLoader {
         }
     }
     
+    private static final String[] BOOLEAN_FIELDS = new String[] { "enabled", "verbose" };
+    
     private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };
     
     private static final String[] INTEGER_FIELDS = new String[] {
@@ -402,6 +436,11 @@ public class OpflowLoader {
     
     private static void transformParameters(Map<String, Object> params) {
         for(String key: params.keySet()) {
+            if (OpflowUtil.arrayContains(BOOLEAN_FIELDS, key)) {
+                if (params.get(key) instanceof String) {
+                    params.put(key, Boolean.parseBoolean(params.get(key).toString()));
+                }
+            }
             if (OpflowUtil.arrayContains(STRING_ARRAY_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     params.put(key, OpflowUtil.splitByComma((String)params.get(key)));
