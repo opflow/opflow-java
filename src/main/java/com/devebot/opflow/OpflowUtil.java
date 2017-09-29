@@ -1,9 +1,5 @@
 package com.devebot.opflow;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -15,9 +11,7 @@ import java.util.Date;
 import javax.xml.bind.DatatypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import com.devebot.opflow.exception.OpflowOperationException;
-import com.google.gson.JsonArray;
 
 /**
  *
@@ -27,66 +21,50 @@ public class OpflowUtil {
     private static final Logger LOG = LoggerFactory.getLogger(OpflowUtil.class);
     private final OpflowLogTracer logTracer = OpflowLogTracer.ROOT.copy();
     
-    private static final Gson GSON = new Gson();
-    private static final JsonParser JSON_PARSER = new JsonParser();
-    
     private final static boolean OPFLOW_BASE64UUID;
     static {
         OPFLOW_BASE64UUID = !"false".equals(OpflowUtil.getSystemProperty("OPFLOW_BASE64UUID", null)) &&
                 !"false".equals(OpflowUtil.getEnvironVariable("OPFLOW_BASE64UUID", null));
     }
     
+    @Deprecated
     public static String jsonObjectToString(Object jsonObj) {
-        return GSON.toJson(jsonObj);
+        return OpflowJsontool.toString(jsonObj);
     }
     
+    @Deprecated
     public static <T> T jsonStringToObject(String json, Class<T> type) {
-        return GSON.fromJson(json, type);
+        return OpflowJsontool.toObject(json, type);
     }
     
+    @Deprecated
     public static String jsonMapToString(Map<String, Object> jsonMap) {
-        return GSON.toJson(jsonMap);
+        return OpflowJsontool.toString(jsonMap);
     }
     
+    @Deprecated
     public static Map<String, Object> jsonStringToMap(String json) {
-        try {
-            Map<String,Object> map = GSON.fromJson(json, Map.class);
-            return map;
-        } catch (JsonSyntaxException e) {
-            throw new OpflowJsonTransformationException(e);
-        }
+        return OpflowJsontool.toObjectMap(json);
     }
     
+    @Deprecated
     public static <T> T jsonMessageToObject(OpflowMessage message, Class<T> type) {
-        return GSON.fromJson(message.getBodyAsString(), type);
+        return OpflowJsontool.toObject(message, type);
     }
     
+    @Deprecated
     public static Object[] jsonStringToArray(String arrayString, Class[] types) {
-        if (arrayString == null) return new Object[0];
-        JsonArray array = JSON_PARSER.parse(arrayString).getAsJsonArray();
-        Object[] args = new Object[types.length];
-        for(int i=0; i<types.length; i++) {
-            args[i] = GSON.fromJson(array.get(i), types[i]);
-        }
-        return args;
+        return OpflowJsontool.toObjectArray(arrayString, types);
     }
     
+    @Deprecated
     public static <T> T jsonExtractField(String json, String fieldName, Class<T> type) {
-        try {
-            JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
-            return type.cast(jsonObject.get(fieldName));
-        } catch (JsonSyntaxException e) {
-            throw new OpflowJsonTransformationException(e);
-        }
+        return OpflowJsontool.extractField(json, fieldName, type);
     }
     
+    @Deprecated
     public static int jsonExtractFieldAsInt(String json, String fieldName) {
-        try {
-            JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
-            return jsonObject.get(fieldName).getAsInt();
-        } catch (JsonSyntaxException e) {
-            throw new OpflowJsonTransformationException(e);
-        }
+        return OpflowJsontool.extractFieldAsInt(json, fieldName);
     }
     
     public static long getCurrentTime() {
@@ -191,7 +169,7 @@ public class OpflowUtil {
         
         @Override
         public String toString() {
-            return GSON.toJson(fields);
+            return OpflowJsontool.toString(fields);
         }
     }
     

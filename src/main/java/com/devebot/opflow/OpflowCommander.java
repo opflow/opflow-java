@@ -122,7 +122,7 @@ public class OpflowCommander {
                     .toString());
             
             if (args == null) args = new Object[0];
-            String body = OpflowUtil.jsonObjectToString(args);
+            String body = OpflowJsontool.toString(args);
             
             if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
                     .put("args", args)
@@ -139,7 +139,7 @@ public class OpflowCommander {
             }
             
             if (rpcResult.isFailed()) {
-                Map<String, Object> errorMap = OpflowUtil.jsonStringToMap(rpcResult.getErrorAsString());
+                Map<String, Object> errorMap = OpflowJsontool.toObjectMap(rpcResult.getErrorAsString());
                 throw rebuildInvokerException(errorMap);
             }
             
@@ -151,7 +151,7 @@ public class OpflowCommander {
             
             if (method.getReturnType() == void.class) return null;
             
-            return OpflowUtil.jsonStringToObject(rpcResult.getValueAsString(), method.getReturnType());
+            return OpflowJsontool.toObject(rpcResult.getValueAsString(), method.getReturnType());
         }
         
         private Throwable rebuildInvokerException(Map<String, Object> errorMap) {
@@ -160,7 +160,7 @@ public class OpflowCommander {
             if (exceptionName != null && exceptionPayload != null) {
                 try {
                     Class exceptionClass = Class.forName(exceptionName.toString());
-                    return (Throwable) OpflowUtil.jsonStringToObject(exceptionPayload.toString(), exceptionClass);
+                    return (Throwable) OpflowJsontool.toObject(exceptionPayload.toString(), exceptionClass);
                 } catch (ClassNotFoundException ex) {
                     return rebuildFailureException(errorMap);
                 }

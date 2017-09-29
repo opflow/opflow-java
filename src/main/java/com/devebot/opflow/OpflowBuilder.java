@@ -25,12 +25,12 @@ import org.yaml.snakeyaml.scanner.ScannerException;
  *
  * @author drupalex
  */
-public class OpflowLoader {
+public class OpflowBuilder {
     public final static String DEFAULT_CONFIGURATION_KEY = "opflow.configuration";
     public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
     
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowLoader.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowBuilder.class);
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
     public static OpflowRpcMaster createRpcMaster() throws OpflowBootstrapException {
@@ -194,22 +194,42 @@ public class OpflowLoader {
         return new OpflowCommander(params);
     }
     
-    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners)
+    public static OpflowServerlet createServerlet()
+            throws OpflowBootstrapException {
+        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, null, true);
+    }
+    
+    public static OpflowServerlet createServerlet(String propFile)
+            throws OpflowBootstrapException {
+        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, propFile, true);
+    }
+    
+    public static OpflowServerlet createServerlet(Map<String, Object> config)
+            throws OpflowBootstrapException {
+        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, config, null, false);
+    }
+    
+    public static OpflowServerlet createServerlet(Map<String, Object> config, String configFile, boolean useDefaultFile)
+            throws OpflowBootstrapException {
+        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, config, configFile, useDefaultFile);
+    }
+    
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners)
             throws OpflowBootstrapException {
         return createServerlet(listeners, null, null, true);
     }
     
-    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners, 
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             String propFile) throws OpflowBootstrapException {
         return createServerlet(listeners, null, propFile, true);
     }
     
-    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners,
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config) throws OpflowBootstrapException {
         return createServerlet(listeners, config, null, false);
     }
     
-    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerMap listeners, 
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
         config = loadConfiguration(config, configFile, useDefaultFile);
         
@@ -289,7 +309,7 @@ public class OpflowLoader {
                 }
             }
             if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
-                    .put("YAML", OpflowUtil.jsonMapToString(config))
+                    .put("YAML", OpflowJsontool.toString(config))
                     .put("message", "loaded properties content")
                     .stringify(true));
             return config;
