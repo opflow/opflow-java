@@ -309,7 +309,7 @@ public class OpflowBuilder {
                 }
             }
             if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
-                    .put("YAML", OpflowUtil.jsonMapToString(config))
+                    .put("YAML", OpflowJsontool.toString(config))
                     .put("message", "loaded properties content")
                     .stringify(true));
             return config;

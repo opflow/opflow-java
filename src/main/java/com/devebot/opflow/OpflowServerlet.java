@@ -288,7 +288,7 @@ public class OpflowServerlet {
                             .stringify(true));
                     Object[] args = EMPTY_ARGS;
                     try {
-                        args = OpflowUtil.jsonStringToArray(json, methodRef.get(routineId).getParameterTypes());
+                        args = OpflowJsontool.toObjectArray(json, methodRef.get(routineId).getParameterTypes());
                     } catch (JsonSyntaxException error) {
                         response.emitFailed(OpflowUtil.buildMap()
                                 .put("type", error.getClass().getName())
@@ -298,7 +298,7 @@ public class OpflowServerlet {
                     }
                     try {
                         Object returnValue = methodRef.get(routineId).invoke(targetRef.get(routineId), args);
-                        String result = OpflowUtil.jsonObjectToString(returnValue);
+                        String result = OpflowJsontool.toString(returnValue);
                         if (LOG.isTraceEnabled()) LOG.trace(listenerTrail
                                 .put("return", OpflowUtil.truncate(result))
                                 .put("message", "Return value of method")
@@ -324,7 +324,7 @@ public class OpflowServerlet {
                         catched.getStackTrace();
                         response.emitFailed(OpflowUtil.buildMap()
                                 .put("exceptionClass", catched.getClass().getName())
-                                .put("exceptionPayload", OpflowUtil.jsonObjectToString(catched))
+                                .put("exceptionPayload", OpflowJsontool.toString(catched))
                                 .put("type", catched.getClass().getName())
                                 .put("message", catched.getMessage())
                                 .toString());
