@@ -1,5 +1,6 @@
 package com.devebot.opflow.tdd;
 
+import com.devebot.opflow.OpflowJsontool;
 import com.devebot.opflow.OpflowUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -42,11 +43,11 @@ public class OpflowUtilTest {
         opts.put("double", 19.79);
         opts.put("boolean", true);
         opts.put("nullable", null);
-        String json = OpflowUtil.jsonMapToString(opts);
+        String json = OpflowJsontool.toString(opts);
         
         System.out.println("Json string: " + json);
         
-        Map<String, Object> jsonObj = OpflowUtil.jsonStringToMap(json);
+        Map<String, Object> jsonObj = OpflowJsontool.toObjectMap(json);
         
         for(String fieldName: jsonObj.keySet()) {
             System.out.println(MessageFormat.format("Field [{0}] has value: {1}", new Object[] {
@@ -123,7 +124,7 @@ public class OpflowUtilTest {
         opts.put("double", 19.79);
         opts.put("boolean", true);
         opts.put("nullable", null);
-        String json = OpflowUtil.jsonMapToString(opts);
+        String json = OpflowJsontool.toString(opts);
         
         System.out.println("Json string: " + json);
         
@@ -155,7 +156,7 @@ public class OpflowUtilTest {
         opts.put("double", 19.79);
         opts.put("boolean", true);
         opts.put("nullable", null);
-        String json = OpflowUtil.jsonMapToString(opts);
+        String json = OpflowJsontool.toString(opts);
         
         System.out.println("Json string: " + json);
         

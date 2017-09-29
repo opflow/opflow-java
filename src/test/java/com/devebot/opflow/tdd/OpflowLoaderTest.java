@@ -1,10 +1,9 @@
 package com.devebot.opflow.tdd;
 
 import com.devebot.opflow.OpflowBuilder;
-import com.devebot.opflow.OpflowUtil;
+import com.devebot.opflow.OpflowJsontool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
@@ -29,7 +28,7 @@ public class OpflowLoaderTest {
     @Test
     public void testYamlLoading() throws OpflowBootstrapException {
         Map<String,Object> loaded = OpflowBuilder.loadConfiguration("opflow.yml");
-        System.out.println("JSON: " + OpflowUtil.jsonMapToString(loaded));
+        System.out.println("JSON: " + OpflowJsontool.toString(loaded));
     }
     
     @Test
@@ -38,7 +37,7 @@ public class OpflowLoaderTest {
         thrown.expectCause(CoreMatchers.is(FileNotFoundException.class));
         thrown.expectMessage(CoreMatchers.is("java.io.FileNotFoundException: configuration file 'opflow_notfound.yml' not found"));
         Map<String,Object> loaded = OpflowBuilder.loadConfiguration("opflow_notfound.yml");
-        System.out.println("JSON: " + OpflowUtil.jsonMapToString(loaded));
+        System.out.println("JSON: " + OpflowJsontool.toString(loaded));
     }
     
     @Test
@@ -47,7 +46,7 @@ public class OpflowLoaderTest {
         thrown.expectCause(CoreMatchers.is(ParserException.class));
         thrown.expectMessage(CoreMatchers.startsWith("expected '<document start>', but found BlockMappingStart\n in 'reader', line"));
         Map<String,Object> loaded = OpflowBuilder.loadConfiguration("opflow_invalid1.yml");
-        System.out.println("JSON: " + OpflowUtil.jsonMapToString(loaded));
+        System.out.println("JSON: " + OpflowJsontool.toString(loaded));
     }
     
     @Test
@@ -56,7 +55,7 @@ public class OpflowLoaderTest {
         thrown.expectCause(CoreMatchers.is(ScannerException.class));
         thrown.expectMessage(CoreMatchers.startsWith("mapping values are not allowed here\n in 'reader', line"));
         Map<String,Object> loaded = OpflowBuilder.loadConfiguration("opflow_invalid2.yml");
-        System.out.println("JSON: " + OpflowUtil.jsonMapToString(loaded));
+        System.out.println("JSON: " + OpflowJsontool.toString(loaded));
     }
     
     @Test

@@ -1,7 +1,7 @@
 package com.devebot.opflow.tdd;
 
+import com.devebot.opflow.OpflowJsontool;
 import com.devebot.opflow.OpflowLogTracer;
-import com.devebot.opflow.OpflowUtil;
 import com.google.gson.Gson;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +26,7 @@ public class OpflowLogTracerTest {
         OpflowLogTracer logTracer = new OpflowLogTracer().branch("rootId", "1234567890");
         
         String emptyMsg = logTracer.toString();
-        Map<String, Object> emptyMap = OpflowUtil.jsonStringToMap(emptyMsg);
+        Map<String, Object> emptyMap = OpflowJsontool.toObjectMap(emptyMsg);
         
         assertThat(emptyMap.get("instanceId").toString(), equalTo("demo"));
         assertThat(emptyMap.get("rootId").toString(), equalTo("1234567890"));
@@ -34,7 +34,7 @@ public class OpflowLogTracerTest {
         String logMsg0 = logTracer
                 .put("message", "Hello Opflow")
                 .toString();
-        Map<String, Object> logMap0 = OpflowUtil.jsonStringToMap(logMsg0);
+        Map<String, Object> logMap0 = OpflowJsontool.toObjectMap(logMsg0);
         
         assertThat(logMap0.get("instanceId").toString(), equalTo("demo"));
         assertThat(logMap0.get("rootId").toString(), equalTo("1234567890"));
@@ -47,7 +47,7 @@ public class OpflowLogTracerTest {
                 .put("message", "Hello App1")
                 .toString();
         
-        Map<String, Object> logMap1 = OpflowUtil.jsonStringToMap(logMsg1);
+        Map<String, Object> logMap1 = OpflowJsontool.toObjectMap(logMsg1);
         
         assertThat(logMap1.get("instanceId").toString(), equalTo("demo"));
         assertThat(logMap1.get("rootId").toString(), equalTo("1234567890"));
@@ -61,7 +61,7 @@ public class OpflowLogTracerTest {
                 .put("message", "Hello App2")
                 .toString();
         
-        Map<String, Object> logMap2 = OpflowUtil.jsonStringToMap(logMsg2);
+        Map<String, Object> logMap2 = OpflowJsontool.toObjectMap(logMsg2);
         
         assertThat(logMap2.get("instanceId").toString(), equalTo("demo"));
         assertThat(logMap2.get("rootId").toString(), equalTo("1234567890"));
@@ -80,7 +80,7 @@ public class OpflowLogTracerTest {
         
         OpflowLogTracer logEngine = logTracer.branch("engineId", "engine-demo");
         String msgEngine = logEngine.toString();
-        Map<String, Object> mapEngine = OpflowUtil.jsonStringToMap(msgEngine);
+        Map<String, Object> mapEngine = OpflowJsontool.toObjectMap(msgEngine);
         assertThat(mapEngine.get("instanceId").toString(), equalTo("demo"));
         assertThat(mapEngine.get("engineId").toString(), equalTo("engine-demo"));
         LOG.debug("msgEngine: " + msgEngine);
@@ -89,7 +89,7 @@ public class OpflowLogTracerTest {
                 .put("appId", "app1")
                 .put("message", "Hello App1");
         String msgApp1 = logApp1.toString();
-        Map<String, Object> mapApp1 = OpflowUtil.jsonStringToMap(msgApp1);
+        Map<String, Object> mapApp1 = OpflowJsontool.toObjectMap(msgApp1);
         assertThat(mapApp1.get("instanceId").toString(), equalTo("demo"));
         assertThat(mapApp1.get("engineId").toString(), equalTo("engine-demo"));
         assertThat(mapApp1.get("message").toString(), equalTo("Hello App1"));
@@ -99,7 +99,7 @@ public class OpflowLogTracerTest {
                 .put("appID", "app2")
                 .put("content", "Hello App2");
         String msgApp2 = logApp2.toString();
-        Map<String, Object> mapApp2 = OpflowUtil.jsonStringToMap(msgApp2);
+        Map<String, Object> mapApp2 = OpflowJsontool.toObjectMap(msgApp2);
         assertThat(mapApp2.get("instanceId").toString(), equalTo("demo"));
         assertThat(mapApp2.get("engineId").toString(), equalTo("engine-demo"));
         assertThat(mapApp2.get("content").toString(), equalTo("Hello App2"));

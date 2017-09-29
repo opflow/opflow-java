@@ -1,6 +1,7 @@
 package com.devebot.opflow.bdd.steps;
 
 import com.devebot.opflow.OpflowBuilder;
+import com.devebot.opflow.OpflowJsontool;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowPubsubHandler;
 import com.devebot.opflow.OpflowPubsubListener;
@@ -78,7 +79,7 @@ public class OpflowPubsubSteps {
                     String msg = message.getBodyAsString();
                     if (LOG.isTraceEnabled()) LOG.trace("[+] EchoRandomError received: '" + msg + "'" +
                             " #" + countdowns.get(pubsubName).getCount());
-                    Map<String, Object> msgObj = OpflowUtil.jsonStringToMap(msg);
+                    Map<String, Object> msgObj = OpflowJsontool.toObjectMap(msg);
                     Integer number = ((Double) msgObj.get("number")).intValue();
                     try {
                         if (OpflowUtil.arrayContains(rejected, number)) {

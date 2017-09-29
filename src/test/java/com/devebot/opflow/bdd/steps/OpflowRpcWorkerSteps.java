@@ -1,6 +1,7 @@
 package com.devebot.opflow.bdd.steps;
 
 import com.devebot.opflow.OpflowBuilder;
+import com.devebot.opflow.OpflowJsontool;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowRpcListener;
 import com.devebot.opflow.OpflowRpcResponse;
@@ -107,7 +108,7 @@ public class OpflowRpcWorkerSteps {
                     // OPTIONAL
                     response.emitStarted();
 
-                    Map<String, Object> jsonMap = OpflowUtil.jsonStringToMap(msg);
+                    Map<String, Object> jsonMap = OpflowJsontool.toObjectMap(msg);
                     int number = ((Double) jsonMap.get("number")).intValue();
                     if (number < 0) throw new OpflowOperationException("number should be positive");
                     if (number > 40) throw new OpflowOperationException("number exceeding limit (40)");
@@ -120,7 +121,7 @@ public class OpflowRpcWorkerSteps {
                         response.emitProgress(r.getStep(), r.getNumber());
                     }
 
-                    String result = OpflowUtil.jsonObjectToString(fibonacci.result());
+                    String result = OpflowJsontool.toString(fibonacci.result());
                     if (LOG.isTraceEnabled()) LOG.trace("[-] Fibonacci finished with: '" + result + "'");
 
                     // MANDATORY
