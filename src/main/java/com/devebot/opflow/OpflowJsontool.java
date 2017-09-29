@@ -16,8 +16,6 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowJsontool {
     private static final Logger LOG = LoggerFactory.getLogger(OpflowJsontool.class);
-    private final OpflowLogTracer logTracer = OpflowLogTracer.ROOT.copy();
-    
     private static final Gson GSON = new Gson();
     private static final JsonParser JSON_PARSER = new JsonParser();
     
@@ -60,6 +58,8 @@ public class OpflowJsontool {
         try {
             JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
             return type.cast(jsonObject.get(fieldName));
+        } catch (ClassCastException e) {
+            throw new OpflowJsonTransformationException(e);
         } catch (JsonSyntaxException e) {
             throw new OpflowJsonTransformationException(e);
         }

@@ -31,7 +31,9 @@ public class OpflowExecutor {
     public int countQueue(final String queueName) {
         try {
             return declareQueue(queueName).getMessageCount();
-        } catch (Exception exception) {
+        } catch (IOException exception) {
+            throw new OpflowOperationException(exception);
+        } catch (TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
     }
@@ -39,7 +41,9 @@ public class OpflowExecutor {
     public AMQP.Queue.DeclareOk defineQueue(final String queueName) {
         try {
             return declareQueue(queueName);
-        } catch (Exception exception) {
+        } catch (IOException exception) {
+            throw new OpflowOperationException(exception);
+        } catch (TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
     }
@@ -72,7 +76,9 @@ public class OpflowExecutor {
                     return _channel.queuePurge(queueName);
                 }
             });
-        } catch (Exception exception) {
+        } catch (IOException exception) {
+            throw new OpflowOperationException(exception);
+        } catch (TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
     }
