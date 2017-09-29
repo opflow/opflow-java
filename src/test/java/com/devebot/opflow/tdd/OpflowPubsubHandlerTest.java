@@ -2,7 +2,7 @@ package com.devebot.opflow.tdd;
 
 import com.devebot.opflow.OpflowEngine;
 import com.devebot.opflow.OpflowExecutor;
-import com.devebot.opflow.OpflowLoader;
+import com.devebot.opflow.OpflowBuilder;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowPubsubHandler;
 import com.devebot.opflow.OpflowPubsubListener;
@@ -29,7 +29,7 @@ public class OpflowPubsubHandlerTest {
     
     @Before
     public void beforeEach() throws OpflowBootstrapException {
-        props = OpflowLoader.loadProperties();
+        props = OpflowBuilder.loadProperties();
     }
     
     @After

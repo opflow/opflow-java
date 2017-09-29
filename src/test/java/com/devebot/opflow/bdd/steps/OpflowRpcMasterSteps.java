@@ -4,7 +4,7 @@ package com.devebot.opflow.bdd.steps;
  *
  * @author drupalex
  */
-import com.devebot.opflow.OpflowLoader;
+import com.devebot.opflow.OpflowBuilder;
 import com.devebot.opflow.OpflowRpcMaster;
 import com.devebot.opflow.OpflowRpcRequest;
 import com.devebot.opflow.OpflowRpcResult;
@@ -55,13 +55,13 @@ public class OpflowRpcMasterSteps {
     
     @Given("a RPC master<$masterName> with default properties file")
     public void createRpcMaster(@Named("masterName") final String masterName) throws OpflowBootstrapException {
-        masters.put(masterName, OpflowLoader.createRpcMaster());
+        masters.put(masterName, OpflowBuilder.createRpcMaster());
     }
     
     @Given("a RPC master<$masterName> with properties file: '$propFile'")
     public void createRpcMaster(@Named("masterName") final String masterName, 
             @Named("propFile") final String propFile) throws OpflowBootstrapException {
-        masters.put(masterName, OpflowLoader.createRpcMaster(propFile));
+        masters.put(masterName, OpflowBuilder.createRpcMaster(propFile));
     }
     
     @When("I make a request<$requestName> to routine<$routineId> in master<$masterName> with input number: $number")

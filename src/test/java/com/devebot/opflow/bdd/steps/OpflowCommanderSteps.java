@@ -1,7 +1,7 @@
 package com.devebot.opflow.bdd.steps;
 
 import com.devebot.opflow.OpflowCommander;
-import com.devebot.opflow.OpflowLoader;
+import com.devebot.opflow.OpflowBuilder;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.lab.FibonacciCalculator;
 import com.devebot.opflow.lab.FibonacciPacket;
@@ -30,14 +30,14 @@ public class OpflowCommanderSteps {
     
     @Given("a Commander named '$commanderName' with default properties file")
     public void createCommander(@Named("commanderName") final String commanderName) throws OpflowBootstrapException {
-        commanders.put(commanderName, OpflowLoader.createCommander("commander.properties"));
+        commanders.put(commanderName, OpflowBuilder.createCommander("commander.properties"));
         if (LOG.isDebugEnabled()) LOG.debug("Commander[" + commanderName + "] has been created");
     }
     
     @Given("a Commander named '$commanderName' with properties file: '$propFile'")
     public void createCommander(@Named("commanderName") final String commanderName, 
             @Named("propFile") final String propFile) throws OpflowBootstrapException {
-        commanders.put(commanderName, OpflowLoader.createCommander(propFile));
+        commanders.put(commanderName, OpflowBuilder.createCommander(propFile));
         if (LOG.isDebugEnabled()) LOG.debug("Commander[" + commanderName + "] has been created");
     }
     

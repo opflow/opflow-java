@@ -1,6 +1,6 @@
 package com.devebot.opflow.tdd;
 
-import com.devebot.opflow.OpflowLoader;
+import com.devebot.opflow.OpflowBuilder;
 import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.util.HashMap;
@@ -21,7 +21,7 @@ public class OpflowRpcWorkerTest {
     
     @Before
     public void beforeEach() throws OpflowBootstrapException {
-        props = OpflowLoader.loadProperties();
+        props = OpflowBuilder.loadProperties();
     }
     
     @Rule

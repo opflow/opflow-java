@@ -1,6 +1,6 @@
 package com.devebot.opflow.tdd;
 
-import com.devebot.opflow.OpflowLoader;
+import com.devebot.opflow.OpflowBuilder;
 import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.OpflowServerlet;
 import com.devebot.opflow.OpflowUtil;
@@ -22,7 +22,7 @@ public class OpflowCommanderTest {
     
     @Before
     public void beforeEach() throws OpflowBootstrapException {
-        rpcWorker = OpflowLoader.createRpcWorker();
+        rpcWorker = OpflowBuilder.createRpcWorker();
         serverlet = new OpflowServerlet.Instantiator(rpcWorker, OpflowUtil.buildMap()
                 .put("autorun", true).toMap());
     }
@@ -89,7 +89,7 @@ public class OpflowCommanderTest {
     
     @Test
     public void testCreateRpcMaster() throws OpflowBootstrapException {
-        Calculator calc = OpflowLoader.createCommander("commander.properties").registerType(Calculator.class);
+        Calculator calc = OpflowBuilder.createCommander("commander.properties").registerType(Calculator.class);
         serverlet.instantiateType(CalculatorImpl.class);
         for(int k=0; k<100; k++) {
             System.out.println("Result: " + calc.add(100, k));

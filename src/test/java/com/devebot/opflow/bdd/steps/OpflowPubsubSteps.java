@@ -1,6 +1,6 @@
 package com.devebot.opflow.bdd.steps;
 
-import com.devebot.opflow.OpflowLoader;
+import com.devebot.opflow.OpflowBuilder;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowPubsubHandler;
 import com.devebot.opflow.OpflowPubsubListener;
@@ -43,7 +43,7 @@ public class OpflowPubsubSteps {
     
     @Given("a PubsubHandler named '$pubsubName' with default config")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName) throws OpflowBootstrapException {
-        pubsubs.put(pubsubName, OpflowLoader.createPubsubHandler());
+        pubsubs.put(pubsubName, OpflowBuilder.createPubsubHandler());
         countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
         if (LOG.isDebugEnabled()) LOG.debug("PubsubHandler[" + pubsubName + "] has been created");
     }
@@ -51,7 +51,7 @@ public class OpflowPubsubSteps {
     @Given("a PubsubHandler named '$pubsubName' with properties file: '$propFile'")
     public void createPubsubHandler(@Named("pubsubName") final String pubsubName, 
             @Named("propFile") final String propFile) throws OpflowBootstrapException {
-        pubsubs.put(pubsubName, OpflowLoader.createPubsubHandler(propFile));
+        pubsubs.put(pubsubName, OpflowBuilder.createPubsubHandler(propFile));
         countdowns.put(pubsubName, new OpflowTask.Countdown(0, 1000));
         if (LOG.isDebugEnabled()) LOG.debug("PubsubHandler[" + pubsubName + "] has been created");
     }

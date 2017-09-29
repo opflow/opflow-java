@@ -1,6 +1,6 @@
 package com.devebot.opflow.tdd;
 
-import com.devebot.opflow.OpflowLoader;
+import com.devebot.opflow.OpflowBuilder;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowPubsubListener;
 import com.devebot.opflow.OpflowRpcListener;
@@ -28,7 +28,7 @@ public class OpflowServerletTest {
     
     @Before
     public void beforeEach() throws OpflowBootstrapException {
-        props = OpflowLoader.loadProperties();
+        props = OpflowBuilder.loadProperties();
     }
     
     @After
