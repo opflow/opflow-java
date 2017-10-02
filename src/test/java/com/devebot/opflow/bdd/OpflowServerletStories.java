@@ -23,7 +23,7 @@ public class OpflowServerletStories extends OpflowEmbedder {
                 new OpflowCommanderSteps(),
                 new OpflowServerletSteps());
     }
-     
+    
     @Override
     protected List<String> storyPaths() {
         String codeLocation = CodeLocations.codeLocationFromClass(this.getClass()).getFile();

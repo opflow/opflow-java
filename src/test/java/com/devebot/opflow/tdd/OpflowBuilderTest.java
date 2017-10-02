@@ -9,18 +9,18 @@ import java.net.URL;
 import java.util.Map;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.scanner.ScannerException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  *
  * @author drupalex
  */
-public class OpflowLoaderTest {
+public class OpflowBuilderTest {
     
     @Rule
     public ExpectedException thrown = ExpectedException.none();

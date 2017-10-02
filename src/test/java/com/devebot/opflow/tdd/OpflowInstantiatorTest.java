@@ -1,36 +1,31 @@
 package com.devebot.opflow.tdd;
 
 import com.devebot.opflow.OpflowBuilder;
+import com.devebot.opflow.OpflowJsontool;
+import com.devebot.opflow.OpflowRpcMaster;
+import com.devebot.opflow.OpflowRpcResult;
 import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.OpflowServerlet;
 import com.devebot.opflow.OpflowUtil;
+import com.devebot.opflow.annotation.OpflowRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
 
 /**
  *
  * @author drupalex
  */
-public class OpflowCommanderTest {
-    private static final Logger LOG = LoggerFactory.getLogger(OpflowCommanderTest.class);
+public class OpflowInstantiatorTest {
+    private OpflowRpcMaster rpcMaster;
     private OpflowRpcWorker rpcWorker;
     private OpflowServerlet.Instantiator instantiator;
     
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-    
     @Before
     public void beforeEach() throws OpflowBootstrapException {
+        rpcMaster = OpflowBuilder.createRpcMaster();
         rpcWorker = OpflowBuilder.createRpcWorker();
         instantiator = new OpflowServerlet.Instantiator(rpcWorker, OpflowUtil.buildMap()
                 .put("autorun", true).toMap());
@@ -38,7 +33,17 @@ public class OpflowCommanderTest {
     
     @After
     public void afterEach() {
+        if (rpcMaster != null) rpcMaster.close();
         if (rpcWorker != null) rpcWorker.close();
+    }
+    
+    @Test
+    public void testRpcWorkerMethodAlias() throws OpflowBootstrapException, NoSuchMethodException {
+        Calculator calc = OpflowBuilder.createCommander("commander.properties").registerType(Calculator.class);
+        instantiator.instantiateType(CalculatorImpl.class);
+        Assert.assertEquals(21, calc.add(20).intValue());
+        OpflowRpcResult result = rpcMaster.request("increase", OpflowJsontool.toString(new Object[] {10})).extractResult();
+        Assert.assertEquals(11, Integer.parseInt(result.getValueAsString()));
     }
     
     public interface Calculator {
@@ -54,11 +59,12 @@ public class OpflowCommanderTest {
         @Override
         public Integer tick() throws CalculatorException {
             ++count;
-            if (count > 1) throw new CalculatorException("this is a demo");
+            if (count > 1) throw new CalculatorException("demo");
             return count;
         }
         
         @Override
+        @OpflowRoutine(alias={"increase"})
         public Integer add(Integer a) {
             return a + 1;
         }
@@ -91,31 +97,5 @@ public class OpflowCommanderTest {
             super(cause);
         }
     }
-    
-    @Test
-    public void testMassCallingMethods() throws OpflowBootstrapException {
-        Calculator calc = OpflowBuilder.createCommander("commander.properties").registerType(Calculator.class);
-        instantiator.instantiateType(CalculatorImpl.class);
-        for(int k=0; k<100; k++) {
-            // System.out.println("Result: " + calc.add(100, k));
-            assertThat(calc.add(100, k), equalTo(100+k));
-        }
-        calc.printInfo();
-    }
-    
-    @Test
-    public void testThrowException() throws CalculatorException, OpflowBootstrapException {
-        Calculator calc = OpflowBuilder.createCommander("commander.properties").registerType(Calculator.class);
-        instantiator.instantiateType(CalculatorImpl.class);
-        thrown.expect(CalculatorException.class);
-        thrown.expectMessage(CoreMatchers.is("this is a demo"));
-        try {
-            assertThat(calc.tick(), equalTo(1));
-            assertThat(calc.tick(), not(equalTo(2)));
-        } catch (CalculatorException exception) {
-            //System.out.println("Exception: " + exception.getClass().getName() + "/" + exception.getMessage());
-            //exception.printStackTrace();
-            throw exception;
-        }
-    }
+
 }
