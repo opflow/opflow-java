@@ -1,9 +1,11 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.annotation.OpflowRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -183,6 +185,20 @@ public class OpflowServerlet {
         }
     }
     
+    public void instantiateTypes(Class[] types) {
+        instantiateTypes(Arrays.asList(types));
+    }
+    
+    public void instantiateTypes(Collection<Class> types) {
+        Set<Class> typeSet = new HashSet<Class>();
+        typeSet.addAll(types);
+        for (Class type : typeSet) {
+            if (!Modifier.isAbstract(type.getModifiers())) {
+                instantiateType(type);
+            }
+        }
+    }
+    
     public final void close() {
         if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("message", "Serverlet stop()")
@@ -258,6 +274,7 @@ public class OpflowServerlet {
         private final Set<String> routineIds = new HashSet<String>();
         private final Map<String, Method> methodRef = new HashMap<String, Method>();
         private final Map<String, Object> targetRef = new HashMap<String, Object>();
+        private final Map<String, String> methodOfAlias = new HashMap<String, String>();
         private boolean processing = false;
         
         public Instantiator(OpflowRpcWorker worker) throws OpflowBootstrapException {
@@ -277,36 +294,57 @@ public class OpflowServerlet {
                     String requestId = OpflowUtil.getRequestId(message.getInfo());
                     OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId);
                     String routineId = OpflowUtil.getRoutineId(message.getInfo());
+                    String methodId = methodOfAlias.getOrDefault(routineId, routineId);
                     if (LOG.isInfoEnabled()) LOG.info(listenerTrail
                             .put("routineId", routineId)
+                            .put("methodId", methodId)
                             .put("message", "Receives new method call")
                             .stringify(true));
-                    String json = message.getBodyAsString();
-                    if (LOG.isTraceEnabled()) LOG.trace(listenerTrail
-                            .put("arguments", json)
-                            .put("message", "Method arguments in json string")
-                            .stringify(true));
-                    Object[] args = EMPTY_ARGS;
+                    Method method = methodRef.get(methodId);
+                    Object target = targetRef.get(methodId);
                     try {
-                        args = OpflowJsontool.toObjectArray(json, methodRef.get(routineId).getParameterTypes());
-                    } catch (JsonSyntaxException error) {
-                        response.emitFailed(OpflowUtil.buildMap()
-                                .put("type", error.getClass().getName())
-                                .put("message", error.getMessage())
-                                .toString());
-                        throw error;
-                    }
-                    try {
-                        Object returnValue = methodRef.get(routineId).invoke(targetRef.get(routineId), args);
+                        Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
+                        OpflowRoutine routine = extractMethodInfo(origin);
+                        if (routine != null && routine.enabled() == false) {
+                            throw new UnsupportedOperationException("Method " + origin.toString() + " is disabled");
+                        }
+                        
+                        String json = message.getBodyAsString();
+                        if (LOG.isTraceEnabled()) LOG.trace(listenerTrail
+                                .put("arguments", json)
+                                .put("message", "Method arguments in json string")
+                                .stringify(true));
+                        Object[] args = OpflowJsontool.toObjectArray(json, method.getParameterTypes());
+                        
+                        Object returnValue = method.invoke(target, args);
                         String result = OpflowJsontool.toString(returnValue);
                         if (LOG.isTraceEnabled()) LOG.trace(listenerTrail
                                 .put("return", OpflowUtil.truncate(result))
                                 .put("message", "Return value of method")
                                 .stringify(true));
                         response.emitCompleted(result);
+                        
                         if (LOG.isInfoEnabled()) LOG.info(listenerTrail
                             .put("message", "Method call has completed")
                             .stringify());
+                    } catch (JsonSyntaxException error) {
+                        response.emitFailed(OpflowUtil.buildMap()
+                                .put("type", error.getClass().getName())
+                                .put("message", error.getMessage())
+                                .toString());
+                        throw error;
+                    } catch (NoSuchMethodException ex) {
+                        LOG.error(null, ex);
+                        response.emitFailed(OpflowUtil.buildMap()
+                                .put("type", ex.getClass().getName())
+                                .put("message", ex.getMessage())
+                                .toString());
+                    } catch (SecurityException ex) {
+                        LOG.error(null, ex);
+                        response.emitFailed(OpflowUtil.buildMap()
+                                .put("type", ex.getClass().getName())
+                                .put("message", ex.getMessage())
+                                .toString());
                     } catch (IllegalAccessException ex) {
                         LOG.error(null, ex);
                         response.emitFailed(OpflowUtil.buildMap()
@@ -327,6 +365,14 @@ public class OpflowServerlet {
                                 .put("exceptionPayload", OpflowJsontool.toString(catched))
                                 .put("type", catched.getClass().getName())
                                 .put("message", catched.getMessage())
+                                .toString());
+                    } catch (UnsupportedOperationException ex) {
+                        ex.getStackTrace();
+                        response.emitFailed(OpflowUtil.buildMap()
+                                .put("exceptionClass", ex.getClass().getName())
+                                .put("exceptionPayload", OpflowJsontool.toString(ex))
+                                .put("type", ex.getClass().getName())
+                                .put("message", ex.getMessage())
                                 .toString());
                     } catch (Exception ex) {
                         response.emitFailed(OpflowUtil.buildMap()
@@ -357,23 +403,42 @@ public class OpflowServerlet {
                 throw new OpflowInterceptionException("Class should not be an abstract type");
             }
             try {
+                Object target = type.newInstance();
+                for (Method method : type.getDeclaredMethods()) {
+                    String methodId = method.toString();
+                    OpflowRoutine routine = extractMethodInfo(method);
+                    if (routine != null && routine.alias() != null) {
+                        for(String alias:routine.alias()) {
+                            if (!routineIds.add(alias)) {
+                                throw new OpflowInterceptionException("Alias/routineId[" + alias + "] is duplicated");
+                            }
+                            methodOfAlias.put(alias, methodId);
+                            if (LOG.isTraceEnabled()) LOG.trace(logTracer
+                                    .put("alias", alias)
+                                    .put("routineId", methodId)
+                                    .put("message", "link alias to routineId")
+                                    .stringify(true));
+                        }
+                    }
+                }
                 List<Class> clazzes = new LinkedList<Class>();
                 clazzes.add(type);
                 Class[] interfaces = type.getInterfaces();
                 clazzes.addAll(Arrays.asList(interfaces));
-
-                Object target = type.newInstance();
                 for(Class clz: clazzes) {
                     Method[] methods = clz.getDeclaredMethods();
                     for (Method method : methods) {
-                        String routineId = method.toString();
+                        String methodId = method.toString();
                         if (LOG.isTraceEnabled()) LOG.trace(logTracer
-                                .put("routineId", routineId)
+                                .put("routineId", methodId)
+                                .put("methodId", methodId)
                                 .put("message", "Attach method to RpcWorker listener")
                                 .stringify(true));
-                        routineIds.add(routineId);
-                        methodRef.put(routineId, method);
-                        targetRef.put(routineId, target);
+                        if (!routineIds.add(methodId)) {
+                            throw new OpflowInterceptionException("Alias/routineId[" + methodId + "] is duplicated");
+                        }
+                        methodRef.put(methodId, method);
+                        targetRef.put(methodId, target);
                     }
                 }
             } catch (InstantiationException except) {
@@ -408,18 +473,13 @@ public class OpflowServerlet {
             process();
         }
         
-        public void instantiateTypes(Class[] types) {
-            instantiateTypes(Arrays.asList(types));
-        }
-        
-        public void instantiateTypes(Collection<Class> types) {
-            Set<Class> typeSet = new HashSet<Class>();
-            typeSet.addAll(types);
-            for(Class type:typeSet) {
-                if (!Modifier.isAbstract(type.getModifiers())) {
-                    instantiateType(type);
-                }
+        private OpflowRoutine extractMethodInfo(Method method) {
+            if (method.isAnnotationPresent(OpflowRoutine.class)) {
+                Annotation annotation = method.getAnnotation(OpflowRoutine.class);
+                OpflowRoutine routine = (OpflowRoutine) annotation;
+                return routine;
             }
+            return null;
         }
     }
 }
