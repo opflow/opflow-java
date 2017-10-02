@@ -1,5 +1,6 @@
 package com.devebot.opflow.tdd;
 
+import com.devebot.opflow.lab.SimpleCalculatorImpl;
 import com.devebot.opflow.OpflowBuilder;
 import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.OpflowPubsubListener;
@@ -278,5 +279,21 @@ public class OpflowServerletTest {
                     }
                 })
                 .build(), params);
+    }
+    
+    @Test
+    public void testInstantiateTypes() throws OpflowBootstrapException {
+        Map<String, Object> params = new HashMap<String, Object>();
+        
+        Map<String, Object> rpcWorkerCfg = new HashMap<String, Object>();
+        rpcWorkerCfg.put("uri", props.getProperty("opflow.uri"));
+        rpcWorkerCfg.put("exchangeName", "tdd-opflow-exchange");
+        rpcWorkerCfg.put("routingKey", "tdd-opflow-rpc");
+        rpcWorkerCfg.put("operatorName", "tdd-opflow-operator");
+        rpcWorkerCfg.put("responseName", "tdd-opflow-response");
+        params.put("rpcWorker", rpcWorkerCfg);
+        
+        serverlet = new OpflowServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, params);
+        serverlet.instantiateTypes(new Class[] {SimpleCalculatorImpl.class });
     }
 }
