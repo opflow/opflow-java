@@ -147,22 +147,4 @@ public class OpflowUtilTest {
         });
         GSON2 = gsonBuilder.create();
     }
-    
-    @Test
-    public void test_registerTypeAdapter() {
-        Map<String, Object> opts = new HashMap<String, Object>();
-        opts.put("string", "Hello world");
-        opts.put("integer", 177);
-        opts.put("double", 19.79);
-        opts.put("boolean", true);
-        opts.put("nullable", null);
-        String json = OpflowJsontool.toString(opts);
-        
-        System.out.println("Json string: " + json);
-        
-        //Map<String,Object> jsonObj = GSON2.fromJson(json, new TypeToken<Map<String, Object>>(){}.getType());
-        Map<String,Object> jsonObj = GSON2.fromJson(json, Map.class);
-
-        System.out.println("Integer type: " + jsonObj.get("integer").getClass());
-    }
 }

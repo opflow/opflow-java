@@ -1,4 +1,4 @@
-Single request sending story
+Batched requests sending story
 
 Lifecycle:
 Before:
@@ -12,5 +12,5 @@ When I close Serverlet named 'serverlet1'
 Scenario: Simple Serverlet
 Given a registered FibonacciCalculator interface in Commander named 'commander1'
 Given an instantiated FibonacciCalculator class in Serverlet named 'serverlet1'
-When I send a request to Commander 'commander1' to calculate fibonacci of '34'
-Then the fibonacci value of '34' by Commander 'commander1' must be '5702887'
+When I make '100' requests to Commander 'commander1' to calculate fibonacci of random number from '20' to '50'
+Then the commander 'commander1' will receive '100' responses
