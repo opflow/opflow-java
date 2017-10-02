@@ -109,7 +109,13 @@ public class OpflowEngine {
                 
                 Integer heartbeat = null;
                 if (params.get("heartbeat") instanceof Integer) {
-                    factory.setRequestedHeartbeat(heartbeat = (Integer)params.get("heartbeat"));
+                    heartbeat = (Integer)params.get("heartbeat");
+                    if (heartbeat < 5) heartbeat = 5;
+                } else {
+                    heartbeat = 20; // default 20 seconds
+                }
+                if (heartbeat != null) {
+                    factory.setRequestedHeartbeat(heartbeat);
                 }
                 
                 Boolean automaticRecoveryEnabled = null;
@@ -124,7 +130,13 @@ public class OpflowEngine {
                 
                 Integer networkRecoveryInterval = null;
                 if (params.get("networkRecoveryInterval") instanceof Integer) {
-                    factory.setNetworkRecoveryInterval(networkRecoveryInterval = (Integer)params.get("networkRecoveryInterval"));
+                    networkRecoveryInterval = (Integer)params.get("networkRecoveryInterval");
+                    if (networkRecoveryInterval <= 0) networkRecoveryInterval = null;
+                } else {
+                    networkRecoveryInterval = 2500; // change default from 5000 to 2500
+                }
+                if (networkRecoveryInterval != null) {
+                    factory.setNetworkRecoveryInterval(networkRecoveryInterval);
                 }
                 
                 if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
