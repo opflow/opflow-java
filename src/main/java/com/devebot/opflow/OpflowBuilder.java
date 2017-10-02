@@ -446,12 +446,15 @@ public class OpflowBuilder {
         }
     }
     
-    private static final String[] BOOLEAN_FIELDS = new String[] { "enabled", "verbose" };
+    private static final String[] BOOLEAN_FIELDS = new String[] {
+        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled"
+    };
     
     private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };
     
     private static final String[] INTEGER_FIELDS = new String[] {
-        "port", "channelMax", "frameMax", "heartbeat", "prefetch", "subscriberLimit", "redeliveredLimit"
+        "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", 
+        "prefetch", "subscriberLimit", "redeliveredLimit"
     };
     
     private static void transformParameters(Map<String, Object> params) {

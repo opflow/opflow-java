@@ -31,7 +31,8 @@ public class OpflowEngine {
 
     public static final String[] PARAMETER_NAMES = new String[] {
         "uri", "host", "port", "virtualHost", "username", "password", "channelMax", "frameMax", "heartbeat",
-        "exchangeName", "exchangeType", "exchangeDurable", "routingKey", "otherKeys", "applicationId"
+        "exchangeName", "exchangeType", "exchangeDurable", "routingKey", "otherKeys", "applicationId",
+        "automaticRecoveryEnabled", "topologyRecoveryEnabled", "networkRecoveryInterval"
     };
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
@@ -73,43 +74,57 @@ public class OpflowEngine {
                         .put("message", "Connection URI")
                         .toString());
             } else {
-                String host = (String) params.get("host");
-                if (host == null) host = "localhost";
+                String host = (String) params.getOrDefault("host", "localhost");
                 factory.setHost(host);
                 
                 Integer port = null;
-                if (params.get("port") != null && params.get("port") instanceof Integer) {
+                if (params.get("port") instanceof Integer) {
                     factory.setPort(port = (Integer)params.get("port"));
                 }
                 
-                String virtualHost = (String) params.get("virtualHost");
-                if (virtualHost != null) {
-                    factory.setVirtualHost(virtualHost);
+                String virtualHost = null;
+                if (params.get("virtualHost") instanceof String) {
+                    factory.setVirtualHost(virtualHost = (String) params.get("virtualHost"));
                 }
                 
-                String username = (String) params.get("username");
-                if (username != null) {
-                    factory.setUsername(username);
+                String username = null;
+                if (params.get("username") instanceof String) {
+                    factory.setUsername(username = (String) params.get("username"));
                 }
                 
-                String password = (String) params.get("password");
-                if (password != null) {
-                    factory.setPassword(password);
+                String password = null;
+                if (params.get("password") instanceof String) {
+                    factory.setPassword(password = (String) params.get("password"));
                 }
                 
                 Integer channelMax = null;
-                if (params.get("channelMax") != null && params.get("channelMax") instanceof Integer) {
+                if (params.get("channelMax") instanceof Integer) {
                     factory.setRequestedChannelMax(channelMax = (Integer)params.get("channelMax"));
                 }
                 
                 Integer frameMax = null;
-                if (params.get("frameMax") != null && params.get("frameMax") instanceof Integer) {
+                if (params.get("frameMax") instanceof Integer) {
                     factory.setRequestedFrameMax(frameMax = (Integer)params.get("frameMax"));
                 }
                 
                 Integer heartbeat = null;
-                if (params.get("heartbeat") != null && params.get("heartbeat") instanceof Integer) {
+                if (params.get("heartbeat") instanceof Integer) {
                     factory.setRequestedHeartbeat(heartbeat = (Integer)params.get("heartbeat"));
+                }
+                
+                Boolean automaticRecoveryEnabled = null;
+                if (params.get("automaticRecoveryEnabled") instanceof Boolean) {
+                    factory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled = (Boolean)params.get("automaticRecoveryEnabled"));
+                }
+                
+                Boolean topologyRecoveryEnabled = null;
+                if (params.get("topologyRecoveryEnabled") instanceof Boolean) {
+                    factory.setTopologyRecoveryEnabled(topologyRecoveryEnabled = (Boolean)params.get("topologyRecoveryEnabled"));
+                }
+                
+                Integer networkRecoveryInterval = null;
+                if (params.get("networkRecoveryInterval") instanceof Integer) {
+                    factory.setNetworkRecoveryInterval(networkRecoveryInterval = (Integer)params.get("networkRecoveryInterval"));
                 }
                 
                 if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
@@ -121,6 +136,9 @@ public class OpflowEngine {
                         .put("channelMax", channelMax)
                         .put("frameMax", frameMax)
                         .put("heartbeat", heartbeat)
+                        .put("automaticRecoveryEnabled", automaticRecoveryEnabled)
+                        .put("topologyRecoveryEnabled", topologyRecoveryEnabled)
+                        .put("networkRecoveryInterval", networkRecoveryInterval)
                         .put("message", "Connection Parameters")
                         .toString());
             }
