@@ -12,6 +12,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowOperationException;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -280,5 +281,11 @@ public class OpflowUtil {
             } catch(Exception ex) {}
         }
         return url;
+    }
+    
+    private static Pattern GENERIC_PATTERN = Pattern.compile("<.*>");
+    
+    public static boolean isGenericDeclaration(String signature) {
+        return GENERIC_PATTERN.matcher(signature).find();
     }
 }

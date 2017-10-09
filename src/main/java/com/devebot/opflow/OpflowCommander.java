@@ -103,7 +103,7 @@ public class OpflowCommander {
                 .put("message", "Commander stop() has done!")
                 .toString());
     }
-
+    
     private class RpcInvocationHandler implements InvocationHandler {
         private final Class clazz;
         private final OpflowRpcMaster rpcMaster;
@@ -179,8 +179,17 @@ public class OpflowCommander {
     private final Map<String, RpcInvocationHandler> handlers = new HashMap<String, RpcInvocationHandler>();
     
     private RpcInvocationHandler getInvocationHandler(Class clazz) {
+        validateType(clazz);
         String clazzName = clazz.getName();
+        if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                .put("className", clazzName)
+                .put("message", "getInvocationHandler() get InvocationHandler by type")
+                .toString());
         if (!handlers.containsKey(clazzName)) {
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                    .put("className", clazzName)
+                    .put("message", "getInvocationHandler() InvocationHandler not found, create new one")
+                    .toString());
             handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, clazz));
         }
         return handlers.get(clazzName);
@@ -192,9 +201,44 @@ public class OpflowCommander {
         handlers.remove(clazzName);
     }
     
+    private boolean validateType(Class type) {
+        boolean ok = true;
+        if (OpflowUtil.isGenericDeclaration(type.toGenericString())) {
+            ok = false;
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                    .put("typeString", type.toGenericString())
+                    .put("message", "generic types are unsupported")
+                    .toString());
+        }
+        Method[] methods = type.getDeclaredMethods();
+        for(Method method:methods) {
+            if (OpflowUtil.isGenericDeclaration(method.toGenericString())) {
+                ok = false;
+                if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                        .put("methodString", method.toGenericString())
+                        .put("message", "generic methods are unsupported")
+                        .toString());
+            }
+        }
+        if (!ok) {
+            throw new OpflowInterceptionException("Generic type/method is unsupported");
+        }
+        return ok;
+    }
+    
     public <T> T registerType(Class<T> type) {
         try {
-            return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class[] {type}, getInvocationHandler(type));
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                    .put("className", type.getName())
+                    .put("classLoaderName", type.getClassLoader().getClass().getName())
+                    .put("message", "registerType() calls newProxyInstance()")
+                    .toString());
+            T t = (T) Proxy.newProxyInstance(type.getClassLoader(), new Class[] {type}, getInvocationHandler(type));
+            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                    .put("className", type.getName())
+                    .put("message", "newProxyInstance() has completed")
+                    .toString());
+            return t;
         } catch (IllegalArgumentException exception) {
             if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
                     .put("exceptionClass", exception.getClass().getName())

@@ -2,6 +2,8 @@ package com.devebot.opflow.tdd;
 
 import com.devebot.opflow.OpflowJsontool;
 import com.devebot.opflow.OpflowUtil;
+import com.devebot.opflow.lab.GenericCalculator;
+import com.devebot.opflow.lab.SimpleCalculator;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -20,6 +22,7 @@ import java.util.Map;
 import org.junit.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import org.junit.Assert;
 
 /**
  *
@@ -146,5 +149,11 @@ public class OpflowUtilTest {
             }
         });
         GSON2 = gsonBuilder.create();
+    }
+    
+    @Test
+    public void test_isGenericDeclaration() {
+        Assert.assertTrue(OpflowUtil.isGenericDeclaration(GenericCalculator.class.toGenericString()));
+        Assert.assertFalse(OpflowUtil.isGenericDeclaration(SimpleCalculator.class.toGenericString()));
     }
 }
