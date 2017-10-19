@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -12,11 +13,11 @@ import javax.xml.bind.DatatypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.supports.OpflowConverter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -238,6 +239,17 @@ public class OpflowUtil {
             if (str.length() > 0) list.add(str);
         }
         return list.toArray(new String[0]);
+    }
+    
+    public static <T> T[] splitByComma(String source, Class<T> type) {
+        if (source == null) return null;
+        String[] arr = source.split(",");
+        ArrayList<T> list = new ArrayList<T>(arr.length);
+        for(String item: arr) {
+            String str = item.trim();
+            if (str.length() > 0) list.add(OpflowConverter.convert(str, type));
+        }
+        return list.toArray((T[]) Array.newInstance(type, 0));
     }
     
     public static String getMessageField(OpflowMessage message, String fieldName) {

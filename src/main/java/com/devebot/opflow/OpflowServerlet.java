@@ -177,8 +177,12 @@ public class OpflowServerlet {
     }
     
     public void instantiateType(Class type) {
+        instantiateType(type, null);
+    }
+    
+    public void instantiateType(Class type, Object target) {
         if (instantiator != null) {
-            instantiator.instantiateType(type);
+            instantiator.instantiateType(type, target);
         } else {
             throw new UnsupportedOperationException("instantiator is nulls");
         }
@@ -266,7 +270,6 @@ public class OpflowServerlet {
     
     public static class Instantiator {
         private static final Logger LOG = LoggerFactory.getLogger(Instantiator.class);
-        private static final Object[] EMPTY_ARGS = new Object[0];
         private final OpflowLogTracer logTracer;
         private final OpflowRpcWorker rpcWorker;
         private final OpflowRpcListener listener;
@@ -395,14 +398,21 @@ public class OpflowServerlet {
         }
         
         public void instantiateType(Class type) {
-            if (Modifier.isAbstract(type.getModifiers())) {
+            instantiateType(type, null);
+        }
+        
+        public void instantiateType(Class type, Object target) {
+            if (type == null && target == null) {
+                throw new OpflowInterceptionException("Both type and target should not be null");
+            }
+            if (Modifier.isAbstract(type.getModifiers()) && target == null) {
                 if (LOG.isErrorEnabled()) LOG.error(logTracer
                         .put("message", "Class should not be an abstract type")
                         .stringify(true));
                 throw new OpflowInterceptionException("Class should not be an abstract type");
             }
             try {
-                Object target = type.newInstance();
+                if (target == null) target = type.newInstance();
                 for (Method method : type.getDeclaredMethods()) {
                     String methodId = method.toString();
                     OpflowRoutine routine = extractMethodInfo(method);
