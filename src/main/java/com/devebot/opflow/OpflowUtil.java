@@ -12,6 +12,11 @@ import javax.xml.bind.DatatypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowOperationException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -287,5 +292,36 @@ public class OpflowUtil {
     
     public static boolean isGenericDeclaration(String signature) {
         return GENERIC_PATTERN.matcher(signature).find();
+    }
+    
+    public static List<Class<?>> getAllAncestorTypes(Class<?> clazz) {
+        List<Class<?>> bag = new ArrayList<Class<?>>();
+
+        do {
+            bag.add(clazz);
+
+            // Add all the interfaces implemented by this class
+            Class<?>[] interfaces = clazz.getInterfaces();
+            if (interfaces.length > 0) {
+                bag.addAll(Arrays.asList(interfaces));
+                // inspect the ancestors of interfaces
+                for (Class<?> interfaze : interfaces) {
+                    bag.addAll(getAllAncestorTypes(interfaze));
+                }
+            }
+
+            // Add the super class
+            Class<?> superClass = clazz.getSuperclass();
+
+            // Interfaces does not have superclass, so break and return
+            if (superClass == null) break;
+
+            // Now inspect the superclass recursively
+            clazz = superClass;
+        } while (!"java.lang.Object".equals(clazz.getCanonicalName()));
+
+        bag = new ArrayList<Class<?>>(new HashSet<Class<?>>(bag));
+        Collections.reverse(bag);
+        return bag;
     }
 }
