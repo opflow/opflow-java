@@ -13,7 +13,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -421,10 +420,7 @@ public class OpflowServerlet {
                         }
                     }
                 }
-                List<Class> clazzes = new LinkedList<Class>();
-                clazzes.add(type);
-                Class[] interfaces = type.getInterfaces();
-                clazzes.addAll(Arrays.asList(interfaces));
+                List<Class<?>> clazzes = OpflowUtil.getAllAncestorTypes(type);
                 for(Class clz: clazzes) {
                     Method[] methods = clz.getDeclaredMethods();
                     for (Method method : methods) {

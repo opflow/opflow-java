@@ -296,10 +296,9 @@ public class OpflowUtil {
     
     public static List<Class<?>> getAllAncestorTypes(Class<?> clazz) {
         List<Class<?>> bag = new ArrayList<Class<?>>();
-
+        if (clazz == null) return bag;
         do {
             bag.add(clazz);
-
             // Add all the interfaces implemented by this class
             Class<?>[] interfaces = clazz.getInterfaces();
             if (interfaces.length > 0) {
@@ -309,17 +308,13 @@ public class OpflowUtil {
                     bag.addAll(getAllAncestorTypes(interfaze));
                 }
             }
-
             // Add the super class
             Class<?> superClass = clazz.getSuperclass();
-
             // Interfaces does not have superclass, so break and return
             if (superClass == null) break;
-
             // Now inspect the superclass recursively
             clazz = superClass;
         } while (!"java.lang.Object".equals(clazz.getCanonicalName()));
-
         bag = new ArrayList<Class<?>>(new HashSet<Class<?>>(bag));
         Collections.reverse(bag);
         return bag;
