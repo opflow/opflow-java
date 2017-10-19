@@ -6,6 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import java.lang.reflect.Type;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,14 @@ public class OpflowJsontool {
     
     public static String toString(Object jsonObj) {
         return GSON.toJson(jsonObj);
+    }
+    
+    public static String toString(Object[] objs, Type[] types) {
+        JsonArray array = new JsonArray();
+        for(int i=0; i<objs.length; i++) {
+            array.add(GSON.toJson(objs[i], types[i]));
+        }
+        return GSON.toJson(array);
     }
     
     public static String toString(Map<String, Object> jsonMap) {

@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -12,6 +13,12 @@ import javax.xml.bind.DatatypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.supports.OpflowConverter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -234,6 +241,17 @@ public class OpflowUtil {
         return list.toArray(new String[0]);
     }
     
+    public static <T> T[] splitByComma(String source, Class<T> type) {
+        if (source == null) return null;
+        String[] arr = source.split(",");
+        ArrayList<T> list = new ArrayList<T>(arr.length);
+        for(String item: arr) {
+            String str = item.trim();
+            if (str.length() > 0) list.add(OpflowConverter.convert(str, type));
+        }
+        return list.toArray((T[]) Array.newInstance(type, 0));
+    }
+    
     public static String getMessageField(OpflowMessage message, String fieldName) {
         if (message == null || fieldName == null) return null;
         Map<String, Object> info = message.getInfo();
@@ -280,5 +298,37 @@ public class OpflowUtil {
             } catch(Exception ex) {}
         }
         return url;
+    }
+    
+    private static Pattern GENERIC_PATTERN = Pattern.compile("<.*>");
+    
+    public static boolean isGenericDeclaration(String signature) {
+        return GENERIC_PATTERN.matcher(signature).find();
+    }
+    
+    public static List<Class<?>> getAllAncestorTypes(Class<?> clazz) {
+        List<Class<?>> bag = new ArrayList<Class<?>>();
+        if (clazz == null) return bag;
+        do {
+            bag.add(clazz);
+            // Add all the interfaces implemented by this class
+            Class<?>[] interfaces = clazz.getInterfaces();
+            if (interfaces.length > 0) {
+                bag.addAll(Arrays.asList(interfaces));
+                // inspect the ancestors of interfaces
+                for (Class<?> interfaze : interfaces) {
+                    bag.addAll(getAllAncestorTypes(interfaze));
+                }
+            }
+            // Add the super class
+            Class<?> superClass = clazz.getSuperclass();
+            // Interfaces does not have superclass, so break and return
+            if (superClass == null) break;
+            // Now inspect the superclass recursively
+            clazz = superClass;
+        } while (!"java.lang.Object".equals(clazz.getCanonicalName()));
+        bag = new ArrayList<Class<?>>(new HashSet<Class<?>>(bag));
+        Collections.reverse(bag);
+        return bag;
     }
 }
