@@ -11,7 +11,6 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface OpflowRoutineTarget {
-    String[] alias() default {};
-    boolean enabled() default true;
+public @interface OpflowSourceRoutine {
+    String alias() default "";
 }

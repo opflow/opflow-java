@@ -1,6 +1,6 @@
 package com.devebot.opflow.lab;
 
-import com.devebot.opflow.annotation.OpflowRoutineTarget;
+import com.devebot.opflow.annotation.OpflowTargetRoutine;
 
 /**
  *
@@ -20,7 +20,7 @@ public class SimpleCalculatorImpl implements SimpleCalculator {
     }
 
     @Override
-    @OpflowRoutineTarget(alias = {"increase"})
+    @OpflowTargetRoutine(alias = {"increase"})
     public Integer add(Integer a) {
         return a + 1;
     }

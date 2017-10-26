@@ -1,6 +1,5 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.annotation.OpflowRoutineSource;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
@@ -14,6 +13,7 @@ import java.util.HashSet;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.devebot.opflow.annotation.OpflowSourceRoutine;
 
 /**
  *
@@ -115,7 +115,7 @@ public class OpflowCommander {
             this.clazz = clazz;
             for (Method method : this.clazz.getDeclaredMethods()) {
                 String methodId = OpflowUtil.getMethodSignature(method);
-                OpflowRoutineSource routine = extractMethodInfo(method);
+                OpflowSourceRoutine routine = extractMethodInfo(method);
                 if (routine != null && routine.alias() != null && routine.alias().length() > 0) {
                     String alias = routine.alias();
                     if (aliasOfMethod.containsValue(alias)) {
@@ -274,10 +274,10 @@ public class OpflowCommander {
         removeInvocationHandler(type);
     }
     
-    private OpflowRoutineSource extractMethodInfo(Method method) {
-        if (!method.isAnnotationPresent(OpflowRoutineSource.class)) return null;
-        Annotation annotation = method.getAnnotation(OpflowRoutineSource.class);
-        OpflowRoutineSource routine = (OpflowRoutineSource) annotation;
+    private OpflowSourceRoutine extractMethodInfo(Method method) {
+        if (!method.isAnnotationPresent(OpflowSourceRoutine.class)) return null;
+        Annotation annotation = method.getAnnotation(OpflowSourceRoutine.class);
+        OpflowSourceRoutine routine = (OpflowSourceRoutine) annotation;
         return routine;
     }
 }

@@ -1,7 +1,7 @@
 package com.devebot.opflow.lab;
 
-import com.devebot.opflow.annotation.OpflowRoutineSource;
-import com.devebot.opflow.annotation.OpflowRoutineTarget;
+import com.devebot.opflow.annotation.OpflowTargetRoutine;
+import com.devebot.opflow.annotation.OpflowSourceRoutine;
 
 /**
  *
@@ -9,8 +9,8 @@ import com.devebot.opflow.annotation.OpflowRoutineTarget;
  */
 public interface MirrorCalculator extends SimpleCalculator {
     @Override
-    @OpflowRoutineSource(alias = "add_by_1")
-    @OpflowRoutineTarget(alias = {"increase"})
+    @OpflowSourceRoutine(alias = "add_by_1")
+    @OpflowTargetRoutine(alias = {"increase"})
     Integer add(Integer a);
     @Override
     Integer add(Integer a, Integer b);
