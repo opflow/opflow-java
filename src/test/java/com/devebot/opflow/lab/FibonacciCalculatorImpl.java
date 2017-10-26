@@ -1,6 +1,6 @@
 package com.devebot.opflow.lab;
 
-import com.devebot.opflow.annotation.OpflowRoutine;
+import com.devebot.opflow.annotation.OpflowRoutineTarget;
 
 /**
  *
@@ -9,13 +9,13 @@ import com.devebot.opflow.annotation.OpflowRoutine;
 public class FibonacciCalculatorImpl implements FibonacciCalculator {
 
     @Override
-    @OpflowRoutine(alias={"fibonacci1"})
+    @OpflowRoutineTarget(alias={"fibonacci1"})
     public FibonacciResult calc(int number) {
         return new FibonacciGenerator(number).finish();
     }
 
     @Override
-    @OpflowRoutine(alias={"fibonacci2"}, enabled=true)
+    @OpflowRoutineTarget(alias={"fibonacci2"}, enabled=true)
     public FibonacciResult calc(FibonacciPacket data) {
         return this.calc(data.getNumber());
     }

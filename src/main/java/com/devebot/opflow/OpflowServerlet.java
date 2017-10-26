@@ -1,6 +1,5 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.annotation.OpflowRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.google.gson.JsonSyntaxException;
@@ -18,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.devebot.opflow.annotation.OpflowRoutineTarget;
 
 /**
  *
@@ -306,7 +306,7 @@ public class OpflowServerlet {
                     Object target = targetRef.get(methodId);
                     try {
                         Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
-                        OpflowRoutine routine = extractMethodInfo(origin);
+                        OpflowRoutineTarget routine = extractMethodInfo(origin);
                         if (routine != null && routine.enabled() == false) {
                             throw new UnsupportedOperationException("Method " + origin.toString() + " is disabled");
                         }
@@ -415,7 +415,7 @@ public class OpflowServerlet {
                 if (target == null) target = type.newInstance();
                 for (Method method : type.getDeclaredMethods()) {
                     String methodId = OpflowUtil.getMethodSignature(method);
-                    OpflowRoutine routine = extractMethodInfo(method);
+                    OpflowRoutineTarget routine = extractMethodInfo(method);
                     if (routine != null && routine.alias() != null) {
                         String[] aliases = routine.alias();
                         for(String alias:aliases) {
@@ -482,10 +482,10 @@ public class OpflowServerlet {
             process();
         }
         
-        private OpflowRoutine extractMethodInfo(Method method) {
-            if (method.isAnnotationPresent(OpflowRoutine.class)) {
-                Annotation annotation = method.getAnnotation(OpflowRoutine.class);
-                OpflowRoutine routine = (OpflowRoutine) annotation;
+        private OpflowRoutineTarget extractMethodInfo(Method method) {
+            if (method.isAnnotationPresent(OpflowRoutineTarget.class)) {
+                Annotation annotation = method.getAnnotation(OpflowRoutineTarget.class);
+                OpflowRoutineTarget routine = (OpflowRoutineTarget) annotation;
                 return routine;
             }
             return null;

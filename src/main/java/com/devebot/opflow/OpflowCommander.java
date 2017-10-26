@@ -1,9 +1,11 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.annotation.OpflowRoutineSource;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -106,17 +108,36 @@ public class OpflowCommander {
     
     private class RpcInvocationHandler implements InvocationHandler {
         private final Class clazz;
+        private final Map<String, String> aliasOfMethod = new HashMap<String, String>();
         private final OpflowRpcMaster rpcMaster;
         
         public RpcInvocationHandler(OpflowRpcMaster rpcMaster, Class clazz) {
             this.clazz = clazz;
+            for (Method method : this.clazz.getDeclaredMethods()) {
+                String methodId = OpflowUtil.getMethodSignature(method);
+                OpflowRoutineSource routine = extractMethodInfo(method);
+                if (routine != null && routine.alias() != null && routine.alias().length() > 0) {
+                    String alias = routine.alias();
+                    if (aliasOfMethod.containsValue(alias)) {
+                        throw new OpflowInterceptionException("Alias[" + alias + "]/routineId[" + methodId + "] is duplicated");
+                    }
+                    aliasOfMethod.put(methodId, alias);
+                    if (LOG.isTraceEnabled()) LOG.trace(logTracer
+                            .put("alias", alias)
+                            .put("routineId", methodId)
+                            .put("message", "link alias to routineId")
+                            .stringify(true));
+                }
+            }
             this.rpcMaster = rpcMaster;
         }
         
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            String routineId = OpflowUtil.getMethodSignature(method);
+            String methodId = OpflowUtil.getMethodSignature(method);
+            String routineId = aliasOfMethod.getOrDefault(methodId, methodId);
             if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                    .put("methodId", methodId)
                     .put("routineId", routineId)
                     .put("message", "RpcInvocationHandler.invoke()")
                     .toString());
@@ -251,5 +272,12 @@ public class OpflowCommander {
     
     public <T> void unregisterType(Class<T> type) {
         removeInvocationHandler(type);
+    }
+    
+    private OpflowRoutineSource extractMethodInfo(Method method) {
+        if (!method.isAnnotationPresent(OpflowRoutineSource.class)) return null;
+        Annotation annotation = method.getAnnotation(OpflowRoutineSource.class);
+        OpflowRoutineSource routine = (OpflowRoutineSource) annotation;
+        return routine;
     }
 }
