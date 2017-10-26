@@ -414,12 +414,14 @@ public class OpflowServerlet {
             try {
                 if (target == null) target = type.newInstance();
                 for (Method method : type.getDeclaredMethods()) {
-                    String methodId = method.toString();
+                    String methodId = OpflowUtil.getMethodSignature(method);
                     OpflowRoutine routine = extractMethodInfo(method);
                     if (routine != null && routine.alias() != null) {
-                        for(String alias:routine.alias()) {
-                            if (!routineIds.add(alias)) {
-                                throw new OpflowInterceptionException("Alias/routineId[" + alias + "] is duplicated");
+                        String[] aliases = routine.alias();
+                        for(String alias:aliases) {
+                            if (methodOfAlias.containsKey(alias)) {
+                                throw new OpflowInterceptionException("Alias[" + alias + "]/routineId[" + methodId + "]" + 
+                                        " is conflicted with alias of routineId[" + methodOfAlias.get(alias) + "]");
                             }
                             methodOfAlias.put(alias, methodId);
                             if (LOG.isTraceEnabled()) LOG.trace(logTracer
@@ -430,18 +432,19 @@ public class OpflowServerlet {
                         }
                     }
                 }
+                routineIds.addAll(methodOfAlias.keySet());
                 List<Class<?>> clazzes = OpflowUtil.getAllAncestorTypes(type);
                 for(Class clz: clazzes) {
                     Method[] methods = clz.getDeclaredMethods();
                     for (Method method : methods) {
-                        String methodId = method.toString();
+                        String methodId = OpflowUtil.getMethodSignature(method);
                         if (LOG.isTraceEnabled()) LOG.trace(logTracer
                                 .put("routineId", methodId)
                                 .put("methodId", methodId)
                                 .put("message", "Attach method to RpcWorker listener")
                                 .stringify(true));
-                        if (!routineIds.add(methodId)) {
-                            throw new OpflowInterceptionException("Alias/routineId[" + methodId + "] is duplicated");
+                        if (!routineIds.add(methodId) && !method.equals(methodRef.get(methodId))) {
+                            throw new OpflowInterceptionException("routineId[" + methodId + "] is conflicted");
                         }
                         methodRef.put(methodId, method);
                         targetRef.put(methodId, target);

@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowConverter;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -330,5 +331,9 @@ public class OpflowUtil {
         bag = new ArrayList<Class<?>>(new HashSet<Class<?>>(bag));
         Collections.reverse(bag);
         return bag;
+    }
+    
+    public static String getMethodSignature(Method method) {
+        return method.toString();
     }
 }

@@ -115,7 +115,7 @@ public class OpflowCommander {
         
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            String routineId = method.toString();
+            String routineId = OpflowUtil.getMethodSignature(method);
             if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                     .put("routineId", routineId)
                     .put("message", "RpcInvocationHandler.invoke()")
