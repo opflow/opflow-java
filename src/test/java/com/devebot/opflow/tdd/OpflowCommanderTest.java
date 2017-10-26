@@ -1,6 +1,8 @@
 package com.devebot.opflow.tdd;
 
 import com.devebot.opflow.OpflowBuilder;
+import com.devebot.opflow.OpflowJsontool;
+import com.devebot.opflow.OpflowLogTracer;
 import com.devebot.opflow.OpflowRpcWorker;
 import com.devebot.opflow.OpflowServerlet;
 import com.devebot.opflow.OpflowUtil;
@@ -8,6 +10,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.lab.SimpleCalculator;
 import com.devebot.opflow.lab.SimpleCalculatorException;
 import com.devebot.opflow.lab.SimpleCalculatorImpl;
+import java.util.Map;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
@@ -69,5 +72,22 @@ public class OpflowCommanderTest {
             //exception.printStackTrace();
             throw exception;
         }
+    }
+    
+    @Test
+    public void test_monitor_configuration() throws OpflowBootstrapException {
+        OpflowLogTracer.clearStringifyInterceptors();
+        OpflowLogTracer.addStringifyInterceptor(new OpflowLogTracer.StringifyInterceptor() {
+            @Override
+            public void intercept(Map<String, Object> logdata) {
+                if ("RpcMaster.new() parameters".equals(logdata.get("message"))) {
+                    System.out.println("Log object: " + OpflowJsontool.toString(logdata));
+                    assertThat((Boolean)logdata.get("monitorEnabled"), equalTo(Boolean.TRUE));
+                    assertThat((Integer)logdata.get("monitorInterval"), equalTo(1500));
+                    assertThat((Long)logdata.get("monitorTimeout"), equalTo(4000l));
+                }
+            }
+        });
+        OpflowBuilder.createCommander("commander_waiting.properties");
     }
 }
