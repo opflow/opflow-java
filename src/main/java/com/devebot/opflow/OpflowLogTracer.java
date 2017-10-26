@@ -145,6 +145,10 @@ public class OpflowLogTracer {
         return interceptors.remove(interceptor);
     }
     
+    public static void clearStringifyInterceptors() {
+        interceptors.clear();
+    }
+    
     private static String libraryInfo = null;;
     
     public static String getLibraryInfo() {

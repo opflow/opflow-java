@@ -186,6 +186,10 @@ public class OpflowBuilder {
             componentCfg.put("enabled", componentNode.get("enabled"));
             if ("rpcMaster".equals(componentName)) {
                 componentCfg.put("responseName", componentNode.get("responseName"));
+                componentCfg.put("monitorId", componentNode.get("monitorId"));
+                componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
+                componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
+                componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
             }
             transformParameters(componentCfg);
             params.put(componentName, componentCfg);
@@ -447,14 +451,18 @@ public class OpflowBuilder {
     }
     
     private static final String[] BOOLEAN_FIELDS = new String[] {
-        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled"
+        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled", "monitorEnabled"
     };
     
     private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };
     
     private static final String[] INTEGER_FIELDS = new String[] {
         "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", 
-        "prefetch", "subscriberLimit", "redeliveredLimit"
+        "prefetch", "subscriberLimit", "redeliveredLimit", "monitorInterval"
+    };
+    
+    private static final String[] LONGINT_FIELDS = new String[] {
+        "monitorTimeout"
     };
     
     private static void transformParameters(Map<String, Object> params) {
@@ -477,6 +485,19 @@ public class OpflowBuilder {
                         if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
                                 .put("fieldName", key)
                                 .put("message", "transformParameters() - field is not an integer")
+                                .toString());
+                        params.put(key, null);
+                    }
+                }
+            }
+            if (OpflowUtil.arrayContains(LONGINT_FIELDS, key)) {
+                if (params.get(key) instanceof String) {
+                    try {
+                        params.put(key, Long.parseLong(params.get(key).toString()));
+                    } catch (NumberFormatException nfe) {
+                        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+                                .put("fieldName", key)
+                                .put("message", "transformParameters() - field is not a longint")
                                 .toString());
                         params.put(key, null);
                     }

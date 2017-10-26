@@ -1,6 +1,5 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.annotation.OpflowRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.google.gson.JsonSyntaxException;
@@ -18,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.devebot.opflow.annotation.OpflowTargetRoutine;
 
 /**
  *
@@ -306,7 +306,7 @@ public class OpflowServerlet {
                     Object target = targetRef.get(methodId);
                     try {
                         Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
-                        OpflowRoutine routine = extractMethodInfo(origin);
+                        OpflowTargetRoutine routine = extractMethodInfo(origin);
                         if (routine != null && routine.enabled() == false) {
                             throw new UnsupportedOperationException("Method " + origin.toString() + " is disabled");
                         }
@@ -414,12 +414,14 @@ public class OpflowServerlet {
             try {
                 if (target == null) target = type.newInstance();
                 for (Method method : type.getDeclaredMethods()) {
-                    String methodId = method.toString();
-                    OpflowRoutine routine = extractMethodInfo(method);
+                    String methodId = OpflowUtil.getMethodSignature(method);
+                    OpflowTargetRoutine routine = extractMethodInfo(method);
                     if (routine != null && routine.alias() != null) {
-                        for(String alias:routine.alias()) {
-                            if (!routineIds.add(alias)) {
-                                throw new OpflowInterceptionException("Alias/routineId[" + alias + "] is duplicated");
+                        String[] aliases = routine.alias();
+                        for(String alias:aliases) {
+                            if (methodOfAlias.containsKey(alias)) {
+                                throw new OpflowInterceptionException("Alias[" + alias + "]/routineId[" + methodId + "]" + 
+                                        " is conflicted with alias of routineId[" + methodOfAlias.get(alias) + "]");
                             }
                             methodOfAlias.put(alias, methodId);
                             if (LOG.isTraceEnabled()) LOG.trace(logTracer
@@ -430,18 +432,19 @@ public class OpflowServerlet {
                         }
                     }
                 }
+                routineIds.addAll(methodOfAlias.keySet());
                 List<Class<?>> clazzes = OpflowUtil.getAllAncestorTypes(type);
                 for(Class clz: clazzes) {
                     Method[] methods = clz.getDeclaredMethods();
                     for (Method method : methods) {
-                        String methodId = method.toString();
+                        String methodId = OpflowUtil.getMethodSignature(method);
                         if (LOG.isTraceEnabled()) LOG.trace(logTracer
                                 .put("routineId", methodId)
                                 .put("methodId", methodId)
                                 .put("message", "Attach method to RpcWorker listener")
                                 .stringify(true));
-                        if (!routineIds.add(methodId)) {
-                            throw new OpflowInterceptionException("Alias/routineId[" + methodId + "] is duplicated");
+                        if (!routineIds.add(methodId) && !method.equals(methodRef.get(methodId))) {
+                            throw new OpflowInterceptionException("routineId[" + methodId + "] is conflicted");
                         }
                         methodRef.put(methodId, method);
                         targetRef.put(methodId, target);
@@ -479,10 +482,10 @@ public class OpflowServerlet {
             process();
         }
         
-        private OpflowRoutine extractMethodInfo(Method method) {
-            if (method.isAnnotationPresent(OpflowRoutine.class)) {
-                Annotation annotation = method.getAnnotation(OpflowRoutine.class);
-                OpflowRoutine routine = (OpflowRoutine) annotation;
+        private OpflowTargetRoutine extractMethodInfo(Method method) {
+            if (method.isAnnotationPresent(OpflowTargetRoutine.class)) {
+                Annotation annotation = method.getAnnotation(OpflowTargetRoutine.class);
+                OpflowTargetRoutine routine = (OpflowTargetRoutine) annotation;
                 return routine;
             }
             return null;

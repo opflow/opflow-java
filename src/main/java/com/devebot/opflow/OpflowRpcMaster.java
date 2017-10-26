@@ -72,7 +72,7 @@ public class OpflowRpcMaster {
         if (params.get("monitorInterval") != null && params.get("monitorInterval") instanceof Integer) {
             monitorInterval = (Integer) params.get("monitorInterval");
         } else {
-            monitorInterval = 2000;
+            monitorInterval = 1000;
         }
         
         if (params.get("monitorTimeout") != null && params.get("monitorTimeout") instanceof Long) {
@@ -83,6 +83,10 @@ public class OpflowRpcMaster {
         
         if (LOG.isInfoEnabled()) LOG.info(logTracer
                 .put("responseName", responseName)
+                .put("monitorId", monitorId)
+                .put("monitorEnabled", monitorEnabled)
+                .put("monitorInterval", monitorInterval)
+                .put("monitorTimeout", monitorTimeout)
                 .put("message", "RpcMaster.new() parameters")
                 .toString());
         
