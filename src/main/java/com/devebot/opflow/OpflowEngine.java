@@ -550,7 +550,7 @@ public class OpflowEngine {
             if (!consumerInfo.isSharedConnection() || !consumerInfo.isSharedChannel()) {
                 if (consumerInfo.getChannel() != null && consumerInfo.getChannel().isOpen()) {
                     if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
-                            .put("message", "cancelConsumer() - close private channel")
+                            .put("message", "shared consumingChannel is closing")
                             .toString());
                     consumerInfo.getChannel().close();
                 }
@@ -559,7 +559,7 @@ public class OpflowEngine {
             if (!consumerInfo.isSharedConnection()) {
                 if (consumerInfo.getConnection() != null && consumerInfo.getConnection().isOpen()) {
                     if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
-                            .put("message", "cancelConsumer() - close private connection")
+                            .put("message", "shared consumingConnection is closing")
                             .toString());
                     consumerInfo.getConnection().close();
                 }
@@ -679,8 +679,18 @@ public class OpflowEngine {
             if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                 .put("message", "close() - close producingChannel, producingConnection")
                 .toString());
-            if (producingChannel != null && producingChannel.isOpen()) producingChannel.close();
-            if (producingConnection != null && producingConnection.isOpen()) producingConnection.close();
+            if (producingChannel != null && producingChannel.isOpen()) {
+                if (LOG.isInfoEnabled()) LOG.info(logTracer
+                        .put("message", "shared producingChannel is closing")
+                        .toString());
+                producingChannel.close();
+            }
+            if (producingConnection != null && producingConnection.isOpen()) {
+                if (LOG.isInfoEnabled()) LOG.info(logTracer
+                        .put("message", "shared producingConnection is closing")
+                        .toString());
+                producingConnection.close();
+            }
             
             if ("engine".equals(mode)) {
                 if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
@@ -696,8 +706,18 @@ public class OpflowEngine {
             if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
                 .put("message", "close() - close consumingChannel, consumingConnection")
                 .toString());
-            if (consumingChannel != null && consumingChannel.isOpen()) consumingChannel.close();
-            if (consumingConnection != null && consumingConnection.isOpen()) consumingConnection.close();
+            if (consumingChannel != null && consumingChannel.isOpen()) {
+                if (LOG.isInfoEnabled()) LOG.info(logTracer
+                        .put("message", "shared consumingChannel is closing")
+                        .toString());
+                consumingChannel.close();
+            }
+            if (consumingConnection != null && consumingConnection.isOpen()) {
+                if (LOG.isInfoEnabled()) LOG.info(logTracer
+                        .put("message", "shared consumingConnection is closing")
+                        .toString());
+                consumingConnection.close();
+            }
 
         } catch (IOException exception) {
             if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
@@ -723,6 +743,9 @@ public class OpflowEngine {
     
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
+            if (LOG.isInfoEnabled()) LOG.info(logTracer
+                    .put("message", "shared producingConnection is created")
+                    .toString());
             producingConnection = factory.newConnection();
         }
         return producingConnection;
@@ -740,15 +763,24 @@ public class OpflowEngine {
                             .toString());
                 }
             });
+            if (LOG.isInfoEnabled()) LOG.info(logTracer
+                    .put("message", "shared producingChannel is created")
+                    .toString());
         }
         return producingChannel;
     }
     
     private Connection getConsumingConnection(boolean forceNewConnection) throws IOException, TimeoutException {
         if (forceNewConnection) {
+            if (LOG.isInfoEnabled()) LOG.info(logTracer
+                    .put("message", "private consumingConnection is created")
+                    .toString());
             return factory.newConnection();
         }
         if (consumingConnection == null || !consumingConnection.isOpen()) {
+            if (LOG.isInfoEnabled()) LOG.info(logTracer
+                    .put("message", "shared consumingConnection is created")
+                    .toString());
             consumingConnection = factory.newConnection();
         }
         return consumingConnection;
@@ -759,6 +791,9 @@ public class OpflowEngine {
             return getConsumingConnection(forceNewConnection).createChannel();
         }
         if (forceNewChannel) {
+            if (LOG.isInfoEnabled()) LOG.info(logTracer
+                    .put("message", "private consumingChannel is created")
+                    .toString());
             return getConsumingConnection(false).createChannel();
         }
         if (consumingChannel == null || !consumingChannel.isOpen()) {
@@ -772,6 +807,9 @@ public class OpflowEngine {
                             .toString());
                 }
             });
+            if (LOG.isInfoEnabled()) LOG.info(logTracer
+                    .put("message", "shared consumingChannel is created")
+                    .toString());
         }
         return consumingChannel;
     }

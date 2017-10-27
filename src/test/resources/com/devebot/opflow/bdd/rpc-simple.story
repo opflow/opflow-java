@@ -1,5 +1,6 @@
 Scenario: Execute single RPC request
 
+Given a stringify interceptor
 Given a RPC master<demo1> with properties file: 'opflow.properties'
 Then the RPC master<demo1> connection is 'opened'
 When I purge responseQueue in RpcMaster named 'demo1'
@@ -23,6 +24,12 @@ When I close RPC master<demo1>
 Then the RPC master<demo1> connection is 'closed'
 When I close RPC worker<demo1>
 Then the RPC worker<demo1> connection is 'closed'
+Then the COUNTER value of left field must equal to value of right field in table:
+| opened                            | closed                           |
+| sharedProducingConnectionCreated  | sharedProducingConnectionClosed  |
+| sharedProducingChannelCreated     | sharedProducingChannelClosed     |
+| sharedConsumingConnectionCreated  | sharedConsumingConnectionClosed  |
+| sharedConsumingChannelCreated     | sharedConsumingChannelClosed     |
 Given a waiting time in 1 seconds
 
 
