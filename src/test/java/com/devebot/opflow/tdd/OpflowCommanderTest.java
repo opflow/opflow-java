@@ -98,7 +98,7 @@ public class OpflowCommanderTest {
     }
     
     @Test
-    public void test_() throws OpflowBootstrapException {
+    public void test_OpflowSourceRoutine_annotation() throws OpflowBootstrapException {
         rpcWorker.process("add_by_1", new OpflowRpcListener() {
             @Override
             public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {

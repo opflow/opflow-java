@@ -2,6 +2,7 @@ package com.devebot.opflow.tdd;
 
 import com.devebot.opflow.OpflowBuilder;
 import com.devebot.opflow.OpflowJsontool;
+import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.io.FileNotFoundException;
 import java.net.MalformedURLException;
@@ -26,9 +27,23 @@ public class OpflowBuilderTest {
     public ExpectedException thrown = ExpectedException.none();
     
     @Test
+    public void test_system_Property_has_highest_priority() throws OpflowBootstrapException {
+        System.setProperty(OpflowBuilder.DEFAULT_CONFIGURATION_KEY, "opflow_mirror.yml");
+        Map<String,Object> loaded = OpflowBuilder.loadConfiguration("opflow.yml");
+        System.out.println("opflow_mirror.yml: " + OpflowJsontool.toString(loaded));
+        assertThat(OpflowUtil.getOptionField(loaded, new String[] {
+            "opflow", "worker", "exchangeName"
+        }).toString(), equalTo("tdd-mirror-exchange"));
+        System.clearProperty(OpflowBuilder.DEFAULT_CONFIGURATION_KEY);
+    }
+    
+    @Test
     public void testYamlLoading() throws OpflowBootstrapException {
         Map<String,Object> loaded = OpflowBuilder.loadConfiguration("opflow.yml");
-        System.out.println("JSON: " + OpflowJsontool.toString(loaded));
+        System.out.println("opflow.yml: " + OpflowJsontool.toString(loaded));
+        assertThat(OpflowUtil.getOptionField(loaded, new String[] {
+            "opflow", "worker", "exchangeName"
+        }).toString(), equalTo("tdd-opflow-exchange"));
     }
     
     @Test

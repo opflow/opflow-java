@@ -330,8 +330,10 @@ public class OpflowBuilder {
     
     private static URL getConfigurationUrl(String configFile) {
         URL url;
-        String cfgFromSystem = (configFile != null) ? configFile : 
-                OpflowUtil.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+        String cfgFromSystem = OpflowUtil.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+        if (cfgFromSystem == null) {
+            cfgFromSystem = configFile;
+        }
         if (cfgFromSystem == null) {
             cfgFromSystem = OpflowUtil.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
         }
