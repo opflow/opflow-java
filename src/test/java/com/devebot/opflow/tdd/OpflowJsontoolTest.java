@@ -181,4 +181,43 @@ public class OpflowJsontoolTest {
             }));
         }
     }
+    
+    static class IgnoreMissFields {
+        private String field1;
+        private int field2;
+
+        public String getField1() {
+            return field1;
+        }
+
+        public void setField1(String field1) {
+            this.field1 = field1;
+        }
+
+        public int getField2() {
+            return field2;
+        }
+
+        public void setField2(int field2) {
+            this.field2 = field2;
+        }
+    }
+    
+    @Test
+    public void testFromJson_IgnoreMissFields() {
+        Map<String, Object> opts = new HashMap<String, Object>();
+        opts.put("field1", "Hello world");
+        opts.put("field2", 177);
+        opts.put("field3", 19.79);
+        opts.put("field4", true);
+        opts.put("field5", null);
+        String json = OpflowJsontool.toString(opts);
+        
+        System.out.println("Json string: " + json);
+        
+        IgnoreMissFields jsonObj = OpflowJsontool.toObject(json, IgnoreMissFields.class);
+        
+        Assert.assertEquals("Hello world", jsonObj.getField1());
+        Assert.assertEquals(177, jsonObj.getField2());
+    }
 }
