@@ -46,10 +46,10 @@ public class OpflowBuilder {
     }
     
     public static OpflowRpcMaster createRpcMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", configFile)
-                .put("message", "Create new OpflowRpcMaster with properties file")
-                .toString());
+                .text("Create new OpflowRpcMaster with properties file")
+                .stringify());
         
         config = loadConfiguration(config, configFile, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
@@ -62,9 +62,9 @@ public class OpflowBuilder {
         
         transformParameters(params);
         
-        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
-                .put("message", "OpflowRpcMaster has been created successfully")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+                .text("OpflowRpcMaster has been created successfully")
+                .stringify());
         
         return new OpflowRpcMaster(params);
     }
@@ -82,10 +82,10 @@ public class OpflowBuilder {
     }
     
     public static OpflowRpcWorker createRpcWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", configFile)
-                .put("message", "Create new OpflowRpcWorker with properties file")
-                .toString());
+                .text("Create new OpflowRpcWorker with properties file")
+                .stringify());
         
         config = loadConfiguration(config, configFile, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
@@ -106,9 +106,9 @@ public class OpflowBuilder {
         
         transformParameters(params);
         
-        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
-                .put("message", "OpflowRpcWorker has been created successfully")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+                .text("OpflowRpcWorker has been created successfully")
+                .stringify());
         
         return new OpflowRpcWorker(params);
     }
@@ -126,10 +126,10 @@ public class OpflowBuilder {
     }
     
     public static OpflowPubsubHandler createPubsubHandler(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", configFile)
-                .put("message", "Create new OpflowPubsubHandler with properties file")
-                .toString());
+                .text("Create new OpflowPubsubHandler with properties file")
+                .stringify());
         
         config = loadConfiguration(config, configFile, useDefaultFile);
         Map<String, Object> params = new HashMap<String, Object>();
@@ -152,9 +152,9 @@ public class OpflowBuilder {
         
         transformParameters(params);
         
-        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER
-                .put("message", "OpflowPubsubHandler has been created successfully")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+                .text("OpflowPubsubHandler has been created successfully")
+                .stringify());
         
         return new OpflowPubsubHandler(params);
     }
@@ -294,11 +294,11 @@ public class OpflowBuilder {
                 URL url = getConfigurationUrl(configFile);
                 if (url != null) {
                     String ext = getConfigurationExtension(url);
-                    if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+                    if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                             .put("configFile", url.getFile())
                             .put("extension", ext)
-                            .put("message", "load configuration file")
-                            .stringify(true));
+                            .text("load configuration file")
+                            .stringify());
                     if ("yml".equals(ext) || "yaml".equals(ext)) {
                         Map<String,Object> yamlConfig = (Map<String,Object>)yaml.load(url.openStream());
                         mergeConfiguration(config, yamlConfig);
@@ -312,10 +312,10 @@ public class OpflowBuilder {
                     throw new FileNotFoundException("configuration file '" + configFile + "' not found");
                 }
             }
-            if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                     .put("YAML", OpflowJsontool.toString(config))
-                    .put("message", "loaded properties content")
-                    .stringify(true));
+                    .text("loaded properties content")
+                    .stringify());
             return config;
         } catch (IOException exception) {
             throw new OpflowBootstrapException(exception);
@@ -337,16 +337,16 @@ public class OpflowBuilder {
         if (cfgFromSystem == null) {
             cfgFromSystem = OpflowUtil.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
         }
-        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", cfgFromSystem)
-                .put("message", "detected configuration file")
-                .toString());
+                .text("detected configuration file")
+                .stringify());
         if (cfgFromSystem == null) {
             url = OpflowUtil.getResource(DEFAULT_CONFIGURATION_FILE);
-            if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", url)
-                .put("message", "default configuration url")
-                .toString());
+                .text("default configuration url")
+                .stringify());
         } else {
             try {
                 url = new URL(cfgFromSystem);
@@ -356,10 +356,10 @@ public class OpflowBuilder {
                 url = OpflowUtil.getResource(cfgFromSystem);
             }
         }
-        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", url)
-                .put("message", "final configuration url")
-                .toString());
+                .text("final configuration url")
+                .stringify());
         return url;
     }
     
@@ -484,10 +484,10 @@ public class OpflowBuilder {
                     try {
                         params.put(key, Integer.parseInt(params.get(key).toString()));
                     } catch (NumberFormatException nfe) {
-                        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                                 .put("fieldName", key)
-                                .put("message", "transformParameters() - field is not an integer")
-                                .toString());
+                                .text("transformParameters() - field is not an integer")
+                                .stringify());
                         params.put(key, null);
                     }
                 }
@@ -497,10 +497,10 @@ public class OpflowBuilder {
                     try {
                         params.put(key, Long.parseLong(params.get(key).toString()));
                     } catch (NumberFormatException nfe) {
-                        if (LOG.isTraceEnabled()) LOG.trace(LOG_TRACER.reset()
+                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
                                 .put("fieldName", key)
-                                .put("message", "transformParameters() - field is not a longint")
-                                .toString());
+                                .text("transformParameters() - field is not a longint")
+                                .stringify());
                         params.put(key, null);
                     }
                 }

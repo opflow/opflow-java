@@ -36,9 +36,9 @@ public class OpflowPubsubHandler {
         final String pubsubHandlerId = OpflowUtil.getOptionField(params, "pubsubHandlerId", true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", pubsubHandlerId);
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "PubsubHandler.new()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("PubsubHandler[${pubsubHandlerId}].new()")
+                .stringify());
         
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
@@ -79,18 +79,19 @@ public class OpflowPubsubHandler {
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .put("subscriberName", subscriberName)
                 .put("recyclebinName", recyclebinName)
                 .put("prefetch", prefetch)
                 .put("subscriberLimit", subscriberLimit)
                 .put("redeliveredLimit", redeliveredLimit)
-                .put("message", "PubsubHandler.new() parameters")
-                .toString());
+                .tags("PubsubHandler.new() parameters")
+                .text("PubsubHandler[${pubsubHandlerId}].new() parameters")
+                .stringify());
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                .put("message", "PubsubHandler.new() end!")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("PubsubHandler[${pubsubHandlerId}].new() end!")
+                .stringify());
     }
 
     public void publish(String body) {
@@ -127,37 +128,37 @@ public class OpflowPubsubHandler {
         }
         
         OpflowLogTracer logPublish = null;
-        if (LOG.isInfoEnabled()) logPublish = logTracer.branch("requestId", requestId);
+        if (OpflowLogTracer.has(LOG, "info")) logPublish = logTracer.branch("requestId", requestId);
 
-        if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish
+        if (OpflowLogTracer.has(LOG, "info") && logPublish != null) LOG.info(logPublish
                 .put("routingKey", routingKey)
-                .put("message", "publish() - Request is produced with overriden routingKey")
-                .toString());
+                .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() - routingKey: ${routingKey}")
+                .stringify());
         
         engine.produce(body, options, override);
         
-        if (LOG.isInfoEnabled() && logPublish != null) LOG.info(logPublish.reset()
-                .put("message", "publish() - Request has completed")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info") && logPublish != null) LOG.info(logPublish
+                .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() request has completed")
+                .stringify());
     }
     
     public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener newListener) {
         final String _consumerId = OpflowUtil.getLogID();
         final OpflowLogTracer logSubscribe = logTracer.branch("consumerId", _consumerId);
-        if (LOG.isInfoEnabled()) LOG.info(logSubscribe
-                .put("message", "subscribe() is invoked")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSubscribe
+                .text("Consumer[${consumerId}] - PubsubHandler[${pubsubHandlerId}].subscribe() is invoked")
+                .stringify());
         
         listener = (listener != null) ? listener : newListener;
         if (listener == null) {
-            if (LOG.isInfoEnabled()) LOG.info(logSubscribe
-                    .put("message", "subscribe() - PubsubListener should not be null")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSubscribe
+                    .text("Consumer[${consumerId}] - subscribe() failed: PubsubListener should not be null")
+                    .stringify());
             throw new IllegalArgumentException("PubsubListener should not be null");
         } else if (listener != newListener) {
-            if (LOG.isInfoEnabled()) LOG.info(logSubscribe
-                    .put("message", "subscribe() - PubsubHandler supports only single PubsubListener")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSubscribe
+                    .text("Consumer[${consumerId}] - subscribe() failed: supports only single PubsubListener")
+                    .stringify());
             throw new OpflowOperationException("PubsubHandler supports only single PubsubListener");
         }
         
@@ -168,15 +169,15 @@ public class OpflowPubsubHandler {
                 Map<String, Object> headers = properties.getHeaders();
                 String requestId = OpflowUtil.getRequestId(headers, true);
                 OpflowLogTracer logRequest = null;
-                if (LOG.isInfoEnabled()) logRequest = logSubscribe.branch("requestId", requestId);
-                if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest
-                        .put("message", "subscribe() - receives a new request")
-                        .toString());
+                if (OpflowLogTracer.has(LOG, "info")) logRequest = logSubscribe.branch("requestId", requestId);
+                if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                        .text("Request[${requestId}] - Consumer[${consumerId}].subscribe() receives a new request")
+                        .stringify());
                 try {
                     listener.processMessage(new OpflowMessage(content, headers));
-                    if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
-                            .put("message", "subscribe() - request processing has completed")
-                            .toString());
+                    if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                            .text("Request[${requestId}] - subscribe() request processing has completed")
+                            .stringify());
                 } catch (Exception exception) {
                     int redeliveredCount = 0;
                     if (headers.get("redeliveredCount") instanceof Integer) {
@@ -188,28 +189,28 @@ public class OpflowPubsubHandler {
                     AMQP.BasicProperties.Builder propBuilder = copyBasicProperties(properties);
                     AMQP.BasicProperties props = propBuilder.headers(headers).build();
                     
-                    if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                    if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
                             .put("redeliveredCount", redeliveredCount)
                             .put("redeliveredLimit", redeliveredLimit)
-                            .put("message", "subscribe() - recycling failed request")
-                            .toString());
+                            .text("Request[${requestId}] - subscribe() recycling failed request")
+                            .stringify());
                     
                     if (redeliveredCount <= redeliveredLimit) {
-                        if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
-                                .put("message", "subscribe() - requeue failed request")
-                                .toString());
+                        if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                                .text("Request[${requestId}] - subscribe() requeue failed request")
+                                .stringify());
                         sendToQueue(content, props, subscriberName, channel);
                     } else {
                         if (recyclebinName != null) {
                             sendToQueue(content, props, recyclebinName, channel);
-                            if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
+                            if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
                                     .put("recyclebinName", recyclebinName)
-                                    .put("message", "subscribe() - enqueue failed request to recyclebin")
-                                    .toString());
+                                    .text("Request[${requestId}] - subscribe() enqueue failed request to recyclebin")
+                                    .stringify());
                         } else {
-                            if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
-                                    .put("message", "subscribe() - recyclebin not found, discard failed request")
-                                    .toString());
+                            if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                                    .text("Request[${requestId}] - subscribe() discard failed request (recyclebin not found)")
+                                    .stringify());
                         }
                     }
                 }
@@ -226,16 +227,16 @@ public class OpflowPubsubHandler {
             }
         }).toMap());
         consumerInfos.add(consumer);
-        if (LOG.isInfoEnabled()) LOG.info(logSubscribe.reset()
-                .put("message", "subscribe() has completed")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSubscribe
+                .text("Consumer[${consumerId}] - subscribe() has completed")
+                .stringify());
         return consumer;
     }
     
     public void close() {
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                .put("message", "close()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("PubsubHandler[${pubsubHandlerId}].close()")
+                .stringify());
         if (engine != null) {
             for(OpflowEngine.ConsumerInfo consumerInfo:consumerInfos) {
                 if (consumerInfo != null) {
@@ -245,9 +246,9 @@ public class OpflowPubsubHandler {
             consumerInfos.clear();
             engine.close();
         }
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                .put("message", "close() has completed")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("PubsubHandler[${pubsubHandlerId}].close() has completed")
+                .stringify());
     }
     
     public State check() {
