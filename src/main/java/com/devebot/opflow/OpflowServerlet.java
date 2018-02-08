@@ -41,9 +41,9 @@ public class OpflowServerlet {
 
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", OpflowUtil.getOptionField(this.kwargs, "serverletId", true));
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Serverlet.new()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Serverlet[${serverletId}].new()")
+                .stringify());
         
         if (listeners == null) {
             throw new OpflowBootstrapException("Listener definitions must not be null");
@@ -101,8 +101,8 @@ public class OpflowServerlet {
         
         checkRecyclebin.retainAll(checkQueue);
         if (!checkRecyclebin.isEmpty()) {
-            if (LOG.isErrorEnabled()) LOG.error(logTracer
-                .put("message", "duplicated_recyclebin_queue_name").toString());
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                .text("duplicated_recyclebin_queue_name").toString());
             throw new OpflowBootstrapException("Invalid recyclebinName (duplicated with some queueNames)");
         }
         
@@ -110,20 +110,20 @@ public class OpflowServerlet {
             if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
                 String pubsubHandlerId = OpflowUtil.getLogID();
                 configurerCfg.put("pubsubHandlerId", pubsubHandlerId);
-                if (LOG.isInfoEnabled()) LOG.info(logTracer
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                         .put("pubsubHandlerId", pubsubHandlerId)
-                        .put("message", "Serverlet creates a new configurer")
-                        .stringify(true));
+                        .text("Serverlet[${serverletId}] creates a new configurer")
+                        .stringify());
                 configurer = new OpflowPubsubHandler(configurerCfg);
             }
 
             if (rpcWorkerCfg != null && !Boolean.FALSE.equals(rpcWorkerCfg.get("enabled"))) {
                 String rpcWorkerId = OpflowUtil.getLogID();
                 rpcWorkerCfg.put("rpcWorkerId", rpcWorkerId);
-                if (LOG.isInfoEnabled()) LOG.info(logTracer
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                         .put("rpcWorkerId", rpcWorkerId)
-                        .put("message", "Serverlet creates a new rpcWorker")
-                        .stringify(true));
+                        .text("Serverlet[${serverletId}] creates a new rpcWorker")
+                        .stringify());
                 rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
                 instantiator = new Instantiator(rpcWorker, OpflowUtil.buildMap()
                         .put("instantiatorId", rpcWorkerId).toMap());
@@ -132,10 +132,10 @@ public class OpflowServerlet {
             if (subscriberCfg != null && !Boolean.FALSE.equals(subscriberCfg.get("enabled"))) {
                 String pubsubHandlerId = OpflowUtil.getLogID();
                 subscriberCfg.put("pubsubHandlerId", pubsubHandlerId);
-                if (LOG.isInfoEnabled()) LOG.info(logTracer
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                         .put("pubsubHandlerId", pubsubHandlerId)
-                        .put("message", "Serverlet creates a new subscriber")
-                        .stringify(true));
+                        .text("Serverlet[${serverletId}] creates a new subscriber")
+                        .stringify());
                 subscriber = new OpflowPubsubHandler(subscriberCfg);
             }
         } catch(OpflowBootstrapException exception) {
@@ -143,15 +143,15 @@ public class OpflowServerlet {
             throw exception;
         }
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Serverlet.new() end!")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Serverlet[${serverletId}].new() end!")
+                .stringify());
     }
     
     public final void start() {
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Serverlet start()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Serverlet[${serverletId}].start()")
+                .stringify());
         
         if (configurer != null && listenerMap.getConfigurer() != null) {
             configurer.subscribe(listenerMap.getConfigurer());
@@ -171,9 +171,9 @@ public class OpflowServerlet {
             subscriber.subscribe(listenerMap.getSubscriber());
         }
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Serverlet start() has done!")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Serverlet[${serverletId}].start() has completed!")
+                .stringify());
     }
     
     public void instantiateType(Class type) {
@@ -203,17 +203,17 @@ public class OpflowServerlet {
     }
     
     public final void close() {
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Serverlet stop()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Serverlet[${serverletId}].close()")
+                .stringify());
         
         if (configurer != null) configurer.close();
         if (rpcWorker != null) rpcWorker.close();
         if (subscriber != null) subscriber.close();
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Serverlet stop() has done!")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Serverlet[${serverletId}].close() has completed!")
+                .stringify());
     }
     
     public static DescriptorBuilder getDescriptorBuilder() {
@@ -297,11 +297,11 @@ public class OpflowServerlet {
                     OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId);
                     String routineId = OpflowUtil.getRoutineId(message.getInfo());
                     String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    if (LOG.isInfoEnabled()) LOG.info(listenerTrail
+                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(listenerTrail
                             .put("routineId", routineId)
                             .put("methodId", methodId)
-                            .put("message", "Receives new method call")
-                            .stringify(true));
+                            .text("Receives new method call")
+                            .stringify());
                     Method method = methodRef.get(methodId);
                     Object target = targetRef.get(methodId);
                     try {
@@ -312,22 +312,22 @@ public class OpflowServerlet {
                         }
                         
                         String json = message.getBodyAsString();
-                        if (LOG.isTraceEnabled()) LOG.trace(listenerTrail
+                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(listenerTrail
                                 .put("arguments", json)
-                                .put("message", "Method arguments in json string")
-                                .stringify(true));
+                                .text("Method arguments in json string")
+                                .stringify());
                         Object[] args = OpflowJsontool.toObjectArray(json, method.getParameterTypes());
                         
                         Object returnValue = method.invoke(target, args);
                         String result = OpflowJsontool.toString(returnValue);
-                        if (LOG.isTraceEnabled()) LOG.trace(listenerTrail
+                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(listenerTrail
                                 .put("return", OpflowUtil.truncate(result))
-                                .put("message", "Return value of method")
-                                .stringify(true));
+                                .text("Return value of method")
+                                .stringify());
                         response.emitCompleted(result);
                         
-                        if (LOG.isInfoEnabled()) LOG.info(listenerTrail
-                            .put("message", "Method call has completed")
+                        if (OpflowLogTracer.has(LOG, "info")) LOG.info(listenerTrail
+                            .text("Method call has completed")
                             .stringify());
                     } catch (JsonSyntaxException error) {
                         response.emitFailed(OpflowUtil.buildMap()
@@ -406,9 +406,9 @@ public class OpflowServerlet {
                 throw new OpflowInterceptionException("Both type and target should not be null");
             }
             if (Modifier.isAbstract(type.getModifiers()) && target == null) {
-                if (LOG.isErrorEnabled()) LOG.error(logTracer
-                        .put("message", "Class should not be an abstract type")
-                        .stringify(true));
+                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                        .text("Class should not be an abstract type")
+                        .stringify());
                 throw new OpflowInterceptionException("Class should not be an abstract type");
             }
             try {
@@ -424,11 +424,11 @@ public class OpflowServerlet {
                                         " is conflicted with alias of routineId[" + methodOfAlias.get(alias) + "]");
                             }
                             methodOfAlias.put(alias, methodId);
-                            if (LOG.isTraceEnabled()) LOG.trace(logTracer
+                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                                     .put("alias", alias)
                                     .put("routineId", methodId)
-                                    .put("message", "link alias to routineId")
-                                    .stringify(true));
+                                    .text("link alias to routineId")
+                                    .stringify());
                         }
                     }
                 }
@@ -438,11 +438,12 @@ public class OpflowServerlet {
                     Method[] methods = clz.getDeclaredMethods();
                     for (Method method : methods) {
                         String methodId = OpflowUtil.getMethodSignature(method);
-                        if (LOG.isTraceEnabled()) LOG.trace(logTracer
+                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                                 .put("routineId", methodId)
                                 .put("methodId", methodId)
-                                .put("message", "Attach method to RpcWorker listener")
-                                .stringify(true));
+                                .tags("Attach method to RpcWorker listener")
+                                .text("Attach method to RpcWorker listener")
+                                .stringify());
                         if (!routineIds.add(methodId) && !method.equals(methodRef.get(methodId))) {
                             throw new OpflowInterceptionException("routineId[" + methodId + "] is conflicted");
                         }
@@ -451,32 +452,32 @@ public class OpflowServerlet {
                     }
                 }
             } catch (InstantiationException except) {
-                if (LOG.isErrorEnabled()) LOG.error(logTracer
+                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
                         .put("errorType", except.getClass().getName())
                         .put("errorMessage", except.getMessage())
-                        .put("message", "Could not instantiate the class")
-                        .stringify(true));
+                        .text("Could not instantiate the class")
+                        .stringify());
                 throw new OpflowInterceptionException("Could not instantiate the class", except);
             } catch (IllegalAccessException except) {
-                if (LOG.isErrorEnabled()) LOG.error(logTracer
+                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
                         .put("errorType", except.getClass().getName())
                         .put("errorMessage", except.getMessage())
-                        .put("message", "Constructor is not accessible")
-                        .stringify(true));
+                        .text("Constructor is not accessible")
+                        .stringify());
                 throw new OpflowInterceptionException("Constructor is not accessible", except);
             } catch (SecurityException except) {
-                if (LOG.isErrorEnabled()) LOG.error(logTracer
+                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
                         .put("errorType", except.getClass().getName())
                         .put("errorMessage", except.getMessage())
-                        .put("message", "Class loaders is not the same or denies access")
-                        .stringify(true));
+                        .text("Class loaders is not the same or denies access")
+                        .stringify());
                 throw new OpflowInterceptionException("Class loaders is not the same or denies access", except);
             } catch (Exception except) {
-                if (LOG.isErrorEnabled()) LOG.error(logTracer
+                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
                         .put("errorType", except.getClass().getName())
                         .put("errorMessage", except.getMessage())
-                        .put("message", "Unknown exception")
-                        .stringify(true));
+                        .text("Unknown exception")
+                        .stringify());
                 throw new OpflowInterceptionException("Unknown exception", except);
             }
             process();

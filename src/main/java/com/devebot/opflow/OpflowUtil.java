@@ -2,24 +2,25 @@ package com.devebot.opflow;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.regex.Pattern;
 import javax.xml.bind.DatatypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowConverter;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.regex.Pattern;
+import com.devebot.opflow.supports.OpflowEnvtool;
 
 /**
  *
@@ -285,24 +286,11 @@ public class OpflowUtil {
     }
     
     public static String getSystemProperty(String key, String def) {
-        try {
-            return System.getProperty(key, def);
-        } catch (Throwable t) {
-            if (LOG.isInfoEnabled()) LOG.info("Was not allowed to read system property [" + key + "].");
-            return def;
-        }
+        return OpflowEnvtool.instance.getSystemProperty(key, def);
     }
     
     public static String getEnvironVariable(String key, String def) {
-        if (key == null) return null;
-        try {
-            String value = System.getenv(key);
-            if (value != null) return value;
-            return def;
-        } catch (Throwable t) {
-            if (LOG.isInfoEnabled()) LOG.info("Was not allowed to read environment variable [" + key + "].");
-            return def;
-        }
+        return OpflowEnvtool.instance.getEnvironVariable(key, def);
     }
     
     public static URL getResource(String location) {
@@ -357,5 +345,18 @@ public class OpflowUtil {
     
     public static String getMethodSignature(Method method) {
         return method.toString();
+    }
+    
+    public static String maskPassword(String password) {
+        if (password == null) return null;
+        char[] charArray = new char[password.length()];
+        Arrays.fill(charArray, '*');
+        return new String(charArray);
+    }
+    
+    private static Pattern passwordPattern = Pattern.compile(":([^:]+)@");
+    
+    public static String hidePasswordInUri(String uri) {
+        return passwordPattern.matcher(uri).replaceAll(":******@");
     }
 }

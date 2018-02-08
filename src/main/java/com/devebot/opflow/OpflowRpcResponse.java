@@ -39,12 +39,12 @@ public class OpflowRpcResponse {
         
         this.progressEnabled = (Boolean) OpflowUtil.getOptionField(properties.getHeaders(), "progressEnabled", null);
         
-        if (LOG.isTraceEnabled()) LOG.trace(logTracer
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                 .put("workerTag", this.workerTag)
                 .put("replyTo", this.replyQueueName)
                 .put("progressEnabled", this.progressEnabled)
-                .put("message", "RpcResponse is created")
-                .toString());
+                .text("RpcResponse is created")
+                .stringify());
     }
     
     public void emitStarted() {
@@ -52,20 +52,20 @@ public class OpflowRpcResponse {
     }
     
     public void emitStarted(String content) {
-        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                 .put("body", content)
-                .put("message", "emitStarted()")
-                .toString());
+                .text("emitStarted()")
+                .stringify());
         emitStarted(OpflowUtil.getBytes(content));
     }
     
     public void emitStarted(byte[] info) {
         if (info == null) info = new byte[0];
         basicPublish(info, createProperties(properties, createHeaders("started")).build());
-        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                 .put("bodyLength", info.length)
-                .put("message", "emitStarted()")
-                .toString());
+                .text("emitStarted()")
+                .stringify());
     }
     
     public void emitProgress(int completed, int total) {
@@ -81,17 +81,17 @@ public class OpflowRpcResponse {
         String result;
         if (jsonData == null) {
             result = "{ \"percent\": " + percent + " }";
-            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                     .put("body", result)
                     .put("bodyLength", result.length())
-                    .put("message", "emitProgress()")
-                    .toString());
+                    .text("emitProgress()")
+                    .stringify());
         } else {
             result = "{ \"percent\": " + percent + ", \"data\": " + jsonData + "}";
-            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                     .put("bodyLength", result.length())
-                    .put("message", "emitProgress()")
-                    .toString());
+                    .text("emitProgress()")
+                    .stringify());
         }
         basicPublish(OpflowUtil.getBytes(result), createProperties(properties, createHeaders("progress")).build());
     }
@@ -103,10 +103,10 @@ public class OpflowRpcResponse {
     public void emitFailed(byte[] error) {
         if (error == null) error = new byte[0];
         basicPublish(error, createProperties(properties, createHeaders("failed", true)).build());
-        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                 .put("bodyLength", error.length)
-                .put("message", "emitFailed()")
-                .toString());
+                .text("emitFailed()")
+                .stringify());
     }
     
     public void emitCompleted(String result) {
@@ -116,10 +116,10 @@ public class OpflowRpcResponse {
     public void emitCompleted(byte[] result) {
         if (result == null) result = new byte[0];
         basicPublish(result, createProperties(properties, createHeaders("completed", true)).build());
-        if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                 .put("bodyLength", result.length)
-                .put("message", "emitCompleted()")
-                .toString());
+                .text("emitCompleted()")
+                .stringify());
     }
 
     private AMQP.BasicProperties.Builder createProperties(AMQP.BasicProperties properties, Map<String, Object> headers) {

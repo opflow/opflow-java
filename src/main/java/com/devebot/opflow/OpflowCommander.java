@@ -35,9 +35,9 @@ public class OpflowCommander {
         kwargs = OpflowUtil.ensureNotNull(kwargs);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", OpflowUtil.getOptionField(kwargs, "commanderId", true));
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Commander.new()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Commander.new()")
+                .stringify());
 
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get("configurer");
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get("rpcMaster");
@@ -87,23 +87,23 @@ public class OpflowCommander {
             throw exception;
         }
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Commander.new() end!")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Commander.new() end!")
+                .stringify());
     }
     
     public final void close() {
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Commander stop()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Commander stop()")
+                .stringify());
         
         if (configurer != null) configurer.close();
         if (rpcMaster != null) rpcMaster.close();
         if (publisher != null) publisher.close();
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Commander stop() has done!")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Commander stop() has done!")
+                .stringify());
     }
     
     private class RpcInvocationHandler implements InvocationHandler {
@@ -122,11 +122,11 @@ public class OpflowCommander {
                         throw new OpflowInterceptionException("Alias[" + alias + "]/routineId[" + methodId + "] is duplicated");
                     }
                     aliasOfMethod.put(methodId, alias);
-                    if (LOG.isTraceEnabled()) LOG.trace(logTracer
+                    if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                             .put("alias", alias)
                             .put("routineId", methodId)
-                            .put("message", "link alias to routineId")
-                            .stringify(true));
+                            .text("link alias to routineId")
+                            .stringify());
                 }
             }
             this.rpcMaster = rpcMaster;
@@ -136,20 +136,20 @@ public class OpflowCommander {
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             String methodId = OpflowUtil.getMethodSignature(method);
             String routineId = aliasOfMethod.getOrDefault(methodId, methodId);
-            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                     .put("methodId", methodId)
                     .put("routineId", routineId)
-                    .put("message", "RpcInvocationHandler.invoke()")
-                    .toString());
+                    .text("RpcInvocationHandler.invoke()")
+                    .stringify());
             
             if (args == null) args = new Object[0];
             String body = OpflowJsontool.toString(args);
             
-            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                     .put("args", args)
                     .put("body", body)
-                    .put("message", "RpcInvocationHandler.invoke() - request")
-                    .toString());
+                    .text("RpcInvocationHandler.invoke() - request")
+                    .stringify());
             
             OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, OpflowUtil.buildMap()
                     .put("progressEnabled", false).toMap());
@@ -164,11 +164,11 @@ public class OpflowCommander {
                 throw rebuildInvokerException(errorMap);
             }
             
-            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                     .put("returnType", method.getReturnType().getName())
                     .put("returnValue", rpcResult.getValueAsString())
-                    .put("message", "RpcInvocationHandler.invoke() - response")
-                    .toString());
+                    .text("RpcInvocationHandler.invoke() - response")
+                    .stringify());
             
             if (method.getReturnType() == void.class) return null;
             
@@ -202,15 +202,15 @@ public class OpflowCommander {
     private RpcInvocationHandler getInvocationHandler(Class clazz) {
         validateType(clazz);
         String clazzName = clazz.getName();
-        if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+        if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                 .put("className", clazzName)
-                .put("message", "getInvocationHandler() get InvocationHandler by type")
-                .toString());
+                .text("getInvocationHandler() get InvocationHandler by type")
+                .stringify());
         if (!handlers.containsKey(clazzName)) {
-            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                     .put("className", clazzName)
-                    .put("message", "getInvocationHandler() InvocationHandler not found, create new one")
-                    .toString());
+                    .text("getInvocationHandler() InvocationHandler not found, create new one")
+                    .stringify());
             handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, clazz));
         }
         return handlers.get(clazzName);
@@ -226,19 +226,19 @@ public class OpflowCommander {
         boolean ok = true;
         if (OpflowUtil.isGenericDeclaration(type.toGenericString())) {
             ok = false;
-            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                     .put("typeString", type.toGenericString())
-                    .put("message", "generic types are unsupported")
-                    .toString());
+                    .text("generic types are unsupported")
+                    .stringify());
         }
         Method[] methods = type.getDeclaredMethods();
         for(Method method:methods) {
             if (OpflowUtil.isGenericDeclaration(method.toGenericString())) {
                 ok = false;
-                if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+                if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                         .put("methodString", method.toGenericString())
-                        .put("message", "generic methods are unsupported")
-                        .toString());
+                        .text("generic methods are unsupported")
+                        .stringify());
             }
         }
         if (!ok) {
@@ -249,23 +249,23 @@ public class OpflowCommander {
     
     public <T> T registerType(Class<T> type) {
         try {
-            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                     .put("className", type.getName())
                     .put("classLoaderName", type.getClassLoader().getClass().getName())
-                    .put("message", "registerType() calls newProxyInstance()")
-                    .toString());
+                    .text("registerType() calls newProxyInstance()")
+                    .stringify());
             T t = (T) Proxy.newProxyInstance(type.getClassLoader(), new Class[] {type}, getInvocationHandler(type));
-            if (LOG.isDebugEnabled()) LOG.debug(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                     .put("className", type.getName())
-                    .put("message", "newProxyInstance() has completed")
-                    .toString());
+                    .text("newProxyInstance() has completed")
+                    .stringify());
             return t;
         } catch (IllegalArgumentException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .put("message", "newProxyInstance() has failed")
-                    .toString());
+                    .text("newProxyInstance() has failed")
+                    .stringify());
             throw new OpflowInterceptionException(exception);
         }
     }

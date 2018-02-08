@@ -31,9 +31,9 @@ public class OpflowRpcWorker {
         final String rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", rpcWorkerId);
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "RpcWorker.new()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("RpcWorker[${rpcWorkerId}].new()")
+                .stringify());
         
         Map<String, Object> brokerParams = new HashMap<String, Object>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
@@ -59,15 +59,16 @@ public class OpflowRpcWorker {
             executor.assertQueue(responseName);
         }
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .put("operatorName", operatorName)
                 .put("responseName", responseName)
-                .put("message", "RpcWorker.new() parameters")
-                .toString());
+                .tags("RpcWorker.new() parameters")
+                .text("RpcWorker[${rpcWorkerId}].new() operatorName: '${operatorName}', responseName: '${responseName}'")
+                .stringify());
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                .put("message", "RpcWorker.new() end!")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("RpcWorker[${rpcWorkerId}].new() end!")
+                .stringify());
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
@@ -107,9 +108,9 @@ public class OpflowRpcWorker {
     public OpflowEngine.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
         final String _consumerId = OpflowUtil.getLogID();
         final OpflowLogTracer logProcess = logTracer.branch("consumerId", _consumerId);
-        if (LOG.isInfoEnabled()) LOG.info(logProcess
-                .put("message", "process() is invoked")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logProcess
+                .text("Consumer[${consumerId}] - RpcWorker[${rpcWorkerId}].process() is invoked")
+                .stringify());
         
         if (checker != null && listener != null) {
             middlewares.add(new Middleware(checker, listener));
@@ -125,12 +126,12 @@ public class OpflowRpcWorker {
                 String requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
 
                 OpflowLogTracer logRequest = null;
-                if (LOG.isInfoEnabled()) logRequest = logProcess.branch("requestId", requestId);
+                if (OpflowLogTracer.has(LOG, "info")) logRequest = logProcess.branch("requestId", requestId);
 
-                if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest
+                if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
                         .put("routineId", routineId)
-                        .put("message", "process() - receives a new RPC request")
-                        .toString());
+                        .text("Request[${requestId}] - Consumer[${consumerId}] receives a new RPC request")
+                        .stringify());
                 int count = 0;
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
@@ -139,9 +140,9 @@ public class OpflowRpcWorker {
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
-                if (LOG.isInfoEnabled() && logRequest != null) LOG.info(logRequest.reset()
-                        .put("message", "process() - RPC request processing has completed")
-                        .toString());
+                if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                        .text("Request[${requestId}] - RPC request processing has completed")
+                        .stringify());
                 return count > 0;
             }
         }, OpflowUtil.buildMap(new OpflowUtil.MapListener() {
@@ -153,9 +154,9 @@ public class OpflowRpcWorker {
                 opts.put("binding", Boolean.TRUE);
             }
         }).toMap());
-        if (LOG.isInfoEnabled()) LOG.info(logProcess.reset()
-                .put("message", "process() has completed")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logProcess
+                .text("Consumer[${consumerId}] - process() has completed")
+                .stringify());
         return consumerInfo;
     }
     
@@ -171,16 +172,16 @@ public class OpflowRpcWorker {
     }
     
     public void close() {
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                .put("message", "close()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("RpcWorker[${rpcWorkerId}].close()")
+                .stringify());
         if (engine != null) {
             engine.cancelConsumer(consumerInfo);
             engine.close();
         }
-        if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                .put("message", "close() has completed")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("RpcWorker[${rpcWorkerId}].close() has completed")
+                .stringify());
     }
 
     public OpflowExecutor getExecutor() {

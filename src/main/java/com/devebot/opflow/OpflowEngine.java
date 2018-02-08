@@ -10,18 +10,18 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Pattern;
+import javax.net.ssl.SSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.supports.OpflowKeytool;
 
 /**
  *
@@ -32,7 +32,8 @@ public class OpflowEngine {
     public static final String[] PARAMETER_NAMES = new String[] {
         "uri", "host", "port", "virtualHost", "username", "password", "channelMax", "frameMax", "heartbeat",
         "exchangeName", "exchangeType", "exchangeDurable", "routingKey", "otherKeys", "applicationId",
-        "automaticRecoveryEnabled", "topologyRecoveryEnabled", "networkRecoveryInterval"
+        "automaticRecoveryEnabled", "topologyRecoveryEnabled", "networkRecoveryInterval",
+        "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
     };
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
@@ -59,20 +60,21 @@ public class OpflowEngine {
         final String engineId = OpflowUtil.getOptionField(params, "engineId", true);
         logTracer = OpflowLogTracer.ROOT.branch("engineId", engineId);
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Engine.new()")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Engine[${engineId}].new()")
+                .stringify());
         
         mode = params.containsKey("mode") ? params.get("mode").toString() : "engine";
         try {
             factory = new ConnectionFactory();
+            
             String uri = (String) params.get("uri");
-            if (uri != null) {
+            if (uri != null && uri.length() > 0) {
                 factory.setUri(uri);
-                if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                        .put("uri", hidePasswordInUri(uri))
-                        .put("message", "Connection URI")
-                        .toString());
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .put("uri", OpflowUtil.hidePasswordInUri(uri))
+                        .text("Engine[${engineId}] make connection using URI: ${uri}")
+                        .stringify());
             } else {
                 String host = (String) params.getOrDefault("host", "localhost");
                 factory.setHost(host);
@@ -97,66 +99,152 @@ public class OpflowEngine {
                     factory.setPassword(password = (String) params.get("password"));
                 }
                 
-                Integer channelMax = null;
-                if (params.get("channelMax") instanceof Integer) {
-                    factory.setRequestedChannelMax(channelMax = (Integer)params.get("channelMax"));
-                }
-                
-                Integer frameMax = null;
-                if (params.get("frameMax") instanceof Integer) {
-                    factory.setRequestedFrameMax(frameMax = (Integer)params.get("frameMax"));
-                }
-                
-                Integer heartbeat = null;
-                if (params.get("heartbeat") instanceof Integer) {
-                    heartbeat = (Integer)params.get("heartbeat");
-                    if (heartbeat < 5) heartbeat = 5;
-                } else {
-                    heartbeat = 20; // default 20 seconds
-                }
-                if (heartbeat != null) {
-                    factory.setRequestedHeartbeat(heartbeat);
-                }
-                
-                Boolean automaticRecoveryEnabled = null;
-                if (params.get("automaticRecoveryEnabled") instanceof Boolean) {
-                    factory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled = (Boolean)params.get("automaticRecoveryEnabled"));
-                }
-                
-                Boolean topologyRecoveryEnabled = null;
-                if (params.get("topologyRecoveryEnabled") instanceof Boolean) {
-                    factory.setTopologyRecoveryEnabled(topologyRecoveryEnabled = (Boolean)params.get("topologyRecoveryEnabled"));
-                }
-                
-                Integer networkRecoveryInterval = null;
-                if (params.get("networkRecoveryInterval") instanceof Integer) {
-                    networkRecoveryInterval = (Integer)params.get("networkRecoveryInterval");
-                    if (networkRecoveryInterval <= 0) networkRecoveryInterval = null;
-                } else {
-                    networkRecoveryInterval = 2500; // change default from 5000 to 2500
-                }
-                if (networkRecoveryInterval != null) {
-                    factory.setNetworkRecoveryInterval(networkRecoveryInterval);
-                }
-                
-                if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                        .put("host", host)
-                        .put("port", port)
-                        .put("virtualHost", virtualHost)
-                        .put("username", username)
-                        .put("password", maskPassword(password))
-                        .put("channelMax", channelMax)
-                        .put("frameMax", frameMax)
-                        .put("heartbeat", heartbeat)
-                        .put("automaticRecoveryEnabled", automaticRecoveryEnabled)
-                        .put("topologyRecoveryEnabled", topologyRecoveryEnabled)
-                        .put("networkRecoveryInterval", networkRecoveryInterval)
-                        .put("message", "Connection Parameters")
-                        .toString());
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .put("host", host)
+                    .put("port", port)
+                    .put("virtualHost", virtualHost)
+                    .put("username", username)
+                    .put("password", OpflowUtil.maskPassword(password))
+                    .text("Engine[${engineId}] make connection using parameters")
+                    .stringify());
             }
+            
+            Integer channelMax = null;
+            if (params.get("channelMax") instanceof Integer) {
+                factory.setRequestedChannelMax(channelMax = (Integer)params.get("channelMax"));
+            }
+
+            Integer frameMax = null;
+            if (params.get("frameMax") instanceof Integer) {
+                factory.setRequestedFrameMax(frameMax = (Integer)params.get("frameMax"));
+            }
+
+            Integer heartbeat;
+            if (params.get("heartbeat") instanceof Integer) {
+                heartbeat = (Integer)params.get("heartbeat");
+                if (heartbeat < 5) heartbeat = 5;
+            } else {
+                heartbeat = 20; // default 20 seconds
+            }
+            if (heartbeat != null) {
+                factory.setRequestedHeartbeat(heartbeat);
+            }
+
+            Boolean automaticRecoveryEnabled = null;
+            if (params.get("automaticRecoveryEnabled") instanceof Boolean) {
+                factory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled = (Boolean)params.get("automaticRecoveryEnabled"));
+            }
+
+            Boolean topologyRecoveryEnabled = null;
+            if (params.get("topologyRecoveryEnabled") instanceof Boolean) {
+                factory.setTopologyRecoveryEnabled(topologyRecoveryEnabled = (Boolean)params.get("topologyRecoveryEnabled"));
+            }
+
+            Integer networkRecoveryInterval;
+            if (params.get("networkRecoveryInterval") instanceof Integer) {
+                networkRecoveryInterval = (Integer)params.get("networkRecoveryInterval");
+                if (networkRecoveryInterval <= 0) networkRecoveryInterval = null;
+            } else {
+                networkRecoveryInterval = 2500; // change default from 5000 to 2500
+            }
+            if (networkRecoveryInterval != null) {
+                factory.setNetworkRecoveryInterval(networkRecoveryInterval);
+            }
+
+            String pkcs12File = null;
+            if (params.get("pkcs12File") instanceof String) {
+                pkcs12File = (String) params.get("pkcs12File");
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .put("pkcs12File", pkcs12File)
+                        .text("Engine[${engineId}] - PKCS12 file: ${pkcs12File}")
+                        .stringify());
+            }
+
+            String pkcs12Passphrase = null;
+            if (params.get("pkcs12Passphrase") instanceof String) {
+                pkcs12Passphrase = (String) params.get("pkcs12Passphrase");
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .put("pkcs12Passphrase", OpflowUtil.maskPassword(pkcs12Passphrase))
+                        .text("Engine[${engineId}] - PKCS12 passphrase: ${pkcs12Passphrase}")
+                        .stringify());
+            }
+
+            String caCertFile = null;
+            if (params.get("caCertFile") instanceof String) {
+                caCertFile = (String) params.get("caCertFile");
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .put("caCertFile", caCertFile)
+                        .text("Engine[${engineId}] - CA file: ${caCertFile}")
+                        .stringify());
+            }
+
+            String serverCertFile = null;
+            if (params.get("serverCertFile") instanceof String) {
+                serverCertFile = (String) params.get("serverCertFile");
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .put("serverCertFile", serverCertFile)
+                        .text("Engine[${engineId}] - server certificate file: ${serverCertFile}")
+                        .stringify());
+            }
+
+            String trustStoreFile = null;
+            if (params.get("trustStoreFile") instanceof String) {
+                trustStoreFile = (String) params.get("trustStoreFile");
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .put("trustStoreFile", trustStoreFile)
+                        .text("Engine[${engineId}] - trust keystore file: ${trustStoreFile}")
+                        .stringify());
+            }
+
+            String trustPassphrase = null;
+            if (params.get("trustPassphrase") instanceof String) {
+                trustPassphrase = (String) params.get("trustPassphrase");
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .put("trustPassphrase", OpflowUtil.maskPassword(trustPassphrase))
+                        .text("Engine[${engineId}] - trust keystore passphrase: ${trustPassphrase}")
+                        .stringify());
+            }
+
+            SSLContext sslContext = null;
+            if (pkcs12File != null && pkcs12Passphrase != null) {
+                if (caCertFile != null) {
+                    sslContext = OpflowKeytool.buildSSLContextWithCertFile(pkcs12File, pkcs12Passphrase, caCertFile);
+                } else if (serverCertFile != null) {
+                    sslContext = OpflowKeytool.buildSSLContextWithCertFile(pkcs12File, pkcs12Passphrase, serverCertFile);
+                } else if (trustStoreFile != null && trustPassphrase != null) {
+                    sslContext = OpflowKeytool.buildSSLContextWithKeyStore(pkcs12File, pkcs12Passphrase,
+                            trustStoreFile, trustPassphrase);
+                }
+            }
+
+            if (sslContext != null) {
+                factory.useSslProtocol(sslContext);
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .text("Engine[${engineId}] use SSL Protocol")
+                    .stringify());
+            } else {
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .text("Engine[${engineId}] SSL context is empty")
+                    .stringify());
+            }
+
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .put("channelMax", channelMax)
+                    .put("frameMax", frameMax)
+                    .put("heartbeat", heartbeat)
+                    .put("automaticRecoveryEnabled", automaticRecoveryEnabled)
+                    .put("topologyRecoveryEnabled", topologyRecoveryEnabled)
+                    .put("networkRecoveryInterval", networkRecoveryInterval)
+                    .text("Engine[${engineId}] make connection using parameters")
+                    .stringify());
+
             this.assertConnection();
         } catch (Exception exception) {
-            if (LOG.isErrorEnabled()) LOG.error("newConnection() has failed, exception: " + exception.getMessage());
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                    .put("exceptionClass", exception.getClass().getName())
+                    .put("exceptionMessage", exception.getMessage())
+                    .text("Engine[${engineId}] newConnection() has failed, exception[${exceptionClass}]: ${exceptionMessage}")
+                    .stringify());
             throw new OpflowConnectionException("connection refused, invalid connection parameters", exception);
         }
         
@@ -169,7 +257,7 @@ public class OpflowEngine {
                 exchangeType = (String) params.get("exchangeType");
             }
             if (exchangeType == null) exchangeType = "direct";
-
+            
             if (params.get("exchangeDurable") instanceof Boolean) {
                 exchangeDurable = (Boolean) params.get("exchangeDurable");
             }
@@ -191,34 +279,34 @@ public class OpflowEngine {
                 applicationId = (String) params.get("applicationId");
             }
             
-            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                         .put("exchangeName", exchangeName)
                         .put("exchangeType", exchangeType)
                         .put("exchangeDurable", exchangeDurable)
                         .put("routingKey", routingKey)
                         .put("otherKeys", otherKeys)
                         .put("applicationId", applicationId)
-                        .put("message", "exchangeName and routingKeys")
-                        .toString());
+                        .text("Engine[${engineId}] exchangeName: '${exchangeName}' and routingKeys: ${routingKey}")
+                        .stringify());
         } catch (IOException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .put("message", "exchangeDeclare has failed")
-                    .toString());
+                    .text("Engine[${engineId}] exchangeDeclare has failed, exception[${exceptionClass}]: ${exceptionMessage}")
+                    .stringify());
             throw new OpflowBootstrapException("exchangeDeclare has failed", exception);
         } catch (TimeoutException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .put("message", "exchangeDeclare is timeout")
-                    .toString());
+                    .text("Engine[${engineId}] exchangeDeclare is timeout, exception[${exceptionClass}]: ${exceptionMessage}")
+                    .stringify());
             throw new OpflowBootstrapException("it maybe too slow or unstable network", exception);
         }
         
-        if (LOG.isInfoEnabled()) LOG.info(logTracer
-                .put("message", "Engine.new() end!")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Engine[${engineId}].new() end!")
+                .stringify());
     }
     
     public void produce(final byte[] body, final Map<String, Object> headers) {
@@ -263,13 +351,13 @@ public class OpflowEngine {
             }
             propBuilder.headers(headers);
             
-            if (LOG.isInfoEnabled()) logProduce = logTracer.branch("requestId", requestId);
+            if (OpflowLogTracer.has(LOG, "info")) logProduce = logTracer.branch("requestId", requestId);
             
-            if (LOG.isInfoEnabled() && logProduce != null) LOG.info(logProduce
+            if (OpflowLogTracer.has(LOG, "info") && logProduce != null) LOG.info(logProduce
                     .put("appId", appId)
                     .put("customKey", customKey)
-                    .put("message", "produce() is invoked")
-                    .toString());
+                    .text("Request[${requestId}] - Engine[${engineId}] - produce() is invoked")
+                    .stringify());
             
             Channel _channel = getProducingChannel();
             if (_channel == null || !_channel.isOpen()) {
@@ -277,18 +365,18 @@ public class OpflowEngine {
             }
             _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), body);
         } catch (IOException exception) {
-            if (LOG.isErrorEnabled() && logProduce != null) LOG.error(logProduce.reset()
+            if (OpflowLogTracer.has(LOG, "error") && logProduce != null) LOG.error(logProduce
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .put("message", "produce() has failed")
-                    .toString());
+                    .text("Request[${requestId}] - produce() has failed")
+                    .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (LOG.isErrorEnabled() && logProduce != null) LOG.error(logProduce.reset()
+            if (OpflowLogTracer.has(LOG, "error") && logProduce != null) LOG.error(logProduce
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .put("message", "produce() is timeout")
-                    .toString());
+                    .text("Request[${requestId}] - produce() is timeout")
+                    .stringify());
             throw new OpflowOperationException(exception);
         }
     }
@@ -298,9 +386,9 @@ public class OpflowEngine {
         final String _consumerId = OpflowUtil.getOptionField(opts, "consumerId", true);
         final OpflowLogTracer logConsume = logTracer.branch("consumerId", _consumerId);
         
-        if (LOG.isInfoEnabled()) LOG.info(logConsume
-                .put("message", "consume() is invoked")
-                .toString());
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logConsume
+                .text("Consumer[${consumerId}].consume() is invoked in Engine[${engineId}]")
+                .stringify());
         try {
             final boolean _forceNewConnection = Boolean.TRUE.equals(opts.get("forceNewConnection"));
             final Boolean _forceNewChannel = Boolean.TRUE.equals(opts.get("forceNewChannel"));
@@ -328,18 +416,18 @@ public class OpflowEngine {
             }
             _queueName = _declareOk.getQueue();
             final Integer _consumerLimit = (Integer) opts.get("consumerLimit");
-            if (LOG.isTraceEnabled()) LOG.trace(logConsume.reset()
+            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logConsume
                     .put("consumerCount", _declareOk.getConsumerCount())
                     .put("consumerLimit", _consumerLimit)
-                    .put("message", "consume() - consumerCount/consumerLimit")
-                    .toString());
+                    .text("Consumer[${consumerId}].consume() - consumerCount(${consumerCount})/consumerLimit(${consumerLimit})")
+                    .stringify());
             if (_consumerLimit != null && _consumerLimit > 0) {
                 if (_declareOk.getConsumerCount() >= _consumerLimit) {
-                    if (LOG.isErrorEnabled()) LOG.error(logConsume.reset()
+                    if (OpflowLogTracer.has(LOG, "error")) LOG.error(logConsume
                             .put("consumerCount", _declareOk.getConsumerCount())
                             .put("consumerLimit", _consumerLimit)
-                            .put("message", "consume() - consumerCount exceed limit")
-                            .toString());
+                            .text("Consumer[${consumerId}].consume() - consumerCount exceed limit")
+                            .stringify());
                     String errorMessage = "consumerLimit exceed: " + _declareOk.getConsumerCount() + "/" + _consumerLimit;
                     throw new OpflowConsumerOverLimitException(errorMessage);
                 }
@@ -398,117 +486,117 @@ public class OpflowEngine {
                     
                     final OpflowLogTracer logRequest = logConsume.branch("requestId", requestID);
                     
-                    if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
+                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logRequest
                             .put("appId", properties.getAppId())
                             .put("deliveryTag", envelope.getDeliveryTag())
                             .put("consumerTag", consumerTag)
-                            .put("message", "consumer received a message")
-                            .toString());
+                            .text("Request[${requestId}] - Consumer[${consumerId}] - consumer received a message")
+                            .stringify());
                     
-                    if (LOG.isTraceEnabled()) {
+                    if (OpflowLogTracer.has(LOG, "trace")) {
                         if (body.length <= 4096) {
-                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
+                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logRequest
                                     .put("bodyHead", new String(body, "UTF-8"))
                                     .put("bodyLength", body.length)
-                                    .put("message", "Body head (4096 bytes)")
-                                    .toString());
+                                    .text("Request[${requestId}] body head (4096 bytes)")
+                                    .stringify());
                         } else {
-                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
+                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logRequest
                                     .put("bodyLength", body.length)
-                                    .put("message", "Body size too large (>4KB)")
-                                    .toString());
+                                    .text("Request[${requestId}] body size too large (>4KB)")
+                                    .stringify());
                         }
                     }
                     
                     try {
                         if (applicationId == null || applicationId.equals(properties.getAppId())) {
-                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
-                                    .put("message", "Request invoke listener.processMessage()")
-                                    .toString());
+                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logRequest
+                                    .text("Request[${requestId}] invoke listener.processMessage()")
+                                    .stringify());
                             
                             boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
                             
                             if (captured) {
-                                if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
-                                        .put("message", "Request has finished successfully")
-                                        .toString());
+                                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logRequest
+                                        .text("Request[${requestId}] has finished successfully")
+                                        .stringify());
                             } else {
-                                if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
-                                        .put("message", "Request has not matched the criteria, skipped")
-                                        .toString());
+                                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logRequest
+                                        .text("Request[${requestId}] has not matched the criteria, skipped")
+                                        .stringify());
                             }
                             
-                            if (LOG.isTraceEnabled()) LOG.trace(logRequest.reset()
+                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logRequest
                                     .put("deliveryTag", envelope.getDeliveryTag())
                                     .put("consumerTag", consumerTag)
-                                    .put("message", "Request invoke ACK")
-                                    .toString());
+                                    .text("Request[${requestId}] invoke ACK")
+                                    .stringify());
                             
                             invokeAck(envelope, true);
                         } else {
-                            if (LOG.isInfoEnabled()) LOG.info(logRequest.reset()
-                                    .put("message", "Request has been rejected, mismatched applicationId")
+                            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logRequest
                                     .put("applicationId", applicationId)
-                                    .toString());
+                                    .text("Request[${requestId}] has been rejected, mismatched applicationId")
+                                    .stringify());
                             invokeAck(envelope, false);
                         }
                     } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
-                        if (LOG.isErrorEnabled()) LOG.error(logRequest.reset()
+                        if (OpflowLogTracer.has(LOG, "error")) LOG.error(logRequest
                                 .put("deliveryTag", envelope.getDeliveryTag())
                                 .put("consumerTag", consumerTag)
                                 .put("exceptionClass", ex.getClass().getName())
                                 .put("exceptionMessage", ex.getMessage())
                                 .put("autoAck", _autoAck)
                                 .put("requeueFailure", _requeueFailure)
-                                .put("message", "Request has been failed. Service still alive")
-                                .toString());
+                                .text("Request[${requestId}] has been failed. Service still alive")
+                                .stringify());
                         invokeAck(envelope, false);
                     }
                 }
                 
                 @Override
                 public void handleCancelOk(String consumerTag) {
-                    if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
+                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logConsume
                             .put("consumerTag", consumerTag)
-                            .put("message", "consume() - handle CancelOk event")
-                            .toString());
+                            .text("Consumer[${consumerId}].consume() - handle CancelOk event")
+                            .stringify());
                 }
                 
                 @Override
                 public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
-                    if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
+                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logConsume
                             .put("consumerTag", consumerTag)
-                            .put("message", "consume() - handle ShutdownSignal event")
-                            .toString());
+                            .text("Consumer[${consumerId}].consume() - handle ShutdownSignal event")
+                            .stringify());
                 }
             };
             
             final String _consumerTag = _channel.basicConsume(_queueName, _autoAck, _consumer);
             
-            if (LOG.isInfoEnabled()) LOG.info(logConsume.reset()
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logConsume
                     .put("queueName", _queueName)
                     .put("consumerTag", _consumerTag)
                     .put("channelNumber", _channel.getChannelNumber())
-                    .put("message", "consume() consume the queue")
-                    .toString());
+                    .text("Consumer[${consumerId}].consume() consume the queue")
+                    .stringify());
             ConsumerInfo info = new ConsumerInfo(_connection, !_forceNewConnection, 
                     _channel, !_forceNewChannel, _queueName, _fixedQueue, _consumerId, _consumerTag);
             if ("engine".equals(mode)) consumerInfos.add(info);
             return info;
         } catch(IOException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logConsume.reset()
-                    .put("message", "consume() - has failed")
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logConsume
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .toString());
+                    .text("Consumer[${consumerId}].consume() - has failed")
+                    .stringify());
             throw new OpflowOperationException(exception);
         } catch(TimeoutException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logConsume.reset()
-                    .put("message", "consume() - is timeout")
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logConsume
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .toString());
+                    .text("Consumer[${consumerId}].consume() - is timeout")
+                    .stringify());
             throw new OpflowOperationException(exception);
         }
     }
@@ -536,46 +624,48 @@ public class OpflowEngine {
         if (consumerInfo == null) return;
         final OpflowLogTracer logCancel = logTracer.branch("consumerId", consumerInfo.getConsumerId());
         try {
-            if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
+            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logCancel
                     .put("queueName", consumerInfo.getQueueName())
-                    .put("message", "cancelConsumer() - consumer will be cancelled")
-                    .toString());
+                    .text("Consumer[${consumerId}].cancelConsumer() - consumer will be cancelled")
+                    .stringify());
 
             consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
 
-            if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
-                    .put("message", "cancelConsumer() - consumer has been cancelled")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logCancel
+                    .text("Consumer[${consumerId}].cancelConsumer() - consumer has been cancelled")
+                    .stringify());
 
             if (!consumerInfo.isSharedConnection() || !consumerInfo.isSharedChannel()) {
                 if (consumerInfo.getChannel() != null && consumerInfo.getChannel().isOpen()) {
-                    if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
-                            .put("message", "shared consumingChannel is closing")
-                            .toString());
+                    if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logCancel
+                            .tags("sharedConsumingChannelClosed")
+                            .text("Consumer[${consumerId}] shared consumingChannel is closing")
+                            .stringify());
                     consumerInfo.getChannel().close();
                 }
             }
 
             if (!consumerInfo.isSharedConnection()) {
                 if (consumerInfo.getConnection() != null && consumerInfo.getConnection().isOpen()) {
-                    if (LOG.isDebugEnabled()) LOG.debug(logCancel.reset()
-                            .put("message", "shared consumingConnection is closing")
-                            .toString());
+                    if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logCancel
+                            .tags("sharedConsumingConnectionClosed")
+                            .text("Consumer[${consumerId}] shared consumingConnection is closing")
+                            .stringify());
                     consumerInfo.getConnection().close();
                 }
             }
         } catch (IOException ex) {
-            if (LOG.isErrorEnabled()) LOG.error(logCancel.reset()
-                    .put("message", "cancelConsumer() - has failed")
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logCancel
                     .put("exceptionClass", ex.getClass().getName())
                     .put("exceptionMessage", ex.getMessage())
-                    .toString());
+                    .text("Consumer[${consumerId}].cancelConsumer() - has failed")
+                    .stringify());
         } catch (TimeoutException ex) {
-            if (LOG.isErrorEnabled()) LOG.error(logCancel.reset()
-                    .put("message", "cancelConsumer() - is timeout")
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logCancel
                     .put("exceptionClass", ex.getClass().getName())
                     .put("exceptionMessage", ex.getMessage())
-                    .toString());
+                    .text("Consumer[${consumerId}].cancelConsumer() - is timeout")
+                    .stringify());
         }
     }
     
@@ -676,58 +766,62 @@ public class OpflowEngine {
      */
     public void close() {
         try {
-            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                .put("message", "close() - close producingChannel, producingConnection")
-                .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Engine[${engineId}].close() - close producingChannel, producingConnection")
+                .stringify());
             if (producingChannel != null && producingChannel.isOpen()) {
-                if (LOG.isInfoEnabled()) LOG.info(logTracer
-                        .put("message", "shared producingChannel is closing")
-                        .toString());
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .tags("sharedProducingChannelClosed")
+                        .text("Engine[${engineId}].close() shared producingChannel is closing")
+                        .stringify());
                 producingChannel.close();
             }
             if (producingConnection != null && producingConnection.isOpen()) {
-                if (LOG.isInfoEnabled()) LOG.info(logTracer
-                        .put("message", "shared producingConnection is closing")
-                        .toString());
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .tags("sharedProducingConnectionClosed")
+                        .text("Engine[${engineId}].close() shared producingConnection is closing")
+                        .stringify());
                 producingConnection.close();
             }
             
             if ("engine".equals(mode)) {
-                if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                         .put("mode", mode)
-                        .put("message", "close() - cancel consumers")
-                        .toString());
+                        .text("Engine[${engineId}].close() - cancel consumers")
+                        .stringify());
                 for(ConsumerInfo consumerInfo: consumerInfos) {
                     this.cancelConsumer(consumerInfo);
                 }
                 consumerInfos.clear();
             }
             
-            if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
-                .put("message", "close() - close consumingChannel, consumingConnection")
-                .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Engine[${engineId}].close() - close consumingChannel, consumingConnection")
+                .stringify());
             if (consumingChannel != null && consumingChannel.isOpen()) {
-                if (LOG.isInfoEnabled()) LOG.info(logTracer
-                        .put("message", "shared consumingChannel is closing")
-                        .toString());
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .tags("sharedConsumingChannelClosed")
+                        .text("Engine[${engineId}].close() shared consumingChannel is closing")
+                        .stringify());
                 consumingChannel.close();
             }
             if (consumingConnection != null && consumingConnection.isOpen()) {
-                if (LOG.isInfoEnabled()) LOG.info(logTracer
-                        .put("message", "shared consumingConnection is closing")
-                        .toString());
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                        .tags("sharedConsumingConnectionClosed")
+                        .text("Engine[${engineId}].close() shared consumingConnection is closing")
+                        .stringify());
                 consumingConnection.close();
             }
 
         } catch (IOException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
-                    .put("message", "close() has failed")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                    .text("Engine[${engineId}].close() has failed")
+                    .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (LOG.isErrorEnabled()) LOG.error(logTracer.reset()
-                    .put("message", "close() is timeout")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                    .text("Engine[${engineId}].close() is timeout")
+                    .stringify());
             throw new OpflowOperationException(exception);
         }
     }
@@ -743,9 +837,10 @@ public class OpflowEngine {
     
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
-            if (LOG.isInfoEnabled()) LOG.info(logTracer
-                    .put("message", "shared producingConnection is created")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .tags("sharedProducingConnectionCreated")
+                    .text("Engine[${engineId}] shared producingConnection is created")
+                    .stringify());
             producingConnection = factory.newConnection();
         }
         return producingConnection;
@@ -757,30 +852,33 @@ public class OpflowEngine {
             producingChannel.addShutdownListener(new ShutdownListener() {
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                             .put("channelNumber", producingChannel.getChannelNumber())
-                            .put("message", "producingChannel has been shutdown")
-                            .toString());
+                            .text("Engine[${engineId}] producingChannel has been shutdown")
+                            .stringify());
                 }
             });
-            if (LOG.isInfoEnabled()) LOG.info(logTracer
-                    .put("message", "shared producingChannel is created")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .tags("sharedProducingChannelCreated")
+                    .text("Engine[${engineId}] shared producingChannel is created")
+                    .stringify());
         }
         return producingChannel;
     }
     
     private Connection getConsumingConnection(boolean forceNewConnection) throws IOException, TimeoutException {
         if (forceNewConnection) {
-            if (LOG.isInfoEnabled()) LOG.info(logTracer
-                    .put("message", "private consumingConnection is created")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .tags("privateConsumingConnectionCreated")
+                    .text("Engine[${engineId}] private consumingConnection is created")
+                    .stringify());
             return factory.newConnection();
         }
         if (consumingConnection == null || !consumingConnection.isOpen()) {
-            if (LOG.isInfoEnabled()) LOG.info(logTracer
-                    .put("message", "shared consumingConnection is created")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .tags("sharedConsumingConnectionCreated")
+                    .text("Engine[${engineId}] shared consumingConnection is created")
+                    .stringify());
             consumingConnection = factory.newConnection();
         }
         return consumingConnection;
@@ -791,9 +889,10 @@ public class OpflowEngine {
             return getConsumingConnection(forceNewConnection).createChannel();
         }
         if (forceNewChannel) {
-            if (LOG.isInfoEnabled()) LOG.info(logTracer
-                    .put("message", "private consumingChannel is created")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .tags("privateConsumingChannelCreated")
+                    .text("Engine[${engineId}] private consumingChannel is created")
+                    .stringify());
             return getConsumingConnection(false).createChannel();
         }
         if (consumingChannel == null || !consumingChannel.isOpen()) {
@@ -801,15 +900,16 @@ public class OpflowEngine {
             consumingChannel.addShutdownListener(new ShutdownListener() {
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (LOG.isInfoEnabled()) LOG.info(logTracer.reset()
+                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                             .put("channelNumber", consumingChannel.getChannelNumber())
-                            .put("message", "consumingChannel has been shutdown")
-                            .toString());
+                            .text("Engine[${engineId}] consumingChannel has been shutdown")
+                            .stringify());
                 }
             });
-            if (LOG.isInfoEnabled()) LOG.info(logTracer
-                    .put("message", "shared consumingChannel is created")
-                    .toString());
+            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .tags("sharedConsumingChannelCreated")
+                    .text("Engine[${engineId}] shared consumingChannel is created")
+                    .stringify());
         }
         return consumingChannel;
     }
@@ -823,25 +923,12 @@ public class OpflowEngine {
         _channel.queueDeclarePassive(_queueName);
         for (String _routingKey : keys) {
             _channel.queueBind(_queueName, _exchangeName, _routingKey);
-            if (LOG.isTraceEnabled()) LOG.trace(logTracer.reset()
+            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
                     .put("exchangeName", _exchangeName)
                     .put("queueName", _queueName)
                     .put("routingKey", _routingKey)
-                    .put("message", "Binds Exchange to Queue")
-                    .toString());
+                    .text("Binds Exchange to Queue")
+                    .stringify());
         }
-    }
-    
-    private Pattern passwordPattern = Pattern.compile(":([^:]+)@");
-    
-    private String maskPassword(String password) {
-        if (password == null) return null;
-        char[] charArray = new char[password.length()];
-        Arrays.fill(charArray, '*');
-        return new String(charArray);
-    }
-    
-    private String hidePasswordInUri(String uri) {
-        return passwordPattern.matcher(uri).replaceAll(":******@");
     }
 }
