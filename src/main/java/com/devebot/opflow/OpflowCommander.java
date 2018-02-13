@@ -36,7 +36,7 @@ public class OpflowCommander {
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", OpflowUtil.getOptionField(kwargs, "commanderId", true));
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
-                .text("Commander.new()")
+                .text("Commander[${commanderId}].new()")
                 .stringify());
 
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get("configurer");
@@ -88,13 +88,13 @@ public class OpflowCommander {
         }
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
-                .text("Commander.new() end!")
+                .text("Commander[${commanderId}].new() end!")
                 .stringify());
     }
     
     public final void close() {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
-                .text("Commander stop()")
+                .text("Commander[${commanderId}].close()")
                 .stringify());
         
         if (configurer != null) configurer.close();
@@ -102,7 +102,7 @@ public class OpflowCommander {
         if (publisher != null) publisher.close();
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
-                .text("Commander stop() has done!")
+                .text("Commander[${commanderId}].close() has done!")
                 .stringify());
     }
     
