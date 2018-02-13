@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowKeytool {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowKeytool.class);
-    private final static OpflowLogTracer logTracer = OpflowLogTracer.ROOT.copy();
+    private final static OpflowLogTracer TRACER = OpflowLogTracer.ROOT.copy();
     
     public static SSLContext buildSSLContextWithCertFile(String pkcs12File, String pkcs12Passphrase, String caCertFile) {
         try {
@@ -116,7 +116,7 @@ public class OpflowKeytool {
     }
     
     private static void logException(Exception e) {
-        if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+        if (OpflowLogTracer.has(LOG, "error")) LOG.error(TRACER
                 .put("exceptionClass", e.getClass().getName())
                 .put("exceptionMessage", e.getMessage())
                 .text("Instance[${instanceId}] buildSSLContext() exception[${exceptionClass}]: ${exceptionMessage}")

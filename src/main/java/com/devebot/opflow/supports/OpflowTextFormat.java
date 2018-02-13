@@ -20,8 +20,8 @@ public class OpflowTextFormat {
         Matcher m = PH_PATTERN.matcher(format);
         String result = format;
         while (m.find()) {
-            String[] found = m.group(1).split("\\.");
-            Object newObj = OpflowUtil.getOptionField(params, found);
+            String[] fieldPath = m.group(1).split("\\.");
+            Object newObj = OpflowUtil.getOptionField(params, fieldPath);
             String newVal = (newObj == null) ? "<null>" : newObj.toString();
             result = result.replaceFirst(PH_STR, newVal);
         }
