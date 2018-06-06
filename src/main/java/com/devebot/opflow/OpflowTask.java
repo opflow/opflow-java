@@ -147,7 +147,7 @@ public class OpflowTask {
         }
         
         public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks, int interval) {
-            this(tasks, interval, 0l);
+            this(tasks, interval, 1000l);
         }
         
         public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks, int interval, long timeout) {
