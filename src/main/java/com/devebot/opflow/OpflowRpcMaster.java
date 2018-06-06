@@ -260,8 +260,13 @@ public class OpflowRpcMaster {
                     .put("replyTo", consumerInfo.getQueueName())
                     .text("Request[${requestId}] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
                     .stringify());
-            builder.replyTo(consumerInfo.getQueueName());
+        } else {
+            if (OpflowLogTracer.has(LOG, "trace") && logRequest != null) LOG.trace(logRequest
+                    .put("replyTo", consumerInfo.getQueueName())
+                    .text("Request[${requestId}] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
+                    .stringify());
         }
+        builder.replyTo(consumerInfo.getQueueName());
         
         engine.produce(body, headers, builder);
         

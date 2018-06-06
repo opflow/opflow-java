@@ -197,7 +197,7 @@ public class OpflowLogTracer {
             if (IS_TEMPLATE_APPLIED && text != null) {
                 output = text;
             } else {
-                if (IS_TAGS_EMBEDDABLE && tagz.size() > 0) {
+                if (IS_TAGS_EMBEDDABLE && tagz != null && tagz.size() > 0) {
                     this.fields.put(TAGS_FIELD_NAME, tagz);
                 }
                 if (IS_TEXT_EMBEDDABLE && text != null) {
@@ -227,7 +227,7 @@ public class OpflowLogTracer {
     
     private static List<StringifyInterceptor> interceptors = new ArrayList<StringifyInterceptor>();
     
-    public static boolean addStringifyInterceptor(StringifyInterceptor interceptor) {
+    public static boolean addInterceptor(StringifyInterceptor interceptor) {
         if (interceptor != null && interceptors.indexOf(interceptor) < 0) {
             interceptors.add(interceptor);
             return true;
@@ -235,12 +235,27 @@ public class OpflowLogTracer {
         return false;
     }
     
-    public static boolean removeStringifyInterceptor(StringifyInterceptor interceptor) {
+    @Deprecated
+    public static boolean addStringifyInterceptor(StringifyInterceptor interceptor) {
+        return addInterceptor(interceptor);
+    }
+    
+    public static boolean removeInterceptor(StringifyInterceptor interceptor) {
         return interceptors.remove(interceptor);
     }
     
-    public static void clearStringifyInterceptors() {
+    @Deprecated
+    public static boolean removeStringifyInterceptor(StringifyInterceptor interceptor) {
+        return removeInterceptor(interceptor);
+    }
+    
+    public static void clearInterceptors() {
         interceptors.clear();
+    }
+    
+    @Deprecated
+    public static void clearStringifyInterceptors() {
+        clearInterceptors();
     }
     
     private static String libraryInfo = null;;

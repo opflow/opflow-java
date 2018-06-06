@@ -460,7 +460,7 @@ public class OpflowBuilder {
     
     private static final String[] INTEGER_FIELDS = new String[] {
         "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", 
-        "prefetch", "subscriberLimit", "redeliveredLimit", "monitorInterval"
+        "prefetch", "subscriberLimit", "redeliveredLimit", "monitorInterval", "threadPoolSize"
     };
     
     private static final String[] LONGINT_FIELDS = new String[] {
