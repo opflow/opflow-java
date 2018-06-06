@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import org.slf4j.Logger;
@@ -31,6 +33,7 @@ public class OpflowEngine {
 
     public static final String[] PARAMETER_NAMES = new String[] {
         "uri", "host", "port", "virtualHost", "username", "password", "channelMax", "frameMax", "heartbeat",
+        "threadPoolType", "threadPoolSize",
         "exchangeName", "exchangeType", "exchangeDurable", "routingKey", "otherKeys", "applicationId",
         "automaticRecoveryEnabled", "topologyRecoveryEnabled", "networkRecoveryInterval",
         "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
@@ -67,6 +70,47 @@ public class OpflowEngine {
         mode = params.containsKey("mode") ? params.get("mode").toString() : "engine";
         try {
             factory = new ConnectionFactory();
+            
+            String threadPoolType = null;
+            if (params.get("threadPoolType") instanceof String) {
+                threadPoolType = (String) params.get("threadPoolType");
+            }
+            
+            Integer threadPoolSize = null;
+            if (params.get("threadPoolSize") instanceof Integer) {
+                threadPoolSize = (Integer)params.get("threadPoolSize");
+            }
+            if (threadPoolSize == null || threadPoolSize <= 0) {
+                threadPoolSize = 2;
+            }
+            
+            ExecutorService threadExecutor = null;
+            if ("cached".equals(threadPoolType)) {
+                threadExecutor = Executors.newCachedThreadPool();
+            } else if ("fixed".equals(threadPoolType)) {
+                threadExecutor = Executors.newFixedThreadPool(threadPoolSize);
+            } else if ("single".equals(threadPoolType)) {
+                threadExecutor = Executors.newSingleThreadExecutor();
+            } else if ("single-scheduled".equals(threadPoolType)) {
+                threadExecutor = Executors.newSingleThreadScheduledExecutor();
+            } else if ("scheduled".equals(threadPoolType)) {
+                threadExecutor = Executors.newScheduledThreadPool(threadPoolSize);
+            }
+            
+            if (threadExecutor != null) {
+                factory.setSharedExecutor(threadExecutor);
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .put("threadPoolType", threadPoolType)
+                    .put("threadPoolSize", threadPoolSize)
+                    .text("Engine[${engineId}] use SharedExecutor type: ${threadPoolType} / ${threadPoolSize}")
+                    .stringify());
+            } else {
+                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    .put("threadPoolType", threadPoolType)
+                    .put("threadPoolSize", threadPoolSize)
+                    .text("Engine[${engineId}] use default SharedExecutor")
+                    .stringify());
+            }
             
             String uri = (String) params.get("uri");
             if (uri != null && uri.length() > 0) {
@@ -235,7 +279,13 @@ public class OpflowEngine {
                     .put("automaticRecoveryEnabled", automaticRecoveryEnabled)
                     .put("topologyRecoveryEnabled", topologyRecoveryEnabled)
                     .put("networkRecoveryInterval", networkRecoveryInterval)
-                    .text("Engine[${engineId}] make connection using parameters")
+                    .text("Engine[${engineId}] make connection using parameters: "
+                            + "channelMax: ${channelMax}, "
+                            + "frameMax: ${frameMax}, "
+                            + "heartbeat: ${heartbeat}, "
+                            + "automaticRecoveryEnabled: ${automaticRecoveryEnabled}, "
+                            + "topologyRecoveryEnabled: ${topologyRecoveryEnabled}, "
+                            + "networkRecoveryInterval: ${networkRecoveryInterval}")
                     .stringify());
 
             this.assertConnection();
