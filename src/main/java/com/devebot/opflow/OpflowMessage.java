@@ -12,7 +12,7 @@ public class OpflowMessage {
     private final Map<String, Object> info;
     
     public final static OpflowMessage EMPTY = new OpflowMessage();
-    public final static OpflowMessage ERROR = new OpflowMessage();
+    public final static OpflowMessage ERROR = new OpflowMessage(null, OpflowUtil.buildMap().put("status", "failed").toMap());
     
     private OpflowMessage() {
         body = null;

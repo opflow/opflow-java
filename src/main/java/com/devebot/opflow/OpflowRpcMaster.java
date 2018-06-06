@@ -120,7 +120,7 @@ public class OpflowRpcMaster {
 
                 if (OpflowLogTracer.has(LOG, "info") && logResult != null) LOG.info(logResult
                         .put("correlationId", taskId)
-                        .text("initResponseConsumer() - receives a result")
+                        .text("initResponseConsumer() - task[${correlationId}] receives a result")
                         .stringify());
 
                 if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
@@ -132,18 +132,18 @@ public class OpflowRpcMaster {
                 if (taskId == null || task == null) {
                     if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
                         .put("correlationId", taskId)
-                        .text("initResponseConsumer() - task not found, skipped")
+                        .text("initResponseConsumer() - task[${correlationId}] not found, skipped")
                         .stringify());
                 } else {
                     if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
                         .put("correlationId", taskId)
-                        .text("initResponseConsumer() - push Message object to Task")
+                        .text("initResponseConsumer() - push Message object to task[${correlationId}]")
                         .stringify());
                     OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                     task.push(message);
                     if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
                         .put("correlationId", taskId)
-                        .text("initResponseConsumer() - returned value has been pushed")
+                        .text("initResponseConsumer() - returned value of task[${correlationId}]")
                         .stringify());
                 }
                 return true;
@@ -231,8 +231,10 @@ public class OpflowRpcMaster {
                         idle.signal();
                     }
                     if (logTask != null && OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTask
+                            .put("taskId", taskId)
                             .put("taskListSize", tasks.size())
-                            .text("Request[${requestId}] - RpcMaster[${rpcMasterId}] - Check tasks size after removing a task")
+                            .text("Request[${requestId}] - RpcMaster[${rpcMasterId}]"
+                                    + "- tasksize after removing task[${taskId}]: ${taskListSize}")
                             .stringify());
                 } finally {
                     lock.unlock();

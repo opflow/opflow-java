@@ -76,12 +76,12 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
     
     @Override
     public long getTimestamp() {
-        return timestamp;
+        return this.timestamp;
     }
     
     @Override
     public void raiseTimeout() {
-        list.add(OpflowMessage.ERROR);
+        this.push(OpflowMessage.ERROR);
     }
     
     private final BlockingQueue<OpflowMessage> list = new LinkedBlockingQueue<OpflowMessage>();
