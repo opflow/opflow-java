@@ -59,6 +59,10 @@ public class OpflowBuilder {
         Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
         
         params.put("responseName", handlerNode.get("responseName"));
+        params.put("responseDurable", handlerNode.get("responseDurable"));
+        params.put("responseExclusive", handlerNode.get("responseExclusive"));
+        params.put("responseAutoDelete", handlerNode.get("responseAutoDelete"));
+        params.put("responseNamePostfixed", handlerNode.get("responseNamePostfixed"));
         
         transformParameters(params);
         
@@ -186,6 +190,10 @@ public class OpflowBuilder {
             componentCfg.put("enabled", componentNode.get("enabled"));
             if ("rpcMaster".equals(componentName)) {
                 componentCfg.put("responseName", componentNode.get("responseName"));
+                componentCfg.put("responseDurable", componentNode.get("responseDurable"));
+                componentCfg.put("responseExclusive", componentNode.get("responseExclusive"));
+                componentCfg.put("responseAutoDelete", componentNode.get("responseAutoDelete"));
+                componentCfg.put("responseNamePostfixed", componentNode.get("responseNamePostfixed"));
                 componentCfg.put("monitorId", componentNode.get("monitorId"));
                 componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
                 componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
@@ -453,7 +461,8 @@ public class OpflowBuilder {
     }
     
     private static final String[] BOOLEAN_FIELDS = new String[] {
-        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled", "monitorEnabled"
+        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled", "monitorEnabled",
+        "responseDurable", "responseExclusive", "responseAutoDelete", "responseNamePostfixed"
     };
     
     private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };

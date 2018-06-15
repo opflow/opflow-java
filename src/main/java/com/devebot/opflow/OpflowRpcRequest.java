@@ -46,11 +46,11 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
                 public void handleEvent() {
                     OpflowLogTracer logWatcher = logTracer.copy();
                     if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logWatcher
-                            .text("Request timeout event has been raised")
+                            .text("Request[${requestId}] timeout event has been raised")
                             .stringify());
                     list.add(OpflowMessage.ERROR);
                     if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logWatcher
-                            .text("Request raise completeListener (timeout)")
+                            .text("Request[${requestId}] raise completeListener (timeout)")
                             .stringify());
                     completeListener.handleEvent();
                 }
@@ -115,12 +115,12 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         if(isDone(message)) {
             OpflowLogTracer pushTrail = logTracer.copy();
             if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(pushTrail
-                    .text("Request has completed/failed message")
+                    .text("Request[${requestId}] has completed/failed message")
                     .stringify());
             list.add(OpflowMessage.EMPTY);
             if (completeListener != null) {
                 if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(pushTrail
-                        .text("Request raises completeListener (completed)")
+                        .text("Request[${requestId}] raises completeListener (completed)")
                         .stringify());
                 completeListener.handleEvent();
             }
@@ -143,7 +143,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
     public OpflowRpcResult extractResult(final boolean includeProgress) {
         OpflowLogTracer extractTrail = logTracer;
         if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(extractTrail
-                .text("Extracting result is running")
+                .text("Request[${requestId}] - extracting result")
                 .stringify());
         String workerTag = null;
         boolean failed = false;
@@ -156,7 +156,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
             String status = getStatus(msg);
             if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(extractTrail
                     .put("status", status)
-                    .text("Extracting result receives a message")
+                    .text("Request[${requestId}] - examine message, status: ${status}")
                     .stringify());
             if (status == null) continue;
             if ("progress".equals(status)) {
@@ -181,7 +181,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
             }
         }
         if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(extractTrail
-                .text("Extracting result has completed")
+                .text("Request[${requestId}] - extracting result has completed")
                 .stringify());
         if (!includeProgress) steps = null;
         return new OpflowRpcResult(routineId, requestId, workerTag, steps, failed, error, completed, value);

@@ -456,9 +456,12 @@ public class OpflowEngine {
             final String _queueName;
             final boolean _fixedQueue;
             String opts_queueName = (String) opts.get("queueName");
+            final boolean opts_durable = !Boolean.FALSE.equals(opts.get("durable"));
+            final boolean opts_exclusive = Boolean.TRUE.equals(opts.get("exclusive"));
+            final boolean opts_autoDelete = Boolean.TRUE.equals(opts.get("autoDelete"));
             AMQP.Queue.DeclareOk _declareOk;
             if (opts_queueName != null) {
-                _declareOk = _channel.queueDeclare(opts_queueName, true, false, false, null);
+                _declareOk = _channel.queueDeclare(opts_queueName, opts_durable, opts_exclusive, opts_autoDelete, null);
                 _fixedQueue = true;
             } else {
                 _declareOk = _channel.queueDeclare();
@@ -628,7 +631,7 @@ public class OpflowEngine {
                     .put("queueName", _queueName)
                     .put("consumerTag", _consumerTag)
                     .put("channelNumber", _channel.getChannelNumber())
-                    .text("Consumer[${consumerId}].consume() consume the queue")
+                    .text("Consumer[${consumerId}].consume() create consumer[${consumerTag}]/queue[${queueName}]")
                     .stringify());
             ConsumerInfo info = new ConsumerInfo(_connection, !_forceNewConnection, 
                     _channel, !_forceNewChannel, _queueName, _fixedQueue, _consumerId, _consumerTag);

@@ -31,6 +31,9 @@ public class OpflowRpcMaster {
     private final OpflowExecutor executor;
     
     private final String responseName;
+    private final Boolean responseDurable;
+    private final Boolean responseExclusive;
+    private final Boolean responseAutoDelete;
     
     private final boolean monitorEnabled;
     private final String monitorId;
@@ -56,9 +59,37 @@ public class OpflowRpcMaster {
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         
-        responseName = (String) params.get("responseName");
+        String _responseName = (String) params.get("responseName");
+        if (_responseName != null) {
+            boolean _responseNamePostfixed = Boolean.TRUE.equals(params.get("responseNamePostfixed"));
+            if (_responseNamePostfixed) {
+                _responseName += '_' + OpflowUtil.getUUID();
+            }
+            responseName = _responseName;
+        } else {
+            responseName = null;
+        }
+        
+        if (params.get("responseDurable") != null && params.get("responseDurable") instanceof Boolean) {
+            responseDurable = (Boolean) params.get("responseDurable");
+        } else {
+            responseDurable = null;
+        }
+        
+        if (params.get("responseExclusive") != null && params.get("responseExclusive") instanceof Boolean) {
+            responseExclusive = (Boolean) params.get("responseExclusive");
+        } else {
+            responseExclusive = null;
+        }
+        
+        if (params.get("responseAutoDelete") != null && params.get("responseAutoDelete") instanceof Boolean) {
+            responseAutoDelete = (Boolean) params.get("responseAutoDelete");
+        } else {
+            responseAutoDelete = null;
+        }
+        
         if (responseName != null) {
-            executor.assertQueue(responseName);
+            executor.assertQueue(responseName, responseDurable, responseExclusive, responseAutoDelete);
         }
         
         if (params.get("monitorEnabled") != null && params.get("monitorEnabled") instanceof Boolean) {
@@ -154,6 +185,9 @@ public class OpflowRpcMaster {
                 opts.put("consumerId", _consumerId);
                 if (!forked) {
                     opts.put("queueName", responseName);
+                    if (responseDurable != null) opts.put("durable", responseDurable);
+                    if (responseExclusive != null) opts.put("exclusive", responseExclusive);
+                    if (responseAutoDelete != null) opts.put("autoDelete", responseAutoDelete);
                     opts.put("consumerLimit", CONSUMER_MAX);
                     opts.put("forceNewChannel", Boolean.FALSE);
                 }
