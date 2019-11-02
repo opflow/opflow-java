@@ -48,7 +48,7 @@ public class OpflowEngine {
     private Channel producingChannel;
     private Connection consumingConnection;
     private Channel consumingChannel;
-    private List<ConsumerInfo> consumerInfos = new LinkedList<ConsumerInfo>();
+    private List<ConsumerInfo> consumerInfos = new LinkedList<>();
     
     private String exchangeName;
     private String exchangeType;
@@ -394,6 +394,8 @@ public class OpflowEngine {
             if (override != null && override.get("replyTo") != null) {
                 propBuilder.replyTo(override.get("replyTo").toString());
             }
+            
+            headers.put("publishedTime", OpflowUtil.getCurrentTimeString());
             
             String requestId = OpflowUtil.getRequestId(headers, false);
             if (requestId == null) {

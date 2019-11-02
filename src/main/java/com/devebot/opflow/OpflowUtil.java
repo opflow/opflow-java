@@ -21,6 +21,10 @@ import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowEnvtool;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 /**
  *
@@ -28,10 +32,11 @@ import com.devebot.opflow.supports.OpflowEnvtool;
  */
 public class OpflowUtil {
     private static final Logger LOG = LoggerFactory.getLogger(OpflowUtil.class);
-    private final OpflowLogTracer logTracer = OpflowLogTracer.ROOT.copy();
-    
-    private final static boolean OPFLOW_BASE64UUID;
+    private static final String ISO8601_TEMPLATE = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    private static final DateFormat DATE_FORMAT = new SimpleDateFormat(ISO8601_TEMPLATE);
+    private static final boolean OPFLOW_BASE64UUID;
     static {
+        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
         OPFLOW_BASE64UUID = !"false".equals(OpflowUtil.getSystemProperty("OPFLOW_BASE64UUID", null)) &&
                 !"false".equals(OpflowUtil.getEnvironVariable("OPFLOW_BASE64UUID", null));
     }
@@ -74,6 +79,21 @@ public class OpflowUtil {
     @Deprecated
     public static int jsonExtractFieldAsInt(String json, String fieldName) {
         return OpflowJsontool.extractFieldAsInt(json, fieldName);
+    }
+    
+    public static String toISO8601UTC(Date date) {
+        return DATE_FORMAT.format(date);
+    }
+    
+    public static Date fromISO8601UTC(String dateStr) {
+        try {
+            return DATE_FORMAT.parse(dateStr);
+        } catch (ParseException e) {}
+        return null;
+    }
+    
+    public static String getCurrentTimeString() {
+        return toISO8601UTC(new Date());
     }
     
     public static long getCurrentTime() {
@@ -191,7 +211,7 @@ public class OpflowUtil {
     }
     
     public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts) {
-        Map<String, Object> source = new HashMap<String, Object>();
+        Map<String, Object> source = new HashMap<>();
         if (defaultOpts != null) {
             source.putAll(defaultOpts);
         }
@@ -257,7 +277,7 @@ public class OpflowUtil {
     public static String[] splitByComma(String source) {
         if (source == null) return null;
         String[] arr = source.split(",");
-        ArrayList<String> list = new ArrayList<String>(arr.length);
+        ArrayList<String> list = new ArrayList<>(arr.length);
         for(String item: arr) {
             String str = item.trim();
             if (str.length() > 0) list.add(str);
@@ -268,7 +288,7 @@ public class OpflowUtil {
     public static <T> T[] splitByComma(String source, Class<T> type) {
         if (source == null) return null;
         String[] arr = source.split(",");
-        ArrayList<T> list = new ArrayList<T>(arr.length);
+        ArrayList<T> list = new ArrayList<>(arr.length);
         for(String item: arr) {
             String str = item.trim();
             if (str.length() > 0) list.add(OpflowConverter.convert(str, type));

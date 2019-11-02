@@ -273,10 +273,10 @@ public class OpflowServerlet {
         private final OpflowLogTracer logTracer;
         private final OpflowRpcWorker rpcWorker;
         private final OpflowRpcListener listener;
-        private final Set<String> routineIds = new HashSet<String>();
-        private final Map<String, Method> methodRef = new HashMap<String, Method>();
-        private final Map<String, Object> targetRef = new HashMap<String, Object>();
-        private final Map<String, String> methodOfAlias = new HashMap<String, String>();
+        private final Set<String> routineIds = new HashSet<>();
+        private final Map<String, Method> methodRef = new HashMap<>();
+        private final Map<String, Object> targetRef = new HashMap<>();
+        private final Map<String, String> methodOfAlias = new HashMap<>();
         private boolean processing = false;
         
         public Instantiator(OpflowRpcWorker worker) throws OpflowBootstrapException {

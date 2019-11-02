@@ -59,13 +59,10 @@ public class OpflowRpcMaster {
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         
+        boolean _responseNamePostfixed = Boolean.TRUE.equals(params.get("responseNamePostfixed"));
         String _responseName = (String) params.get("responseName");
         if (_responseName != null) {
-            boolean _responseNamePostfixed = Boolean.TRUE.equals(params.get("responseNamePostfixed"));
-            if (_responseNamePostfixed) {
-                _responseName += '_' + OpflowUtil.getUUID();
-            }
-            responseName = _responseName;
+            responseName = _responseNamePostfixed ? _responseName + '_' + OpflowUtil.getUUID() : _responseName;
         } else {
             responseName = null;
         }
@@ -73,19 +70,19 @@ public class OpflowRpcMaster {
         if (params.get("responseDurable") != null && params.get("responseDurable") instanceof Boolean) {
             responseDurable = (Boolean) params.get("responseDurable");
         } else {
-            responseDurable = null;
+            responseDurable = _responseNamePostfixed ? false : null;
         }
         
         if (params.get("responseExclusive") != null && params.get("responseExclusive") instanceof Boolean) {
             responseExclusive = (Boolean) params.get("responseExclusive");
         } else {
-            responseExclusive = null;
+            responseExclusive = _responseNamePostfixed ? true : null;
         }
         
         if (params.get("responseAutoDelete") != null && params.get("responseAutoDelete") instanceof Boolean) {
             responseAutoDelete = (Boolean) params.get("responseAutoDelete");
         } else {
-            responseAutoDelete = null;
+            responseAutoDelete = _responseNamePostfixed ? true : null;
         }
         
         if (responseName != null) {
@@ -114,6 +111,9 @@ public class OpflowRpcMaster {
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .put("responseName", responseName)
+                .put("responseDurable", responseDurable)
+                .put("responseExclusive", responseExclusive)
+                .put("responseAutoDelete", responseAutoDelete)
                 .put("monitorId", monitorId)
                 .put("monitorEnabled", monitorEnabled)
                 .put("monitorInterval", monitorInterval)
