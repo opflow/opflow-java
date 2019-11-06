@@ -24,6 +24,7 @@ import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowKeytool;
+import io.prometheus.client.Gauge;
 
 /**
  *
@@ -57,6 +58,8 @@ public class OpflowEngine {
     private String[] otherKeys;
     private String applicationId;
 
+    private OpflowExporter exporter = OpflowExporter.getInstance();
+    
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
@@ -85,16 +88,24 @@ public class OpflowEngine {
             }
             
             ExecutorService threadExecutor = null;
-            if ("cached".equals(threadPoolType)) {
-                threadExecutor = Executors.newCachedThreadPool();
-            } else if ("fixed".equals(threadPoolType)) {
-                threadExecutor = Executors.newFixedThreadPool(threadPoolSize);
-            } else if ("single".equals(threadPoolType)) {
-                threadExecutor = Executors.newSingleThreadExecutor();
-            } else if ("single-scheduled".equals(threadPoolType)) {
-                threadExecutor = Executors.newSingleThreadScheduledExecutor();
-            } else if ("scheduled".equals(threadPoolType)) {
-                threadExecutor = Executors.newScheduledThreadPool(threadPoolSize);
+            if (null != threadPoolType) switch (threadPoolType) {
+                case "cached":
+                    threadExecutor = Executors.newCachedThreadPool();
+                    break;
+                case "fixed":
+                    threadExecutor = Executors.newFixedThreadPool(threadPoolSize);
+                    break;
+                case "single":
+                    threadExecutor = Executors.newSingleThreadExecutor();
+                    break;
+                case "single-scheduled":
+                    threadExecutor = Executors.newSingleThreadScheduledExecutor();
+                    break;
+                case "scheduled":
+                    threadExecutor = Executors.newScheduledThreadPool(threadPoolSize);
+                    break;
+                default:
+                    break;
             }
             
             if (threadExecutor != null) {
@@ -890,6 +901,12 @@ public class OpflowEngine {
         });
     }
     
+    private final Gauge engineConnectionGauge = Gauge.build()
+            .name("opflow_engine_connection")
+            .help("Number of producing connections.")
+            .labelNames("host", "port", "virtual_host", "connection_type")
+            .register();
+    
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
             if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
@@ -897,6 +914,7 @@ public class OpflowEngine {
                     .text("Engine[${engineId}] shared producingConnection is created")
                     .stringify());
             producingConnection = factory.newConnection();
+            engineConnectionGauge.labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), "producing").inc();
         }
         return producingConnection;
     }
@@ -935,6 +953,7 @@ public class OpflowEngine {
                     .text("Engine[${engineId}] shared consumingConnection is created")
                     .stringify());
             consumingConnection = factory.newConnection();
+            engineConnectionGauge.labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), "consuming").inc();
         }
         return consumingConnection;
     }
