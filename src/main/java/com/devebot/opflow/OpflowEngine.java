@@ -24,7 +24,6 @@ import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowKeytool;
-import io.prometheus.client.Gauge;
 
 /**
  *
@@ -901,12 +900,6 @@ public class OpflowEngine {
         });
     }
     
-    private final Gauge engineConnectionGauge = Gauge.build()
-            .name("opflow_engine_connection")
-            .help("Number of producing connections.")
-            .labelNames("host", "port", "virtual_host", "connection_type")
-            .register();
-    
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
             if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
@@ -914,7 +907,7 @@ public class OpflowEngine {
                     .text("Engine[${engineId}] shared producingConnection is created")
                     .stringify());
             producingConnection = factory.newConnection();
-            engineConnectionGauge.labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), "producing").inc();
+            OpflowPromHelper.incEngineConnectionGauge(factory, "producing");
         }
         return producingConnection;
     }
@@ -953,7 +946,7 @@ public class OpflowEngine {
                     .text("Engine[${engineId}] shared consumingConnection is created")
                     .stringify());
             consumingConnection = factory.newConnection();
-            engineConnectionGauge.labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), "consuming").inc();
+            OpflowPromHelper.incEngineConnectionGauge(factory, "consuming");
         }
         return consumingConnection;
     }
