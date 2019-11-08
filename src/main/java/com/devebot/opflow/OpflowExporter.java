@@ -16,17 +16,21 @@ public class OpflowExporter {
     public final static String DEFAULT_PROM_EXPORTER_PORT_ENV = "OPFLOW_EXPORTER_PORT";
 
     private static OpflowExporter instance;
-    private static OpflowEnvtool envtool = OpflowEnvtool.instance;
+    private static final OpflowEnvtool envtool = OpflowEnvtool.instance;
 
-    private OpflowExporter() throws OpflowBootstrapException {
+    private static String getExporterPort() {
         String port1 = envtool.getEnvironVariable(DEFAULT_PROM_EXPORTER_PORT_ENV, null);
         String port2 = envtool.getSystemProperty(DEFAULT_PROM_EXPORTER_PORT_KEY, port1);
-        String port3 = (port2 != null) ? port2 : DEFAULT_PROM_EXPORTER_PORT;
+        return (port2 != null) ? port2 : DEFAULT_PROM_EXPORTER_PORT; 
+    }
+    
+    private OpflowExporter() throws OpflowBootstrapException {
+        String portStr = getExporterPort();
         try {
             DefaultExports.initialize();
-            HTTPServer server = new HTTPServer(Integer.parseInt(port3));
+            HTTPServer server = new HTTPServer(Integer.parseInt(portStr));
         } catch (Exception exception) {
-            throw new OpflowBootstrapException("Exporter connection refused, port: " + port3, exception);
+            throw new OpflowBootstrapException("Exporter connection refused, port: " + portStr, exception);
         }
     }
  
