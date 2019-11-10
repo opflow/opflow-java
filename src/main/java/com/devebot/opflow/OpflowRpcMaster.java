@@ -29,6 +29,7 @@ public class OpflowRpcMaster {
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
+    private OpflowExporter exporter;
     
     private final String responseName;
     private final Boolean responseDurable;
@@ -58,6 +59,7 @@ public class OpflowRpcMaster {
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
+        exporter = OpflowExporter.getInstance();
         
         boolean _responseNamePostfixed = Boolean.TRUE.equals(params.get("responseNamePostfixed"));
         String _responseName = (String) params.get("responseName");
@@ -306,6 +308,8 @@ public class OpflowRpcMaster {
         
         engine.produce(body, headers, builder);
         
+        exporter.setRpcMasterRequestGauge(requestId.toString(), routineId, taskId);
+
         return task;
     }
 

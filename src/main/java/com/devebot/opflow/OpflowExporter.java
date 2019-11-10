@@ -34,7 +34,6 @@ public class OpflowExporter {
 
     private static final CollectorRegistry pushRegistry = new CollectorRegistry();
     private static PushGateway pushGateway;
-    private static Gauge engineConnectionGauge;
 
     private static void finish(String jobName) {
         if (pushGateway != null) {
@@ -46,6 +45,8 @@ public class OpflowExporter {
         }
     }
     
+    private static Gauge engineConnectionGauge;
+
     private static Gauge getEngineConnectionGauge() {
         Gauge.Builder builder = Gauge.build()
             .name("opflow_engine_connection")
@@ -67,6 +68,48 @@ public class OpflowExporter {
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
 
+    private static Gauge rpcMasterRequestGauge;
+    
+    private static Gauge assertRpcMasterRequestGauge() {
+        if (rpcMasterRequestGauge == null) {
+            Gauge.Builder builder = Gauge.build()
+                .name("opflow_rpc_master_request_seconds")
+                .help("Number of requests of the master")
+                .labelNames("requestId", "routineId", "taskId");
+            if (pushGateway != null) {
+                rpcMasterRequestGauge = builder.register(pushRegistry);
+            } else {
+                rpcMasterRequestGauge = builder.register();
+            }
+        }
+        return rpcMasterRequestGauge;
+    }
+    
+    public void setRpcMasterRequestGauge(String requestId, String routineId, String taskId) {
+        assertRpcMasterRequestGauge().labels(requestId, routineId, taskId).setToCurrentTime();
+    }
+    
+    private static Gauge rpcWorkerRequestGauge;
+    
+    private static Gauge assertRpcWorkerRequestGauge() {
+        if (rpcWorkerRequestGauge == null) {
+            Gauge.Builder builder = Gauge.build()
+                .name("opflow_rpc_worker_request_seconds")
+                .help("Number of requests of the worker")
+                .labelNames("requestId", "routineId");
+            if (pushGateway != null) {
+                rpcWorkerRequestGauge = builder.register(pushRegistry);
+            } else {
+                rpcWorkerRequestGauge = builder.register();
+            }
+        }
+        return rpcWorkerRequestGauge;
+    }
+    
+    public void setRpcWorkerRequestGauge(String requestId, String routineId) {
+        assertRpcWorkerRequestGauge().labels(requestId, routineId).setToCurrentTime();
+    }
+    
     private static String getExporterPort() {
         String port1 = OpflowEnvtool.instance.getEnvironVariable(DEFAULT_PROM_EXPORTER_PORT_ENV, null);
         String port2 = OpflowEnvtool.instance.getSystemProperty(DEFAULT_PROM_EXPORTER_PORT_KEY, port1);

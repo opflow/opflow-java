@@ -22,6 +22,8 @@ public class OpflowRpcWorker {
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
+    private OpflowExporter exporter;
+    
     private final String operatorName;
     private final String responseName;
     
@@ -50,6 +52,7 @@ public class OpflowRpcWorker {
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
+        exporter = OpflowExporter.getInstance();
         
         if (operatorName != null) {
             executor.assertQueue(operatorName);
@@ -137,6 +140,7 @@ public class OpflowRpcWorker {
                     if (middleware.getChecker().match(routineId)) {
                         count++;
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
+                        exporter.setRpcWorkerRequestGauge(requestId.toString(), routineId);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
