@@ -68,46 +68,26 @@ public class OpflowExporter {
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
 
-    private static Gauge rpcMasterRequestGauge;
+    private static Gauge rpcInvocationEventGauge;
     
-    private static Gauge assertRpcMasterRequestGauge() {
-        if (rpcMasterRequestGauge == null) {
+    private static Gauge assertRpcInvocationEventGauge() {
+        if (rpcInvocationEventGauge == null) {
             Gauge.Builder builder = Gauge.build()
-                .name("opflow_rpc_master_request_seconds")
-                .help("Number of requests of the master")
-                .labelNames("requestId", "routineId", "taskId");
+                .name("opflow_rpc_invocation_events")
+                .help("The timestamp of the RPC invocation events")
+                .labelNames("module_name", "requestId", "routineId", "taskId", "status");
             if (pushGateway != null) {
-                rpcMasterRequestGauge = builder.register(pushRegistry);
+                rpcInvocationEventGauge = builder.register(pushRegistry);
             } else {
-                rpcMasterRequestGauge = builder.register();
+                rpcInvocationEventGauge = builder.register();
             }
         }
-        return rpcMasterRequestGauge;
+        return rpcInvocationEventGauge;
     }
     
-    public void setRpcMasterRequestGauge(String requestId, String routineId, String taskId) {
-        assertRpcMasterRequestGauge().labels(requestId, routineId, taskId).setToCurrentTime();
-    }
-    
-    private static Gauge rpcWorkerRequestGauge;
-    
-    private static Gauge assertRpcWorkerRequestGauge() {
-        if (rpcWorkerRequestGauge == null) {
-            Gauge.Builder builder = Gauge.build()
-                .name("opflow_rpc_worker_request_seconds")
-                .help("Number of requests of the worker")
-                .labelNames("requestId", "routineId");
-            if (pushGateway != null) {
-                rpcWorkerRequestGauge = builder.register(pushRegistry);
-            } else {
-                rpcWorkerRequestGauge = builder.register();
-            }
-        }
-        return rpcWorkerRequestGauge;
-    }
-    
-    public void setRpcWorkerRequestGauge(String requestId, String routineId) {
-        assertRpcWorkerRequestGauge().labels(requestId, routineId).setToCurrentTime();
+    public void setRpcInvocationEventGauge(String moduleName, String requestId, String routineId, String taskId, String status) {
+        assertRpcInvocationEventGauge().labels(moduleName, requestId, routineId, taskId, status).setToCurrentTime();
+        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
     private static String getExporterPort() {

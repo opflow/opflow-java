@@ -140,7 +140,7 @@ public class OpflowRpcWorker {
                     if (middleware.getChecker().match(routineId)) {
                         count++;
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
-                        exporter.setRpcWorkerRequestGauge(requestId.toString(), routineId);
+                        exporter.setRpcInvocationEventGauge("rpc_worker", requestId, routineId, "", "request");
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }

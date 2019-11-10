@@ -308,7 +308,7 @@ public class OpflowRpcMaster {
         
         engine.produce(body, headers, builder);
         
-        exporter.setRpcMasterRequestGauge(requestId.toString(), routineId, taskId);
+        exporter.setRpcInvocationEventGauge("rpc_master", requestId.toString(), routineId, taskId, "request");
 
         return task;
     }
