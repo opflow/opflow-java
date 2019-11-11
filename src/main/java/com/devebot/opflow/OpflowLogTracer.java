@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowTextFormat;
 import com.google.gson.Gson;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,17 +44,28 @@ public class OpflowLogTracer {
     private final static boolean IS_TEMPLATE_APPLIED;
 
     static {
-        ALWAYS_ENABLED = new HashSet<String>();
+        ALWAYS_ENABLED = new HashSet<>();
         String[] _levels = OpflowUtil.getSystemProperty("OPFLOW_ALWAYS_ENABLED", "").split(",");
         for(String _level: _levels) {
             ALWAYS_ENABLED.add(_level.trim());
         }
         
         String treepath = OpflowUtil.getSystemProperty("OPFLOW_TRACKING_DEPTH", null);
-        if ("none".equals(treepath)) TRACKING_DEPTH = 0;
-        else if ("parent".equals(treepath)) TRACKING_DEPTH = 1;
-        else if ("full".equals(treepath)) TRACKING_DEPTH = 2;
-        else TRACKING_DEPTH = 2;
+        if (null == treepath) TRACKING_DEPTH = 2;
+        else switch (treepath) {
+            case "none":
+                TRACKING_DEPTH = 0;
+                break;
+            case "parent":
+                TRACKING_DEPTH = 1;
+                break;
+            case "full":
+                TRACKING_DEPTH = 2;
+                break;
+            default:
+                TRACKING_DEPTH = 2;
+                break;
+        }
         
         KEEP_ORDER = (OpflowUtil.getSystemProperty("OPFLOW_LOGKEEPORDER", null) == null);
         
@@ -281,7 +293,7 @@ public class OpflowLogTracer {
             String POM_PROPSFILE = "META-INF/maven/com.devebot.opflow/opflow-core/pom.properties";
             props.load(OpflowLogTracer.class.getClassLoader().getResourceAsStream(POM_PROPSFILE));
             return props.getProperty("version");
-        } catch (Exception ioe) {}
+        } catch (IOException ioe) {}
         return OPFLOW_VERSION;
     }
     
@@ -293,7 +305,7 @@ public class OpflowLogTracer {
                 Attributes attributes = manifest.getMainAttributes();
                 return attributes.getValue("Implementation-Version");
             }
-        } catch (Exception ioe) {}
+        } catch (IOException ioe) {}
         return OPFLOW_VERSION;
     }
     

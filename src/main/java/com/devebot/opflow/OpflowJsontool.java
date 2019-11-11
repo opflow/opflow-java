@@ -67,9 +67,7 @@ public class OpflowJsontool {
         try {
             JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
             return type.cast(jsonObject.get(fieldName));
-        } catch (ClassCastException e) {
-            throw new OpflowJsonTransformationException(e);
-        } catch (JsonSyntaxException e) {
+        } catch (ClassCastException | JsonSyntaxException e) {
             throw new OpflowJsonTransformationException(e);
         }
     }

@@ -28,19 +28,15 @@ public class OpflowExecutor {
             if (exclusive == null) exclusive = false;
             if (autoDelete == null) autoDelete = false;
             declareQueue(queueName, durable, exclusive, autoDelete);
-        } catch (IOException ioe) {
+        } catch (IOException | TimeoutException ioe) {
             throw new OpflowBootstrapException(ioe);
-        } catch (TimeoutException te) {
-            throw new OpflowBootstrapException(te);
         }
     }
     
     public int countQueue(final String queueName) {
         try {
             return declareQueue(queueName, true, false, false).getMessageCount();
-        } catch (IOException exception) {
-            throw new OpflowOperationException(exception);
-        } catch (TimeoutException exception) {
+        } catch (IOException | TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
     }
@@ -55,9 +51,7 @@ public class OpflowExecutor {
             exclusive = (exclusive == null) ? false : exclusive;
             autoDelete = (autoDelete == null) ? false : autoDelete;
             return declareQueue(queueName, durable, exclusive, autoDelete);
-        } catch (IOException exception) {
-            throw new OpflowOperationException(exception);
-        } catch (TimeoutException exception) {
+        } catch (IOException | TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
     }
@@ -90,9 +84,7 @@ public class OpflowExecutor {
                     return _channel.queuePurge(queueName);
                 }
             });
-        } catch (IOException exception) {
-            throw new OpflowOperationException(exception);
-        } catch (TimeoutException exception) {
+        } catch (IOException | TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
     }
@@ -105,9 +97,7 @@ public class OpflowExecutor {
                     return channel.queueDelete(queueName, true, false);
                 }
             });
-        } catch (IOException exception) {
-            throw new OpflowOperationException(exception);
-        } catch (TimeoutException exception) {
+        } catch (IOException | TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
     }
@@ -115,10 +105,8 @@ public class OpflowExecutor {
     public AMQP.Exchange.DeclareOk defineExchange(final String exchangeName, final String exchangeType) {
         try {
             return declareExchange(exchangeName, exchangeType);
-        } catch (IOException ioe) {
+        } catch (IOException | TimeoutException ioe) {
             throw new OpflowOperationException(ioe);
-        } catch (TimeoutException te) {
-            throw new OpflowOperationException(te);
         }
     }
     
@@ -151,9 +139,7 @@ public class OpflowExecutor {
                     return channel.exchangeDelete(exchangeName);
                 }
             });
-        } catch (IOException exception) {
-            throw new OpflowOperationException(exception);
-        } catch (TimeoutException exception) {
+        } catch (IOException | TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
     }

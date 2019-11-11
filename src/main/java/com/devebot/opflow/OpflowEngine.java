@@ -24,6 +24,9 @@ import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowKeytool;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 
 /**
  *
@@ -299,7 +302,7 @@ public class OpflowEngine {
                     .stringify());
 
             this.assertConnection();
-        } catch (Exception exception) {
+        } catch (IOException | URISyntaxException | KeyManagementException | NoSuchAlgorithmException | TimeoutException exception) {
             if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
@@ -605,7 +608,7 @@ public class OpflowEngine {
                                     .stringify());
                             invokeAck(envelope, false);
                         }
-                    } catch (Exception ex) {
+                    } catch (IOException ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
                         if (OpflowLogTracer.has(LOG, "error")) LOG.error(logRequest
                                 .put("deliveryTag", envelope.getDeliveryTag())

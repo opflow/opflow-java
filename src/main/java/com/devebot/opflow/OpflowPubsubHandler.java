@@ -24,7 +24,7 @@ public class OpflowPubsubHandler {
     private final OpflowExecutor executor;
     private final String subscriberName;
     private final String recyclebinName;
-    private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<OpflowEngine.ConsumerInfo>();
+    private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<>();
     private int prefetch = 0;
     private int subscriberLimit = 0;
     private int redeliveredLimit = 0;
@@ -40,7 +40,7 @@ public class OpflowPubsubHandler {
                 .text("PubsubHandler[${pubsubHandlerId}].new()")
                 .stringify());
         
-        Map<String, Object> brokerParams = new HashMap<String, Object>();
+        Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("engineId", pubsubHandlerId);
         brokerParams.put("mode", "pubsub");
