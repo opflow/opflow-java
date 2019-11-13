@@ -84,7 +84,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         this.push(OpflowMessage.ERROR);
     }
     
-    private final BlockingQueue<OpflowMessage> list = new LinkedBlockingQueue<OpflowMessage>();
+    private final BlockingQueue<OpflowMessage> list = new LinkedBlockingQueue<>();
     private OpflowMessage current = null;
     
     @Override
@@ -131,7 +131,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
     }
     
     public List<OpflowMessage> iterateResult() {
-        List<OpflowMessage> buff = new LinkedList<OpflowMessage>();
+        List<OpflowMessage> buff = new LinkedList<>();
         while(this.hasNext()) buff.add(this.next());
         return buff;
     }
@@ -150,7 +150,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         byte[] error = null;
         boolean completed = false;
         byte[] value = null;
-        List<OpflowRpcResult.Step> steps = new LinkedList<OpflowRpcResult.Step>();
+        List<OpflowRpcResult.Step> steps = new LinkedList<>();
         while(this.hasNext()) {
             OpflowMessage msg = this.next();
             String status = getStatus(msg);
@@ -159,25 +159,28 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
                     .text("Request[${requestId}] - examine message, status: ${status}")
                     .stringify());
             if (status == null) continue;
-            if ("progress".equals(status)) {
-                if (includeProgress) {
-                    try {
-                        int percent = OpflowJsontool.extractFieldAsInt(msg.getBodyAsString(), "percent");
-                        steps.add(new OpflowRpcResult.Step(percent));
-                    } catch (OpflowJsonTransformationException jse) {
-                        steps.add(new OpflowRpcResult.Step());
-                    }
-                }
-            } else
-            if ("failed".equals(status)) {
-                workerTag = OpflowUtil.getMessageField(msg, "workerTag");
-                failed = true;
-                error = msg.getBody();
-            } else
-            if ("completed".equals(status)) {
-                workerTag = OpflowUtil.getMessageField(msg, "workerTag");
-                completed = true;
-                value = msg.getBody();
+            switch (status) {
+                case "progress":
+                    if (includeProgress) {
+                        try {
+                            int percent = OpflowJsontool.extractFieldAsInt(msg.getBodyAsString(), "percent");
+                            steps.add(new OpflowRpcResult.Step(percent));
+                        } catch (OpflowJsonTransformationException jse) {
+                            steps.add(new OpflowRpcResult.Step());
+                        }
+                    }   break;
+                case "failed":
+                    workerTag = OpflowUtil.getMessageField(msg, "workerTag");
+                    failed = true;
+                    error = msg.getBody();
+                    break;
+                case "completed":
+                    workerTag = OpflowUtil.getMessageField(msg, "workerTag");
+                    completed = true;
+                    value = msg.getBody();
+                    break;
+                default:
+                    break;
             }
         }
         if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(extractTrail

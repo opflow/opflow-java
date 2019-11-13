@@ -122,7 +122,7 @@ public class OpflowPubsubHandler {
             options.put("requestId", requestId = OpflowUtil.getLogID());
         }
         
-        Map<String, Object> override = new HashMap<String, Object>();
+        Map<String, Object> override = new HashMap<>();
         if (routingKey != null) {
             override.put("routingKey", routingKey);
         }

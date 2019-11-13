@@ -99,8 +99,8 @@ public class OpflowLogTracer {
         this.key = key;
         this.value = value;
         this.fields = KEEP_ORDER ? new LinkedHashMap<String, Object>() : new HashMap<String, Object>();
-        this.frozen = new HashSet<String>();
-        this.tags = new HashSet<String>();
+        this.frozen = new HashSet<>();
+        this.tags = new HashSet<>();
         this.reset();
     }
     
@@ -220,9 +220,9 @@ public class OpflowLogTracer {
         }
         
         if (IS_INTERCEPTOR_ENABLED && !interceptors.isEmpty()) {
-            Map<String, Object> cloned = new HashMap<String, Object>();
+            Map<String, Object> cloned = new HashMap<>();
             cloned.putAll(fields);
-            tagz = new HashSet<String>(this.tags);
+            tagz = new HashSet<>(this.tags);
             for(StringifyInterceptor interceptor:interceptors) {
                 interceptor.intercept(cloned, tagz);
             }

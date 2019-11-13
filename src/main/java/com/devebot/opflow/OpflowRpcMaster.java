@@ -51,7 +51,7 @@ public class OpflowRpcMaster {
                 .text("RpcMaster[${rpcMasterId}].new()")
                 .stringify());
         
-        Map<String, Object> brokerParams = new HashMap<String, Object>();
+        Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("engineId", rpcMasterId);
         brokerParams.put("mode", "rpc_master");
@@ -129,7 +129,7 @@ public class OpflowRpcMaster {
                 .stringify());
     }
 
-    private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<String, OpflowRpcRequest>();
+    private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();
     
     private OpflowEngine.ConsumerInfo responseConsumer;
 
@@ -281,7 +281,7 @@ public class OpflowRpcMaster {
         OpflowRpcRequest task = new OpflowRpcRequest(options, listener);
         tasks.put(taskId, task);
         
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put("requestId", task.getRequestId());
         headers.put("routineId", task.getRoutineId());
         

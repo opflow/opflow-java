@@ -2,6 +2,7 @@ package com.devebot.opflow.supports;
 
 import com.devebot.opflow.exception.OpflowFailedConversionException;
 import com.devebot.opflow.exception.OpflowUnimplementedException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -32,7 +33,7 @@ public final class OpflowConverter {
 
         try {
             return type.cast(converter.invoke(type, value));
-        } catch (Exception e) {
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             throw new OpflowFailedConversionException("Cannot convert from " 
                 + value.getClass().getName() + " to " + type.getName(), e);
         }

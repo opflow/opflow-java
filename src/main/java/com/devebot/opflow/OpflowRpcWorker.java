@@ -37,7 +37,7 @@ public class OpflowRpcWorker {
                 .text("RpcWorker[${rpcWorkerId}].new()")
                 .stringify());
         
-        Map<String, Object> brokerParams = new HashMap<String, Object>();
+        Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("engineId", rpcWorkerId);
         brokerParams.put("mode", "rpc_worker");
@@ -75,7 +75,7 @@ public class OpflowRpcWorker {
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
-    private List<Middleware> middlewares = new LinkedList<Middleware>();
+    private List<Middleware> middlewares = new LinkedList<>();
     
     public OpflowEngine.ConsumerInfo process(final OpflowRpcListener listener) {
         return process(TRUE, listener);

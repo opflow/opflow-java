@@ -33,16 +33,7 @@ public class OpflowKeytool {
             tks.setCertificateEntry("cert", loadCertificate(caCertFile));
             return buildSSLContext(pkcs12File, pkcs12Passphrase, tks);
         }
-        catch (IOException e) {
-            logException(e);
-        }
-        catch (KeyStoreException e) {
-            logException(e);
-        }
-        catch (NoSuchAlgorithmException e) {
-            logException(e);
-        }
-        catch (CertificateException e) {
+        catch (IOException | KeyStoreException | NoSuchAlgorithmException | CertificateException e) {
             logException(e);
         }
         return null;
@@ -55,16 +46,7 @@ public class OpflowKeytool {
             tks.load(new FileInputStream(trustStoreFile), passphrase);
             return buildSSLContext(pkcs12File, pkcs12Passphrase, tks);
         }
-        catch (IOException e) {
-            logException(e);
-        }
-        catch (KeyStoreException e) {
-            logException(e);
-        }
-        catch (NoSuchAlgorithmException e) {
-            logException(e);
-        }
-        catch (CertificateException e) {
+        catch (IOException | KeyStoreException | NoSuchAlgorithmException | CertificateException e) {
             logException(e);
         }
         return null;
@@ -87,22 +69,7 @@ public class OpflowKeytool {
             
             return c;
         }
-        catch (IOException e) {
-            logException(e);
-        }
-        catch (KeyStoreException e) {
-            logException(e);
-        }
-        catch (NoSuchAlgorithmException e) {
-            logException(e);
-        }
-        catch (CertificateException e) {
-            logException(e);
-        }
-        catch (UnrecoverableKeyException e) {
-            logException(e);
-        }
-        catch (KeyManagementException e) {
+        catch (IOException | KeyStoreException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e) {
             logException(e);
         }
         return null;

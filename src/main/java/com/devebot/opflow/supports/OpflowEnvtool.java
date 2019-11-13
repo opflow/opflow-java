@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory;
 public class OpflowEnvtool {
     private static final Logger LOG = LoggerFactory.getLogger(OpflowEnvtool.class);
     
-    private final Map<String, String> _properties = new HashMap<String, String>();
-    private final Map<String, String> _variables = new HashMap<String, String>();
+    private final Map<String, String> _properties = new HashMap<>();
+    private final Map<String, String> _variables = new HashMap<>();
     
     public OpflowEnvtool setSystemProperty(String key, String value) {
         _properties.put(key, value);

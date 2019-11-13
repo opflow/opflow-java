@@ -137,7 +137,7 @@ public class OpflowRpcResponse {
     }
     
     private Map<String, Object> createHeaders(String status, boolean finished) {
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put("status", status);
         if (this.requestId != null) {
             headers.put("requestId", this.requestId);

@@ -54,9 +54,9 @@ public class OpflowServerlet {
         Map<String, Object> rpcWorkerCfg = (Map<String, Object>)this.kwargs.get("rpcWorker");
         Map<String, Object> subscriberCfg = (Map<String, Object>)this.kwargs.get("subscriber");
         
-        HashSet<String> checkExchange = new HashSet<String>();
-        HashSet<String> checkQueue = new HashSet<String>();
-        HashSet<String> checkRecyclebin = new HashSet<String>();
+        HashSet<String> checkExchange = new HashSet<>();
+        HashSet<String> checkQueue = new HashSet<>();
+        HashSet<String> checkRecyclebin = new HashSet<>();
         
         if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
             if (configurerCfg.get("exchangeName") == null || configurerCfg.get("routingKey") == null) {
@@ -193,7 +193,7 @@ public class OpflowServerlet {
     }
     
     public void instantiateTypes(Collection<Class> types) {
-        Set<Class> typeSet = new HashSet<Class>();
+        Set<Class> typeSet = new HashSet<>();
         typeSet.addAll(types);
         for (Class type : typeSet) {
             if (!Modifier.isAbstract(type.getModifiers())) {
@@ -248,7 +248,7 @@ public class OpflowServerlet {
     public static class ListenerDescriptor {
         public static final ListenerDescriptor EMPTY = new ListenerDescriptor();
         private OpflowPubsubListener configurer;
-        private Map<String, OpflowRpcListener> rpcListeners = new HashMap<String, OpflowRpcListener>();
+        private Map<String, OpflowRpcListener> rpcListeners = new HashMap<>();
         private OpflowPubsubListener subscriber;
         
         private ListenerDescriptor() {}
@@ -258,7 +258,7 @@ public class OpflowServerlet {
         }
 
         public Map<String, OpflowRpcListener> getRpcListeners() {
-            Map<String, OpflowRpcListener> cloned = new HashMap<String, OpflowRpcListener>();
+            Map<String, OpflowRpcListener> cloned = new HashMap<>();
             cloned.putAll(rpcListeners);
             return cloned;
         }
@@ -335,25 +335,7 @@ public class OpflowServerlet {
                                 .put("message", error.getMessage())
                                 .toString());
                         throw error;
-                    } catch (NoSuchMethodException ex) {
-                        LOG.error(null, ex);
-                        response.emitFailed(OpflowUtil.buildMap()
-                                .put("type", ex.getClass().getName())
-                                .put("message", ex.getMessage())
-                                .toString());
-                    } catch (SecurityException ex) {
-                        LOG.error(null, ex);
-                        response.emitFailed(OpflowUtil.buildMap()
-                                .put("type", ex.getClass().getName())
-                                .put("message", ex.getMessage())
-                                .toString());
-                    } catch (IllegalAccessException ex) {
-                        LOG.error(null, ex);
-                        response.emitFailed(OpflowUtil.buildMap()
-                                .put("type", ex.getClass().getName())
-                                .put("message", ex.getMessage())
-                                .toString());
-                    } catch (IllegalArgumentException ex) {
+                    } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException ex) {
                         LOG.error(null, ex);
                         response.emitFailed(OpflowUtil.buildMap()
                                 .put("type", ex.getClass().getName())
