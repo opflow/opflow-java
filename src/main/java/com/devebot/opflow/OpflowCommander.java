@@ -43,7 +43,7 @@ public class OpflowCommander {
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get("rpcMaster");
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get("publisher");
         
-        HashSet<String> checkExchange = new HashSet<String>();
+        HashSet<String> checkExchange = new HashSet<>();
         
         if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
             if (configurerCfg.get("exchangeName") == null || configurerCfg.get("routingKey") == null) {
@@ -108,7 +108,7 @@ public class OpflowCommander {
     
     private class RpcInvocationHandler implements InvocationHandler {
         private final Class clazz;
-        private final Map<String, String> aliasOfMethod = new HashMap<String, String>();
+        private final Map<String, String> aliasOfMethod = new HashMap<>();
         private final OpflowRpcMaster rpcMaster;
         
         public RpcInvocationHandler(OpflowRpcMaster rpcMaster, Class clazz) {
@@ -197,7 +197,7 @@ public class OpflowCommander {
         }
     }
     
-    private final Map<String, RpcInvocationHandler> handlers = new HashMap<String, RpcInvocationHandler>();
+    private final Map<String, RpcInvocationHandler> handlers = new HashMap<>();
     
     private RpcInvocationHandler getInvocationHandler(Class clazz) {
         validateType(clazz);

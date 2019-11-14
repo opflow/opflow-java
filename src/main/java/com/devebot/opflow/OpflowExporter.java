@@ -117,7 +117,7 @@ public class OpflowExporter {
         try {
             DefaultExports.initialize();
             HTTPServer server = new HTTPServer(Integer.parseInt(portStr));
-        } catch (Exception exception) {
+        } catch (IOException | NumberFormatException exception) {
             throw new OpflowOperationException("Exporter connection refused, port: " + portStr, exception);
         }
     }

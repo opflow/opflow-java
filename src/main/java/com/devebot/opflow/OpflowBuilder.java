@@ -52,7 +52,7 @@ public class OpflowBuilder {
                 .stringify());
         
         config = loadConfiguration(config, configFile, useDefaultFile);
-        Map<String, Object> params = new HashMap<String, Object>();
+        Map<String, Object> params = new HashMap<>();
         
         String[] handlerPath = new String[] {"opflow", "master"};
         extractEngineParameters(params, config, handlerPath);
@@ -92,7 +92,7 @@ public class OpflowBuilder {
                 .stringify());
         
         config = loadConfiguration(config, configFile, useDefaultFile);
-        Map<String, Object> params = new HashMap<String, Object>();
+        Map<String, Object> params = new HashMap<>();
         
         String[] handlerPath = new String[] {"opflow", "worker"};
         extractEngineParameters(params, config, handlerPath);
@@ -136,7 +136,7 @@ public class OpflowBuilder {
                 .stringify());
         
         config = loadConfiguration(config, configFile, useDefaultFile);
-        Map<String, Object> params = new HashMap<String, Object>();
+        Map<String, Object> params = new HashMap<>();
         
         String[] handlerPath = new String[] {"opflow", "pubsub"};
         extractEngineParameters(params, config, handlerPath);
@@ -179,12 +179,12 @@ public class OpflowBuilder {
             String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
         config = loadConfiguration(config, configFile, useDefaultFile);
         
-        Map<String, Object> params = new HashMap<String, Object>();
+        Map<String, Object> params = new HashMap<>();
         String[] componentNames = new String[] {"configurer", "rpcMaster", "publisher"};
         String[] componentPath = new String[] {"opflow", "commander", ""};
         for(String componentName:componentNames) {
             componentPath[2] = componentName;
-            Map<String, Object> componentCfg = new HashMap<String, Object>();
+            Map<String, Object> componentCfg = new HashMap<>();
             extractEngineParameters(componentCfg, config, componentPath);
             Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
             componentCfg.put("enabled", componentNode.get("enabled"));
@@ -245,12 +245,12 @@ public class OpflowBuilder {
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
         config = loadConfiguration(config, configFile, useDefaultFile);
         
-        Map<String, Object> params = new HashMap<String, Object>();
+        Map<String, Object> params = new HashMap<>();
         String[] componentNames = new String[] {"configurer", "rpcWorker", "subscriber"};
         String[] componentPath = new String[] {"opflow", "serverlet", ""};
         for(String componentName:componentNames) {
             componentPath[2] = componentName;
-            Map<String, Object> componentCfg = new HashMap<String, Object>();
+            Map<String, Object> componentCfg = new HashMap<>();
             extractEngineParameters(componentCfg, config, componentPath);
             Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
             componentCfg.put("enabled", componentNode.get("enabled"));
@@ -296,7 +296,7 @@ public class OpflowBuilder {
         try {
             Yaml yaml = new Yaml();
             if (config == null) {
-                config = new HashMap<String,Object>();
+                config = new HashMap<>();
             }
             if (configFile != null || useDefaultFile) {
                 URL url = getConfigurationUrl(configFile);
@@ -327,9 +327,7 @@ public class OpflowBuilder {
             return config;
         } catch (IOException exception) {
             throw new OpflowBootstrapException(exception);
-        } catch (ParserException exception) {
-            throw new OpflowBootstrapException(exception);
-        } catch (ScannerException exception) {
+        } catch (ParserException | ScannerException exception) {
             throw new OpflowBootstrapException(exception);
         } catch (MarkedYAMLException exception) {
             throw new OpflowBootstrapException(exception);
@@ -377,7 +375,7 @@ public class OpflowBuilder {
     }
     
     public static Map<String, Object> mergeConfiguration(Map<String, Object> target, Map<String, Object> source) {
-        if (target == null) target = new HashMap<String, Object>();
+        if (target == null) target = new HashMap<>();
         if (source == null) return target;
         for (String key : source.keySet()) {
             if (source.get(key) instanceof Map && target.get(key) instanceof Map) {
@@ -392,7 +390,7 @@ public class OpflowBuilder {
     }
     
     public static Map<String, Object> mergeConfiguration(Map<String, Object> target, Properties props) {
-        if (target == null) target = new HashMap<String, Object>();
+        if (target == null) target = new HashMap<>();
         if (props == null) return target;
         Set<Object> keys = props.keySet();
         for(Object keyo:keys) {
@@ -434,13 +432,13 @@ public class OpflowBuilder {
         if(sourceObject != null && sourceObject instanceof Map) {
             return (Map<String, Object>) sourceObject;
         }
-        Map<String, Object> blank = new HashMap<String, Object>();
+        Map<String, Object> blank = new HashMap<>();
         blank.put("enabled", false);
         return blank;
     }
     
     private static void extractEngineParameters(Map<String, Object> target, Map<String, Object> source, String[] path) {
-        List<Map<String, Object>> maps = new ArrayList<Map<String, Object>>(path.length);
+        List<Map<String, Object>> maps = new ArrayList<>(path.length);
         for(String node:path) {
             if (source.get(node) != null && source.get(node) instanceof Map) {
                 source = (Map<String, Object>)source.get(node);
