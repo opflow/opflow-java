@@ -222,13 +222,14 @@ public class OpflowRpcMaster {
         return request(routineId, body, null);
     }
     
-    public OpflowRpcRequest request(String routineId, byte[] body, Map<String, Object> options) {
+    public OpflowRpcRequest request(final String routineId, byte[] body, Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
         
-        Object requestId = options.get("requestId");
-        if (requestId == null) {
-            options.put("requestId", requestId = OpflowUtil.getLogID());
+        Object requestIdVal = options.get("requestId");
+        if (requestIdVal == null) {
+            options.put("requestId", requestIdVal = OpflowUtil.getLogID());
         }
+        final String requestId = requestIdVal.toString();
         
         final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
         
@@ -285,9 +286,8 @@ public class OpflowRpcMaster {
         headers.put("requestId", task.getRequestId());
         headers.put("routineId", task.getRoutineId());
         
-        Boolean progressEnabled = null;
         if (options.get("progressEnabled") instanceof Boolean) {
-            headers.put("progressEnabled", progressEnabled = (Boolean) options.get("progressEnabled"));
+            headers.put("progressEnabled", options.get("progressEnabled"));
         }
         
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()
@@ -307,9 +307,9 @@ public class OpflowRpcMaster {
         builder.replyTo(consumerInfo.getQueueName());
         
         engine.produce(body, headers, builder);
-        
-        exporter.setRpcInvocationEventGauge("rpc_master", requestId.toString(), routineId, taskId, "request");
 
+        exporter.setRpcInvocationEventGauge("rpc_master", requestId, routineId, taskId, "request");
+        
         return task;
     }
 

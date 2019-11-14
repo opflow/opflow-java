@@ -47,24 +47,28 @@ public class OpflowExporter {
     
     private static Gauge engineConnectionGauge;
 
-    private static Gauge getEngineConnectionGauge() {
-        Gauge.Builder builder = Gauge.build()
+    private static Gauge assertEngineConnectionGauge() {
+        if (engineConnectionGauge == null) {
+            Gauge.Builder builder = Gauge.build()
             .name("opflow_engine_connection")
             .help("Number of producing connections.")
             .labelNames("host", "port", "virtual_host", "connection_type");
-        if (pushGateway != null) {
-            return builder.register(pushRegistry);
+            if (pushGateway != null) {
+                engineConnectionGauge = builder.register(pushRegistry);
+            } else {
+                engineConnectionGauge = builder.register();
+            }
         }
-        return builder.register();
+        return engineConnectionGauge;
     }
     
     public void incEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
-        engineConnectionGauge.labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), connectionType).inc();
+        assertEngineConnectionGauge().labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), connectionType).inc();
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
     public void decEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
-        engineConnectionGauge.labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), connectionType).dec();
+        assertEngineConnectionGauge().labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), connectionType).dec();
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
 
@@ -90,6 +94,10 @@ public class OpflowExporter {
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
+    public void dropRpcInvocationEventGauge(String moduleName, String requestId, String routineId, String taskId, String status) {
+        assertRpcInvocationEventGauge().remove(moduleName, requestId, routineId, taskId, status);
+    }
+    
     private static String getExporterPort() {
         String port1 = OpflowEnvtool.instance.getEnvironVariable(DEFAULT_PROM_EXPORTER_PORT_ENV, null);
         String port2 = OpflowEnvtool.instance.getSystemProperty(DEFAULT_PROM_EXPORTER_PORT_KEY, port1);
@@ -111,7 +119,7 @@ public class OpflowExporter {
             if (OpflowLogTracer.has(LOG, "info")) LOG.info("Exporter - pushgateway is empty");
         }
 
-        engineConnectionGauge = getEngineConnectionGauge();
+        assertEngineConnectionGauge();
 
         String portStr = getExporterPort();
         try {
