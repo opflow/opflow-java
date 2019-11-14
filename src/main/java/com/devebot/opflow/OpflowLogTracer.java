@@ -247,27 +247,12 @@ public class OpflowLogTracer {
         return false;
     }
     
-    @Deprecated
-    public static boolean addStringifyInterceptor(StringifyInterceptor interceptor) {
-        return addInterceptor(interceptor);
-    }
-    
     public static boolean removeInterceptor(StringifyInterceptor interceptor) {
         return interceptors.remove(interceptor);
     }
     
-    @Deprecated
-    public static boolean removeStringifyInterceptor(StringifyInterceptor interceptor) {
-        return removeInterceptor(interceptor);
-    }
-    
     public static void clearInterceptors() {
         interceptors.clear();
-    }
-    
-    @Deprecated
-    public static void clearStringifyInterceptors() {
-        clearInterceptors();
     }
     
     private static String libraryInfo = null;;

@@ -384,8 +384,8 @@ public class OpflowServerlet {
         }
         
         public void instantiateType(Class type, Object target) {
-            if (type == null && target == null) {
-                throw new OpflowInterceptionException("Both type and target should not be null");
+            if (type == null) {
+                throw new OpflowInterceptionException("The [type] parameter must not be null");
             }
             if (Modifier.isAbstract(type.getModifiers()) && target == null) {
                 if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
