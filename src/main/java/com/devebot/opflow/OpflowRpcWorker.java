@@ -22,7 +22,7 @@ public class OpflowRpcWorker {
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
-    private OpflowExporter exporter;
+    private final OpflowExporter exporter;
     
     private final String operatorName;
     private final String responseName;

@@ -32,22 +32,20 @@ public class OpflowExporter {
 
     private static OpflowExporter instance;
 
-    private static final CollectorRegistry pushRegistry = new CollectorRegistry();
-    private static PushGateway pushGateway;
+    private final CollectorRegistry pushRegistry = new CollectorRegistry();
+    private PushGateway pushGateway;
 
-    private static void finish(String jobName) {
+    private void finish(String jobName) {
         if (pushGateway != null) {
             try {
-                pushGateway.push(pushRegistry, jobName);
-            } catch (IOException exception) {
-                // 
-            }
+                pushGateway.push(pushRegistry, DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
+            } catch (IOException exception) {}
         }
     }
     
-    private static Gauge engineConnectionGauge;
+    private Gauge engineConnectionGauge;
 
-    private static Gauge assertEngineConnectionGauge() {
+    private Gauge assertEngineConnectionGauge() {
         if (engineConnectionGauge == null) {
             Gauge.Builder builder = Gauge.build()
             .name("opflow_engine_connection")
@@ -72,9 +70,9 @@ public class OpflowExporter {
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
 
-    private static Gauge rpcInvocationEventGauge;
+    private Gauge rpcInvocationEventGauge;
     
-    private static Gauge assertRpcInvocationEventGauge() {
+    private Gauge assertRpcInvocationEventGauge() {
         if (rpcInvocationEventGauge == null) {
             Gauge.Builder builder = Gauge.build()
                 .name("opflow_rpc_invocation_events")
@@ -96,6 +94,7 @@ public class OpflowExporter {
     
     public void dropRpcInvocationEventGauge(String moduleName, String requestId, String routineId, String taskId, String status) {
         assertRpcInvocationEventGauge().remove(moduleName, requestId, routineId, taskId, status);
+        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
     private static String getExporterPort() {
@@ -111,6 +110,7 @@ public class OpflowExporter {
     }
     
     private OpflowExporter() throws OpflowOperationException {
+        // Initialize the PushGateway
         String pushAddr = getPushGatewayAddr();
         if (pushAddr != null) {
             pushGateway = new PushGateway(pushAddr);
@@ -119,15 +119,19 @@ public class OpflowExporter {
             if (OpflowLogTracer.has(LOG, "info")) LOG.info("Exporter - pushgateway is empty");
         }
 
-        assertEngineConnectionGauge();
-
-        String portStr = getExporterPort();
-        try {
-            DefaultExports.initialize();
-            HTTPServer server = new HTTPServer(Integer.parseInt(portStr));
-        } catch (IOException | NumberFormatException exception) {
-            throw new OpflowOperationException("Exporter connection refused, port: " + portStr, exception);
+        // Initialize the HTTP Exporter
+        if (pushGateway == null) {
+            String portStr = getExporterPort();
+            try {
+                DefaultExports.initialize();
+                HTTPServer server = new HTTPServer(Integer.parseInt(portStr));
+            } catch (IOException | NumberFormatException exception) {
+                throw new OpflowOperationException("Exporter connection refused, port: " + portStr, exception);
+            }
         }
+        
+        // Initialize the metrics
+        assertEngineConnectionGauge();
     }
  
     public static OpflowExporter getInstance() throws OpflowOperationException {

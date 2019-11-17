@@ -29,7 +29,7 @@ public class OpflowRpcMaster {
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
-    private OpflowExporter exporter;
+    private final OpflowExporter exporter;
     
     private final String responseName;
     private final Boolean responseDurable;

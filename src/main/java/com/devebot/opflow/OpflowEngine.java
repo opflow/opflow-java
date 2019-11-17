@@ -910,7 +910,7 @@ public class OpflowEngine {
                     .text("Engine[${engineId}] shared producingConnection is created")
                     .stringify());
             producingConnection = factory.newConnection();
-            OpflowExporter.getInstance().incEngineConnectionGauge(factory, "producing");
+            exporter.incEngineConnectionGauge(factory, "producing");
         }
         return producingConnection;
     }
@@ -949,7 +949,7 @@ public class OpflowEngine {
                     .text("Engine[${engineId}] shared consumingConnection is created")
                     .stringify());
             consumingConnection = factory.newConnection();
-            OpflowExporter.getInstance().incEngineConnectionGauge(factory, "consuming");
+            exporter.incEngineConnectionGauge(factory, "consuming");
         }
         return consumingConnection;
     }
