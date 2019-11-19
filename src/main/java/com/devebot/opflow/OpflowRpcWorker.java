@@ -24,13 +24,14 @@ public class OpflowRpcWorker {
     private final OpflowExecutor executor;
     private final OpflowExporter exporter;
     
+    private final String rpcWorkerId;
     private final String operatorName;
     private final String responseName;
     
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        final String rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
+        rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", rpcWorkerId);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
@@ -139,7 +140,7 @@ public class OpflowRpcWorker {
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
                         count++;
-                        exporter.incRpcInvocationEvent("rpc_worker", routineId, "process");
+                        exporter.incRpcInvocationEvent("rpc_worker", rpcWorkerId, routineId, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }

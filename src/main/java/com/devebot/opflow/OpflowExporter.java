@@ -74,7 +74,7 @@ public class OpflowExporter {
 
     private Counter rpcInvocationCounterGauge;
     
-    private final String[] rpcInvocationEventLabels = new String[] { "module_name", "routineId", "status" };
+    private final String[] rpcInvocationEventLabels = new String[] { "module_name", "engineId", "routineId", "status" };
     
     private Counter assertRpcInvocationCounterGauge() {
         if (rpcInvocationCounterGauge == null) {
@@ -99,8 +99,8 @@ public class OpflowExporter {
         return assertRpcInvocationCounterGauge().labels(values);
     }
     
-    public void incRpcInvocationEvent(String module_name, String routineId, String status) {
-        assertRpcInvocationCounterGauge().labels(module_name, routineId, status).inc();
+    public void incRpcInvocationEvent(String module_name, String engineId, String routineId, String status) {
+        assertRpcInvocationCounterGauge().labels(module_name, engineId, routineId, status).inc();
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     

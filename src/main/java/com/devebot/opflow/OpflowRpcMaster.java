@@ -31,6 +31,7 @@ public class OpflowRpcMaster {
     private final OpflowExecutor executor;
     private final OpflowExporter exporter;
     
+    private final String rpcMasterId;
     private final String responseName;
     private final Boolean responseDurable;
     private final Boolean responseExclusive;
@@ -44,7 +45,7 @@ public class OpflowRpcMaster {
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        final String rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
+        rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", rpcMasterId);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
@@ -306,7 +307,7 @@ public class OpflowRpcMaster {
         }
         builder.replyTo(consumerInfo.getQueueName());
         
-        exporter.incRpcInvocationEvent("rpc_master", routineId, "request");
+        exporter.incRpcInvocationEvent("rpc_master", rpcMasterId, routineId, "request");
         
         engine.produce(body, headers, builder);
         
