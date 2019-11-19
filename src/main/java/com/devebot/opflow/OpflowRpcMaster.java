@@ -306,9 +306,9 @@ public class OpflowRpcMaster {
         }
         builder.replyTo(consumerInfo.getQueueName());
         
+        exporter.incRpcInvocationEvent("rpc_master", routineId, "request");
+        
         engine.produce(body, headers, builder);
-
-        exporter.setRpcInvocationEventGauge("rpc_master", requestId, routineId, taskId, "request");
         
         return task;
     }

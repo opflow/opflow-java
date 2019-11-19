@@ -5,11 +5,13 @@ import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowEnvtool;
 import com.rabbitmq.client.ConnectionFactory;
 import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.exporter.PushGateway;
 import io.prometheus.client.hotspot.DefaultExports;
 import java.io.IOException;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,30 +72,35 @@ public class OpflowExporter {
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
 
-    private Gauge rpcInvocationEventGauge;
+    private Counter rpcInvocationCounterGauge;
     
-    private Gauge assertRpcInvocationEventGauge() {
-        if (rpcInvocationEventGauge == null) {
-            Gauge.Builder builder = Gauge.build()
-                .name("opflow_rpc_invocation_events")
-                .help("The timestamp of the RPC invocation events")
-                .labelNames("module_name", "requestId", "routineId", "taskId", "status");
+    private final String[] rpcInvocationEventLabels = new String[] { "module_name", "routineId", "status" };
+    
+    private Counter assertRpcInvocationCounterGauge() {
+        if (rpcInvocationCounterGauge == null) {
+            Counter.Builder builder = Counter.build()
+                .name("opflow_rpc_invocation_total")
+                .help("The total of the RPC invocation events")
+                .labelNames(rpcInvocationEventLabels);
             if (pushGateway != null) {
-                rpcInvocationEventGauge = builder.register(pushRegistry);
+                rpcInvocationCounterGauge = builder.register(pushRegistry);
             } else {
-                rpcInvocationEventGauge = builder.register();
+                rpcInvocationCounterGauge = builder.register();
             }
         }
-        return rpcInvocationEventGauge;
+        return rpcInvocationCounterGauge;
     }
     
-    public void setRpcInvocationEventGauge(String moduleName, String requestId, String routineId, String taskId, String status) {
-        assertRpcInvocationEventGauge().labels(moduleName, requestId, routineId, taskId, status).setToCurrentTime();
-        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
+    private Counter.Child getRpcInvocationChildEvent(Map<String, String> labels) {
+        String[] values = new String[rpcInvocationEventLabels.length];
+        for (int i=0; i<rpcInvocationEventLabels.length; i++) {
+            values[i] = labels.get(rpcInvocationEventLabels[i]);
+        }
+        return assertRpcInvocationCounterGauge().labels(values);
     }
     
-    public void dropRpcInvocationEventGauge(String moduleName, String requestId, String routineId, String taskId, String status) {
-        assertRpcInvocationEventGauge().remove(moduleName, requestId, routineId, taskId, status);
+    public void incRpcInvocationEvent(String module_name, String routineId, String status) {
+        assertRpcInvocationCounterGauge().labels(module_name, routineId, status).inc();
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     

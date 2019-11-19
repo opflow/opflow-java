@@ -139,8 +139,8 @@ public class OpflowRpcWorker {
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
                         count++;
+                        exporter.incRpcInvocationEvent("rpc_worker", routineId, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
-                        exporter.setRpcInvocationEventGauge("rpc_worker", requestId, routineId, "", "request");
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
