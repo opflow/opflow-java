@@ -44,7 +44,8 @@ public class OpflowEngine {
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
     private final OpflowLogTracer logTracer;
-    
+    private final String engineId;
+
     private String mode;
     private ConnectionFactory factory;
     private Connection producingConnection;
@@ -65,7 +66,7 @@ public class OpflowEngine {
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        final String engineId = OpflowUtil.getOptionField(params, "engineId", true);
+        engineId = OpflowUtil.getOptionField(params, "engineId", true);
         logTracer = OpflowLogTracer.ROOT.branch("engineId", engineId);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
@@ -370,6 +371,8 @@ public class OpflowEngine {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Engine[${engineId}].new() end!")
                 .stringify());
+        
+        exporter.changeComponentInstance(OpflowExporter.GaugeAction.INC, "engine", engineId);
     }
     
     public void produce(final byte[] body, final Map<String, Object> headers) {
@@ -999,6 +1002,14 @@ public class OpflowEngine {
                     .put("routingKey", _routingKey)
                     .text("Binds Exchange to Queue")
                     .stringify());
+        }
+    }
+    
+    protected void finalize() throws Throwable {
+        try {
+            close();
+        } finally {
+            exporter.changeComponentInstance(OpflowExporter.GaugeAction.DEC, "engine", engineId);
         }
     }
 }

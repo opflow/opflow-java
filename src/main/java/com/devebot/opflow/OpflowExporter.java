@@ -32,6 +32,11 @@ public class OpflowExporter {
     public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_ENV = "OPFLOW_PUSHGATEWAY_ADDR";
     public static final String DEFAULT_PROM_PUSHGATEWAY_JOBNAME = "opflow-push-gateway";
 
+    public static enum GaugeAction {
+        INC,
+        DEC;
+    }
+    
     private static OpflowExporter instance;
 
     private final CollectorRegistry pushRegistry = new CollectorRegistry();
@@ -43,6 +48,38 @@ public class OpflowExporter {
                 pushGateway.push(pushRegistry, DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
             } catch (IOException exception) {}
         }
+    }
+    
+    private Gauge componentInstanceGauge;
+
+    private Gauge assertComponentInstanceGauge() {
+        if (componentInstanceGauge == null) {
+            Gauge.Builder builder = Gauge.build()
+            .name("opflow_component_instance")
+            .help("Number of component instances.")
+            .labelNames("instance_type", "instance_id");
+            if (pushGateway != null) {
+                componentInstanceGauge = builder.register(pushRegistry);
+            } else {
+                componentInstanceGauge = builder.register();
+            }
+        }
+        return componentInstanceGauge;
+    }
+    
+    public void changeComponentInstance(GaugeAction action, String instanceType, String instanceId) {
+        Gauge.Child metric = assertComponentInstanceGauge().labels(instanceType, instanceId);
+        switch(action) {
+            case INC:
+                metric.inc();
+                break;
+            case DEC:
+                metric.dec();
+                break;
+            default:
+                break;
+        }
+        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
     private Gauge engineConnectionGauge;

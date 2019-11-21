@@ -73,6 +73,8 @@ public class OpflowRpcWorker {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].new() end!")
                 .stringify());
+        
+        exporter.changeComponentInstance(OpflowExporter.GaugeAction.INC, "rpc_worker", rpcWorkerId);
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
@@ -229,4 +231,12 @@ public class OpflowRpcWorker {
             return true;
         }
     };
+    
+    protected void finalize() throws Throwable {
+        try {
+            close();
+        } finally {
+            exporter.changeComponentInstance(OpflowExporter.GaugeAction.DEC, "rpc_worker", rpcWorkerId);
+        }
+    }
 }

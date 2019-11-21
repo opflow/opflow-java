@@ -128,6 +128,8 @@ public class OpflowRpcMaster {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
                 .stringify());
+        
+        exporter.changeComponentInstance(OpflowExporter.GaugeAction.INC, "rpc_master", rpcMasterId);
     }
 
     private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();
@@ -368,5 +370,13 @@ public class OpflowRpcMaster {
     
     public String getResponseName() {
         return responseName;
+    }
+    
+    protected void finalize() throws Throwable {
+        try {
+            close();
+        } finally {
+            exporter.changeComponentInstance(OpflowExporter.GaugeAction.DEC, "rpc_master", rpcMasterId);
+        }
     }
 }
