@@ -67,7 +67,7 @@ public class OpflowExporter {
         return componentInstanceGauge;
     }
     
-    public void changeComponentInstance(GaugeAction action, String instanceType, String instanceId) {
+    public void changeComponentInstance(String instanceType, String instanceId, GaugeAction action) {
         Gauge.Child metric = assertComponentInstanceGauge().labels(instanceType, instanceId);
         switch(action) {
             case INC:
@@ -80,6 +80,12 @@ public class OpflowExporter {
                 break;
         }
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
+    }
+    
+    public void removeComponentInstance(String instanceType, String instanceId) {
+        if (pushGateway != null) {
+            assertComponentInstanceGauge().remove(instanceType, instanceId);
+        }
     }
     
     private Gauge engineConnectionGauge;

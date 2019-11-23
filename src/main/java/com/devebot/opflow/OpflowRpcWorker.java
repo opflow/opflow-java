@@ -74,7 +74,7 @@ public class OpflowRpcWorker {
                 .text("RpcWorker[${rpcWorkerId}].new() end!")
                 .stringify());
         
-        exporter.changeComponentInstance(OpflowExporter.GaugeAction.INC, "rpc_worker", rpcWorkerId);
+        exporter.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowExporter.GaugeAction.INC);
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
@@ -232,11 +232,12 @@ public class OpflowRpcWorker {
         }
     };
     
+    @Override
     protected void finalize() throws Throwable {
         try {
             close();
         } finally {
-            exporter.changeComponentInstance(OpflowExporter.GaugeAction.DEC, "rpc_worker", rpcWorkerId);
+            exporter.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowExporter.GaugeAction.DEC);
         }
     }
 }

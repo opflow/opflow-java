@@ -372,7 +372,7 @@ public class OpflowEngine {
                 .text("Engine[${engineId}].new() end!")
                 .stringify());
         
-        exporter.changeComponentInstance(OpflowExporter.GaugeAction.INC, "engine", engineId);
+        exporter.changeComponentInstance("engine", engineId, OpflowExporter.GaugeAction.INC);
     }
     
     public void produce(final byte[] body, final Map<String, Object> headers) {
@@ -1005,11 +1005,12 @@ public class OpflowEngine {
         }
     }
     
+    @Override
     protected void finalize() throws Throwable {
         try {
             close();
         } finally {
-            exporter.changeComponentInstance(OpflowExporter.GaugeAction.DEC, "engine", engineId);
+            exporter.changeComponentInstance("engine", engineId, OpflowExporter.GaugeAction.DEC);
         }
     }
 }

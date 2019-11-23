@@ -129,7 +129,7 @@ public class OpflowRpcMaster {
                 .text("RpcMaster[${rpcMasterId}].new() end!")
                 .stringify());
         
-        exporter.changeComponentInstance(OpflowExporter.GaugeAction.INC, "rpc_master", rpcMasterId);
+        exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.INC);
     }
 
     private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();
@@ -372,11 +372,12 @@ public class OpflowRpcMaster {
         return responseName;
     }
     
+    @Override
     protected void finalize() throws Throwable {
         try {
             close();
         } finally {
-            exporter.changeComponentInstance(OpflowExporter.GaugeAction.DEC, "rpc_master", rpcMasterId);
+            exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.DEC);
         }
     }
 }
