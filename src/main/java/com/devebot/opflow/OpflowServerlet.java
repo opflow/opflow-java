@@ -26,7 +26,9 @@ import com.devebot.opflow.annotation.OpflowTargetRoutine;
 public class OpflowServerlet {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
     private final OpflowLogTracer logTracer;
+    private final OpflowExporter exporter;
     
+    private final String serverletId;
     private OpflowPubsubHandler configurer;
     private OpflowRpcWorker rpcWorker;
     private OpflowPubsubHandler subscriber;
@@ -39,7 +41,8 @@ public class OpflowServerlet {
     public OpflowServerlet(ListenerDescriptor listeners, Map<String, Object> kwargs) throws OpflowBootstrapException {
         this.kwargs = OpflowUtil.ensureNotNull(kwargs);
 
-        logTracer = OpflowLogTracer.ROOT.branch("serverletId", OpflowUtil.getOptionField(this.kwargs, "serverletId", true));
+        serverletId = OpflowUtil.getOptionField(this.kwargs, "serverletId", true);
+        logTracer = OpflowLogTracer.ROOT.branch("serverletId", serverletId);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].new()")
@@ -146,6 +149,10 @@ public class OpflowServerlet {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
+        
+        exporter = OpflowExporter.getInstance();
+        
+        exporter.changeComponentInstance("serverletId", serverletId, OpflowExporter.GaugeAction.INC);
     }
     
     public final void start() {
@@ -472,6 +479,15 @@ public class OpflowServerlet {
                 return routine;
             }
             return null;
+        }
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            close();
+        } finally {
+            exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);
         }
     }
 }

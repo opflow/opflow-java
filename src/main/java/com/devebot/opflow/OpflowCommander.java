@@ -22,7 +22,9 @@ import com.devebot.opflow.annotation.OpflowSourceRoutine;
 public class OpflowCommander {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
     private final OpflowLogTracer logTracer;
+    private final OpflowExporter exporter;
     
+    private final String commanderId;
     private OpflowPubsubHandler configurer;
     private OpflowRpcMaster rpcMaster;
     private OpflowPubsubHandler publisher;
@@ -33,7 +35,8 @@ public class OpflowCommander {
     
     public OpflowCommander(Map<String, Object> kwargs) throws OpflowBootstrapException {
         kwargs = OpflowUtil.ensureNotNull(kwargs);
-        logTracer = OpflowLogTracer.ROOT.branch("commanderId", OpflowUtil.getOptionField(kwargs, "commanderId", true));
+        commanderId = OpflowUtil.getOptionField(kwargs, "commanderId", true);
+        logTracer = OpflowLogTracer.ROOT.branch("commanderId", commanderId);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new()")
@@ -90,6 +93,10 @@ public class OpflowCommander {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new() end!")
                 .stringify());
+        
+        exporter = OpflowExporter.getInstance();
+        
+        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
     }
     
     public final void close() {
@@ -279,5 +286,14 @@ public class OpflowCommander {
         Annotation annotation = method.getAnnotation(OpflowSourceRoutine.class);
         OpflowSourceRoutine routine = (OpflowSourceRoutine) annotation;
         return routine;
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            close();
+        } finally {
+            exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.DEC);
+        }
     }
 }
