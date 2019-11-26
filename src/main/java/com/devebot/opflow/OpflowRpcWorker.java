@@ -124,8 +124,13 @@ public class OpflowRpcWorker {
         if (consumerInfo != null) return consumerInfo;
         consumerInfo = engine.consume(new OpflowListener() {
             @Override
-            public boolean processMessage(byte[] body, AMQP.BasicProperties properties, 
-                    String queueName, Channel channel, String workerTag) throws IOException {
+            public boolean processMessage(
+                    byte[] body,
+                    AMQP.BasicProperties properties,
+                    String queueName,
+                    Channel channel,
+                    String workerTag
+            ) throws IOException {
                 OpflowMessage request = new OpflowMessage(body, properties.getHeaders());
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, workerTag, queueName);
                 String routineId = OpflowUtil.getRoutineId(properties.getHeaders(), false);

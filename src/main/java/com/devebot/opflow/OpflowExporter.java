@@ -94,7 +94,7 @@ public class OpflowExporter {
         if (engineConnectionGauge == null) {
             Gauge.Builder builder = Gauge.build()
             .name("opflow_engine_connection")
-            .help("Number of producing connections.")
+            .help("Number of active connections.")
             .labelNames("host", "port", "virtual_host", "connection_type");
             if (pushGateway != null) {
                 engineConnectionGauge = builder.register(pushRegistry);
@@ -115,6 +115,38 @@ public class OpflowExporter {
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
 
+    private Gauge activeChannelGauge;
+
+    private Gauge assertActiveChannelGauge() {
+        if (activeChannelGauge == null) {
+            Gauge.Builder builder = Gauge.build()
+            .name("opflow_active_channel")
+            .help("Number of active channels.")
+            .labelNames("instance_type", "instance_id");
+            if (pushGateway != null) {
+                activeChannelGauge = builder.register(pushRegistry);
+            } else {
+                activeChannelGauge = builder.register();
+            }
+        }
+        return activeChannelGauge;
+    }
+    
+    public void changeActiveChannel(String instanceType, String instanceId, GaugeAction action) {
+        Gauge.Child metric = assertActiveChannelGauge().labels(instanceType, instanceId);
+        switch(action) {
+            case INC:
+                metric.inc();
+                break;
+            case DEC:
+                metric.dec();
+                break;
+            default:
+                break;
+        }
+        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
+    }
+    
     private Counter rpcInvocationCounterGauge;
     
     private final String[] rpcInvocationEventLabels = new String[] { "module_name", "engineId", "routineId", "status" };
@@ -150,7 +182,7 @@ public class OpflowExporter {
     private static String getExporterPort() {
         String port1 = OpflowEnvtool.instance.getEnvironVariable(DEFAULT_PROM_EXPORTER_PORT_ENV, null);
         String port2 = OpflowEnvtool.instance.getSystemProperty(DEFAULT_PROM_EXPORTER_PORT_KEY, port1);
-        return (port2 != null) ? port2 : DEFAULT_PROM_EXPORTER_PORT_VAL;
+        return ("default".equals(port2) ? DEFAULT_PROM_EXPORTER_PORT_VAL : port2);
     }
     
     private static String getPushGatewayAddr() {
@@ -172,11 +204,13 @@ public class OpflowExporter {
         // Initialize the HTTP Exporter
         if (pushGateway == null) {
             String portStr = getExporterPort();
-            try {
-                DefaultExports.initialize();
-                HTTPServer server = new HTTPServer(Integer.parseInt(portStr));
-            } catch (IOException | NumberFormatException exception) {
-                throw new OpflowOperationException("Exporter connection refused, port: " + portStr, exception);
+            if (portStr != null) {
+                try {
+                    DefaultExports.initialize();
+                    HTTPServer server = new HTTPServer(Integer.parseInt(portStr));
+                } catch (IOException | NumberFormatException exception) {
+                    throw new OpflowOperationException("Exporter connection refused, port: " + portStr, exception);
+                }
             }
         }
         

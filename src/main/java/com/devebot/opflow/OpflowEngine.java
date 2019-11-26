@@ -750,8 +750,16 @@ public class OpflowEngine {
         private final String consumerId;
         private final String consumerTag;
         
-        public ConsumerInfo(Connection connection, boolean sharedConnection, Channel channel, boolean sharedChannel, 
-                String queueName, boolean fixedQueue, String consumerId, String consumerTag) {
+        public ConsumerInfo(
+                Connection connection,
+                boolean sharedConnection,
+                Channel channel,
+                boolean sharedChannel,
+                String queueName,
+                boolean fixedQueue,
+                String consumerId,
+                String consumerTag
+        ) {
             this.connection = connection;
             this.sharedConnection = sharedConnection;
             this.channel = channel;

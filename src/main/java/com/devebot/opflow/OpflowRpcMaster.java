@@ -145,8 +145,13 @@ public class OpflowRpcMaster {
                 .stringify());
         return engine.consume(new OpflowListener() {
             @Override
-            public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
-                    String queueName, Channel channel, String workerTag) throws IOException {
+            public boolean processMessage(
+                    byte[] content,
+                    AMQP.BasicProperties properties,
+                    String queueName,
+                    Channel channel,
+                    String workerTag
+            ) throws IOException {
                 String taskId = properties.getCorrelationId();
                 Map<String, Object> headers = properties.getHeaders();
 
