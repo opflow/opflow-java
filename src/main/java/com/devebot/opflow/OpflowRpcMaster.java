@@ -21,6 +21,7 @@ public class OpflowRpcMaster {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
     private final OpflowLogTracer logTracer;
     
+    private final long DELAY_TIMEOUT = 1000;
     private final int PREFETCH_NUM = 1;
     private final int CONSUMER_MAX = 1;
     
@@ -32,6 +33,7 @@ public class OpflowRpcMaster {
     private final OpflowExporter exporter;
     
     private final String rpcMasterId;
+    private final long expiration;
     private final String responseName;
     private final Boolean responseDurable;
     private final Boolean responseExclusive;
@@ -61,6 +63,12 @@ public class OpflowRpcMaster {
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         exporter = OpflowExporter.getInstance();
+        
+        if (params.get("expiration") != null && params.get("expiration") instanceof Long) {
+            expiration = (Long) params.get("expiration");
+        } else {
+            expiration = 0;
+        }
         
         boolean _responseNamePostfixed = Boolean.TRUE.equals(params.get("responseNamePostfixed"));
         String _responseName = (String) params.get("responseName");
@@ -111,7 +119,7 @@ public class OpflowRpcMaster {
         } else {
             monitorTimeout = 0;
         }
-        
+
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .put("responseName", responseName)
                 .put("responseDurable", responseDurable)
@@ -287,6 +295,10 @@ public class OpflowRpcMaster {
             }
         };
         
+        if (expiration > 0) {
+            options.put("timeout", expiration + DELAY_TIMEOUT);
+        }
+        
         OpflowRpcRequest task = new OpflowRpcRequest(options, listener);
         tasks.put(taskId, task);
         
@@ -313,6 +325,10 @@ public class OpflowRpcMaster {
                     .stringify());
         }
         builder.replyTo(consumerInfo.getQueueName());
+        
+        if (expiration > 0) {
+            builder.expiration(String.valueOf(expiration));
+        }
         
         exporter.incRpcInvocationEvent("rpc_master", rpcMasterId, routineId, "request");
         

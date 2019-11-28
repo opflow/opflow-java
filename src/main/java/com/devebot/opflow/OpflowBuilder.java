@@ -189,6 +189,7 @@ public class OpflowBuilder {
             Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
             componentCfg.put("enabled", componentNode.get("enabled"));
             if ("rpcMaster".equals(componentName)) {
+                componentCfg.put("expiration", componentNode.get("expiration"));
                 componentCfg.put("responseName", componentNode.get("responseName"));
                 componentCfg.put("responseDurable", componentNode.get("responseDurable"));
                 componentCfg.put("responseExclusive", componentNode.get("responseExclusive"));
@@ -471,7 +472,7 @@ public class OpflowBuilder {
     };
     
     private static final String[] LONGINT_FIELDS = new String[] {
-        "monitorTimeout"
+        "expiration", "monitorTimeout"
     };
     
     private static void transformParameters(Map<String, Object> params) {
