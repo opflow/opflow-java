@@ -42,6 +42,7 @@ public class OpflowLogTracer {
     private final static boolean IS_TAGS_EMBEDDABLE;
     private final static boolean IS_TEXT_EMBEDDABLE;
     private final static boolean IS_TEMPLATE_APPLIED;
+    private final static boolean IS_PING_LOGGING_OMITTED;
 
     static {
         ALWAYS_ENABLED = new HashSet<>();
@@ -77,6 +78,7 @@ public class OpflowLogTracer {
         IS_TEXT_EMBEDDABLE = "false".equals(OpflowUtil.getSystemProperty("OPFLOW_TEXT_EMBEDDABLE", null));
         IS_TEMPLATE_APPLIED = !"false".equals(OpflowUtil.getSystemProperty("OPFLOW_TEMPLATE_APPLIED", null));
         IS_INTERCEPTOR_ENABLED = !"false".equals(OpflowUtil.getSystemProperty("OPFLOW_DEBUGLOG", null));
+        IS_PING_LOGGING_OMITTED = !"false".equals(OpflowUtil.getSystemProperty("OPFLOW_OMIT_PING_LOGS", null));
         IS_STRINGIFY_ENABLED = true;
     }
     
@@ -93,7 +95,7 @@ public class OpflowLogTracer {
         
         @Override
         public boolean isMute() {
-            return "internal".equals(messageScope);
+            return IS_PING_LOGGING_OMITTED && "internal".equals(messageScope);
         }
     }
     
