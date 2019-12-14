@@ -115,11 +115,13 @@ public class OpflowCommander {
     
     private class RpcInvocationHandler implements InvocationHandler {
         private final Class clazz;
+        private final Object bean;
         private final Map<String, String> aliasOfMethod = new HashMap<>();
         private final OpflowRpcMaster rpcMaster;
         
-        public RpcInvocationHandler(OpflowRpcMaster rpcMaster, Class clazz) {
+        public RpcInvocationHandler(OpflowRpcMaster rpcMaster, Class clazz, Object bean) {
             this.clazz = clazz;
+            this.bean = bean;
             for (Method method : this.clazz.getDeclaredMethods()) {
                 String methodId = OpflowUtil.getMethodSignature(method);
                 OpflowSourceRoutine routine = extractMethodInfo(method);
@@ -163,6 +165,9 @@ public class OpflowCommander {
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
             
             if (rpcResult.isTimeout()) {
+                if (this.bean != null) {
+                    return method.invoke(this.bean, args);
+                }
                 throw new OpflowRequestTimeoutException();
             }
             
@@ -206,7 +211,7 @@ public class OpflowCommander {
     
     private final Map<String, RpcInvocationHandler> handlers = new HashMap<>();
     
-    private RpcInvocationHandler getInvocationHandler(Class clazz) {
+    private RpcInvocationHandler getInvocationHandler(Class clazz, Object bean) {
         validateType(clazz);
         String clazzName = clazz.getName();
         if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
@@ -218,7 +223,7 @@ public class OpflowCommander {
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
-            handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, clazz));
+            handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, clazz, bean));
         }
         return handlers.get(clazzName);
     }
@@ -255,13 +260,17 @@ public class OpflowCommander {
     }
     
     public <T> T registerType(Class<T> type) {
+        return registerType(type, null);
+    }
+    
+    public <T> T registerType(Class<T> type, T bean) {
         try {
             if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                     .put("className", type.getName())
                     .put("classLoaderName", type.getClassLoader().getClass().getName())
                     .text("registerType() calls newProxyInstance()")
                     .stringify());
-            T t = (T) Proxy.newProxyInstance(type.getClassLoader(), new Class[] {type}, getInvocationHandler(type));
+            T t = (T) Proxy.newProxyInstance(type.getClassLoader(), new Class[] {type}, getInvocationHandler(type, bean));
             if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                     .put("className", type.getName())
                     .text("newProxyInstance() has completed")
