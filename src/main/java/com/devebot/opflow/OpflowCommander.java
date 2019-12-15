@@ -20,11 +20,15 @@ import com.devebot.opflow.annotation.OpflowSourceRoutine;
  * @author drupalex
  */
 public class OpflowCommander {
+    public final static String PARAM_RESERVE_WORKER_ENABLED = "reserveWorkerEnabled";
+    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
     private final OpflowLogTracer logTracer;
     private final OpflowExporter exporter;
     
     private final String commanderId;
+    
+    private boolean reserveWorkerEnabled;
     private OpflowPubsubHandler configurer;
     private OpflowRpcMaster rpcMaster;
     private OpflowPubsubHandler publisher;
@@ -42,6 +46,12 @@ public class OpflowCommander {
                 .text("Commander[${commanderId}].new()")
                 .stringify());
 
+        if (kwargs.get(PARAM_RESERVE_WORKER_ENABLED) != null && kwargs.get(PARAM_RESERVE_WORKER_ENABLED) instanceof Boolean) {
+            reserveWorkerEnabled = (Boolean) kwargs.get(PARAM_RESERVE_WORKER_ENABLED);
+        } else {
+            reserveWorkerEnabled = true;
+        }
+        
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get("configurer");
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get("rpcMaster");
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get("publisher");
@@ -115,13 +125,15 @@ public class OpflowCommander {
     
     private class RpcInvocationHandler implements InvocationHandler {
         private final Class clazz;
-        private final Object bean;
+        private final Object reserveWorker;
+        private final boolean reserveWorkerEnabled;
         private final Map<String, String> aliasOfMethod = new HashMap<>();
         private final OpflowRpcMaster rpcMaster;
         
-        public RpcInvocationHandler(OpflowRpcMaster rpcMaster, Class clazz, Object bean) {
+        public RpcInvocationHandler(OpflowRpcMaster rpcMaster, Class clazz, Object reserveWorker, boolean reserveWorkerEnabled) {
             this.clazz = clazz;
-            this.bean = bean;
+            this.reserveWorker = reserveWorker;
+            this.reserveWorkerEnabled = reserveWorkerEnabled;
             for (Method method : this.clazz.getDeclaredMethods()) {
                 String methodId = OpflowUtil.getMethodSignature(method);
                 OpflowSourceRoutine routine = extractMethodInfo(method);
@@ -165,8 +177,10 @@ public class OpflowCommander {
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
             
             if (rpcResult.isTimeout()) {
-                if (this.bean != null) {
-                    return method.invoke(this.bean, args);
+                if (this.reserveWorker != null) {
+                    if (this.reserveWorkerEnabled) {
+                        return method.invoke(this.reserveWorker, args);
+                    }
                 }
                 throw new OpflowRequestTimeoutException();
             }
@@ -223,7 +237,7 @@ public class OpflowCommander {
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
-            handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, clazz, bean));
+            handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, clazz, bean, reserveWorkerEnabled));
         }
         return handlers.get(clazzName);
     }
