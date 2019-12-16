@@ -128,9 +128,11 @@ public class OpflowCommander {
         private final Object reserveWorker;
         private final boolean reserveWorkerEnabled;
         private final Map<String, String> aliasOfMethod = new HashMap<>();
+        private final Map<String, Boolean> methodIsAsync = new HashMap<>();
         private final OpflowRpcMaster rpcMaster;
+        private final OpflowPubsubHandler publisher;
         
-        public RpcInvocationHandler(OpflowRpcMaster rpcMaster, Class clazz, Object reserveWorker, boolean reserveWorkerEnabled) {
+        public RpcInvocationHandler(OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher, Class clazz, Object reserveWorker, boolean reserveWorkerEnabled) {
             this.clazz = clazz;
             this.reserveWorker = reserveWorker;
             this.reserveWorkerEnabled = reserveWorkerEnabled;
@@ -149,14 +151,17 @@ public class OpflowCommander {
                             .text("link alias to routineId")
                             .stringify());
                 }
+                methodIsAsync.put(methodId, (routine != null) && routine.isAsync());
             }
             this.rpcMaster = rpcMaster;
+            this.publisher = publisher;
         }
         
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             String methodId = OpflowUtil.getMethodSignature(method);
             String routineId = aliasOfMethod.getOrDefault(methodId, methodId);
+            Boolean isAsync = methodIsAsync.getOrDefault(methodId, false);
             if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                     .put("methodId", methodId)
                     .put("routineId", routineId)
@@ -171,6 +176,11 @@ public class OpflowCommander {
                     .put("body", body)
                     .text("RpcInvocationHandler.invoke() - request")
                     .stringify());
+            
+            if (this.publisher != null && isAsync && method.getReturnType() == void.class) {
+                this.publisher.publish(body);
+                return null;
+            }
             
             OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, OpflowUtil.buildMap()
                     .put("progressEnabled", false).toMap());
@@ -237,7 +247,7 @@ public class OpflowCommander {
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
-            handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, clazz, bean, reserveWorkerEnabled));
+            handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, publisher, clazz, bean, reserveWorkerEnabled));
         }
         return handlers.get(clazzName);
     }
