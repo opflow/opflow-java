@@ -31,8 +31,21 @@ public interface OpflowRpcChecker {
         
         @Override
         public String toString() {
+            String summary;
+            switch (status) {
+                case "ok":
+                    summary = "The connection is ok";
+                    break;
+                case "failed":
+                    summary = "The workers have not been started or the parameters mismatched";
+                    break;
+                default:
+                    summary = "Unknown error";
+                    break;
+            }
             return OpflowUtil.buildMap()
                     .put("status", status)
+                    .put("summary", summary)
                     .toString();
         }
     }
