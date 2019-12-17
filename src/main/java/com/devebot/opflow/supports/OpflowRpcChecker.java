@@ -1,6 +1,7 @@
 package com.devebot.opflow.supports;
 
 import com.devebot.opflow.OpflowUtil;
+import java.util.Map;
 
 /**
  *
@@ -15,14 +16,31 @@ public interface OpflowRpcChecker {
     }
     
     public static class Pong {
+        private Map<String, Object> accumulator;
+
+        public Pong() {
+        }
         
+        public Pong(Map<String, Object> accumulator) {
+            this.accumulator = accumulator;
+        }
+
+        public Map<String, Object> getAccumulator() {
+            return accumulator;
+        }
+
+        public void setAccumulator(Map<String, Object> accumulator) {
+            this.accumulator = accumulator;
+        }
     }
     
     public static class Info {
         private String status = "";
+        private Pong pong;
 
         public Info (Pong pong) {
             this.status = "ok";
+            this.pong = pong;
         }
         
         public Info (Exception exception) {
@@ -45,6 +63,7 @@ public interface OpflowRpcChecker {
             }
             return OpflowUtil.buildMap()
                     .put("status", status)
+                    .put("return", pong)
                     .put("summary", summary)
                     .toString();
         }

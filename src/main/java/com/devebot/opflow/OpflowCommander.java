@@ -111,6 +111,14 @@ public class OpflowCommander {
         exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
     }
     
+    public boolean isReserveWorkerEnabled() {
+        return this.reserveWorkerEnabled;
+    }
+    
+    public void setReserveWorkerEnabled(boolean enabled) {
+        this.reserveWorkerEnabled = enabled;
+    }
+    
     public OpflowRpcChecker.Info ping() {
         if (this.rpcChecker == null) {
             this.rpcChecker = this.registerType(OpflowRpcChecker.class);

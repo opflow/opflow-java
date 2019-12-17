@@ -18,6 +18,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.annotation.OpflowTargetRoutine;
+import com.devebot.opflow.supports.OpflowRpcChecker;
 import com.devebot.opflow.supports.OpflowRpcCheckerImpl;
 
 /**
@@ -303,7 +304,7 @@ public class OpflowServerlet {
             rpcWorker = worker;
             listener = new OpflowRpcListener() {
                 @Override
-                public Boolean processMessage(OpflowMessage message, OpflowRpcResponse response) throws IOException {
+                public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
                     String requestId = OpflowUtil.getRequestId(message.getInfo());
                     OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId);
                     String routineId = OpflowUtil.getRoutineId(message.getInfo());
@@ -329,7 +330,23 @@ public class OpflowServerlet {
                                 .stringify());
                         Object[] args = OpflowJsontool.toObjectArray(json, method.getParameterTypes());
                         
-                        Object returnValue = method.invoke(target, args);
+                        Object returnValue;
+                        
+                        String pingSignature = OpflowRpcChecker.class.getMethod("send", OpflowRpcChecker.Ping.class).toString();
+                        if (pingSignature.equals(routineId)) {
+                            returnValue = new OpflowRpcChecker.Pong(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                                @Override
+                                public void transform(Map<String, Object> opts) {
+                                    opts.put("requestId", response.getRequestId());
+                                    opts.put("replyToQueue", response.getReplyQueueName());
+                                    opts.put("workerTag", response.getWorkerTag());
+                                    opts.put("dispatchQueue", rpcWorker.getDispatchName());
+                                }
+                            }).toMap());
+                        } else {
+                            returnValue = method.invoke(target, args);
+                        }
+                        
                         String result = OpflowJsontool.toString(returnValue);
                         if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(listenerTrail
                                 .put("return", OpflowUtil.truncate(result))
