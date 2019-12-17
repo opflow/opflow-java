@@ -46,9 +46,17 @@ public interface OpflowRpcChecker {
         public Info (Exception exception) {
             this.status = "failed";
         }
+
+        public String getStatus() {
+            return status;
+        }
         
         @Override
         public String toString() {
+            return toString(false);
+        }
+        
+        public String toString(boolean pretty) {
             String summary;
             switch (status) {
                 case "ok":
@@ -63,9 +71,9 @@ public interface OpflowRpcChecker {
             }
             return OpflowUtil.buildMap()
                     .put("status", status)
-                    .put("return", pong)
+                    .put("serverlet", pong.getAccumulator())
                     .put("summary", summary)
-                    .toString();
+                    .toString(pretty);
         }
     }
 }

@@ -198,7 +198,11 @@ public class OpflowUtil {
         
         @Override
         public String toString() {
-            return OpflowJsontool.toString(fields);
+            return toString(false);
+        }
+        
+        public String toString(boolean pretty) {
+            return OpflowJsontool.toString(fields, pretty);
         }
     }
     

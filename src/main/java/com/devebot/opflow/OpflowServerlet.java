@@ -131,7 +131,8 @@ public class OpflowServerlet implements AutoCloseable {
                         .stringify());
                 rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
                 instantiator = new Instantiator(rpcWorker, OpflowUtil.buildMap()
-                        .put("instantiatorId", rpcWorkerId).toMap());
+                        .put("instanceId", serverletId)
+                        .toMap());
             }
 
             if (subscriberCfg != null && !Boolean.FALSE.equals(subscriberCfg.get("enabled"))) {
@@ -303,15 +304,16 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("RpcWorker should not be null");
             }
             options = OpflowUtil.ensureNotNull(options);
-            logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", options.getOrDefault("instantiatorId", OpflowUtil.getLogID()));
+            final String instanceId = options.getOrDefault("instanceId", OpflowUtil.getLogID()).toString();
+            logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", instanceId);
             rpcWorker = worker;
             listener = new OpflowRpcListener() {
                 @Override
                 public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
-                    String requestId = OpflowUtil.getRequestId(message.getInfo());
-                    OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId);
-                    String routineId = OpflowUtil.getRoutineId(message.getInfo());
-                    String methodId = methodOfAlias.getOrDefault(routineId, routineId);
+                    final String requestId = OpflowUtil.getRequestId(message.getInfo());
+                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId);
+                    final String routineId = OpflowUtil.getRoutineId(message.getInfo());
+                    final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
                     if (OpflowLogTracer.has(LOG, "info")) LOG.info(listenerTrail
                             .put("routineId", routineId)
                             .put("methodId", methodId)
@@ -340,10 +342,18 @@ public class OpflowServerlet implements AutoCloseable {
                             returnValue = new OpflowRpcChecker.Pong(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
                                 @Override
                                 public void transform(Map<String, Object> opts) {
-                                    opts.put("requestId", response.getRequestId());
-                                    opts.put("replyToQueue", response.getReplyQueueName());
-                                    opts.put("workerTag", response.getWorkerTag());
-                                    opts.put("dispatchQueue", rpcWorker.getDispatchName());
+                                    opts.put("requestId", requestId);
+                                    opts.put("instanceId", instanceId);
+                                    opts.put("rpcWorker", OpflowUtil.buildMap()
+                                            .put("instanceId", rpcWorker.getIntanceId())
+                                            .put("dispatchQueue", rpcWorker.getDispatchName())
+                                            .put("callbackQueue", rpcWorker.getCallbackName())
+                                            .toMap());
+                                    opts.put("listener", OpflowUtil.buildMap()
+                                            .put("applicationId", response.getApplicationId())
+                                            .put("replyToQueue", response.getReplyQueueName())
+                                            .put("consumerTag", response.getWorkerTag())
+                                            .toMap());
                                 }
                             }).toMap());
                         } else {

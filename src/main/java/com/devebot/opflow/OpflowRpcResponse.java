@@ -20,19 +20,6 @@ public class OpflowRpcResponse {
     private final AMQP.BasicProperties properties;
     private final String workerTag;
     private final String replyQueueName;
-
-    public String getRequestId() {
-        return requestId;
-    }
-
-    public String getReplyQueueName() {
-        return replyQueueName;
-    }
-
-    public String getWorkerTag() {
-        return workerTag;
-    }
-
     private final String requestId;
     private final Boolean progressEnabled;
     
@@ -60,7 +47,21 @@ public class OpflowRpcResponse {
                 .stringify());
     }
     
+    public String getApplicationId() {
+        return properties.getAppId();
+    }
     
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public String getReplyQueueName() {
+        return replyQueueName;
+    }
+
+    public String getWorkerTag() {
+        return workerTag;
+    }
     
     public void emitStarted() {
         emitStarted("{}");

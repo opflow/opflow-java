@@ -200,6 +200,10 @@ public class OpflowRpcWorker {
         return executor;
     }
 
+    public String getIntanceId() {
+        return rpcWorkerId;
+    }
+    
     public String getDispatchName() {
         return operatorName;
     }
