@@ -25,7 +25,7 @@ import com.devebot.opflow.supports.OpflowRpcCheckerImpl;
  *
  * @author drupalex
  */
-public class OpflowServerlet {
+public class OpflowServerlet implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
     private final OpflowLogTracer logTracer;
     private final OpflowExporter exporter;
@@ -214,6 +214,7 @@ public class OpflowServerlet {
         }
     }
     
+    @Override
     public final void close() {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].close()")
@@ -222,6 +223,8 @@ public class OpflowServerlet {
         if (configurer != null) configurer.close();
         if (rpcWorker != null) rpcWorker.close();
         if (subscriber != null) subscriber.close();
+        
+        exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].close() has completed!")
@@ -332,7 +335,7 @@ public class OpflowServerlet {
                         
                         Object returnValue;
                         
-                        String pingSignature = OpflowRpcChecker.class.getMethod("send", OpflowRpcChecker.Ping.class).toString();
+                        String pingSignature = OpflowRpcCheckerImpl.getSendSignature();
                         if (pingSignature.equals(routineId)) {
                             returnValue = new OpflowRpcChecker.Pong(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
                                 @Override
@@ -500,15 +503,6 @@ public class OpflowServerlet {
                 return routine;
             }
             return null;
-        }
-    }
-    
-    @Override
-    protected void finalize() throws Throwable {
-        try {
-            close();
-        } finally {
-            exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);
         }
     }
 }

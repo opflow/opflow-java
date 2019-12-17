@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowCommander {
+public class OpflowCommander implements AutoCloseable {
     public final static String PARAM_RESERVE_WORKER_ENABLED = "reserveWorkerEnabled";
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
@@ -130,6 +130,7 @@ public class OpflowCommander {
         }
     }
     
+    @Override
     public final void close() {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close()")
@@ -138,6 +139,8 @@ public class OpflowCommander {
         if (configurer != null) configurer.close();
         if (rpcMaster != null) rpcMaster.close();
         if (publisher != null) publisher.close();
+        
+        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.DEC);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close() has done!")
@@ -340,14 +343,5 @@ public class OpflowCommander {
         Annotation annotation = method.getAnnotation(OpflowSourceRoutine.class);
         OpflowSourceRoutine routine = (OpflowSourceRoutine) annotation;
         return routine;
-    }
-    
-    @Override
-    protected void finalize() throws Throwable {
-        try {
-            close();
-        } finally {
-            exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.DEC);
-        }
     }
 }
