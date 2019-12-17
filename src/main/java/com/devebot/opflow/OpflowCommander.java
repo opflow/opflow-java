@@ -123,10 +123,26 @@ public class OpflowCommander implements AutoCloseable {
         if (this.rpcChecker == null) {
             this.rpcChecker = this.registerType(OpflowRpcChecker.class);
         }
+        Map<String, Object> me = OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+            @Override
+            public void transform(Map<String, Object> opts) {
+                opts.put("instanceId", commanderId);
+                opts.put("rpcMaster", OpflowUtil.buildOrderedMap()
+                        .put("instanceId", rpcMaster.getInstanceId())
+                        .put("callbackQueue", rpcMaster.getCallbackName())
+                        .put("callbackDurable", rpcMaster.getCallbackDurable())
+                        .put("callbackExclusive", rpcMaster.getCallbackExclusive())
+                        .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete())
+                        .toMap());
+                opts.put("request", OpflowUtil.buildOrderedMap()
+                        .put("expiration", rpcMaster.getExpiration())
+                        .toMap());
+            }
+        }).toMap();
         try {
-            return new OpflowRpcChecker.Info(this.rpcChecker.send(new OpflowRpcChecker.Ping()));
+            return new OpflowRpcChecker.Info(me, this.rpcChecker.send(new OpflowRpcChecker.Ping()));
         } catch (Exception exception) {
-            return new OpflowRpcChecker.Info(exception);
+            return new OpflowRpcChecker.Info(me, exception);
         }
     }
     

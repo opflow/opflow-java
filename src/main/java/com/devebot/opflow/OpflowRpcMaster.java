@@ -389,6 +389,14 @@ public class OpflowRpcMaster {
         return executor;
     }
     
+    public String getInstanceId() {
+        return rpcMasterId;
+    }
+    
+    public long getExpiration() {
+        return expiration;
+    }
+    
     public String getCallbackName() {
         return responseName;
     }

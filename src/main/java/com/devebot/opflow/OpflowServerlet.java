@@ -339,17 +339,17 @@ public class OpflowServerlet implements AutoCloseable {
                         
                         String pingSignature = OpflowRpcCheckerImpl.getSendSignature();
                         if (pingSignature.equals(routineId)) {
-                            returnValue = new OpflowRpcChecker.Pong(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                            returnValue = new OpflowRpcChecker.Pong(OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
                                 @Override
                                 public void transform(Map<String, Object> opts) {
-                                    opts.put("requestId", requestId);
                                     opts.put("instanceId", instanceId);
-                                    opts.put("rpcWorker", OpflowUtil.buildMap()
+                                    opts.put("rpcWorker", OpflowUtil.buildOrderedMap()
                                             .put("instanceId", rpcWorker.getIntanceId())
                                             .put("dispatchQueue", rpcWorker.getDispatchName())
                                             .put("callbackQueue", rpcWorker.getCallbackName())
                                             .toMap());
-                                    opts.put("listener", OpflowUtil.buildMap()
+                                    opts.put("handler", OpflowUtil.buildOrderedMap()
+                                            .put("requestId", requestId)
                                             .put("applicationId", response.getApplicationId())
                                             .put("replyToQueue", response.getReplyQueueName())
                                             .put("consumerTag", response.getWorkerTag())

@@ -36,15 +36,20 @@ public interface OpflowRpcChecker {
     
     public static class Info {
         private String status = "";
-        private Pong pong;
+        private Map<String, Object> source;
+        private Pong result;
+        private Exception exception;
 
-        public Info (Pong pong) {
+        public Info (Map<String, Object> source, Pong result) {
             this.status = "ok";
-            this.pong = pong;
+            this.source = source;
+            this.result = result;
         }
         
-        public Info (Exception exception) {
+        public Info (Map<String, Object> source, Exception exception) {
             this.status = "failed";
+            this.source = source;
+            this.exception = exception;
         }
 
         public String getStatus() {
@@ -57,23 +62,27 @@ public interface OpflowRpcChecker {
         }
         
         public String toString(boolean pretty) {
-            String summary;
+            OpflowUtil.MapBuilder builder = OpflowUtil.buildOrderedMap()
+                    .put("status", status)
+                    .put("commander", source);
             switch (status) {
                 case "ok":
-                    summary = "The connection is ok";
+                    builder.put("serverlet", result.getAccumulator())
+                            .put("summary", "The connection is ok");
                     break;
                 case "failed":
-                    summary = "The workers have not been started or the parameters mismatched";
+                    builder
+                            .put("exception", OpflowUtil.buildOrderedMap()
+                                    .put("name", exception.getClass().getName())
+                                    .put("message", exception.getMessage())
+                                    .toMap())
+                            .put("summary", "The workers have not been started or the parameters mismatched");
                     break;
                 default:
-                    summary = "Unknown error";
+                    builder.put("summary", "Unknown error");
                     break;
             }
-            return OpflowUtil.buildMap()
-                    .put("status", status)
-                    .put("serverlet", pong.getAccumulator())
-                    .put("summary", summary)
-                    .toString(pretty);
+            return builder.toString(pretty);
         }
     }
 }
