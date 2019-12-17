@@ -111,16 +111,14 @@ public class OpflowCommander {
         exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
     }
     
-    public boolean ping() {
+    public OpflowRpcChecker.Info ping() {
         if (this.rpcChecker == null) {
             this.rpcChecker = this.registerType(OpflowRpcChecker.class);
         }
         try {
-            OpflowRpcChecker.Ping ping = new OpflowRpcChecker.Ping();
-            OpflowRpcChecker.Pong pong = this.rpcChecker.send(ping);
-            return true;
+            return new OpflowRpcChecker.Info(this.rpcChecker.send(new OpflowRpcChecker.Ping()));
         } catch (Exception exception) {
-            return false;
+            return new OpflowRpcChecker.Info(exception);
         }
     }
     
