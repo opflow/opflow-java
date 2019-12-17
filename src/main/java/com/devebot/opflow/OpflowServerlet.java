@@ -18,6 +18,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.annotation.OpflowTargetRoutine;
+import com.devebot.opflow.supports.OpflowRpcCheckerImpl;
 
 /**
  *
@@ -170,13 +171,16 @@ public class OpflowServerlet {
                 rpcWorker.process(entry.getKey(), entry.getValue());
             }
         }
-        if (instantiator != null) {
-            instantiator.process();
-        }
         
         if (subscriber != null && listenerMap.getSubscriber() != null) {
             subscriber.subscribe(listenerMap.getSubscriber());
         }
+
+        if (instantiator != null) {
+            instantiator.process();
+        }
+        
+        this.instantiateType(OpflowRpcCheckerImpl.class);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].start() has completed!")

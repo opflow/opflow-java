@@ -1,9 +1,11 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
+import com.devebot.opflow.supports.OpflowRpcChecker;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -13,7 +15,6 @@ import java.util.HashSet;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.devebot.opflow.annotation.OpflowSourceRoutine;
 
 /**
  *
@@ -32,6 +33,7 @@ public class OpflowCommander {
     private OpflowPubsubHandler configurer;
     private OpflowRpcMaster rpcMaster;
     private OpflowPubsubHandler publisher;
+    private OpflowRpcChecker rpcChecker;
     
     public OpflowCommander() throws OpflowBootstrapException {
         this(null);
@@ -107,6 +109,19 @@ public class OpflowCommander {
         exporter = OpflowExporter.getInstance();
         
         exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
+    }
+    
+    public boolean ping() {
+        if (this.rpcChecker == null) {
+            this.rpcChecker = this.registerType(OpflowRpcChecker.class);
+        }
+        try {
+            OpflowRpcChecker.Ping ping = new OpflowRpcChecker.Ping();
+            OpflowRpcChecker.Pong pong = this.rpcChecker.send(ping);
+            return true;
+        } catch (Exception exception) {
+            return false;
+        }
     }
     
     public final void close() {
