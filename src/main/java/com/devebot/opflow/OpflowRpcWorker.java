@@ -22,7 +22,7 @@ public class OpflowRpcWorker {
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
-    private final OpflowExporter exporter;
+    private final OpflowPromMeasurer measurer;
     
     private final String rpcWorkerId;
     private final String operatorName;
@@ -53,7 +53,7 @@ public class OpflowRpcWorker {
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
-        exporter = OpflowExporter.getInstance();
+        measurer = OpflowPromMeasurer.getInstance();
         
         if (operatorName != null) {
             executor.assertQueue(operatorName);
@@ -74,7 +74,7 @@ public class OpflowRpcWorker {
                 .text("RpcWorker[${rpcWorkerId}].new() end!")
                 .stringify());
         
-        exporter.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowExporter.GaugeAction.INC);
+        measurer.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
@@ -147,7 +147,7 @@ public class OpflowRpcWorker {
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
                         count++;
-                        exporter.incRpcInvocationEvent("rpc_worker", rpcWorkerId, routineId, "process");
+                        measurer.incRpcInvocationEvent("rpc_worker", rpcWorkerId, routineId, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
@@ -242,7 +242,7 @@ public class OpflowRpcWorker {
         try {
             close();
         } finally {
-            exporter.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowExporter.GaugeAction.DEC);
+            measurer.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowPromMeasurer.GaugeAction.DEC);
         }
     }
 }

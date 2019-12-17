@@ -24,7 +24,7 @@ public class OpflowCommander {
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
     private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
+    private final OpflowPromMeasurer measurer;
     
     private final String commanderId;
     
@@ -104,9 +104,9 @@ public class OpflowCommander {
                 .text("Commander[${commanderId}].new() end!")
                 .stringify());
         
-        exporter = OpflowExporter.getInstance();
+        measurer = OpflowPromMeasurer.getInstance();
         
-        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
+        measurer.changeComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.INC);
     }
     
     public final void close() {
@@ -316,7 +316,7 @@ public class OpflowCommander {
         try {
             close();
         } finally {
-            exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.DEC);
+            measurer.changeComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.DEC);
         }
     }
 }

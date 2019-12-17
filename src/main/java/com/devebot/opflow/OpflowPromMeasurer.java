@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author acegik
  */
-public class OpflowExporter {
+public class OpflowPromMeasurer {
 
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowExporter.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowPromMeasurer.class);
     
     public final static String DEFAULT_PROM_EXPORTER_PORT_VAL = "9450";
     public final static String DEFAULT_PROM_EXPORTER_PORT_KEY = "opflow.exporter.port";
@@ -37,7 +37,7 @@ public class OpflowExporter {
         DEC;
     }
     
-    private static OpflowExporter instance;
+    private static OpflowPromMeasurer instance;
 
     private final CollectorRegistry pushRegistry = new CollectorRegistry();
     private PushGateway pushGateway;
@@ -191,7 +191,7 @@ public class OpflowExporter {
         return ("default".equals(addr2) ? DEFAULT_PROM_PUSHGATEWAY_ADDR_VAL : addr2);
     }
     
-    private OpflowExporter() throws OpflowOperationException {
+    private OpflowPromMeasurer() throws OpflowOperationException {
         // Initialize the PushGateway
         String pushAddr = getPushGatewayAddr();
         if (pushAddr != null) {
@@ -218,9 +218,9 @@ public class OpflowExporter {
         assertEngineConnectionGauge();
     }
  
-    public static OpflowExporter getInstance() throws OpflowOperationException {
+    public static OpflowPromMeasurer getInstance() throws OpflowOperationException {
         if (instance == null) {
-            instance = new OpflowExporter();
+            instance = new OpflowPromMeasurer();
         }
         return instance;
     }

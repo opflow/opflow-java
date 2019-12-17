@@ -26,7 +26,7 @@ import com.devebot.opflow.annotation.OpflowTargetRoutine;
 public class OpflowServerlet {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
     private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
+    private final OpflowPromMeasurer measurer;
     
     private final String serverletId;
     private OpflowPubsubHandler configurer;
@@ -150,9 +150,9 @@ public class OpflowServerlet {
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
         
-        exporter = OpflowExporter.getInstance();
+        measurer = OpflowPromMeasurer.getInstance();
         
-        exporter.changeComponentInstance("serverletId", serverletId, OpflowExporter.GaugeAction.INC);
+        measurer.changeComponentInstance("serverletId", serverletId, OpflowPromMeasurer.GaugeAction.INC);
     }
     
     public final void start() {
@@ -487,7 +487,7 @@ public class OpflowServerlet {
         try {
             close();
         } finally {
-            exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);
+            measurer.changeComponentInstance("serverlet", serverletId, OpflowPromMeasurer.GaugeAction.DEC);
         }
     }
 }

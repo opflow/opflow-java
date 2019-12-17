@@ -61,7 +61,7 @@ public class OpflowEngine {
     private String[] otherKeys;
     private String applicationId;
 
-    private OpflowExporter exporter = OpflowExporter.getInstance();
+    private OpflowPromMeasurer measurer = OpflowPromMeasurer.getInstance();
     
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
@@ -372,7 +372,7 @@ public class OpflowEngine {
                 .text("Engine[${engineId}].new() end!")
                 .stringify());
         
-        exporter.changeComponentInstance("engine", engineId, OpflowExporter.GaugeAction.INC);
+        measurer.changeComponentInstance("engine", engineId, OpflowPromMeasurer.GaugeAction.INC);
     }
     
     public void produce(final byte[] body, final Map<String, Object> headers) {
@@ -921,7 +921,7 @@ public class OpflowEngine {
                     .text("Engine[${engineId}] shared producingConnection is created")
                     .stringify());
             producingConnection = factory.newConnection();
-            exporter.incEngineConnectionGauge(factory, "producing");
+            measurer.incEngineConnectionGauge(factory, "producing");
         }
         return producingConnection;
     }
@@ -960,7 +960,7 @@ public class OpflowEngine {
                     .text("Engine[${engineId}] shared consumingConnection is created")
                     .stringify());
             consumingConnection = factory.newConnection();
-            exporter.incEngineConnectionGauge(factory, "consuming");
+            measurer.incEngineConnectionGauge(factory, "consuming");
         }
         return consumingConnection;
     }
@@ -1018,7 +1018,7 @@ public class OpflowEngine {
         try {
             close();
         } finally {
-            exporter.changeComponentInstance("engine", engineId, OpflowExporter.GaugeAction.DEC);
+            measurer.changeComponentInstance("engine", engineId, OpflowPromMeasurer.GaugeAction.DEC);
         }
     }
 }
