@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -18,22 +19,35 @@ import org.slf4j.LoggerFactory;
 public class OpflowJsontool {
     private static final Logger LOG = LoggerFactory.getLogger(OpflowJsontool.class);
     private static final Gson GSON = new Gson();
+    private static final Gson PSON = new GsonBuilder().setPrettyPrinting().create();
     private static final JsonParser JSON_PARSER = new JsonParser();
     
     public static String toString(Object jsonObj) {
-        return GSON.toJson(jsonObj);
+        return toString(jsonObj, false);
+    }
+    
+    public static String toString(Object jsonObj, boolean pretty) {
+        return pretty ? PSON.toJson(jsonObj) : GSON.toJson(jsonObj);
     }
     
     public static String toString(Object[] objs, Type[] types) {
+        return toString(objs, types, false);
+    }
+    
+    public static String toString(Object[] objs, Type[] types, boolean pretty) {
         JsonArray array = new JsonArray();
         for(int i=0; i<objs.length; i++) {
             array.add(GSON.toJson(objs[i], types[i]));
         }
-        return GSON.toJson(array);
+        return pretty ? PSON.toJson(array) : GSON.toJson(array);
     }
     
     public static String toString(Map<String, Object> jsonMap) {
-        return GSON.toJson(jsonMap);
+        return toString(jsonMap, false);
+    }
+    
+    public static String toString(Map<String, Object> jsonMap, boolean pretty) {
+        return pretty ? PSON.toJson(jsonMap) : GSON.toJson(jsonMap);
     }
     
     public static <T> T toObject(String json, Class<T> type) {
