@@ -24,6 +24,7 @@ import com.devebot.opflow.supports.OpflowEnvtool;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.LinkedHashMap;
 import java.util.TimeZone;
 
 /**
@@ -215,7 +216,11 @@ public class OpflowUtil {
     }
     
     public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts) {
-        Map<String, Object> source = new HashMap<>();
+        return buildMap(listener, defaultOpts, false);
+    }
+    
+    public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts, boolean orderKeep) {
+        Map<String, Object> source = orderKeep ? new LinkedHashMap<String, Object>() : new HashMap<String, Object>();
         if (defaultOpts != null) {
             source.putAll(defaultOpts);
         }
@@ -223,6 +228,18 @@ public class OpflowUtil {
             listener.transform(source);
         }
         return new MapBuilder(source);
+    }
+    
+    public static MapBuilder buildOrderedMap() {
+        return buildOrderedMap(null);
+    }
+    
+    public static MapBuilder buildOrderedMap(MapListener listener) {
+        return buildOrderedMap(listener, null);
+    }
+    
+    public static MapBuilder buildOrderedMap(MapListener listener, Map<String, Object> defaultOpts) {
+        return buildMap(listener, defaultOpts, true);
     }
     
     public static Map<String, Object> ensureNotNull(Map<String, Object> opts) {
