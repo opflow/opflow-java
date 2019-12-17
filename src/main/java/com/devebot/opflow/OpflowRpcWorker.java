@@ -200,11 +200,11 @@ public class OpflowRpcWorker {
         return executor;
     }
 
-    public String getOperatorName() {
+    public String getDispatchName() {
         return operatorName;
     }
 
-    public String getResponseName() {
+    public String getCallbackName() {
         return responseName;
     }
     

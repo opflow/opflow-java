@@ -389,10 +389,22 @@ public class OpflowRpcMaster {
         return executor;
     }
     
-    public String getResponseName() {
+    public String getCallbackName() {
         return responseName;
     }
     
+    public Boolean getCallbackDurable() {
+        return responseDurable;
+    }
+
+    public Boolean getCallbackExclusive() {
+        return responseExclusive;
+    }
+
+    public Boolean getCallbackAutoDelete() {
+        return responseAutoDelete;
+    }
+
     @Override
     protected void finalize() throws Throwable {
         try {
