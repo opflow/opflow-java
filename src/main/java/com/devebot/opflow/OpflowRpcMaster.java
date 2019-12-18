@@ -389,6 +389,10 @@ public class OpflowRpcMaster {
         return executor;
     }
     
+    public OpflowEngine getEngine() {
+        return engine;
+    }
+    
     public String getInstanceId() {
         return rpcMasterId;
     }

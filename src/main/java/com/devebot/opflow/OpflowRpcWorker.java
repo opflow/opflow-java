@@ -200,6 +200,10 @@ public class OpflowRpcWorker {
         return executor;
     }
 
+    public OpflowEngine getEngine() {
+        return engine;
+    }
+
     public String getIntanceId() {
         return rpcWorkerId;
     }

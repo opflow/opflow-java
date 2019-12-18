@@ -126,9 +126,15 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> me = OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
+                OpflowEngine engine = rpcMaster.getEngine();
                 opts.put("instanceId", commanderId);
                 opts.put("rpcMaster", OpflowUtil.buildOrderedMap()
                         .put("instanceId", rpcMaster.getInstanceId())
+                        .put("exchangeName", engine.getExchangeName())
+                        .put("exchangeDurable", engine.getExchangeDurable())
+                        .put("routingKey", engine.getRoutingKey())
+                        .put("otherKeys", engine.getOtherKeys())
+                        .put("applicationId", engine.getApplicationId())
                         .put("callbackQueue", rpcMaster.getCallbackName())
                         .put("callbackDurable", rpcMaster.getCallbackDurable())
                         .put("callbackExclusive", rpcMaster.getCallbackExclusive())

@@ -374,6 +374,26 @@ public class OpflowEngine {
         
         exporter.changeComponentInstance("engine", engineId, OpflowExporter.GaugeAction.INC);
     }
+
+    public String getExchangeName() {
+        return exchangeName;
+    }
+
+    public Boolean getExchangeDurable() {
+        return exchangeDurable;
+    }
+
+    public String getRoutingKey() {
+        return routingKey;
+    }
+
+    public String[] getOtherKeys() {
+        return otherKeys;
+    }
+
+    public String getApplicationId() {
+        return applicationId;
+    }
     
     public void produce(final byte[] body, final Map<String, Object> headers) {
         produce(body, headers, null, null);
