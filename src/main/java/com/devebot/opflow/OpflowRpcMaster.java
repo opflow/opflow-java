@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowRpcMaster {
+public class OpflowRpcMaster implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
     private final OpflowLogTracer logTracer;
     
@@ -349,6 +349,7 @@ public class OpflowRpcMaster {
         return state;
     }
     
+    @Override
     public void close() {
         lock.lock();
         if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
@@ -420,10 +421,6 @@ public class OpflowRpcMaster {
 
     @Override
     protected void finalize() throws Throwable {
-        try {
-            close();
-        } finally {
-            exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.DEC);
-        }
+        exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.DEC);
     }
 }

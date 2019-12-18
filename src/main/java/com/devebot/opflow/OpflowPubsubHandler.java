@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowPubsubHandler {
+public class OpflowPubsubHandler implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
     private final OpflowLogTracer logTracer;
 
@@ -233,6 +233,7 @@ public class OpflowPubsubHandler {
         return consumer;
     }
     
+    @Override
     public void close() {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].close()")

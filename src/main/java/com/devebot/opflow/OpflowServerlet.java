@@ -1,7 +1,10 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.annotation.OpflowTargetRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.devebot.opflow.supports.OpflowRpcChecker;
+import com.devebot.opflow.supports.OpflowRpcCheckerImpl;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -17,9 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.devebot.opflow.annotation.OpflowTargetRoutine;
-import com.devebot.opflow.supports.OpflowRpcChecker;
-import com.devebot.opflow.supports.OpflowRpcCheckerImpl;
 
 /**
  *
@@ -228,13 +228,11 @@ public class OpflowServerlet implements AutoCloseable {
         if (rpcWorker != null) rpcWorker.close();
         if (subscriber != null) subscriber.close();
         
-        exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);
-        
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].close() has completed!")
                 .stringify());
     }
-    
+        
     public static DescriptorBuilder getDescriptorBuilder() {
         return new DescriptorBuilder();
     }
@@ -522,5 +520,10 @@ public class OpflowServerlet implements AutoCloseable {
             }
             return null;
         }
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);
     }
 }

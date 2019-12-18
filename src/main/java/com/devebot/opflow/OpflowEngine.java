@@ -32,7 +32,7 @@ import java.security.NoSuchAlgorithmException;
  *
  * @author drupalex
  */
-public class OpflowEngine {
+public class OpflowEngine implements AutoCloseable {
 
     public static final String[] PARAMETER_NAMES = new String[] {
         "uri", "host", "port", "virtualHost", "username", "password", "channelMax", "frameMax", "heartbeat",
@@ -863,6 +863,7 @@ public class OpflowEngine {
      *
      * @throws OpflowOperationException if an error is encountered
      */
+    @Override
     public void close() {
         try {
             if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
@@ -1035,10 +1036,6 @@ public class OpflowEngine {
     
     @Override
     protected void finalize() throws Throwable {
-        try {
-            close();
-        } finally {
-            exporter.changeComponentInstance("engine", engineId, OpflowExporter.GaugeAction.DEC);
-        }
+        exporter.changeComponentInstance("engine", engineId, OpflowExporter.GaugeAction.DEC);
     }
 }
