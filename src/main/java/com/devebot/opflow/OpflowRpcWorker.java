@@ -53,7 +53,6 @@ public class OpflowRpcWorker {
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
-        exporter = OpflowExporter.getInstance();
         
         if (operatorName != null) {
             executor.assertQueue(operatorName);
@@ -70,11 +69,13 @@ public class OpflowRpcWorker {
                 .text("RpcWorker[${rpcWorkerId}].new() operatorName: '${operatorName}', responseName: '${responseName}'")
                 .stringify());
         
+        exporter = OpflowExporter.getInstance();
+
+        exporter.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowExporter.GaugeAction.INC);
+
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].new() end!")
                 .stringify());
-        
-        exporter.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowExporter.GaugeAction.INC);
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;

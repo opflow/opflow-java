@@ -62,7 +62,6 @@ public class OpflowRpcMaster {
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
-        exporter = OpflowExporter.getInstance();
         
         if (params.get("expiration") != null && params.get("expiration") instanceof Long) {
             expiration = (Long) params.get("expiration");
@@ -132,12 +131,14 @@ public class OpflowRpcMaster {
                 .tags("RpcMaster.new() parameters")
                 .text("RpcMaster[${rpcMasterId}].new() parameters")
                 .stringify());
+
+        exporter = OpflowExporter.getInstance();
+        
+        exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.INC);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
                 .stringify());
-        
-        exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.INC);
     }
 
     private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();

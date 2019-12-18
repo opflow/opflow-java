@@ -149,13 +149,13 @@ public class OpflowServerlet implements AutoCloseable {
             throw exception;
         }
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
-                .text("Serverlet[${serverletId}].new() end!")
-                .stringify());
-        
         exporter = OpflowExporter.getInstance();
         
         exporter.changeComponentInstance("serverletId", serverletId, OpflowExporter.GaugeAction.INC);
+
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Serverlet[${serverletId}].new() end!")
+                .stringify());
     }
     
     public final void start() {

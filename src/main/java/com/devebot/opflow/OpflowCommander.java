@@ -6,6 +6,7 @@ import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.supports.OpflowRpcChecker;
+import com.devebot.opflow.supports.OpflowRpcSwitcher;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -34,6 +35,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRpcMaster rpcMaster;
     private OpflowPubsubHandler publisher;
     private OpflowRpcChecker rpcChecker;
+    private OpflowRpcSwitcher rpcSwitcher;
     
     public OpflowCommander() throws OpflowBootstrapException {
         this(null);
@@ -102,13 +104,15 @@ public class OpflowCommander implements AutoCloseable {
             throw exception;
         }
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
-                .text("Commander[${commanderId}].new() end!")
-                .stringify());
+        rpcSwitcher = new OpflowRpcSwitcher();
         
         exporter = OpflowExporter.getInstance();
         
         exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
+        
+        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                .text("Commander[${commanderId}].new() end!")
+                .stringify());
     }
     
     public boolean isReserveWorkerEnabled() {
@@ -226,6 +230,15 @@ public class OpflowCommander implements AutoCloseable {
             if (this.publisher != null && isAsync && method.getReturnType() == void.class) {
                 this.publisher.publish(body);
                 return null;
+            }
+            
+            // rpc switching
+            if (false) {
+                if (this.reserveWorker != null) {
+                    if (this.reserveWorkerEnabled) {
+                        return method.invoke(this.reserveWorker, args);
+                    }
+                }
             }
             
             OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, OpflowUtil.buildMap()
