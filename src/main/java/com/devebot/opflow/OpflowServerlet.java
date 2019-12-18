@@ -130,9 +130,6 @@ public class OpflowServerlet implements AutoCloseable {
                         .text("Serverlet[${serverletId}] creates a new rpcWorker")
                         .stringify());
                 rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
-                instantiator = new Instantiator(rpcWorker, OpflowUtil.buildMap()
-                        .put("instanceId", serverletId)
-                        .toMap());
             }
 
             if (subscriberCfg != null && !Boolean.FALSE.equals(subscriberCfg.get("enabled"))) {
@@ -143,6 +140,12 @@ public class OpflowServerlet implements AutoCloseable {
                         .text("Serverlet[${serverletId}] creates a new subscriber")
                         .stringify());
                 subscriber = new OpflowPubsubHandler(subscriberCfg);
+            }
+            
+            if (rpcWorker != null) {
+                instantiator = new Instantiator(rpcWorker, OpflowUtil.buildMap()
+                        .put("instanceId", serverletId)
+                        .toMap());
             }
         } catch(OpflowBootstrapException exception) {
             this.close();
@@ -288,7 +291,7 @@ public class OpflowServerlet implements AutoCloseable {
         private static final Logger LOG = LoggerFactory.getLogger(Instantiator.class);
         private final OpflowLogTracer logTracer;
         private final OpflowRpcWorker rpcWorker;
-        private final OpflowRpcListener listener;
+        private final OpflowRpcListener rpcListener;
         private final Set<String> routineIds = new HashSet<>();
         private final Map<String, Method> methodRef = new HashMap<>();
         private final Map<String, Object> targetRef = new HashMap<>();
@@ -307,7 +310,7 @@ public class OpflowServerlet implements AutoCloseable {
             final String instanceId = options.getOrDefault("instanceId", OpflowUtil.getLogID()).toString();
             logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", instanceId);
             rpcWorker = worker;
-            listener = new OpflowRpcListener() {
+            rpcListener = new OpflowRpcListener() {
                 @Override
                 public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
                     final String requestId = OpflowUtil.getRequestId(message.getInfo());
@@ -420,7 +423,7 @@ public class OpflowServerlet implements AutoCloseable {
         
         public final void process() {
             if (!processing) {
-                rpcWorker.process(routineIds, listener);
+                rpcWorker.process(routineIds, rpcListener);
                 processing = true;
             }
         }
