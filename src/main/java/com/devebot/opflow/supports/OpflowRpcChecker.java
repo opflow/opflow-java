@@ -7,9 +7,9 @@ import java.util.Map;
  *
  * @author acegik
  */
-public interface OpflowRpcChecker {
+public abstract class OpflowRpcChecker {
 
-    Pong send(Ping info) throws Throwable;
+    public abstract Pong send(Ping info) throws Throwable;
     
     public static class Ping {
         

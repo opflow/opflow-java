@@ -4,7 +4,6 @@ import com.devebot.opflow.annotation.OpflowTargetRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.supports.OpflowRpcChecker;
-import com.devebot.opflow.supports.OpflowRpcCheckerImpl;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -185,7 +184,7 @@ public class OpflowServerlet implements AutoCloseable {
             instantiator.process();
         }
         
-        this.instantiateType(OpflowRpcCheckerImpl.class);
+        this.instantiateType(OpflowRpcCheckerWorker.class);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].start() has completed!")
@@ -232,7 +231,7 @@ public class OpflowServerlet implements AutoCloseable {
                 .text("Serverlet[${serverletId}].close() has completed!")
                 .stringify());
     }
-        
+
     public static DescriptorBuilder getDescriptorBuilder() {
         return new DescriptorBuilder();
     }
@@ -338,7 +337,7 @@ public class OpflowServerlet implements AutoCloseable {
                         
                         Object returnValue;
                         
-                        String pingSignature = OpflowRpcCheckerImpl.getSendSignature();
+                        String pingSignature = OpflowRpcCheckerWorker.getSendMethodName();
                         if (pingSignature.equals(routineId)) {
                             returnValue = new OpflowRpcChecker.Pong(OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
                                 @Override
@@ -522,6 +521,23 @@ public class OpflowServerlet implements AutoCloseable {
         }
     }
     
+    public static class OpflowRpcCheckerWorker extends OpflowRpcChecker {
+
+        @Override
+        public Pong send(Ping info) throws Throwable {
+            return new Pong();
+        }
+
+        private static String sendSignature = "";
+        
+        public static String getSendMethodName() throws NoSuchMethodException {
+            if (sendSignature.length() == 0) {
+                sendSignature = OpflowRpcChecker.class.getMethod("send", OpflowRpcChecker.Ping.class).toString();
+            }
+            return sendSignature;
+        }
+    }
+
     @Override
     protected void finalize() throws Throwable {
         exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);

@@ -6,7 +6,6 @@ import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.supports.OpflowRpcChecker;
-import com.devebot.opflow.supports.OpflowRpcCheckerImpl;
 import com.devebot.opflow.supports.OpflowRpcSwitcher;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -171,26 +170,19 @@ public class OpflowCommander implements AutoCloseable {
                 .stringify());
     }
     
-    private class OpflowRpcCheckerMaster implements OpflowRpcChecker {
+    private static class OpflowRpcCheckerMaster extends OpflowRpcChecker {
         
-        private final Map<String, Object> rpcOpts = OpflowUtil.buildMap()
-                .put("progressEnabled", false).toMap();
         private final OpflowRpcMaster rpcMaster;
-        private final String sendMethodName;
         
         OpflowRpcCheckerMaster(OpflowRpcMaster rpcMaster) throws OpflowBootstrapException {
             this.rpcMaster = rpcMaster;
-            try {
-                sendMethodName = OpflowRpcChecker.class.getMethod("send", OpflowRpcChecker.Ping.class).toString();
-            } catch (NoSuchMethodException exception) {
-                throw new OpflowBootstrapException();
-            }
         }
         
         @Override
         public OpflowRpcChecker.Pong send(OpflowRpcChecker.Ping ping) throws Throwable {
             String body = OpflowJsontool.toString(new Object[] { ping });
-            OpflowRpcRequest rpcSession = rpcMaster.request(sendMethodName, body, rpcOpts);
+            OpflowRpcRequest rpcSession = rpcMaster.request(getSendMethodName(), body, OpflowUtil.buildMap()
+                .put("progressEnabled", false).toMap());
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
 
             if (rpcResult.isTimeout()) {
@@ -203,6 +195,15 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             return OpflowJsontool.toObject(rpcResult.getValueAsString(), OpflowRpcChecker.Pong.class);
+        }
+        
+        private static String sendMethodName = "";
+    
+        public static String getSendMethodName() throws NoSuchMethodException {
+            if (sendMethodName.length() == 0) {
+                sendMethodName = OpflowRpcChecker.class.getMethod("send", OpflowRpcChecker.Ping.class).toString();
+            }
+            return sendMethodName;
         }
     }
     
@@ -246,7 +247,7 @@ public class OpflowCommander implements AutoCloseable {
         
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            final String pingSignature = OpflowRpcCheckerImpl.getSendSignature();
+            final String pingSignature = OpflowRpcCheckerMaster.getSendMethodName();
             String methodId = OpflowUtil.getMethodSignature(method);
             String routineId = aliasOfMethod.getOrDefault(methodId, methodId);
             Boolean isAsync = methodIsAsync.getOrDefault(methodId, false);
@@ -305,7 +306,7 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
 
-    private Throwable rebuildInvokerException(Map<String, Object> errorMap) {
+    private static Throwable rebuildInvokerException(Map<String, Object> errorMap) {
         Object exceptionName = errorMap.get("exceptionClass");
         Object exceptionPayload = errorMap.get("exceptionPayload");
         if (exceptionName != null && exceptionPayload != null) {
@@ -319,7 +320,7 @@ public class OpflowCommander implements AutoCloseable {
         return rebuildFailureException(errorMap);
     }
 
-    private Throwable rebuildFailureException(Map<String, Object> errorMap) {
+    private static Throwable rebuildFailureException(Map<String, Object> errorMap) {
         if (errorMap.get("message") != null) {
             return new OpflowRequestFailureException(errorMap.get("message").toString());
         }
