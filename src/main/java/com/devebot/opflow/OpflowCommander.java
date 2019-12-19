@@ -46,6 +46,8 @@ public class OpflowCommander {
                 .text("Commander[${commanderId}].new()")
                 .stringify());
 
+        measurer = OpflowPromMeasurer.getInstance();
+        
         if (kwargs.get(PARAM_RESERVE_WORKER_ENABLED) != null && kwargs.get(PARAM_RESERVE_WORKER_ENABLED) instanceof Boolean) {
             reserveWorkerEnabled = (Boolean) kwargs.get(PARAM_RESERVE_WORKER_ENABLED);
         } else {
@@ -87,13 +89,28 @@ public class OpflowCommander {
         
         try {
             if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
-                configurer = new OpflowPubsubHandler(configurerCfg);
+                configurer = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, configurerCfg).toMap());
             }
             if (rpcMasterCfg != null && !Boolean.FALSE.equals(rpcMasterCfg.get("enabled"))) {
-                rpcMaster = new OpflowRpcMaster(rpcMasterCfg);
+                rpcMaster = new OpflowRpcMaster(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, rpcMasterCfg).toMap());
             }
             if (publisherCfg != null && !Boolean.FALSE.equals(publisherCfg.get("enabled"))) {
-                publisher = new OpflowPubsubHandler(publisherCfg);
+                publisher = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, publisherCfg).toMap());
             }
         } catch(OpflowBootstrapException exception) {
             this.close();
@@ -103,8 +120,6 @@ public class OpflowCommander {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new() end!")
                 .stringify());
-        
-        measurer = OpflowPromMeasurer.getInstance();
         
         measurer.changeComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.INC);
     }

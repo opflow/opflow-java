@@ -48,6 +48,8 @@ public class OpflowRpcMaster {
         params = OpflowUtil.ensureNotNull(params);
         
         rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.DEFAULT);
+        
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", rpcMasterId);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
@@ -57,12 +59,12 @@ public class OpflowRpcMaster {
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("engineId", rpcMasterId);
+        brokerParams.put("measurer", measurer);
         brokerParams.put("mode", "rpc_master");
         brokerParams.put("exchangeType", "direct");
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
-        measurer = OpflowPromMeasurer.getInstance();
         
         if (params.get("expiration") != null && params.get("expiration") instanceof Long) {
             expiration = (Long) params.get("expiration");

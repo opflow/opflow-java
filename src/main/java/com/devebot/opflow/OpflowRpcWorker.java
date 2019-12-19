@@ -32,6 +32,8 @@ public class OpflowRpcWorker {
         params = OpflowUtil.ensureNotNull(params);
         
         rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.DEFAULT);
+        
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", rpcWorkerId);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
@@ -41,6 +43,7 @@ public class OpflowRpcWorker {
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("engineId", rpcWorkerId);
+        brokerParams.put("measurer", measurer);
         brokerParams.put("mode", "rpc_worker");
         brokerParams.put("exchangeType", "direct");
         
@@ -53,7 +56,6 @@ public class OpflowRpcWorker {
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
-        measurer = OpflowPromMeasurer.getInstance();
         
         if (operatorName != null) {
             executor.assertQueue(operatorName);

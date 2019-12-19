@@ -53,6 +53,8 @@ public class OpflowServerlet {
         }
         listenerMap = listeners;
         
+        measurer = OpflowPromMeasurer.getInstance();
+        
         Map<String, Object> configurerCfg = (Map<String, Object>)this.kwargs.get("configurer");
         Map<String, Object> rpcWorkerCfg = (Map<String, Object>)this.kwargs.get("rpcWorker");
         Map<String, Object> subscriberCfg = (Map<String, Object>)this.kwargs.get("subscriber");
@@ -117,7 +119,12 @@ public class OpflowServerlet {
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new configurer")
                         .stringify());
-                configurer = new OpflowPubsubHandler(configurerCfg);
+                configurer = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, configurerCfg).toMap());
             }
 
             if (rpcWorkerCfg != null && !Boolean.FALSE.equals(rpcWorkerCfg.get("enabled"))) {
@@ -127,7 +134,12 @@ public class OpflowServerlet {
                         .put("rpcWorkerId", rpcWorkerId)
                         .text("Serverlet[${serverletId}] creates a new rpcWorker")
                         .stringify());
-                rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
+                rpcWorker = new OpflowRpcWorker(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, rpcWorkerCfg).toMap());
                 instantiator = new Instantiator(rpcWorker, OpflowUtil.buildMap()
                         .put("instantiatorId", rpcWorkerId).toMap());
             }
@@ -139,7 +151,12 @@ public class OpflowServerlet {
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new subscriber")
                         .stringify());
-                subscriber = new OpflowPubsubHandler(subscriberCfg);
+                subscriber = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, subscriberCfg).toMap());
             }
         } catch(OpflowBootstrapException exception) {
             this.close();
@@ -149,8 +166,6 @@ public class OpflowServerlet {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
-        
-        measurer = OpflowPromMeasurer.getInstance();
         
         measurer.changeComponentInstance("serverletId", serverletId, OpflowPromMeasurer.GaugeAction.INC);
     }

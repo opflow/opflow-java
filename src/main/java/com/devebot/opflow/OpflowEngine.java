@@ -45,7 +45,8 @@ public class OpflowEngine {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
     private final OpflowLogTracer logTracer;
     private final String engineId;
-
+    private final OpflowPromMeasurer measurer;
+    
     private String mode;
     private ConnectionFactory factory;
     private Connection producingConnection;
@@ -60,13 +61,13 @@ public class OpflowEngine {
     private String routingKey;
     private String[] otherKeys;
     private String applicationId;
-
-    private OpflowPromMeasurer measurer = OpflowPromMeasurer.getInstance();
     
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
         engineId = OpflowUtil.getOptionField(params, "engineId", true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.DEFAULT);
+        
         logTracer = OpflowLogTracer.ROOT.branch("engineId", engineId);
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer

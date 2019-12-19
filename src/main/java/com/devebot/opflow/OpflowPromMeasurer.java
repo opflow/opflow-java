@@ -224,4 +224,6 @@ public class OpflowPromMeasurer {
         }
         return instance;
     }
+    
+    public static final OpflowPromMeasurer DEFAULT = getInstance();
 }
