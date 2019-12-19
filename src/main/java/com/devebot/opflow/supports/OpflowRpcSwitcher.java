@@ -6,4 +6,7 @@ package com.devebot.opflow.supports;
  */
 public class OpflowRpcSwitcher {
     
+    public boolean isCongested() {
+        return false;
+    }
 }

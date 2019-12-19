@@ -9,7 +9,7 @@ import java.util.Map;
  */
 public interface OpflowRpcChecker {
 
-    Pong send(Ping info);
+    Pong send(Ping info) throws Throwable;
     
     public static class Ping {
         
@@ -38,7 +38,7 @@ public interface OpflowRpcChecker {
         private String status = "";
         private Map<String, Object> source;
         private Pong result;
-        private Exception exception;
+        private Throwable exception;
 
         public Info (Map<String, Object> source, Pong result) {
             this.status = "ok";
@@ -46,7 +46,7 @@ public interface OpflowRpcChecker {
             this.result = result;
         }
         
-        public Info (Map<String, Object> source, Exception exception) {
+        public Info (Map<String, Object> source, Throwable exception) {
             this.status = "failed";
             this.source = source;
             this.exception = exception;

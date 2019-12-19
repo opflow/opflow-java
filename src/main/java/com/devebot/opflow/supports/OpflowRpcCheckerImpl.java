@@ -9,7 +9,7 @@ public class OpflowRpcCheckerImpl implements OpflowRpcChecker {
     private static String sendSignature = "";
 
     @Override
-    public Pong send(Ping info) {
+    public Pong send(Ping info) throws Throwable {
         return new Pong();
     }
     

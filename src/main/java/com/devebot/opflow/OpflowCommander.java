@@ -6,6 +6,7 @@ import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.supports.OpflowRpcChecker;
+import com.devebot.opflow.supports.OpflowRpcCheckerImpl;
 import com.devebot.opflow.supports.OpflowRpcSwitcher;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -104,6 +105,8 @@ public class OpflowCommander implements AutoCloseable {
             throw exception;
         }
         
+        rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
+        
         rpcSwitcher = new OpflowRpcSwitcher();
         
         exporter = OpflowExporter.getInstance();
@@ -124,9 +127,6 @@ public class OpflowCommander implements AutoCloseable {
     }
     
     public OpflowRpcChecker.Info ping() {
-        if (this.rpcChecker == null) {
-            this.rpcChecker = this.registerType(OpflowRpcChecker.class);
-        }
         Map<String, Object> me = OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
@@ -151,7 +151,7 @@ public class OpflowCommander implements AutoCloseable {
         }).toMap();
         try {
             return new OpflowRpcChecker.Info(me, this.rpcChecker.send(new OpflowRpcChecker.Ping()));
-        } catch (Exception exception) {
+        } catch (Throwable exception) {
             return new OpflowRpcChecker.Info(me, exception);
         }
     }
@@ -166,11 +166,44 @@ public class OpflowCommander implements AutoCloseable {
         if (rpcMaster != null) rpcMaster.close();
         if (publisher != null) publisher.close();
         
-        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.DEC);
-        
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close() has done!")
                 .stringify());
+    }
+    
+    private class OpflowRpcCheckerMaster implements OpflowRpcChecker {
+        
+        private final Map<String, Object> rpcOpts = OpflowUtil.buildMap()
+                .put("progressEnabled", false).toMap();
+        private final OpflowRpcMaster rpcMaster;
+        private final String sendMethodName;
+        
+        OpflowRpcCheckerMaster(OpflowRpcMaster rpcMaster) throws OpflowBootstrapException {
+            this.rpcMaster = rpcMaster;
+            try {
+                sendMethodName = OpflowRpcChecker.class.getMethod("send", OpflowRpcChecker.Ping.class).toString();
+            } catch (NoSuchMethodException exception) {
+                throw new OpflowBootstrapException();
+            }
+        }
+        
+        @Override
+        public OpflowRpcChecker.Pong send(OpflowRpcChecker.Ping ping) throws Throwable {
+            String body = OpflowJsontool.toString(new Object[] { ping });
+            OpflowRpcRequest rpcSession = rpcMaster.request(sendMethodName, body, rpcOpts);
+            OpflowRpcResult rpcResult = rpcSession.extractResult(false);
+
+            if (rpcResult.isTimeout()) {
+                throw new OpflowRequestTimeoutException();
+            }
+
+            if (rpcResult.isFailed()) {
+                Map<String, Object> errorMap = OpflowJsontool.toObjectMap(rpcResult.getErrorAsString());
+                throw rebuildInvokerException(errorMap);
+            }
+
+            return OpflowJsontool.toObject(rpcResult.getValueAsString(), OpflowRpcChecker.Pong.class);
+        }
     }
     
     private class RpcInvocationHandler implements InvocationHandler {
@@ -207,8 +240,13 @@ public class OpflowCommander implements AutoCloseable {
             this.publisher = publisher;
         }
         
+        public boolean hasReserveWorker() {
+            return this.reserveWorker != null && this.reserveWorkerEnabled;
+        }
+        
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            final String pingSignature = OpflowRpcCheckerImpl.getSendSignature();
             String methodId = OpflowUtil.getMethodSignature(method);
             String routineId = aliasOfMethod.getOrDefault(methodId, methodId);
             Boolean isAsync = methodIsAsync.getOrDefault(methodId, false);
@@ -233,11 +271,9 @@ public class OpflowCommander implements AutoCloseable {
             }
             
             // rpc switching
-            if (false) {
-                if (this.reserveWorker != null) {
-                    if (this.reserveWorkerEnabled) {
-                        return method.invoke(this.reserveWorker, args);
-                    }
+            if (rpcSwitcher.isCongested() && !pingSignature.equals(routineId)) {
+                if (this.hasReserveWorker()) {
+                    return method.invoke(this.reserveWorker, args);
                 }
             }
             
@@ -246,10 +282,8 @@ public class OpflowCommander implements AutoCloseable {
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
             
             if (rpcResult.isTimeout()) {
-                if (this.reserveWorker != null) {
-                    if (this.reserveWorkerEnabled) {
-                        return method.invoke(this.reserveWorker, args);
-                    }
+                if (this.hasReserveWorker()) {
+                    return method.invoke(this.reserveWorker, args);
                 }
                 throw new OpflowRequestTimeoutException();
             }
@@ -269,27 +303,27 @@ public class OpflowCommander implements AutoCloseable {
             
             return OpflowJsontool.toObject(rpcResult.getValueAsString(), method.getReturnType());
         }
-        
-        private Throwable rebuildInvokerException(Map<String, Object> errorMap) {
-            Object exceptionName = errorMap.get("exceptionClass");
-            Object exceptionPayload = errorMap.get("exceptionPayload");
-            if (exceptionName != null && exceptionPayload != null) {
-                try {
-                    Class exceptionClass = Class.forName(exceptionName.toString());
-                    return (Throwable) OpflowJsontool.toObject(exceptionPayload.toString(), exceptionClass);
-                } catch (ClassNotFoundException ex) {
-                    return rebuildFailureException(errorMap);
-                }
+    }
+
+    private Throwable rebuildInvokerException(Map<String, Object> errorMap) {
+        Object exceptionName = errorMap.get("exceptionClass");
+        Object exceptionPayload = errorMap.get("exceptionPayload");
+        if (exceptionName != null && exceptionPayload != null) {
+            try {
+                Class exceptionClass = Class.forName(exceptionName.toString());
+                return (Throwable) OpflowJsontool.toObject(exceptionPayload.toString(), exceptionClass);
+            } catch (ClassNotFoundException ex) {
+                return rebuildFailureException(errorMap);
             }
-            return rebuildFailureException(errorMap);
         }
-        
-        private Throwable rebuildFailureException(Map<String, Object> errorMap) {
-            if (errorMap.get("message") != null) {
-                return new OpflowRequestFailureException(errorMap.get("message").toString());
-            }
-            return new OpflowRequestFailureException();
+        return rebuildFailureException(errorMap);
+    }
+
+    private Throwable rebuildFailureException(Map<String, Object> errorMap) {
+        if (errorMap.get("message") != null) {
+            return new OpflowRequestFailureException(errorMap.get("message").toString());
         }
+        return new OpflowRequestFailureException();
     }
     
     private final Map<String, RpcInvocationHandler> handlers = new HashMap<>();
@@ -378,5 +412,10 @@ public class OpflowCommander implements AutoCloseable {
         Annotation annotation = method.getAnnotation(OpflowSourceRoutine.class);
         OpflowSourceRoutine routine = (OpflowSourceRoutine) annotation;
         return routine;
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.DEC);
     }
 }
