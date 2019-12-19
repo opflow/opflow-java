@@ -196,15 +196,6 @@ public class OpflowCommander implements AutoCloseable {
 
             return OpflowJsontool.toObject(rpcResult.getValueAsString(), OpflowRpcChecker.Pong.class);
         }
-        
-        private static String sendMethodName = "";
-    
-        public static String getSendMethodName() throws NoSuchMethodException {
-            if (sendMethodName.length() == 0) {
-                sendMethodName = OpflowRpcChecker.class.getMethod("send", OpflowRpcChecker.Ping.class).toString();
-            }
-            return sendMethodName;
-        }
     }
     
     private class RpcInvocationHandler implements InvocationHandler {

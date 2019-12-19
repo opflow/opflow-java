@@ -11,6 +11,15 @@ public abstract class OpflowRpcChecker {
 
     public abstract Pong send(Ping info) throws Throwable;
     
+    private static String sendMethodName = "";
+    
+    public static String getSendMethodName() throws NoSuchMethodException {
+        if (sendMethodName.length() == 0) {
+            sendMethodName = OpflowRpcChecker.class.getMethod("send", Ping.class).toString();
+        }
+        return sendMethodName;
+    }
+    
     public static class Ping {
         
     }

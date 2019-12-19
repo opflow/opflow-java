@@ -527,15 +527,6 @@ public class OpflowServerlet implements AutoCloseable {
         public Pong send(Ping info) throws Throwable {
             return new Pong();
         }
-
-        private static String sendSignature = "";
-        
-        public static String getSendMethodName() throws NoSuchMethodException {
-            if (sendSignature.length() == 0) {
-                sendSignature = OpflowRpcChecker.class.getMethod("send", OpflowRpcChecker.Ping.class).toString();
-            }
-            return sendSignature;
-        }
     }
 
     @Override
