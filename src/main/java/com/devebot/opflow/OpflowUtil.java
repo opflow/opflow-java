@@ -208,11 +208,15 @@ public class OpflowUtil {
     }
     
     public static MapBuilder buildMap() {
-        return buildMap(null);
+        return buildMap(null, null);
     }
     
     public static MapBuilder buildMap(MapListener listener) {
         return buildMap(listener, null);
+    }
+    
+    public static MapBuilder buildMap(Map<String, Object> defaultOpts) {
+        return buildMap(null, defaultOpts, false);
     }
     
     public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts) {
@@ -231,11 +235,15 @@ public class OpflowUtil {
     }
     
     public static MapBuilder buildOrderedMap() {
-        return buildOrderedMap(null);
+        return buildOrderedMap(null, null);
     }
     
     public static MapBuilder buildOrderedMap(MapListener listener) {
         return buildOrderedMap(listener, null);
+    }
+    
+    public static MapBuilder buildOrderedMap(Map<String, Object> defaultOpts) {
+        return buildMap(null, defaultOpts, true);
     }
     
     public static MapBuilder buildOrderedMap(MapListener listener, Map<String, Object> defaultOpts) {
