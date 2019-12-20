@@ -181,10 +181,13 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         @Override
-        public OpflowRpcChecker.Pong send(OpflowRpcChecker.Ping ping) throws Throwable {
+        public Pong send(Ping ping) throws Throwable {
             String body = OpflowJsontool.toString(new Object[] { ping });
+            String requestId = OpflowUtil.getLogID();
             OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, OpflowUtil.buildMap()
-                .put("progressEnabled", false).toMap());
+                    .put("requestId", requestId)
+                    .put("progressEnabled", false)
+                    .toMap());
             OpflowRpcResult rpcResult = rpcRequest.extractResult(false);
 
             if (rpcResult.isTimeout()) {
@@ -196,7 +199,9 @@ public class OpflowCommander implements AutoCloseable {
                 throw rebuildInvokerException(errorMap);
             }
 
-            return OpflowJsontool.toObject(rpcResult.getValueAsString(), OpflowRpcChecker.Pong.class);
+            Pong pong = OpflowJsontool.toObject(rpcResult.getValueAsString(), Pong.class);
+            pong.getParameters().put("requestId", requestId);
+            return pong;
         }
     }
     

@@ -1,6 +1,8 @@
 package com.devebot.opflow.supports;
 
 import com.devebot.opflow.OpflowUtil;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -25,6 +27,7 @@ public abstract class OpflowRpcChecker {
     }
     
     public static class Pong {
+        private Map<String, Object> parameters;
         private Map<String, Object> accumulator;
 
         public Pong() {
@@ -32,6 +35,17 @@ public abstract class OpflowRpcChecker {
         
         public Pong(Map<String, Object> accumulator) {
             this.accumulator = accumulator;
+        }
+
+        public Map<String, Object> getParameters() {
+            if (parameters == null) {
+                parameters = new LinkedHashMap<>();
+            }
+            return parameters;
+        }
+
+        public void setParameters(Map<String, Object> parameters) {
+            this.parameters = parameters;
         }
 
         public Map<String, Object> getAccumulator() {
@@ -74,9 +88,17 @@ public abstract class OpflowRpcChecker {
             OpflowUtil.MapBuilder builder = OpflowUtil.buildOrderedMap()
                     .put("status", status)
                     .put("commander", source);
+            if (result != null && result.getParameters().containsKey("requestId")) {
+                if (!source.containsKey("request") || !(source.get("request") instanceof HashMap)) {
+                    source.put("request", OpflowUtil.buildOrderedMap().toMap());
+                }
+                Map<String, Object> requestInfo = (Map<String, Object>)source.get("request");
+                requestInfo.put("requestId", result.getParameters().get("requestId"));
+            }
             switch (status) {
                 case "ok":
-                    builder.put("serverlet", result.getAccumulator())
+                    builder
+                            .put("serverlet", result.getAccumulator())
                             .put("summary", "The connection is ok");
                     break;
                 case "failed":
