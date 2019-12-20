@@ -106,7 +106,8 @@ public class OpflowCommander implements AutoCloseable {
         
         rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
         
-        rpcSwitcher = new OpflowRpcSwitcher();
+        rpcSwitcher = new OpflowRpcSwitcher(rpcChecker);
+        rpcSwitcher.start();
         
         exporter = OpflowExporter.getInstance();
         
@@ -164,6 +165,7 @@ public class OpflowCommander implements AutoCloseable {
         if (configurer != null) configurer.close();
         if (rpcMaster != null) rpcMaster.close();
         if (publisher != null) publisher.close();
+        if (rpcSwitcher != null) rpcSwitcher.close();
         
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close() has done!")
@@ -181,12 +183,12 @@ public class OpflowCommander implements AutoCloseable {
         @Override
         public OpflowRpcChecker.Pong send(OpflowRpcChecker.Ping ping) throws Throwable {
             String body = OpflowJsontool.toString(new Object[] { ping });
-            OpflowRpcRequest rpcSession = rpcMaster.request(getSendMethodName(), body, OpflowUtil.buildMap()
+            OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, OpflowUtil.buildMap()
                 .put("progressEnabled", false).toMap());
-            OpflowRpcResult rpcResult = rpcSession.extractResult(false);
+            OpflowRpcResult rpcResult = rpcRequest.extractResult(false);
 
             if (rpcResult.isTimeout()) {
-                throw new OpflowRequestTimeoutException();
+                throw new OpflowRequestTimeoutException("OpflowRpcChecker.send() call is timeout");
             }
 
             if (rpcResult.isFailed()) {
@@ -274,6 +276,7 @@ public class OpflowCommander implements AutoCloseable {
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
             
             if (rpcResult.isTimeout()) {
+                rpcSwitcher.setCongested(true);
                 if (this.hasReserveWorker()) {
                     return method.invoke(this.reserveWorker, args);
                 }
