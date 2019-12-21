@@ -80,6 +80,11 @@ public class OpflowLogTracer {
         IS_STRINGIFY_ENABLED = true;
     }
     
+    interface Customizer {
+        boolean isMute();
+    }
+    
+    private final Customizer customizer;
     private final OpflowLogTracer parent;
     private final String key;
     private final Object value;
@@ -91,10 +96,11 @@ public class OpflowLogTracer {
     public final static OpflowLogTracer ROOT = new OpflowLogTracer();
     
     public OpflowLogTracer() {
-        this(null, "instanceId", OpflowUtil.getSystemProperty("OPFLOW_INSTANCE_ID", OPFLOW_INSTANCE_ID));
+        this(null, "instanceId", OpflowUtil.getSystemProperty("OPFLOW_INSTANCE_ID", OPFLOW_INSTANCE_ID), null);
     }
     
-    private OpflowLogTracer(OpflowLogTracer ref, String key, Object value) {
+    private OpflowLogTracer(OpflowLogTracer ref, String key, Object value, Customizer customizer) {
+        this.customizer = customizer;
         this.parent = ref;
         this.key = key;
         this.value = value;
@@ -105,11 +111,22 @@ public class OpflowLogTracer {
     }
     
     public OpflowLogTracer copy() {
-        return new OpflowLogTracer(this.parent, this.key, this.value);
+        return new OpflowLogTracer(this.parent, this.key, this.value, this.customizer);
     }
     
     public OpflowLogTracer branch(String key, Object value) {
-        return new OpflowLogTracer(this, key, value);
+        return branch(key, value, null);
+    }
+    
+    public OpflowLogTracer branch(String key, Object value, Customizer customizer) {
+        return new OpflowLogTracer(this, key, value, customizer);
+    }
+    
+    public boolean ready(Logger logger, String level) {
+        if (customizer != null && customizer.isMute()) {
+            return false;
+        }
+        return has(logger, level);
     }
     
     public final OpflowLogTracer clear() {
