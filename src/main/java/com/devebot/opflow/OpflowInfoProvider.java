@@ -15,20 +15,20 @@ import java.util.Map;
  *
  * @author acegik
  */
-public class OpflowRestServer implements AutoCloseable {
+public class OpflowInfoProvider implements AutoCloseable {
 
     private final String instanceId;
     private final OpflowRpcMaster rpcMaster;
     private final OpflowRpcChecker rpcChecker;
     private final Undertow server;
 
-    OpflowRestServer(OpflowRpcMaster _rpcMaster,
+    OpflowInfoProvider(OpflowRpcMaster _rpcMaster,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs) throws OpflowBootstrapException {
         this(_rpcMaster, _rpcChecker, kwargs, null);
     }
     
-    OpflowRestServer(OpflowRpcMaster _rpcMaster,
+    OpflowInfoProvider(OpflowRpcMaster _rpcMaster,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs,
             Map<String, HttpHandler> httpHandlers) throws OpflowBootstrapException {
@@ -83,7 +83,7 @@ public class OpflowRestServer implements AutoCloseable {
         }
     }
     
-    public void start() {
+    public void serve() {
         if (server != null) {
             server.start();
         }

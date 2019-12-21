@@ -36,7 +36,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowPubsubHandler publisher;
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcSwitcher rpcSwitcher;
-    private OpflowRestServer restServer;
+    private OpflowInfoProvider infoProvider;
     
     public OpflowCommander() throws OpflowBootstrapException {
         this(null);
@@ -110,7 +110,7 @@ public class OpflowCommander implements AutoCloseable {
         rpcSwitcher = new OpflowRpcSwitcher(rpcChecker);
         rpcSwitcher.start();
         
-        restServer = new OpflowRestServer(rpcMaster, rpcChecker, OpflowUtil.buildMap()
+        infoProvider = new OpflowInfoProvider(rpcMaster, rpcChecker, OpflowUtil.buildMap()
                 .put("instanceId", commanderId)
                 .toMap());
 
@@ -132,12 +132,12 @@ public class OpflowCommander implements AutoCloseable {
     }
     
     public OpflowRpcChecker.Info ping() {
-        return restServer.ping();
+        return infoProvider.ping();
     }
     
     public final void start() {
-        if (restServer != null) {
-            restServer.start();
+        if (infoProvider != null) {
+            infoProvider.serve();
         }
     }
     
@@ -147,7 +147,7 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].close()")
                 .stringify());
         
-        if (restServer != null) restServer.close();
+        if (infoProvider != null) infoProvider.close();
         if (rpcSwitcher != null) rpcSwitcher.close();
         if (publisher != null) publisher.close();
         if (rpcMaster != null) rpcMaster.close();
