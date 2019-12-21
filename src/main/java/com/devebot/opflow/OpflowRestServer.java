@@ -8,6 +8,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.Headers;
+import java.util.Deque;
 import java.util.Map;
 
 /**
@@ -92,13 +93,20 @@ public class OpflowRestServer implements AutoCloseable {
     class PingHandler implements HttpHandler {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
+            // pretty printing or not?
+            boolean pretty = false;
+            Deque<String> prettyVals = exchange.getQueryParameters().get("pretty");
+            if (prettyVals != null && !prettyVals.isEmpty()) {
+                pretty = true;
+            }
             try {
                 OpflowRpcChecker.Info result = ping();
                 if (!"ok".equals(result.getStatus())) {
                     exchange.setStatusCode(503);
                 }
+                // render the result
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                exchange.getResponseSender().send(result.toString(true));
+                exchange.getResponseSender().send(result.toString(pretty));
             } catch (Exception exception) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());
