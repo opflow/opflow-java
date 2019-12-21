@@ -36,6 +36,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowPubsubHandler publisher;
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcSwitcher rpcSwitcher;
+    private OpflowRestServer restServer;
     
     public OpflowCommander() throws OpflowBootstrapException {
         this(null);
@@ -109,6 +110,10 @@ public class OpflowCommander implements AutoCloseable {
         rpcSwitcher = new OpflowRpcSwitcher(rpcChecker);
         rpcSwitcher.start();
         
+        restServer = new OpflowRestServer(rpcMaster, rpcChecker, OpflowUtil.buildMap()
+                .put("instanceId", commanderId)
+                .toMap());
+
         exporter = OpflowExporter.getInstance();
         
         exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
@@ -127,32 +132,12 @@ public class OpflowCommander implements AutoCloseable {
     }
     
     public OpflowRpcChecker.Info ping() {
-        Map<String, Object> me = OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
-            @Override
-            public void transform(Map<String, Object> opts) {
-                OpflowEngine engine = rpcMaster.getEngine();
-                opts.put("instanceId", commanderId);
-                opts.put("rpcMaster", OpflowUtil.buildOrderedMap()
-                        .put("instanceId", rpcMaster.getInstanceId())
-                        .put("exchangeName", engine.getExchangeName())
-                        .put("exchangeDurable", engine.getExchangeDurable())
-                        .put("routingKey", engine.getRoutingKey())
-                        .put("otherKeys", engine.getOtherKeys())
-                        .put("applicationId", engine.getApplicationId())
-                        .put("callbackQueue", rpcMaster.getCallbackName())
-                        .put("callbackDurable", rpcMaster.getCallbackDurable())
-                        .put("callbackExclusive", rpcMaster.getCallbackExclusive())
-                        .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete())
-                        .toMap());
-                opts.put("request", OpflowUtil.buildOrderedMap()
-                        .put("expiration", rpcMaster.getExpiration())
-                        .toMap());
-            }
-        }).toMap();
-        try {
-            return new OpflowRpcChecker.Info(me, this.rpcChecker.send(new OpflowRpcChecker.Ping()));
-        } catch (Throwable exception) {
-            return new OpflowRpcChecker.Info(me, exception);
+        return restServer.ping();
+    }
+    
+    public final void start() {
+        if (restServer != null) {
+            restServer.start();
         }
     }
     
@@ -162,11 +147,12 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].close()")
                 .stringify());
         
-        if (configurer != null) configurer.close();
-        if (rpcMaster != null) rpcMaster.close();
-        if (publisher != null) publisher.close();
+        if (restServer != null) restServer.close();
         if (rpcSwitcher != null) rpcSwitcher.close();
-        
+        if (publisher != null) publisher.close();
+        if (rpcMaster != null) rpcMaster.close();
+        if (configurer != null) configurer.close();
+
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close() has done!")
                 .stringify());

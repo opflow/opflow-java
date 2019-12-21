@@ -24,6 +24,12 @@ public class OpflowRestServer implements AutoCloseable {
 
     OpflowRestServer(OpflowRpcMaster _rpcMaster,
             OpflowRpcChecker _rpcChecker,
+            Map<String, Object> kwargs) throws OpflowBootstrapException {
+        this(_rpcMaster, _rpcChecker, kwargs, null);
+    }
+    
+    OpflowRestServer(OpflowRpcMaster _rpcMaster,
+            OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs,
             Map<String, HttpHandler> httpHandlers) throws OpflowBootstrapException {
         kwargs = OpflowUtil.ensureNotNull(kwargs);
@@ -42,7 +48,7 @@ public class OpflowRestServer implements AutoCloseable {
         }
 
         server = Undertow.builder()
-                .addHttpListener(8989, "0.0.0.0")
+                .addHttpListener(9999, "0.0.0.0")
                 .setHandler(ptHandler)
                 .build();
     }
