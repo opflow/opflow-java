@@ -32,7 +32,7 @@ public class OpflowRpcWorker {
         params = OpflowUtil.ensureNotNull(params);
         
         rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.DEFAULT);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", rpcWorkerId);
         

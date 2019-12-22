@@ -71,5 +71,5 @@ public abstract class OpflowPromMeasurer {
         }
     }
     
-    public static final OpflowPromMeasurer DEFAULT = new DevNull();
+    public static final OpflowPromMeasurer NULL = new DevNull();
 }

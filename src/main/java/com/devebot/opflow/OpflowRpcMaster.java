@@ -48,7 +48,7 @@ public class OpflowRpcMaster {
         params = OpflowUtil.ensureNotNull(params);
         
         rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.DEFAULT);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", rpcMasterId);
         

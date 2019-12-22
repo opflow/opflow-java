@@ -66,7 +66,7 @@ public class OpflowEngine {
         params = OpflowUtil.ensureNotNull(params);
         
         engineId = OpflowUtil.getOptionField(params, "engineId", true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.DEFAULT);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("engineId", engineId);
         
