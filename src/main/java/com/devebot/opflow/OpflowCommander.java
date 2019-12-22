@@ -7,6 +7,7 @@ import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.supports.OpflowRpcChecker;
 import com.devebot.opflow.supports.OpflowRpcSwitcher;
+import io.undertow.server.HttpHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -130,15 +131,21 @@ public class OpflowCommander implements AutoCloseable {
     public void setReserveWorkerEnabled(boolean enabled) {
         this.reserveWorkerEnabled = enabled;
     }
+
+    public Map<String, HttpHandler> getInfoHttpHandlers() {
+        return infoProvider.getHttpHandlers();
+    }
     
     public OpflowRpcChecker.Info ping() {
         return infoProvider.ping();
     }
     
-    public final void start() {
-        if (infoProvider != null) {
-            infoProvider.serve();
-        }
+    public final void serve() {
+        infoProvider.serve();
+    }
+    
+    public final void serve(Map<String, HttpHandler> httpHandlers) {
+        infoProvider.serve(httpHandlers);
     }
     
     @Override

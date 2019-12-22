@@ -9,6 +9,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.Headers;
 import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -20,7 +21,8 @@ public class OpflowInfoProvider implements AutoCloseable {
     private final String instanceId;
     private final OpflowRpcMaster rpcMaster;
     private final OpflowRpcChecker rpcChecker;
-    private final Undertow server;
+    private final Map<String, HttpHandler> defaultHandlers;
+    private Undertow server;
 
     OpflowInfoProvider(OpflowRpcMaster _rpcMaster,
             OpflowRpcChecker _rpcChecker,
@@ -37,20 +39,9 @@ public class OpflowInfoProvider implements AutoCloseable {
         instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
         rpcMaster = _rpcMaster;
         rpcChecker = _rpcChecker;
-
-        PathTemplateHandler ptHandler = Handlers.pathTemplate()
-                .add("/ping", new PingHandler());
-
-        if (httpHandlers != null) {
-            for(Map.Entry<String, HttpHandler> entry:httpHandlers.entrySet()) {
-                ptHandler.add(entry.getKey(), entry.getValue());
-            }
-        }
-
-        server = Undertow.builder()
-                .addHttpListener(9999, "0.0.0.0")
-                .setHandler(ptHandler)
-                .build();
+        
+        defaultHandlers = new LinkedHashMap<>();
+        defaultHandlers.put("/ping", new PingHandler());
     }
 
     public OpflowRpcChecker.Info ping() {
@@ -83,16 +74,47 @@ public class OpflowInfoProvider implements AutoCloseable {
         }
     }
     
+    public Map<String, HttpHandler> getHttpHandlers() {
+        return defaultHandlers;
+    }
+    
     public void serve() {
-        if (server != null) {
-            server.start();
+        serve(null, null);
+    }
+
+    public void serve(Map<String, HttpHandler> httpHandlers) {
+        serve(httpHandlers, null);
+    }
+    
+    public void serve(Map<String, HttpHandler> httpHandlers, Map<String, Object> kwargs) {
+        if (httpHandlers != null || kwargs != null) {
+            this.close();
         }
+        if (server == null) {
+            PathTemplateHandler ptHandler = Handlers.pathTemplate();
+            for(Map.Entry<String, HttpHandler> entry:defaultHandlers.entrySet()) {
+                ptHandler.add(entry.getKey(), entry.getValue());
+            }
+
+            if (httpHandlers != null) {
+                for(Map.Entry<String, HttpHandler> entry:httpHandlers.entrySet()) {
+                    ptHandler.add(entry.getKey(), entry.getValue());
+                }
+            }
+            
+            server = Undertow.builder()
+                    .addHttpListener(9999, "0.0.0.0")
+                    .setHandler(ptHandler)
+                    .build();
+        }
+        server.start();
     }
     
     @Override
     public void close() {
         if (server != null) {
             server.stop();
+            server = null;
         }
     }
     
