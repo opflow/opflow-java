@@ -180,12 +180,14 @@ public class OpflowBuilder {
         config = loadConfiguration(config, configFile, useDefaultFile);
         
         Map<String, Object> params = new HashMap<>();
-        String[] componentNames = new String[] {"configurer", "rpcMaster", "publisher"};
+        String[] componentNames = new String[] {"configurer", "rpcMaster", "publisher", "infoProvider"};
         String[] componentPath = new String[] {"opflow", "commander", ""};
         for(String componentName:componentNames) {
             componentPath[2] = componentName;
             Map<String, Object> componentCfg = new HashMap<>();
-            extractEngineParameters(componentCfg, config, componentPath);
+            if (!"infoProvider".equals(componentName)) {
+                extractEngineParameters(componentCfg, config, componentPath);
+            }
             Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
             componentCfg.put("enabled", componentNode.get("enabled"));
             if ("rpcMaster".equals(componentName)) {
@@ -199,6 +201,10 @@ public class OpflowBuilder {
                 componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
                 componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
                 componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
+            }
+            if ("infoProvider".equals(componentName)) {
+                componentCfg.put("host", componentNode.get("host"));
+                componentCfg.put("port", componentNode.get("port"));
             }
             transformParameters(componentCfg);
             params.put(componentName, componentCfg);

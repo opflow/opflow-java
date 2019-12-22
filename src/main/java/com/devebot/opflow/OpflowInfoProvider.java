@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowRpcChecker;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
@@ -11,17 +12,23 @@ import io.undertow.util.Headers;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author acegik
  */
 public class OpflowInfoProvider implements AutoCloseable {
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowInfoProvider.class);
 
     private final String instanceId;
     private final OpflowRpcMaster rpcMaster;
     private final OpflowRpcChecker rpcChecker;
     private final Map<String, HttpHandler> defaultHandlers;
+    private final String host;
+    private final Integer port;
+    private final Boolean enabled;
     private Undertow server;
 
     OpflowInfoProvider(OpflowRpcMaster _rpcMaster,
@@ -37,6 +44,10 @@ public class OpflowInfoProvider implements AutoCloseable {
         kwargs = OpflowUtil.ensureNotNull(kwargs);
 
         instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
+        enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", null), Boolean.class);
+        port = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "port", 8989), Integer.class);
+        host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();
+        
         rpcMaster = _rpcMaster;
         rpcChecker = _rpcChecker;
         
@@ -87,6 +98,9 @@ public class OpflowInfoProvider implements AutoCloseable {
     }
     
     public void serve(Map<String, HttpHandler> httpHandlers, Map<String, Object> kwargs) {
+        if (enabled != null && Boolean.FALSE.equals(enabled)) {
+            return;
+        }
         if (httpHandlers != null || kwargs != null) {
             this.close();
         }
@@ -103,7 +117,7 @@ public class OpflowInfoProvider implements AutoCloseable {
             }
             
             server = Undertow.builder()
-                    .addHttpListener(9999, "0.0.0.0")
+                    .addHttpListener(port, host)
                     .setHandler(ptHandler)
                     .build();
         }

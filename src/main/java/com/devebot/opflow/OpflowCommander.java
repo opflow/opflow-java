@@ -52,7 +52,7 @@ public class OpflowCommander implements AutoCloseable {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new()")
                 .stringify());
-
+        
         if (kwargs.get(PARAM_RESERVE_WORKER_ENABLED) != null && kwargs.get(PARAM_RESERVE_WORKER_ENABLED) instanceof Boolean) {
             reserveWorkerEnabled = (Boolean) kwargs.get(PARAM_RESERVE_WORKER_ENABLED);
         } else {
@@ -62,6 +62,7 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get("configurer");
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get("rpcMaster");
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get("publisher");
+        Map<String, Object> infoProviderCfg = (Map<String, Object>)kwargs.get("infoProvider");
         
         HashSet<String> checkExchange = new HashSet<>();
         
@@ -102,19 +103,19 @@ public class OpflowCommander implements AutoCloseable {
             if (publisherCfg != null && !Boolean.FALSE.equals(publisherCfg.get("enabled"))) {
                 publisher = new OpflowPubsubHandler(publisherCfg);
             }
+            
+            rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
+            
+            rpcSwitcher = new OpflowRpcSwitcher(rpcChecker);
+            rpcSwitcher.start();
+            
+            infoProvider = new OpflowInfoProvider(rpcMaster, rpcChecker, OpflowUtil.buildMap(infoProviderCfg)
+                    .put("instanceId", commanderId)
+                    .toMap());
         } catch(OpflowBootstrapException exception) {
             this.close();
             throw exception;
         }
-        
-        rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
-        
-        rpcSwitcher = new OpflowRpcSwitcher(rpcChecker);
-        rpcSwitcher.start();
-        
-        infoProvider = new OpflowInfoProvider(rpcMaster, rpcChecker, OpflowUtil.buildMap()
-                .put("instanceId", commanderId)
-                .toMap());
 
         exporter = OpflowExporter.getInstance();
         
@@ -134,19 +135,29 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     public Map<String, HttpHandler> getInfoHttpHandlers() {
-        return infoProvider.getHttpHandlers();
+        if (infoProvider != null) {
+            return infoProvider.getHttpHandlers();
+        }
+        return null;
     }
     
     public OpflowRpcChecker.Info ping() {
-        return infoProvider.ping();
+        if (infoProvider != null) {
+            return infoProvider.ping();
+        }
+        return null;
     }
     
     public final void serve() {
-        infoProvider.serve();
+        if (infoProvider != null) {
+            infoProvider.serve();
+        }
     }
     
     public final void serve(Map<String, HttpHandler> httpHandlers) {
-        infoProvider.serve(httpHandlers);
+        if (infoProvider != null) {
+            infoProvider.serve(httpHandlers);
+        }
     }
     
     @Override
