@@ -83,6 +83,19 @@ public class OpflowLogTracer {
     interface Customizer {
         boolean isMute();
     }
+
+     public static class OmitPingLogs implements Customizer {
+        final String messageScope;
+                
+        OmitPingLogs(Map<String, Object> options) {
+            messageScope = OpflowUtil.getOptionField(options, "messageScope", false);
+        }
+        
+        @Override
+        public boolean isMute() {
+            return "internal".equals(messageScope);
+        }
+    }
     
     private final Customizer customizer;
     private final OpflowLogTracer parent;
