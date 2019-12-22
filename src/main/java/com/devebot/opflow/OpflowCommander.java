@@ -12,6 +12,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -177,10 +178,13 @@ public class OpflowCommander implements AutoCloseable {
         public Pong send(Ping ping) throws Throwable {
             String body = OpflowJsontool.toString(new Object[] { ping });
             String requestId = OpflowUtil.getLogID();
+            Date startTime = new Date();
             OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, OpflowUtil.buildMap()
                     .put("requestId", requestId)
                     .put("progressEnabled", false)
                     .toMap());
+            Date endTime = new Date();
+            
             OpflowRpcResult rpcResult = rpcRequest.extractResult(false);
 
             if (rpcResult.isTimeout()) {
@@ -194,6 +198,9 @@ public class OpflowCommander implements AutoCloseable {
 
             Pong pong = OpflowJsontool.toObject(rpcResult.getValueAsString(), Pong.class);
             pong.getParameters().put("requestId", requestId);
+            pong.getParameters().put("startTime", OpflowUtil.toISO8601UTC(startTime));
+            pong.getParameters().put("endTime", OpflowUtil.toISO8601UTC(endTime));
+            pong.getParameters().put("duration", endTime.getTime() - startTime.getTime());
             return pong;
         }
     }

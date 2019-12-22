@@ -23,7 +23,6 @@ public abstract class OpflowRpcChecker {
     }
     
     public static class Ping {
-        
     }
     
     public static class Pong {
@@ -88,12 +87,23 @@ public abstract class OpflowRpcChecker {
             OpflowUtil.MapBuilder builder = OpflowUtil.buildOrderedMap()
                     .put("status", status)
                     .put("commander", source);
-            if (result != null && result.getParameters().containsKey("requestId")) {
+            if (result != null) {
                 if (!source.containsKey("request") || !(source.get("request") instanceof HashMap)) {
                     source.put("request", OpflowUtil.buildOrderedMap().toMap());
                 }
                 Map<String, Object> requestInfo = (Map<String, Object>)source.get("request");
-                requestInfo.put("requestId", result.getParameters().get("requestId"));
+                if (result.getParameters().containsKey("requestId")) {
+                    requestInfo.put("requestId", result.getParameters().get("requestId"));
+                }
+                if (result.getParameters().containsKey("startTime")) {
+                    requestInfo.put("startTime", result.getParameters().get("startTime"));
+                }
+                if (result.getParameters().containsKey("endTime")) {
+                    requestInfo.put("endTime", result.getParameters().get("endTime"));
+                }
+                if (result.getParameters().containsKey("duration")) {
+                    requestInfo.put("duration", result.getParameters().get("duration"));
+                }
             }
             switch (status) {
                 case "ok":
