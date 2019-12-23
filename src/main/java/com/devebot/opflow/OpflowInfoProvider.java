@@ -52,11 +52,12 @@ public class OpflowInfoProvider implements AutoCloseable {
         rpcChecker = _rpcChecker;
         
         defaultHandlers = new LinkedHashMap<>();
+        defaultHandlers.put("/info", new InfoHandler());
         defaultHandlers.put("/ping", new PingHandler());
     }
 
-    public OpflowRpcChecker.Info ping() {
-        Map<String, Object> me = OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+    public Map<String, Object> info() {
+        Map<String, Object> data = OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
                 OpflowEngine engine = rpcMaster.getEngine();
@@ -72,6 +73,27 @@ public class OpflowInfoProvider implements AutoCloseable {
                         .put("callbackDurable", rpcMaster.getCallbackDurable())
                         .put("callbackExclusive", rpcMaster.getCallbackExclusive())
                         .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete())
+                        .toMap());
+                opts.put("request", OpflowUtil.buildOrderedMap()
+                        .put("expiration", rpcMaster.getExpiration())
+                        .toMap());
+            }
+        }).toMap();
+        return data;
+    }
+    
+    public OpflowRpcChecker.Info ping() {
+        Map<String, Object> me = OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+            @Override
+            public void transform(Map<String, Object> opts) {
+                OpflowEngine engine = rpcMaster.getEngine();
+                opts.put("instanceId", instanceId);
+                opts.put("rpcMaster", OpflowUtil.buildOrderedMap()
+                        .put("instanceId", rpcMaster.getInstanceId())
+                        .put("exchangeName", engine.getExchangeName())
+                        .put("routingKey", engine.getRoutingKey())
+                        .put("applicationId", engine.getApplicationId())
+                        .put("callbackQueue", rpcMaster.getCallbackName())
                         .toMap());
                 opts.put("request", OpflowUtil.buildOrderedMap()
                         .put("expiration", rpcMaster.getExpiration())
@@ -132,10 +154,23 @@ public class OpflowInfoProvider implements AutoCloseable {
         }
     }
     
+    class InfoHandler implements HttpHandler {
+        @Override
+        public void handleRequest(HttpServerExchange exchange) throws Exception {
+            try {
+                Map<String, Object> result = info();
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                exchange.getResponseSender().send(OpflowJsontool.toString(result, getPrettyParam(exchange)));
+            } catch (Exception exception) {
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                exchange.setStatusCode(500).getResponseSender().send(exception.toString());
+            }
+        }
+    }
+    
     class PingHandler implements HttpHandler {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
-            // pretty printing or not?
             try {
                 OpflowRpcChecker.Info result = ping();
                 if (!"ok".equals(result.getStatus())) {
