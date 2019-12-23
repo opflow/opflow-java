@@ -2,6 +2,7 @@ package com.devebot.opflow.supports;
 
 import com.devebot.opflow.OpflowLogTracer;
 import com.devebot.opflow.OpflowUtil;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.slf4j.Logger;
@@ -20,21 +21,30 @@ public class OpflowRpcSwitcher implements AutoCloseable {
     private final OpflowLogTracer logTracer;
     
     private final OpflowRpcChecker rpcChecker;
+    private final boolean enabled;
     private final long interval;
     private final Timer timer = new Timer(true);
     private final TimerTask timerTask;
     
     private boolean congested = false;
     
-    public OpflowRpcSwitcher(OpflowRpcChecker rpcChecker) {
-        this(rpcChecker, RPC_DETECTION_INTERVAL);
+    public OpflowRpcSwitcher(OpflowRpcChecker _rpcChecker) {
+        this(_rpcChecker, null);
     }
     
-    public OpflowRpcSwitcher(OpflowRpcChecker _rpcChecker, long interval) {
-        this.rpcSwitcherId = OpflowUtil.getLogID();
+    public OpflowRpcSwitcher(OpflowRpcChecker _rpcChecker, Map<String, Object> kwargs) {
+        if (kwargs == null) {
+            rpcSwitcherId = OpflowUtil.getLogID();
+            enabled = true;
+            interval = RPC_DETECTION_INTERVAL;
+        } else {
+            rpcSwitcherId = OpflowUtil.getOptionField(kwargs, "commanderId", true);
+            enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", Boolean.TRUE), Boolean.class);
+            interval = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "interval", RPC_DETECTION_INTERVAL), Long.class);
+        }
+        
         this.logTracer = OpflowLogTracer.ROOT.branch("rpcSwitcherId", this.rpcSwitcherId);
         this.rpcChecker = _rpcChecker;
-        this.interval = interval;
         this.timerTask = new TimerTask() {
             @Override
             public void run() {
@@ -72,16 +82,22 @@ public class OpflowRpcSwitcher implements AutoCloseable {
         if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                 .text("Detector.start()")
                 .stringify());
-        if (interval > 0) {
-            timer.scheduleAtFixedRate(timerTask, 0, interval);
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
-                    .put("interval", interval)
-                    .text("Detector has been started with interval: ${interval}")
-                    .stringify());
+        if (enabled) {
+            if (interval > 0) {
+                timer.scheduleAtFixedRate(timerTask, 0, interval);
+                if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+                        .put("interval", interval)
+                        .text("Detector has been started with interval: ${interval}")
+                        .stringify());
+            } else {
+                if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+                        .put("interval", interval)
+                        .text("Detector is not available. undefined interval")
+                        .stringify());
+            }
         } else {
             if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
-                    .put("interval", interval)
-                    .text("Detector is not available. undefined interval")
+                    .text("Detector is disabled")
                     .stringify());
         }
     }

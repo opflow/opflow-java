@@ -12,9 +12,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,16 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowCommander implements AutoCloseable {
+    public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
+        "configurer", "rpcMaster", "publisher"
+    });
+    
+    public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
+        "infoProvider", "rpcWatcher"
+    });
+    
+    public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
+    
     public final static String PARAM_RESERVE_WORKER_ENABLED = "reserveWorkerEnabled";
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
@@ -62,6 +74,7 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get("configurer");
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get("rpcMaster");
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get("publisher");
+        Map<String, Object> rpcWatcherCfg = (Map<String, Object>)kwargs.get("rpcWatcher");
         Map<String, Object> infoProviderCfg = (Map<String, Object>)kwargs.get("infoProvider");
         
         HashSet<String> checkExchange = new HashSet<>();
@@ -106,7 +119,7 @@ public class OpflowCommander implements AutoCloseable {
             
             rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
             
-            rpcSwitcher = new OpflowRpcSwitcher(rpcChecker);
+            rpcSwitcher = new OpflowRpcSwitcher(rpcChecker, rpcWatcherCfg);
             rpcSwitcher.start();
             
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, rpcMaster);

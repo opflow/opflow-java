@@ -180,15 +180,17 @@ public class OpflowBuilder {
         config = loadConfiguration(config, configFile, useDefaultFile);
         
         Map<String, Object> params = new HashMap<>();
-        String[] componentNames = new String[] {"configurer", "rpcMaster", "publisher", "infoProvider"};
         String[] componentPath = new String[] {"opflow", "commander", ""};
-        for(String componentName:componentNames) {
+        for(String componentName:OpflowCommander.ALL_BEAN_NAMES) {
             componentPath[2] = componentName;
             Map<String, Object> componentCfg = new HashMap<>();
-            if (!"infoProvider".equals(componentName)) {
+            Map<String, Object> componentNode;
+            if (OpflowCommander.SERVICE_BEAN_NAMES.contains(componentName)) {
                 extractEngineParameters(componentCfg, config, componentPath);
+                componentNode = getChildMapByPath(config, componentPath);
+            } else {
+                componentNode = getChildMapByPath(config, componentPath, false);
             }
-            Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
             componentCfg.put("enabled", componentNode.get("enabled"));
             if ("rpcMaster".equals(componentName)) {
                 componentCfg.put("expiration", componentNode.get("expiration"));
@@ -201,6 +203,9 @@ public class OpflowBuilder {
                 componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
                 componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
                 componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
+            }
+            if ("rpcWatcher".equals(componentName)) {
+                componentCfg.put("interval", componentNode.get("interval"));
             }
             if ("infoProvider".equals(componentName)) {
                 componentCfg.put("host", componentNode.get("host"));
@@ -435,12 +440,18 @@ public class OpflowBuilder {
     }
     
     private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path) {
+        return getChildMapByPath(source, path, true);
+    }
+    
+    private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path, boolean disableByEmpty) {
         Object sourceObject = traverseMapByPath(source, path);
         if(sourceObject != null && sourceObject instanceof Map) {
             return (Map<String, Object>) sourceObject;
         }
         Map<String, Object> blank = new HashMap<>();
-        blank.put("enabled", false);
+        if (disableByEmpty) {
+            blank.put("enabled", false);
+        }
         return blank;
     }
     
@@ -478,7 +489,7 @@ public class OpflowBuilder {
     };
     
     private static final String[] LONGINT_FIELDS = new String[] {
-        "expiration", "monitorTimeout"
+        "expiration", "interval", "monitorTimeout"
     };
     
     private static void transformParameters(Map<String, Object> params) {
