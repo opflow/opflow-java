@@ -136,11 +136,6 @@ public class OpflowInfoProvider implements AutoCloseable {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             // pretty printing or not?
-            boolean pretty = false;
-            Deque<String> prettyVals = exchange.getQueryParameters().get("pretty");
-            if (prettyVals != null && !prettyVals.isEmpty()) {
-                pretty = true;
-            }
             try {
                 OpflowRpcChecker.Info result = ping();
                 if (!"ok".equals(result.getStatus())) {
@@ -148,11 +143,20 @@ public class OpflowInfoProvider implements AutoCloseable {
                 }
                 // render the result
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                exchange.getResponseSender().send(result.toString(pretty));
+                exchange.getResponseSender().send(result.toString(getPrettyParam(exchange)));
             } catch (Exception exception) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());
             }
         }
+    }
+    
+    private boolean getPrettyParam(HttpServerExchange exchange) {
+        boolean pretty = false;
+        Deque<String> prettyVals = exchange.getQueryParameters().get("pretty");
+        if (prettyVals != null && !prettyVals.isEmpty()) {
+            pretty = true;
+        }
+        return pretty;
     }
 }
