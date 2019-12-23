@@ -23,7 +23,7 @@ public class OpflowInfoProvider implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowInfoProvider.class);
 
     private final String instanceId;
-    private final OpflowRpcMaster rpcMaster;
+    private final OpflowInfoCollector infoCollector;
     private final OpflowRpcChecker rpcChecker;
     private final Map<String, HttpHandler> defaultHandlers;
     private final String host;
@@ -31,13 +31,13 @@ public class OpflowInfoProvider implements AutoCloseable {
     private final Boolean enabled;
     private Undertow server;
 
-    OpflowInfoProvider(OpflowRpcMaster _rpcMaster,
+    OpflowInfoProvider(OpflowInfoCollector _infoCollector,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs) throws OpflowBootstrapException {
-        this(_rpcMaster, _rpcChecker, kwargs, null);
+        this(_infoCollector, _rpcChecker, kwargs, null);
     }
     
-    OpflowInfoProvider(OpflowRpcMaster _rpcMaster,
+    OpflowInfoProvider(OpflowInfoCollector _infoCollector,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs,
             Map<String, HttpHandler> httpHandlers) throws OpflowBootstrapException {
@@ -48,7 +48,7 @@ public class OpflowInfoProvider implements AutoCloseable {
         port = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "port", 8989), Integer.class);
         host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();
         
-        rpcMaster = _rpcMaster;
+        infoCollector = _infoCollector;
         rpcChecker = _rpcChecker;
         
         defaultHandlers = new LinkedHashMap<>();
@@ -57,49 +57,11 @@ public class OpflowInfoProvider implements AutoCloseable {
     }
 
     public Map<String, Object> info() {
-        Map<String, Object> data = OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
-            @Override
-            public void transform(Map<String, Object> opts) {
-                OpflowEngine engine = rpcMaster.getEngine();
-                opts.put("instanceId", instanceId);
-                opts.put("rpcMaster", OpflowUtil.buildOrderedMap()
-                        .put("instanceId", rpcMaster.getInstanceId())
-                        .put("exchangeName", engine.getExchangeName())
-                        .put("exchangeDurable", engine.getExchangeDurable())
-                        .put("routingKey", engine.getRoutingKey())
-                        .put("otherKeys", engine.getOtherKeys())
-                        .put("applicationId", engine.getApplicationId())
-                        .put("callbackQueue", rpcMaster.getCallbackName())
-                        .put("callbackDurable", rpcMaster.getCallbackDurable())
-                        .put("callbackExclusive", rpcMaster.getCallbackExclusive())
-                        .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete())
-                        .toMap());
-                opts.put("request", OpflowUtil.buildOrderedMap()
-                        .put("expiration", rpcMaster.getExpiration())
-                        .toMap());
-            }
-        }).toMap();
-        return data;
+        return infoCollector.collect();
     }
     
     public OpflowRpcChecker.Info ping() {
-        Map<String, Object> me = OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
-            @Override
-            public void transform(Map<String, Object> opts) {
-                OpflowEngine engine = rpcMaster.getEngine();
-                opts.put("instanceId", instanceId);
-                opts.put("rpcMaster", OpflowUtil.buildOrderedMap()
-                        .put("instanceId", rpcMaster.getInstanceId())
-                        .put("exchangeName", engine.getExchangeName())
-                        .put("routingKey", engine.getRoutingKey())
-                        .put("applicationId", engine.getApplicationId())
-                        .put("callbackQueue", rpcMaster.getCallbackName())
-                        .toMap());
-                opts.put("request", OpflowUtil.buildOrderedMap()
-                        .put("expiration", rpcMaster.getExpiration())
-                        .toMap());
-            }
-        }).toMap();
+        Map<String, Object> me = infoCollector.collect();
         try {
             return new OpflowRpcChecker.Info(me, this.rpcChecker.send(new OpflowRpcChecker.Ping()));
         } catch (Throwable exception) {

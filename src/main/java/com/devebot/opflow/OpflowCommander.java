@@ -109,7 +109,9 @@ public class OpflowCommander implements AutoCloseable {
             rpcSwitcher = new OpflowRpcSwitcher(rpcChecker);
             rpcSwitcher.start();
             
-            infoProvider = new OpflowInfoProvider(rpcMaster, rpcChecker, OpflowUtil.buildMap(infoProviderCfg)
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, rpcMaster);
+            
+            infoProvider = new OpflowInfoProvider(infoCollector, rpcChecker, OpflowUtil.buildMap(infoProviderCfg)
                     .put("instanceId", commanderId)
                     .toMap());
         } catch(OpflowBootstrapException exception) {
@@ -213,6 +215,43 @@ public class OpflowCommander implements AutoCloseable {
             pong.getParameters().put("endTime", OpflowUtil.toISO8601UTC(endTime));
             pong.getParameters().put("duration", endTime.getTime() - startTime.getTime());
             return pong;
+        }
+    }
+    
+    private static class OpflowInfoCollectorMaster implements OpflowInfoCollector {
+        
+        private final String instanceId;
+        private final OpflowRpcMaster rpcMaster;
+        
+        OpflowInfoCollectorMaster(String instanceId, OpflowRpcMaster rpcMaster) {
+            this.instanceId = instanceId;
+            this.rpcMaster = rpcMaster;
+        }
+        
+        @Override
+        public Map<String, Object> collect() {
+            return OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+                @Override
+                public void transform(Map<String, Object> opts) {
+                    OpflowEngine engine = rpcMaster.getEngine();
+                    opts.put("instanceId", instanceId);
+                    opts.put("rpcMaster", OpflowUtil.buildOrderedMap()
+                            .put("instanceId", rpcMaster.getInstanceId())
+                            .put("exchangeName", engine.getExchangeName())
+                            .put("exchangeDurable", engine.getExchangeDurable())
+                            .put("routingKey", engine.getRoutingKey())
+                            .put("otherKeys", engine.getOtherKeys())
+                            .put("applicationId", engine.getApplicationId())
+                            .put("callbackQueue", rpcMaster.getCallbackName())
+                            .put("callbackDurable", rpcMaster.getCallbackDurable())
+                            .put("callbackExclusive", rpcMaster.getCallbackExclusive())
+                            .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete())
+                            .toMap());
+                    opts.put("request", OpflowUtil.buildOrderedMap()
+                            .put("expiration", rpcMaster.getExpiration())
+                            .toMap());
+                }
+            }).toMap();
         }
     }
     
