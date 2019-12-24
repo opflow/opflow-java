@@ -6,7 +6,7 @@ import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.supports.OpflowRpcChecker;
-import com.devebot.opflow.supports.OpflowRpcSwitcher;
+import com.devebot.opflow.supports.OpflowRpcWatcher;
 import io.undertow.server.HttpHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -49,7 +49,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRpcMaster rpcMaster;
     private OpflowPubsubHandler publisher;
     private OpflowRpcChecker rpcChecker;
-    private OpflowRpcSwitcher rpcSwitcher;
+    private OpflowRpcWatcher rpcWatcher;
     private OpflowInfoProvider infoProvider;
     
     public OpflowCommander() throws OpflowBootstrapException {
@@ -119,8 +119,11 @@ public class OpflowCommander implements AutoCloseable {
             
             rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
             
-            rpcSwitcher = new OpflowRpcSwitcher(rpcChecker, rpcWatcherCfg);
-            rpcSwitcher.start();
+            rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowUtil.buildMap(rpcWatcherCfg)
+                    .put("instanceId", commanderId)
+                    .toMap());
+            
+            rpcWatcher.start();
             
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, rpcMaster);
             
@@ -182,7 +185,7 @@ public class OpflowCommander implements AutoCloseable {
                 .stringify());
         
         if (infoProvider != null) infoProvider.close();
-        if (rpcSwitcher != null) rpcSwitcher.close();
+        if (rpcWatcher != null) rpcWatcher.close();
         if (publisher != null) publisher.close();
         if (rpcMaster != null) rpcMaster.close();
         if (configurer != null) configurer.close();
@@ -333,7 +336,7 @@ public class OpflowCommander implements AutoCloseable {
             }
             
             // rpc switching
-            if (rpcSwitcher.isCongested() && !pingSignature.equals(routineId)) {
+            if (rpcWatcher.isCongested() && !pingSignature.equals(routineId)) {
                 if (this.hasReserveWorker()) {
                     return method.invoke(this.reserveWorker, args);
                 }
@@ -344,7 +347,7 @@ public class OpflowCommander implements AutoCloseable {
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
             
             if (rpcResult.isTimeout()) {
-                rpcSwitcher.setCongested(true);
+                rpcWatcher.setCongested(true);
                 if (this.hasReserveWorker()) {
                     return method.invoke(this.reserveWorker, args);
                 }

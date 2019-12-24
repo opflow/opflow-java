@@ -12,12 +12,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author acegik
  */
-public class OpflowRpcSwitcher implements AutoCloseable {
+public class OpflowRpcWatcher implements AutoCloseable {
     public final static long RPC_DETECTION_INTERVAL = 30000;
     
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcSwitcher.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcWatcher.class);
     
-    private final String rpcSwitcherId;
+    private final String instanceId;
     private final OpflowLogTracer logTracer;
     
     private final OpflowRpcChecker rpcChecker;
@@ -28,22 +28,22 @@ public class OpflowRpcSwitcher implements AutoCloseable {
     
     private boolean congested = false;
     
-    public OpflowRpcSwitcher(OpflowRpcChecker _rpcChecker) {
+    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker) {
         this(_rpcChecker, null);
     }
     
-    public OpflowRpcSwitcher(OpflowRpcChecker _rpcChecker, Map<String, Object> kwargs) {
+    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker, Map<String, Object> kwargs) {
         if (kwargs == null) {
-            rpcSwitcherId = OpflowUtil.getLogID();
+            instanceId = OpflowUtil.getLogID();
             enabled = true;
             interval = RPC_DETECTION_INTERVAL;
         } else {
-            rpcSwitcherId = OpflowUtil.getOptionField(kwargs, "commanderId", true);
+            instanceId = OpflowUtil.getOptionField(kwargs, "commanderId", true);
             enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", Boolean.TRUE), Boolean.class);
             interval = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "interval", RPC_DETECTION_INTERVAL), Long.class);
         }
         
-        this.logTracer = OpflowLogTracer.ROOT.branch("rpcSwitcherId", this.rpcSwitcherId);
+        this.logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", this.instanceId);
         this.rpcChecker = _rpcChecker;
         this.timerTask = new TimerTask() {
             @Override
