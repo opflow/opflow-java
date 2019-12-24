@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowUtil.MapBuilder;
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
@@ -12,12 +13,14 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +128,7 @@ public class OpflowCommander implements AutoCloseable {
             
             rpcWatcher.start();
             
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, rpcMaster);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, rpcMaster, handlers);
             
             infoProvider = new OpflowInfoProvider(infoCollector, rpcChecker, OpflowUtil.buildMap(infoProviderCfg)
                     .put("instanceId", commanderId)
@@ -238,31 +241,67 @@ public class OpflowCommander implements AutoCloseable {
         
         private final String instanceId;
         private final OpflowRpcMaster rpcMaster;
+        private final Map<String, RpcInvocationHandler> handlers;
         
-        OpflowInfoCollectorMaster(String instanceId, OpflowRpcMaster rpcMaster) {
+        OpflowInfoCollectorMaster(String instanceId, OpflowRpcMaster rpcMaster, Map<String, RpcInvocationHandler> mappings) {
             this.instanceId = instanceId;
             this.rpcMaster = rpcMaster;
+            this.handlers = mappings;
         }
         
         @Override
         public Map<String, Object> collect() {
+            return collect(null);
+        }
+        
+        @Override
+        public Map<String, Object> collect(Scope scope) {
+            final Scope label = (scope == null)? Scope.BASIC : scope;
             return OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     OpflowEngine engine = rpcMaster.getEngine();
                     opts.put("instanceId", instanceId);
-                    opts.put("rpcMaster", OpflowUtil.buildOrderedMap()
+                    
+                    // rpcMaster information
+                    MapBuilder mb1 = OpflowUtil.buildOrderedMap()
                             .put("instanceId", rpcMaster.getInstanceId())
-                            .put("exchangeName", engine.getExchangeName())
-                            .put("exchangeDurable", engine.getExchangeDurable())
-                            .put("routingKey", engine.getRoutingKey())
-                            .put("otherKeys", engine.getOtherKeys())
                             .put("applicationId", engine.getApplicationId())
-                            .put("callbackQueue", rpcMaster.getCallbackName())
-                            .put("callbackDurable", rpcMaster.getCallbackDurable())
-                            .put("callbackExclusive", rpcMaster.getCallbackExclusive())
-                            .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete())
-                            .toMap());
+                            .put("exchangeName", engine.getExchangeName());
+                    
+                    if (label == Scope.FULL) {
+                        mb1.put("exchangeDurable", engine.getExchangeDurable());
+                    }
+                    
+                    mb1.put("routingKey", engine.getRoutingKey());
+                    
+                    if (label == Scope.FULL) {
+                        mb1.put("otherKeys", engine.getOtherKeys());
+                    }
+                    
+                    mb1.put("callbackQueue", rpcMaster.getCallbackName());
+                    
+                    if (label == Scope.FULL) {
+                        mb1.put("callbackDurable", rpcMaster.getCallbackDurable())
+                                .put("callbackExclusive", rpcMaster.getCallbackExclusive())
+                                .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete());
+                    }
+                    opts.put("rpcMaster", mb1.toMap());
+                    
+                    // RPC mappings
+                    if (label == Scope.FULL) {
+                        List<Map<String, Object>> mappingInfos = new ArrayList<>();
+                        for(Map.Entry<String, RpcInvocationHandler> entry:handlers.entrySet()) {
+                            mappingInfos.add(OpflowUtil.buildOrderedMap()
+                                    .put("class", entry.getKey())
+                                    .put("methods", entry.getValue().getMethodNames())
+                                    .put("isReserveWorkerReady", entry.getValue().hasReserveWorker())
+                                    .toMap());
+                        }
+                        opts.put("mappings", mappingInfos);
+                    }
+                    
+                    // request information
                     opts.put("request", OpflowUtil.buildOrderedMap()
                             .put("expiration", rpcMaster.getExpiration())
                             .toMap());
@@ -307,6 +346,10 @@ public class OpflowCommander implements AutoCloseable {
         
         public boolean hasReserveWorker() {
             return this.reserveWorker != null && this.reserveWorkerEnabled;
+        }
+        
+        public Set<String> getMethodNames() {
+            return methodIsAsync.keySet();
         }
         
         @Override

@@ -57,11 +57,11 @@ public class OpflowInfoProvider implements AutoCloseable {
     }
 
     public Map<String, Object> info() {
-        return infoCollector.collect();
+        return infoCollector.collect(OpflowInfoCollector.Scope.FULL);
     }
     
     public OpflowRpcChecker.Info ping() {
-        Map<String, Object> me = infoCollector.collect();
+        Map<String, Object> me = infoCollector.collect(OpflowInfoCollector.Scope.BASIC);
         try {
             return new OpflowRpcChecker.Info(me, this.rpcChecker.send(new OpflowRpcChecker.Ping()));
         } catch (Throwable exception) {

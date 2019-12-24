@@ -346,11 +346,10 @@ public class OpflowServerlet implements AutoCloseable {
                                     opts.put("instanceId", instanceId);
                                     opts.put("rpcWorker", OpflowUtil.buildOrderedMap()
                                             .put("instanceId", rpcWorker.getIntanceId())
+                                            .put("applicationId", engine.getApplicationId())
                                             .put("exchangeName", engine.getExchangeName())
-                                            .put("exchangeDurable", engine.getExchangeDurable())
                                             .put("routingKey", engine.getRoutingKey())
                                             .put("otherKeys", engine.getOtherKeys())
-                                            .put("applicationId", engine.getApplicationId())
                                             .put("dispatchQueue", rpcWorker.getDispatchName())
                                             .toMap());
                                     opts.put("handler", OpflowUtil.buildOrderedMap()
