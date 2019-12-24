@@ -581,7 +581,7 @@ public class OpflowEngine implements AutoCloseable {
                             .put("appId", properties.getAppId())
                             .put("deliveryTag", envelope.getDeliveryTag())
                             .put("consumerTag", consumerTag)
-                            .text("Request[${requestId}] - Consumer[${consumerId}] - consumer received a message")
+                            .text("Request[${requestId}] - Consumer[${consumerId}] receives a message")
                             .stringify());
                     
                     if (OpflowLogTracer.has(LOG, "trace")) {

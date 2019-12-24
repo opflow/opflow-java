@@ -317,7 +317,7 @@ public class OpflowServerlet implements AutoCloseable {
                     if (OpflowLogTracer.has(LOG, "info")) LOG.info(listenerTrail
                             .put("routineId", routineId)
                             .put("methodId", methodId)
-                            .text("Receives new method call")
+                            .text("Request[${requestId}] - Receives new method call")
                             .stringify());
                     Method method = methodRef.get(methodId);
                     Object target = targetRef.get(methodId);
@@ -331,7 +331,7 @@ public class OpflowServerlet implements AutoCloseable {
                         String json = message.getBodyAsString();
                         if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(listenerTrail
                                 .put("arguments", json)
-                                .text("Method arguments in json string")
+                                .text("Request[${requestId}] - Method arguments in json string")
                                 .stringify());
                         Object[] args = OpflowJsontool.toObjectArray(json, method.getParameterTypes());
                         
@@ -368,12 +368,12 @@ public class OpflowServerlet implements AutoCloseable {
                         String result = OpflowJsontool.toString(returnValue);
                         if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(listenerTrail
                                 .put("return", OpflowUtil.truncate(result))
-                                .text("Return value of method")
+                                .text("Request[${requestId}] - Return the output of the method")
                                 .stringify());
                         response.emitCompleted(result);
                         
                         if (OpflowLogTracer.has(LOG, "info")) LOG.info(listenerTrail
-                            .text("Method call has completed")
+                            .text("Request[${requestId}] - Method call has completed")
                             .stringify());
                     } catch (JsonSyntaxException error) {
                         response.emitFailed(OpflowUtil.buildMap()

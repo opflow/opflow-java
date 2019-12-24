@@ -38,32 +38,32 @@ public class OpflowRpcWatcher implements AutoCloseable {
             enabled = true;
             interval = RPC_DETECTION_INTERVAL;
         } else {
-            instanceId = OpflowUtil.getOptionField(kwargs, "commanderId", true);
+            instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
             enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", Boolean.TRUE), Boolean.class);
             interval = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "interval", RPC_DETECTION_INTERVAL), Long.class);
         }
         
-        this.logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", this.instanceId);
-        this.rpcChecker = _rpcChecker;
-        this.timerTask = new TimerTask() {
+        logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", instanceId);
+        rpcChecker = _rpcChecker;
+        timerTask = new TimerTask() {
             @Override
             public void run() {
                 long current = OpflowUtil.getCurrentTime();
                 OpflowLogTracer logTask = logTracer.branch("timestamp", current);
                 if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTask
                         .put("threadCount", Thread.activeCount())
-                        .text("Detector[${rpcSwitcherId}].run(), threads: ${threadCount}")
+                        .text("Detector[${rpcWatcherId}].run(), threads: ${threadCount}")
                         .stringify());
                 try {
                     OpflowRpcChecker.Pong result = rpcChecker.send(new OpflowRpcChecker.Ping());
                     congested = false;
                     if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTask
-                            .text("Detector[${rpcSwitcherId}].run(), the queue is drained")
+                            .text("Detector[${rpcWatcherId}].run(), the queue is drained")
                             .stringify());
                 } catch (Throwable exception) {
                     congested = true;
                     if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTask
-                            .text("Detector[${rpcSwitcherId}].run(), the queue is congested")
+                            .text("Detector[${rpcWatcherId}].run(), the queue is congested")
                             .stringify());
                 }
             }
@@ -80,24 +80,24 @@ public class OpflowRpcWatcher implements AutoCloseable {
     
     public void start() {
         if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
-                .text("Detector.start()")
+                .text("Detector[${rpcWatcherId}].start()")
                 .stringify());
         if (enabled) {
             if (interval > 0) {
                 timer.scheduleAtFixedRate(timerTask, 0, interval);
                 if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                         .put("interval", interval)
-                        .text("Detector has been started with interval: ${interval}")
+                        .text("Detector[${rpcWatcherId}] has been started with interval: ${interval}")
                         .stringify());
             } else {
                 if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
                         .put("interval", interval)
-                        .text("Detector is not available. undefined interval")
+                        .text("Detector[${rpcWatcherId}] is not available. undefined interval")
                         .stringify());
             }
         } else {
             if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
-                    .text("Detector is disabled")
+                    .text("Detector[${rpcWatcherId}] is disabled")
                     .stringify());
         }
     }
@@ -105,7 +105,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
     @Override
     public void close() {
         if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
-                .text("Detector.close()")
+                .text("Detector[${rpcWatcherId}].close()")
                 .stringify());
         timer.cancel();
         timer.purge();
