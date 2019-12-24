@@ -145,12 +145,12 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     private OpflowEngine.ConsumerInfo responseConsumer;
 
-    private OpflowEngine.ConsumerInfo initResponseConsumer(final boolean forked) {
+    private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean forked) {
         final String _consumerId = OpflowUtil.getLogID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSession
                 .put("forked", forked)
-                .text("initResponseConsumer() is invoked")
+                .text("initCallbackConsumer() is invoked")
                 .stringify());
         return engine.consume(new OpflowListener() {
             @Override
@@ -170,30 +170,30 @@ public class OpflowRpcMaster implements AutoCloseable {
 
                 if (OpflowLogTracer.has(LOG, "info") && logResult != null) LOG.info(logResult
                         .put("correlationId", taskId)
-                        .text("initResponseConsumer() - task[${correlationId}] receives a result")
+                        .text("initCallbackConsumer() - task[${correlationId}] receives a result")
                         .stringify());
 
                 if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
                         .put("bodyLength", (content != null ? content.length : -1))
-                        .text("initResponseConsumer() - result body length")
+                        .text("initCallbackConsumer() - result body length")
                         .stringify());
 
                 OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
                     if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
                         .put("correlationId", taskId)
-                        .text("initResponseConsumer() - task[${correlationId}] not found, skipped")
+                        .text("initCallbackConsumer() - task[${correlationId}] not found, skipped")
                         .stringify());
                 } else {
                     if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
                         .put("correlationId", taskId)
-                        .text("initResponseConsumer() - push Message object to task[${correlationId}]")
+                        .text("initCallbackConsumer() - push Message object to task[${correlationId}]")
                         .stringify());
                     OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                     task.push(message);
                     if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
                         .put("correlationId", taskId)
-                        .text("initResponseConsumer() - returned value of task[${correlationId}]")
+                        .text("initCallbackConsumer() - returned value of task[${correlationId}]")
                         .stringify());
                 }
                 return true;
@@ -261,10 +261,10 @@ public class OpflowRpcMaster implements AutoCloseable {
         final boolean forked = "forked".equals((String)options.get("mode"));
         final OpflowEngine.ConsumerInfo consumerInfo;
         if (forked) {
-            consumerInfo = initResponseConsumer(true);
+            consumerInfo = initCallbackConsumer(true);
         } else {
             if (responseConsumer == null) {
-                responseConsumer = initResponseConsumer(false);
+                responseConsumer = initCallbackConsumer(false);
             }
             consumerInfo = responseConsumer;
         }
