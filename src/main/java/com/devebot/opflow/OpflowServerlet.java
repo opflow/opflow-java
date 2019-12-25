@@ -140,8 +140,8 @@ public class OpflowServerlet implements AutoCloseable {
                 subscriber = new OpflowPubsubHandler(subscriberCfg);
             }
             
-            if (rpcWorker != null) {
-                instantiator = new Instantiator(rpcWorker, OpflowUtil.buildMap()
+            if (rpcWorker != null || subscriber != null) {
+                instantiator = new Instantiator(rpcWorker, subscriber, OpflowUtil.buildMap()
                         .put("instanceId", serverletId)
                         .toMap());
             }
@@ -288,25 +288,27 @@ public class OpflowServerlet implements AutoCloseable {
         private final OpflowLogTracer logTracer;
         private final OpflowRpcWorker rpcWorker;
         private final OpflowRpcListener rpcListener;
+        private final OpflowPubsubHandler subscriber;
+        private final OpflowPubsubListener subListener;
         private final Set<String> routineIds = new HashSet<>();
         private final Map<String, Method> methodRef = new HashMap<>();
         private final Map<String, Object> targetRef = new HashMap<>();
         private final Map<String, String> methodOfAlias = new HashMap<>();
         private boolean processing = false;
         
-        public Instantiator(OpflowRpcWorker worker) throws OpflowBootstrapException {
-            this(worker, null);
+        public Instantiator(OpflowRpcWorker worker, OpflowPubsubHandler subscriber) throws OpflowBootstrapException {
+            this(worker, subscriber, null);
         }
         
-        public Instantiator(OpflowRpcWorker worker, Map<String, Object> options) throws OpflowBootstrapException {
-            if (worker == null) {
-                throw new OpflowBootstrapException("RpcWorker should not be null");
+        public Instantiator(OpflowRpcWorker worker, OpflowPubsubHandler subscriber, Map<String, Object> options) throws OpflowBootstrapException {
+            if (worker == null && subscriber == null) {
+                throw new OpflowBootstrapException("Both of RpcWorker and subscriber must not be null");
             }
             options = OpflowUtil.ensureNotNull(options);
             final String instanceId = options.getOrDefault("instanceId", OpflowUtil.getLogID()).toString();
-            logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", instanceId);
-            rpcWorker = worker;
-            rpcListener = new OpflowRpcListener() {
+            this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", instanceId);
+            this.rpcWorker = worker;
+            this.rpcListener = new OpflowRpcListener() {
                 @Override
                 public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
                     final String requestId = OpflowUtil.getRequestId(message.getInfo());
@@ -411,6 +413,51 @@ public class OpflowServerlet implements AutoCloseable {
                     return null;
                 }
             };
+            this.subscriber = subscriber;
+            this.subListener = new OpflowPubsubListener() {
+                @Override
+                public void processMessage(OpflowMessage message) throws IOException {
+                    final String requestId = OpflowUtil.getRequestId(message.getInfo());
+                    final String routineId = OpflowUtil.getRoutineId(message.getInfo());
+                    final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
+                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(message.getInfo()));
+                    if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
+                            .put("routineId", routineId)
+                            .put("methodId", methodId)
+                            .text("Request[${requestId}] - Receives new method call [${routineId}]")
+                            .stringify());
+                    Method method = methodRef.get(methodId);
+                    Object target = targetRef.get(methodId);
+                    try {
+                        Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
+                        OpflowTargetRoutine routine = extractMethodInfo(origin);
+                        if (routine != null && routine.enabled() == false) {
+                            throw new UnsupportedOperationException("Method " + origin.toString() + " is disabled");
+                        }
+                        
+                        String json = message.getBodyAsString();
+                        if (listenerTrail.ready(LOG, "trace")) LOG.trace(listenerTrail
+                                .put("arguments", json)
+                                .text("Request[${requestId}] - Method arguments in json string")
+                                .stringify());
+                        Object[] args = OpflowJsontool.toObjectArray(json, method.getParameterTypes());
+                        
+                        method.invoke(target, args);
+                        
+                        if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
+                                .text("Request[${requestId}] - Method call has completed")
+                                .stringify());
+                    } catch (JsonSyntaxException error) {
+                        throw error;
+                    } catch (IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException | UnsupportedOperationException ex) {
+                        throw new IOException(ex);
+                    } catch (InvocationTargetException exception) {
+                        Throwable catched = exception.getCause();
+                        catched.getStackTrace();
+                        throw new IOException(catched);
+                    }
+                }
+            };
             if (Boolean.TRUE.equals(options.get("autorun"))) {
                 process();
             }
@@ -418,7 +465,12 @@ public class OpflowServerlet implements AutoCloseable {
         
         public final void process() {
             if (!processing) {
-                rpcWorker.process(routineIds, rpcListener);
+                if (rpcWorker != null) {
+                    rpcWorker.process(routineIds, rpcListener);
+                }
+                if (subscriber != null) {
+                    subscriber.subscribe(subListener);
+                }
                 processing = true;
             }
         }

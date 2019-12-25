@@ -128,17 +128,19 @@ public class OpflowPubsubHandler implements AutoCloseable {
         }
         
         OpflowLogTracer logPublish = null;
-        if (OpflowLogTracer.has(LOG, "info")) logPublish = logTracer.branch("requestId", requestId);
+        if (OpflowLogTracer.has(LOG, "info")) {
+            logPublish = logTracer.branch("requestId", requestId);
+        }
 
-        if (OpflowLogTracer.has(LOG, "info") && logPublish != null) LOG.info(logPublish
+        if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
                 .put("routingKey", routingKey)
                 .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() - routingKey: ${routingKey}")
                 .stringify());
         
         engine.produce(body, options, override);
         
-        if (OpflowLogTracer.has(LOG, "info") && logPublish != null) LOG.info(logPublish
-                .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() request has completed")
+        if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
+                .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() request has enqueued")
                 .stringify());
     }
     

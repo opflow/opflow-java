@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,21 +31,21 @@ public class OpflowCommander implements AutoCloseable {
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
         "configurer", "rpcMaster", "publisher"
     });
-    
+
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
         "infoProvider", "rpcWatcher"
     });
-    
+
     public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
-    
+
     public final static String PARAM_RESERVE_WORKER_ENABLED = "reserveWorkerEnabled";
-    
+
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
     private final OpflowLogTracer logTracer;
     private final OpflowExporter exporter;
-    
+
     private final String commanderId;
-    
+
     private boolean reserveWorkerEnabled;
     private OpflowPubsubHandler configurer;
     private OpflowRpcMaster rpcMaster;
@@ -52,43 +53,43 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcWatcher rpcWatcher;
     private OpflowInfoProvider infoProvider;
-    
+
     public OpflowCommander() throws OpflowBootstrapException {
         this(null);
     }
-    
+
     public OpflowCommander(Map<String, Object> kwargs) throws OpflowBootstrapException {
         kwargs = OpflowUtil.ensureNotNull(kwargs);
         commanderId = OpflowUtil.getOptionField(kwargs, "commanderId", true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", commanderId);
-        
+
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new()")
                 .stringify());
-        
+
         if (kwargs.get(PARAM_RESERVE_WORKER_ENABLED) != null && kwargs.get(PARAM_RESERVE_WORKER_ENABLED) instanceof Boolean) {
             reserveWorkerEnabled = (Boolean) kwargs.get(PARAM_RESERVE_WORKER_ENABLED);
         } else {
             reserveWorkerEnabled = true;
         }
-        
+
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get("configurer");
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get("rpcMaster");
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get("publisher");
         Map<String, Object> rpcWatcherCfg = (Map<String, Object>)kwargs.get("rpcWatcher");
         Map<String, Object> infoProviderCfg = (Map<String, Object>)kwargs.get("infoProvider");
-        
+
         HashSet<String> checkExchange = new HashSet<>();
-        
+
         if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
             if (configurerCfg.get("exchangeName") == null || configurerCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
-            } 
+            }
             if (!checkExchange.add(configurerCfg.get("exchangeName").toString() + configurerCfg.get("routingKey").toString())) {
                 throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
             }
         }
-        
+
         if (rpcMasterCfg != null && !Boolean.FALSE.equals(rpcMasterCfg.get("enabled"))) {
             if (rpcMasterCfg.get("exchangeName") == null || rpcMasterCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid RpcMaster connection parameters");
@@ -97,7 +98,7 @@ public class OpflowCommander implements AutoCloseable {
                 throw new OpflowBootstrapException("Duplicated RpcMaster connection parameters");
             }
         }
-        
+
         if (publisherCfg != null && !Boolean.FALSE.equals(publisherCfg.get("enabled"))) {
             if (publisherCfg.get("exchangeName") == null || publisherCfg.get("routingKey") == null) {
                 throw new OpflowBootstrapException("Invalid Publisher connection parameters");
@@ -106,7 +107,7 @@ public class OpflowCommander implements AutoCloseable {
                 throw new OpflowBootstrapException("Duplicated Publisher connection parameters");
             }
         }
-        
+
         try {
             if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
                 configurer = new OpflowPubsubHandler(configurerCfg);
@@ -117,17 +118,17 @@ public class OpflowCommander implements AutoCloseable {
             if (publisherCfg != null && !Boolean.FALSE.equals(publisherCfg.get("enabled"))) {
                 publisher = new OpflowPubsubHandler(publisherCfg);
             }
-            
+
             rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
-            
+
             rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowUtil.buildMap(rpcWatcherCfg)
                     .put("instanceId", commanderId)
                     .toMap());
-            
+
             rpcWatcher.start();
-            
+
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, rpcMaster, handlers);
-            
+
             infoProvider = new OpflowInfoProvider(infoCollector, rpcChecker, OpflowUtil.buildMap(infoProviderCfg)
                     .put("instanceId", commanderId)
                     .toMap());
@@ -137,18 +138,18 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         exporter = OpflowExporter.getInstance();
-        
+
         exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
-        
+
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new() end!")
                 .stringify());
     }
-    
+
     public boolean isReserveWorkerEnabled() {
         return this.reserveWorkerEnabled;
     }
-    
+
     public void setReserveWorkerEnabled(boolean enabled) {
         this.reserveWorkerEnabled = enabled;
     }
@@ -159,32 +160,32 @@ public class OpflowCommander implements AutoCloseable {
         }
         return null;
     }
-    
+
     public OpflowRpcChecker.Info ping() {
         if (infoProvider != null) {
             return infoProvider.ping();
         }
         return null;
     }
-    
+
     public final void serve() {
         if (infoProvider != null) {
             infoProvider.serve();
         }
     }
-    
+
     public final void serve(Map<String, HttpHandler> httpHandlers) {
         if (infoProvider != null) {
             infoProvider.serve(httpHandlers);
         }
     }
-    
+
     @Override
     public final void close() {
         if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close()")
                 .stringify());
-        
+
         if (infoProvider != null) infoProvider.close();
         if (rpcWatcher != null) rpcWatcher.close();
         if (publisher != null) publisher.close();
@@ -195,15 +196,15 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].close() has done!")
                 .stringify());
     }
-    
+
     private static class OpflowRpcCheckerMaster extends OpflowRpcChecker {
-        
+
         private final OpflowRpcMaster rpcMaster;
-        
+
         OpflowRpcCheckerMaster(OpflowRpcMaster rpcMaster) throws OpflowBootstrapException {
             this.rpcMaster = rpcMaster;
         }
-        
+
         @Override
         public Pong send(Ping ping) throws Throwable {
             String body = OpflowJsontool.toString(new Object[] { ping });
@@ -215,7 +216,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("progressEnabled", false)
                     .toMap());
             Date endTime = new Date();
-            
+
             OpflowRpcResult rpcResult = rpcRequest.extractResult(false);
 
             if (rpcResult.isTimeout()) {
@@ -235,24 +236,24 @@ public class OpflowCommander implements AutoCloseable {
             return pong;
         }
     }
-    
+
     private static class OpflowInfoCollectorMaster implements OpflowInfoCollector {
-        
+
         private final String instanceId;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
-        
+
         OpflowInfoCollectorMaster(String instanceId, OpflowRpcMaster rpcMaster, Map<String, RpcInvocationHandler> mappings) {
             this.instanceId = instanceId;
             this.rpcMaster = rpcMaster;
             this.handlers = mappings;
         }
-        
+
         @Override
         public Map<String, Object> collect() {
             return collect(null);
         }
-        
+
         @Override
         public Map<String, Object> collect(Scope scope) {
             final Scope label = (scope == null) ? Scope.BASIC : scope;
@@ -261,32 +262,32 @@ public class OpflowCommander implements AutoCloseable {
                 public void transform(Map<String, Object> opts) {
                     OpflowEngine engine = rpcMaster.getEngine();
                     opts.put("instanceId", instanceId);
-                    
+
                     // rpcMaster information
                     MapBuilder mb1 = OpflowUtil.buildOrderedMap()
                             .put("instanceId", rpcMaster.getInstanceId())
                             .put("applicationId", engine.getApplicationId())
                             .put("exchangeName", engine.getExchangeName());
-                    
+
                     if (label == Scope.FULL) {
                         mb1.put("exchangeDurable", engine.getExchangeDurable());
                     }
-                    
+
                     mb1.put("routingKey", engine.getRoutingKey());
-                    
+
                     if (label == Scope.FULL) {
                         mb1.put("otherKeys", engine.getOtherKeys());
                     }
-                    
+
                     mb1.put("callbackQueue", rpcMaster.getCallbackName());
-                    
+
                     if (label == Scope.FULL) {
                         mb1.put("callbackDurable", rpcMaster.getCallbackDurable())
                                 .put("callbackExclusive", rpcMaster.getCallbackExclusive())
                                 .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete());
                     }
                     opts.put("rpcMaster", mb1.toMap());
-                    
+
                     // RPC mappings
                     if (label == Scope.FULL) {
                         List<Map<String, Object>> mappingInfos = new ArrayList<>();
@@ -299,7 +300,7 @@ public class OpflowCommander implements AutoCloseable {
                         }
                         opts.put("mappings", mappingInfos);
                     }
-                    
+
                     // request information
                     opts.put("request", OpflowUtil.buildOrderedMap()
                             .put("expiration", rpcMaster.getExpiration())
@@ -308,7 +309,7 @@ public class OpflowCommander implements AutoCloseable {
             }).toMap();
         }
     }
-    
+
     private class RpcInvocationHandler implements InvocationHandler {
         private final Class clazz;
         private final Object reserveWorker;
@@ -317,7 +318,7 @@ public class OpflowCommander implements AutoCloseable {
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
         private final OpflowRpcMaster rpcMaster;
         private final OpflowPubsubHandler publisher;
-        
+
         public RpcInvocationHandler(OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher, Class clazz, Object reserveWorker, boolean reserveWorkerEnabled) {
             this.clazz = clazz;
             this.reserveWorker = reserveWorker;
@@ -342,52 +343,67 @@ public class OpflowCommander implements AutoCloseable {
             this.rpcMaster = rpcMaster;
             this.publisher = publisher;
         }
-        
+
         public boolean hasReserveWorker() {
             return this.reserveWorker != null && this.reserveWorkerEnabled;
         }
-        
+
         public Set<String> getMethodNames() {
             return methodIsAsync.keySet();
         }
-        
+
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             final String pingSignature = OpflowRpcCheckerMaster.getSendMethodName();
+            final String requestId = OpflowUtil.getLogID();
+            final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
             String methodId = OpflowUtil.getMethodSignature(method);
             String routineId = aliasOfMethod.getOrDefault(methodId, methodId);
             Boolean isAsync = methodIsAsync.getOrDefault(methodId, false);
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logRequest.ready(LOG, "info")) LOG.info(logRequest
                     .put("methodId", methodId)
                     .put("routineId", routineId)
-                    .text("RpcInvocationHandler.invoke()")
+                    .put("isAsync", isAsync)
+                    .text("Req[${requestId}] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
                     .stringify());
-            
+
             if (args == null) args = new Object[0];
             String body = OpflowJsontool.toString(args);
-            
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+
+            if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("args", args)
                     .put("body", body)
-                    .text("RpcInvocationHandler.invoke() - request")
+                    .text("Req[${requestId}] - RpcInvocationHandler.invoke() details")
                     .stringify());
-            
-            if (this.publisher != null && isAsync && method.getReturnType() == void.class) {
-                this.publisher.publish(body);
+
+            if (this.publisher != null && isAsync && void.class.equals(method.getReturnType())) {
+                if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+                        .text("Req[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
+                        .stringify());
+                this.publisher.publish(body, OpflowUtil.buildMap()
+                        .put("requestId", requestId)
+                        .put("routineId", routineId)
+                        .toMap());
                 return null;
+            } else {
+                if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+                        .text("Req[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
+                        .stringify());
             }
-            
+
             // rpc switching
             if (rpcWatcher.isCongested() && !pingSignature.equals(routineId)) {
                 if (this.hasReserveWorker()) {
                     return method.invoke(this.reserveWorker, args);
                 }
             }
-            
+
             OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, OpflowUtil.buildMap()
-                    .put("progressEnabled", false).toMap());
+                    .put("requestId", requestId)
+                    .put("progressEnabled", false)
+                    .toMap());
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
-            
+
             if (rpcResult.isTimeout()) {
                 rpcWatcher.setCongested(true);
                 if (this.hasReserveWorker()) {
@@ -395,20 +411,20 @@ public class OpflowCommander implements AutoCloseable {
                 }
                 throw new OpflowRequestTimeoutException();
             }
-            
+
             if (rpcResult.isFailed()) {
                 Map<String, Object> errorMap = OpflowJsontool.toObjectMap(rpcResult.getErrorAsString());
                 throw rebuildInvokerException(errorMap);
             }
-            
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+
+            if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("returnType", method.getReturnType().getName())
                     .put("returnValue", rpcResult.getValueAsString())
-                    .text("RpcInvocationHandler.invoke() - response")
+                    .text("Req[${requestId}] - RpcInvocationHandler.invoke() return the output")
                     .stringify());
-            
+
             if (method.getReturnType() == void.class) return null;
-            
+
             return OpflowJsontool.toObject(rpcResult.getValueAsString(), method.getReturnType());
         }
     }
@@ -433,9 +449,9 @@ public class OpflowCommander implements AutoCloseable {
         }
         return new OpflowRequestFailureException();
     }
-    
-    private final Map<String, RpcInvocationHandler> handlers = new HashMap<>();
-    
+
+    private final Map<String, RpcInvocationHandler> handlers = new LinkedHashMap<>();
+
     private RpcInvocationHandler getInvocationHandler(Class clazz, Object bean) {
         validateType(clazz);
         String clazzName = clazz.getName();
@@ -452,13 +468,13 @@ public class OpflowCommander implements AutoCloseable {
         }
         return handlers.get(clazzName);
     }
-    
+
     private void removeInvocationHandler(Class clazz) {
         if (clazz == null) return;
         String clazzName = clazz.getName();
         handlers.remove(clazzName);
     }
-    
+
     private boolean validateType(Class type) {
         boolean ok = true;
         if (OpflowUtil.isGenericDeclaration(type.toGenericString())) {
@@ -483,11 +499,11 @@ public class OpflowCommander implements AutoCloseable {
         }
         return ok;
     }
-    
+
     public <T> T registerType(Class<T> type) {
         return registerType(type, null);
     }
-    
+
     public <T> T registerType(Class<T> type, T bean) {
         try {
             if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
@@ -510,18 +526,18 @@ public class OpflowCommander implements AutoCloseable {
             throw new OpflowInterceptionException(exception);
         }
     }
-    
+
     public <T> void unregisterType(Class<T> type) {
         removeInvocationHandler(type);
     }
-    
+
     private OpflowSourceRoutine extractMethodInfo(Method method) {
         if (!method.isAnnotationPresent(OpflowSourceRoutine.class)) return null;
         Annotation annotation = method.getAnnotation(OpflowSourceRoutine.class);
         OpflowSourceRoutine routine = (OpflowSourceRoutine) annotation;
         return routine;
     }
-    
+
     @Override
     protected void finalize() throws Throwable {
         exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.DEC);
