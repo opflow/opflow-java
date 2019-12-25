@@ -38,7 +38,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         } else {
             this.timeout = 0;
         }
-        logTracer = OpflowLogTracer.ROOT.branch("requestId", requestId);
+        logTracer = OpflowLogTracer.ROOT.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
         this.completeListener = completeListener;
         if (Boolean.TRUE.equals(opts.get("watcherEnabled")) && completeListener != null && this.timeout > 0) {
             timeoutWatcher = new OpflowTask.TimeoutWatcher(requestId, this.timeout, new OpflowTask.Listener() {

@@ -310,9 +310,9 @@ public class OpflowServerlet implements AutoCloseable {
                 @Override
                 public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
                     final String requestId = OpflowUtil.getRequestId(message.getInfo());
-                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId);
                     final String routineId = OpflowUtil.getRoutineId(message.getInfo());
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
+                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(message.getInfo()));
                     if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
                             .put("routineId", routineId)
                             .put("methodId", methodId)

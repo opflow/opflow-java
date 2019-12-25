@@ -21,6 +21,7 @@ public class OpflowRpcResponse {
     private final String workerTag;
     private final String replyQueueName;
     private final String requestId;
+    private final String messageScope;
     private final Boolean progressEnabled;
     
     public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String workerTag, String replyQueueName) {
@@ -29,7 +30,7 @@ public class OpflowRpcResponse {
         this.workerTag = workerTag;
         this.requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
         
-        logTracer = OpflowLogTracer.ROOT.branch("requestId", this.requestId);
+        logTracer = OpflowLogTracer.ROOT.branch("requestId", this.requestId, new OpflowLogTracer.OmitPingLogs(properties.getHeaders()));
         
         if (properties.getReplyTo() != null) {
             this.replyQueueName = properties.getReplyTo();
@@ -37,6 +38,7 @@ public class OpflowRpcResponse {
             this.replyQueueName = replyQueueName;
         }
         
+        this.messageScope = OpflowUtil.getOptionField(properties.getHeaders(), "messageScope", false);
         this.progressEnabled = (Boolean) OpflowUtil.getOptionField(properties.getHeaders(), "progressEnabled", null);
         
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
@@ -157,6 +159,9 @@ public class OpflowRpcResponse {
         headers.put("status", status);
         if (this.requestId != null) {
             headers.put("requestId", this.requestId);
+        }
+        if (this.messageScope != null) {
+            headers.put("messageScope", this.messageScope);
         }
         if (finished) {
             headers.put("workerTag", this.workerTag);

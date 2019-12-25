@@ -439,11 +439,11 @@ public class OpflowEngine implements AutoCloseable {
             }
             propBuilder.headers(headers);
             
-            String messageScope = OpflowUtil.getOptionField(headers, "messageScope", false);
+            if (OpflowLogTracer.has(LOG, "info")) {
+                logProduce = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+            }
             
-            if (OpflowLogTracer.has(LOG, "info")) logProduce = logTracer.branch("requestId", requestId);
-            
-            if (logProduce != null && OpflowLogTracer.has(LOG, "info")) LOG.info(logProduce
+            if (logProduce != null && logProduce.ready(LOG, "info")) LOG.info(logProduce
                     .put("appId", appId)
                     .put("customKey", customKey)
                     .text("Request[${requestId}] - Engine[${engineId}] - produce() is invoked")
@@ -455,14 +455,14 @@ public class OpflowEngine implements AutoCloseable {
             }
             _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), body);
         } catch (IOException exception) {
-            if (logProduce != null && OpflowLogTracer.has(LOG, "error")) LOG.error(logProduce
+            if (logProduce != null && logProduce.ready(LOG, "error")) LOG.error(logProduce
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Request[${requestId}] - produce() has failed")
                     .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (logProduce != null && OpflowLogTracer.has(LOG, "error")) LOG.error(logProduce
+            if (logProduce != null && logProduce.ready(LOG, "error")) LOG.error(logProduce
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Request[${requestId}] - produce() is timeout")
@@ -576,26 +576,25 @@ public class OpflowEngine implements AutoCloseable {
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
                     final String requestID = OpflowUtil.getRequestId(properties.getHeaders(), false);
-                    final String messageScope = OpflowUtil.getOptionField(properties.getHeaders(), "messageScope", false);
                     
-                    final OpflowLogTracer logRequest = logConsume.branch("requestId", requestID);
+                    final OpflowLogTracer logRequest = logConsume.branch("requestId", requestID, new OpflowLogTracer.OmitPingLogs(properties.getHeaders()));
                     
-                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logRequest
+                    if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .put("appId", properties.getAppId())
                             .put("deliveryTag", envelope.getDeliveryTag())
                             .put("consumerTag", consumerTag)
                             .text("Request[${requestId}] - Consumer[${consumerId}] receives a message")
                             .stringify());
                     
-                    if (OpflowLogTracer.has(LOG, "trace")) {
+                    if (logRequest != null && logRequest.ready(LOG, "trace")) {
                         if (body.length <= 4096) {
-                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logRequest
+                            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                     .put("bodyHead", new String(body, "UTF-8"))
                                     .put("bodyLength", body.length)
                                     .text("Request[${requestId}] body head (4096 bytes)")
                                     .stringify());
                         } else {
-                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logRequest
+                            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                     .put("bodyLength", body.length)
                                     .text("Request[${requestId}] body size too large (>4KB)")
                                     .stringify());
@@ -604,23 +603,23 @@ public class OpflowEngine implements AutoCloseable {
                     
                     try {
                         if (applicationId == null || applicationId.equals(properties.getAppId())) {
-                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logRequest
+                            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                     .text("Request[${requestId}] invoke listener.processMessage()")
                                     .stringify());
                             
                             boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
                             
                             if (captured) {
-                                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logRequest
+                                if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                                         .text("Request[${requestId}] has finished successfully")
                                         .stringify());
                             } else {
-                                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logRequest
+                                if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                                         .text("Request[${requestId}] has not matched the criteria, skipped")
                                         .stringify());
                             }
                             
-                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logRequest
+                            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                     .put("deliveryTag", envelope.getDeliveryTag())
                                     .put("consumerTag", consumerTag)
                                     .text("Request[${requestId}] invoke ACK")
@@ -628,7 +627,7 @@ public class OpflowEngine implements AutoCloseable {
                             
                             invokeAck(envelope, true);
                         } else {
-                            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logRequest
+                            if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                                     .put("applicationId", applicationId)
                                     .text("Request[${requestId}] has been rejected, mismatched applicationId")
                                     .stringify());
@@ -636,7 +635,7 @@ public class OpflowEngine implements AutoCloseable {
                         }
                     } catch (IOException ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
-                        if (OpflowLogTracer.has(LOG, "error")) LOG.error(logRequest
+                        if (logRequest != null && logRequest.ready(LOG, "error")) LOG.error(logRequest
                                 .put("deliveryTag", envelope.getDeliveryTag())
                                 .put("consumerTag", consumerTag)
                                 .put("exceptionClass", ex.getClass().getName())

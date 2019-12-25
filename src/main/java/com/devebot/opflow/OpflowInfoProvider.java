@@ -56,7 +56,9 @@ public class OpflowInfoProvider implements AutoCloseable {
     }
 
     public Map<String, Object> info() {
-        return infoCollector.collect(OpflowInfoCollector.Scope.FULL);
+        return OpflowUtil.buildOrderedMap()
+                .put("commander", infoCollector.collect(OpflowInfoCollector.Scope.FULL))
+                .toMap();
     }
     
     public OpflowRpcChecker.Info ping() {

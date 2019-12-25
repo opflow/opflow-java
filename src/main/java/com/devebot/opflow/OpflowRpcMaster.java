@@ -166,7 +166,9 @@ public class OpflowRpcMaster implements AutoCloseable {
 
                 String requestId = OpflowUtil.getRequestId(headers, true);
                 OpflowLogTracer logResult = null;
-                if (OpflowLogTracer.has(LOG, "info")) logResult = logSession.branch("requestId", requestId);
+                if (OpflowLogTracer.has(LOG, "info")) {
+                    logResult = logSession.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                }
 
                 if (logResult != null && logResult.ready(LOG, "info")) LOG.info(logResult
                         .put("correlationId", taskId)
@@ -248,7 +250,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         final String requestId = requestIdVal.toString();
         
-        final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
+        final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
         
         if (routineId != null) {
             options.put("routineId", routineId);
