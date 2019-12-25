@@ -255,7 +255,7 @@ public class OpflowCommander implements AutoCloseable {
         
         @Override
         public Map<String, Object> collect(Scope scope) {
-            final Scope label = (scope == null)? Scope.BASIC : scope;
+            final Scope label = (scope == null) ? Scope.BASIC : scope;
             return OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
                 @Override
                 public void transform(Map<String, Object> opts) {
@@ -290,7 +290,7 @@ public class OpflowCommander implements AutoCloseable {
                     // RPC mappings
                     if (label == Scope.FULL) {
                         List<Map<String, Object>> mappingInfos = new ArrayList<>();
-                        for(Map.Entry<String, RpcInvocationHandler> entry:handlers.entrySet()) {
+                        for(Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
                             mappingInfos.add(OpflowUtil.buildOrderedMap()
                                     .put("class", entry.getKey())
                                     .put("methods", entry.getValue().getMethodNames())
