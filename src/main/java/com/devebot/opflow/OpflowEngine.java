@@ -439,9 +439,11 @@ public class OpflowEngine implements AutoCloseable {
             }
             propBuilder.headers(headers);
             
+            String messageScope = OpflowUtil.getOptionField(headers, "messageScope", false);
+            
             if (OpflowLogTracer.has(LOG, "info")) logProduce = logTracer.branch("requestId", requestId);
             
-            if (OpflowLogTracer.has(LOG, "info") && logProduce != null) LOG.info(logProduce
+            if (logProduce != null && OpflowLogTracer.has(LOG, "info")) LOG.info(logProduce
                     .put("appId", appId)
                     .put("customKey", customKey)
                     .text("Request[${requestId}] - Engine[${engineId}] - produce() is invoked")
@@ -453,14 +455,14 @@ public class OpflowEngine implements AutoCloseable {
             }
             _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), body);
         } catch (IOException exception) {
-            if (OpflowLogTracer.has(LOG, "error") && logProduce != null) LOG.error(logProduce
+            if (logProduce != null && OpflowLogTracer.has(LOG, "error")) LOG.error(logProduce
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Request[${requestId}] - produce() has failed")
                     .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (OpflowLogTracer.has(LOG, "error") && logProduce != null) LOG.error(logProduce
+            if (logProduce != null && OpflowLogTracer.has(LOG, "error")) LOG.error(logProduce
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Request[${requestId}] - produce() is timeout")
@@ -574,6 +576,7 @@ public class OpflowEngine implements AutoCloseable {
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
                     final String requestID = OpflowUtil.getRequestId(properties.getHeaders(), false);
+                    final String messageScope = OpflowUtil.getOptionField(properties.getHeaders(), "messageScope", false);
                     
                     final OpflowLogTracer logRequest = logConsume.branch("requestId", requestID);
                     

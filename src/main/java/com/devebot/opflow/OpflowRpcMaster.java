@@ -168,30 +168,30 @@ public class OpflowRpcMaster implements AutoCloseable {
                 OpflowLogTracer logResult = null;
                 if (OpflowLogTracer.has(LOG, "info")) logResult = logSession.branch("requestId", requestId);
 
-                if (OpflowLogTracer.has(LOG, "info") && logResult != null) LOG.info(logResult
+                if (logResult != null && logResult.ready(LOG, "info")) LOG.info(logResult
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - task[${correlationId}] receives a result")
                         .stringify());
 
-                if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
+                if (logResult != null && logResult.ready(LOG, "debug")) LOG.debug(logResult
                         .put("bodyLength", (content != null ? content.length : -1))
                         .text("initCallbackConsumer() - result body length")
                         .stringify());
 
                 OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
-                    if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
+                    if (logResult != null && logResult.ready(LOG, "debug")) LOG.debug(logResult
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - task[${correlationId}] not found, skipped")
                         .stringify());
                 } else {
-                    if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
+                    if (logResult != null && logResult.ready(LOG, "debug")) LOG.debug(logResult
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - push Message object to task[${correlationId}]")
                         .stringify());
                     OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                     task.push(message);
-                    if (OpflowLogTracer.has(LOG, "debug") && logResult != null) LOG.debug(logResult
+                    if (logResult != null && logResult.ready(LOG, "debug")) LOG.debug(logResult
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - returned value of task[${correlationId}]")
                         .stringify());
@@ -275,7 +275,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             @Override
             public void handleEvent() {
                 lock.lock();
-                if (OpflowLogTracer.has(LOG, "debug") && logRequest != null) logTask = logRequest.copy();
+                if (logRequest != null && logRequest.ready(LOG, "debug")) logTask = logRequest.copy();
                 try {
                     tasks.remove(taskId);
                     if (tasks.isEmpty()) {
@@ -284,7 +284,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                         }
                         idle.signal();
                     }
-                    if (logTask != null && OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTask
+                    if (logTask != null && logTask.ready(LOG, "debug")) LOG.debug(logTask
                             .put("taskId", taskId)
                             .put("taskListSize", tasks.size())
                             .text("Request[${requestId}] - RpcMaster[${rpcMasterId}]"
@@ -307,6 +307,10 @@ public class OpflowRpcMaster implements AutoCloseable {
         headers.put("requestId", task.getRequestId());
         headers.put("routineId", task.getRoutineId());
         
+        if (options.containsKey("messageScope")) {
+            headers.put("messageScope", options.get("messageScope"));
+        }
+        
         if (options.get("progressEnabled") instanceof Boolean) {
             headers.put("progressEnabled", options.get("progressEnabled"));
         }
@@ -315,12 +319,12 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .correlationId(taskId);
         
         if (!consumerInfo.isFixedQueue()) {
-            if (OpflowLogTracer.has(LOG, "trace") && logRequest != null) LOG.trace(logRequest
+            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("replyTo", consumerInfo.getQueueName())
                     .text("Request[${requestId}] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
                     .stringify());
         } else {
-            if (OpflowLogTracer.has(LOG, "trace") && logRequest != null) LOG.trace(logRequest
+            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("replyTo", consumerInfo.getQueueName())
                     .text("Request[${requestId}] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
                     .stringify());

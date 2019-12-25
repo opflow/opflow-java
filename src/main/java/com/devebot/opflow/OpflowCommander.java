@@ -211,6 +211,7 @@ public class OpflowCommander implements AutoCloseable {
             Date startTime = new Date();
             OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, OpflowUtil.buildMap()
                     .put("requestId", requestId)
+                    .put("messageScope", "internal")
                     .put("progressEnabled", false)
                     .toMap());
             Date endTime = new Date();

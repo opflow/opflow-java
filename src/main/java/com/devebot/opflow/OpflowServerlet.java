@@ -313,7 +313,7 @@ public class OpflowServerlet implements AutoCloseable {
                     final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId);
                     final String routineId = OpflowUtil.getRoutineId(message.getInfo());
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(listenerTrail
+                    if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
                             .put("routineId", routineId)
                             .put("methodId", methodId)
                             .text("Request[${requestId}] - Receives new method call")
@@ -328,7 +328,7 @@ public class OpflowServerlet implements AutoCloseable {
                         }
                         
                         String json = message.getBodyAsString();
-                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(listenerTrail
+                        if (listenerTrail.ready(LOG, "trace")) LOG.trace(listenerTrail
                                 .put("arguments", json)
                                 .text("Request[${requestId}] - Method arguments in json string")
                                 .stringify());
@@ -364,13 +364,13 @@ public class OpflowServerlet implements AutoCloseable {
                         }
                         
                         String result = OpflowJsontool.toString(returnValue);
-                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(listenerTrail
+                        if (listenerTrail.ready(LOG, "trace")) LOG.trace(listenerTrail
                                 .put("return", OpflowUtil.truncate(result))
                                 .text("Request[${requestId}] - Return the output of the method")
                                 .stringify());
                         response.emitCompleted(result);
                         
-                        if (OpflowLogTracer.has(LOG, "info")) LOG.info(listenerTrail
+                        if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
                             .text("Request[${requestId}] - Method call has completed")
                             .stringify());
                     } catch (JsonSyntaxException error) {

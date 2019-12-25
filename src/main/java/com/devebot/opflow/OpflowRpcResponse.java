@@ -39,7 +39,7 @@ public class OpflowRpcResponse {
         
         this.progressEnabled = (Boolean) OpflowUtil.getOptionField(properties.getHeaders(), "progressEnabled", null);
         
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .put("workerTag", this.workerTag)
                 .put("replyTo", this.replyQueueName)
                 .put("progressEnabled", this.progressEnabled)
@@ -68,7 +68,7 @@ public class OpflowRpcResponse {
     }
     
     public void emitStarted(String content) {
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .put("body", content)
                 .text("Request[${requestId}] - emitStarted()")
                 .stringify());
@@ -78,7 +78,7 @@ public class OpflowRpcResponse {
     public void emitStarted(byte[] info) {
         if (info == null) info = new byte[0];
         basicPublish(info, createProperties(properties, createHeaders("started")).build());
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .put("bodyLength", info.length)
                 .text("Request[${requestId}] - emitStarted()")
                 .stringify());
@@ -97,14 +97,14 @@ public class OpflowRpcResponse {
         String result;
         if (jsonData == null) {
             result = "{ \"percent\": " + percent + " }";
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                     .put("body", result)
                     .put("bodyLength", result.length())
                     .text("Request[${requestId}] - emitProgress()")
                     .stringify());
         } else {
             result = "{ \"percent\": " + percent + ", \"data\": " + jsonData + "}";
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                     .put("bodyLength", result.length())
                     .text("Request[${requestId}] - emitProgress()")
                     .stringify());
@@ -119,7 +119,7 @@ public class OpflowRpcResponse {
     public void emitFailed(byte[] error) {
         if (error == null) error = new byte[0];
         basicPublish(error, createProperties(properties, createHeaders("failed", true)).build());
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .put("bodyLength", error.length)
                 .text("Request[${requestId}] - emitFailed()")
                 .stringify());
@@ -132,7 +132,7 @@ public class OpflowRpcResponse {
     public void emitCompleted(byte[] result) {
         if (result == null) result = new byte[0];
         basicPublish(result, createProperties(properties, createHeaders("completed", true)).build());
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .put("bodyLength", result.length)
                 .text("Request[${requestId}] - emitCompleted()")
                 .stringify());

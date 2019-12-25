@@ -136,11 +136,14 @@ public class OpflowRpcWorker implements AutoCloseable {
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, workerTag, queueName);
                 String routineId = OpflowUtil.getRoutineId(properties.getHeaders(), false);
                 String requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
+                String messageScope = OpflowUtil.getOptionField(properties.getHeaders(), "messageScope", false);
 
                 OpflowLogTracer logRequest = null;
-                if (OpflowLogTracer.has(LOG, "info")) logRequest = logProcess.branch("requestId", requestId);
+                if (OpflowLogTracer.has(LOG, "info")) {
+                    logRequest = logProcess.branch("requestId", requestId);
+                }
 
-                if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                         .put("routineId", routineId)
                         .text("Request[${requestId}] - Consumer[${consumerId}] receives a new RPC request")
                         .stringify());
@@ -153,7 +156,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
-                if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                         .text("Request[${requestId}] - RPC request processing has completed")
                         .stringify());
                 return count > 0;
