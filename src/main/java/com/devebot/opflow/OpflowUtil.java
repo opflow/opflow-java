@@ -417,4 +417,12 @@ public class OpflowUtil {
     public static String hidePasswordInUri(String uri) {
         return passwordPattern.matcher(uri).replaceAll(":******@");
     }
+    
+    public static boolean isAMQPEntrypointNull(Map<String, Object> cfg) {
+        return cfg.get("exchangeName") == null || cfg.get("routingKey") == null;
+    }
+    
+    public static String getAMQPEntrypointCode(Map<String, Object> cfg) {
+        return cfg.get("exchangeName").toString() + cfg.get("routingKey").toString();
+    }
 }

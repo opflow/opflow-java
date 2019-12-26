@@ -82,28 +82,28 @@ public class OpflowCommander implements AutoCloseable {
         HashSet<String> checkExchange = new HashSet<>();
 
         if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
-            if (configurerCfg.get("exchangeName") == null || configurerCfg.get("routingKey") == null) {
+            if (OpflowUtil.isAMQPEntrypointNull(configurerCfg)) {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
             }
-            if (!checkExchange.add(configurerCfg.get("exchangeName").toString() + configurerCfg.get("routingKey").toString())) {
+            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(configurerCfg))) {
                 throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
             }
         }
 
         if (rpcMasterCfg != null && !Boolean.FALSE.equals(rpcMasterCfg.get("enabled"))) {
-            if (rpcMasterCfg.get("exchangeName") == null || rpcMasterCfg.get("routingKey") == null) {
+            if (OpflowUtil.isAMQPEntrypointNull(rpcMasterCfg)) {
                 throw new OpflowBootstrapException("Invalid RpcMaster connection parameters");
             }
-            if (!checkExchange.add(rpcMasterCfg.get("exchangeName").toString() + rpcMasterCfg.get("routingKey").toString())) {
+            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(rpcMasterCfg))) {
                 throw new OpflowBootstrapException("Duplicated RpcMaster connection parameters");
             }
         }
 
         if (publisherCfg != null && !Boolean.FALSE.equals(publisherCfg.get("enabled"))) {
-            if (publisherCfg.get("exchangeName") == null || publisherCfg.get("routingKey") == null) {
+            if (OpflowUtil.isAMQPEntrypointNull(publisherCfg)) {
                 throw new OpflowBootstrapException("Invalid Publisher connection parameters");
             }
-            if (!checkExchange.add(publisherCfg.get("exchangeName").toString() + publisherCfg.get("routingKey").toString())) {
+            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(publisherCfg))) {
                 throw new OpflowBootstrapException("Duplicated Publisher connection parameters");
             }
         }

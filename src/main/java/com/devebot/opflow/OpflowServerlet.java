@@ -62,10 +62,10 @@ public class OpflowServerlet implements AutoCloseable {
         HashSet<String> checkRecyclebin = new HashSet<>();
         
         if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
-            if (configurerCfg.get("exchangeName") == null || configurerCfg.get("routingKey") == null) {
+            if (OpflowUtil.isAMQPEntrypointNull(configurerCfg)) {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
             } 
-            if (!checkExchange.add(configurerCfg.get("exchangeName").toString() + configurerCfg.get("routingKey").toString())) {
+            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(configurerCfg))) {
                 throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
             }
             if (configurerCfg.get("subscriberName") != null && !checkQueue.add(configurerCfg.get("subscriberName").toString())) {
@@ -75,10 +75,10 @@ public class OpflowServerlet implements AutoCloseable {
         }
 
         if (rpcWorkerCfg != null && !Boolean.FALSE.equals(rpcWorkerCfg.get("enabled"))) {
-            if (rpcWorkerCfg.get("exchangeName") == null || rpcWorkerCfg.get("routingKey") == null) {
+            if (OpflowUtil.isAMQPEntrypointNull(rpcWorkerCfg)) {
                 throw new OpflowBootstrapException("Invalid RpcWorker connection parameters");
             }
-            if (!checkExchange.add(rpcWorkerCfg.get("exchangeName").toString() + rpcWorkerCfg.get("routingKey").toString())) {
+            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(rpcWorkerCfg))) {
                 throw new OpflowBootstrapException("Duplicated RpcWorker connection parameters");
             }
             if (rpcWorkerCfg.get("operatorName") != null && !checkQueue.add(rpcWorkerCfg.get("operatorName").toString())) {
@@ -90,10 +90,10 @@ public class OpflowServerlet implements AutoCloseable {
         }
         
         if (subscriberCfg != null && !Boolean.FALSE.equals(subscriberCfg.get("enabled"))) {
-            if (subscriberCfg.get("exchangeName") == null || subscriberCfg.get("routingKey") == null) {
+            if (OpflowUtil.isAMQPEntrypointNull(subscriberCfg)) {
                 throw new OpflowBootstrapException("Invalid Subscriber connection parameters");
             }
-            if (!checkExchange.add(subscriberCfg.get("exchangeName").toString() + subscriberCfg.get("routingKey").toString())) {
+            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(subscriberCfg))) {
                 throw new OpflowBootstrapException("Duplicated Subscriber connection parameters");
             }
             if (subscriberCfg.get("subscriberName") != null && !checkQueue.add(subscriberCfg.get("subscriberName").toString())) {
