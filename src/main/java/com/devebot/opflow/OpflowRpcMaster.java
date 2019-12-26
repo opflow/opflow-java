@@ -69,10 +69,23 @@ public class OpflowRpcMaster implements AutoCloseable {
             expiration = 0;
         }
         
-        boolean _responseNamePostfixed = Boolean.TRUE.equals(params.get("responseNamePostfixed"));
+        String responseQueuePattern = null;
+        if (params.get("responseQueueSuffix") instanceof String) {
+            responseQueuePattern = (String) params.get("responseQueueSuffix");
+        }
+        
+        String responseQueueSuffix = null;
+        if (responseQueuePattern != null && responseQueuePattern.length() > 0) {
+            if (responseQueuePattern.equals("~")) {
+                responseQueueSuffix = OpflowUtil.getUUID();
+            } else {
+                responseQueueSuffix = responseQueuePattern;
+            }
+        }
+        
         String _responseName = (String) params.get("responseName");
         if (_responseName != null) {
-            responseName = _responseNamePostfixed ? _responseName + '_' + OpflowUtil.getUUID() : _responseName;
+            responseName = responseQueueSuffix != null ? _responseName + '_' + responseQueueSuffix : _responseName;
         } else {
             responseName = null;
         }
@@ -80,19 +93,19 @@ public class OpflowRpcMaster implements AutoCloseable {
         if (params.get("responseDurable") != null && params.get("responseDurable") instanceof Boolean) {
             responseDurable = (Boolean) params.get("responseDurable");
         } else {
-            responseDurable = _responseNamePostfixed ? false : null;
+            responseDurable = responseQueueSuffix != null ? false : null;
         }
         
         if (params.get("responseExclusive") != null && params.get("responseExclusive") instanceof Boolean) {
             responseExclusive = (Boolean) params.get("responseExclusive");
         } else {
-            responseExclusive = _responseNamePostfixed ? true : null;
+            responseExclusive = responseQueueSuffix != null ? true : null;
         }
         
         if (params.get("responseAutoDelete") != null && params.get("responseAutoDelete") instanceof Boolean) {
             responseAutoDelete = (Boolean) params.get("responseAutoDelete");
         } else {
-            responseAutoDelete = _responseNamePostfixed ? true : null;
+            responseAutoDelete = responseQueueSuffix != null ? true : null;
         }
         
         if (responseName != null) {

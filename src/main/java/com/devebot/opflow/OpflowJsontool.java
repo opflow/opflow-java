@@ -7,6 +7,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.JsonReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -52,6 +56,14 @@ public class OpflowJsontool {
     
     public static <T> T toObject(String json, Class<T> type) {
         return GSON.fromJson(json, type);
+    }
+    
+    public static <T> T toObject(InputStream inputStream, Class<T> type) {
+        try {
+        return GSON.fromJson(new JsonReader(new InputStreamReader(inputStream, "UTF-8")), type);
+        } catch (UnsupportedEncodingException exception) {
+            throw new OpflowJsonTransformationException(exception);
+        }
     }
     
     public static <T> T toObject(OpflowMessage message, Class<T> type) {
