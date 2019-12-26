@@ -939,11 +939,22 @@ public class OpflowEngine implements AutoCloseable {
     
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
+            producingConnection = factory.newConnection();
+            producingConnection.setId(OpflowUtil.getLogID());
+            producingConnection.addShutdownListener(new ShutdownListener() {
+                @Override
+                public void shutdownCompleted(ShutdownSignalException sse) {
+                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                            .put("connectionId", producingConnection.getId())
+                            .text("Engine[${engineId}] producingConnection[${connectionId}] has been shutdown")
+                            .stringify(true));
+                }
+            });
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedProducingConnectionCreated")
-                    .text("Engine[${engineId}] shared producingConnection is created")
-                    .stringify());
-            producingConnection = factory.newConnection();
+                    .put("connectionId", producingConnection.getId())
+                    .text("Engine[${engineId}]shared producingConnection[${connectionId}] is created")
+                    .stringify(true));
             exporter.incEngineConnectionGauge(factory, "producing");
         }
         return producingConnection;
@@ -963,7 +974,8 @@ public class OpflowEngine implements AutoCloseable {
             });
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedProducingChannelCreated")
-                    .text("Engine[${engineId}] shared producingChannel is created")
+                    .put("channelNumber", producingChannel.getChannelNumber())
+                    .text("Engine[${engineId}] shared producingChannel[${channelNumber}] is created")
                     .stringify());
         }
         return producingChannel;
@@ -978,11 +990,21 @@ public class OpflowEngine implements AutoCloseable {
             return factory.newConnection();
         }
         if (consumingConnection == null || !consumingConnection.isOpen()) {
+            consumingConnection = factory.newConnection();
+            consumingConnection.setId(OpflowUtil.getLogID());
+            consumingConnection.addShutdownListener(new ShutdownListener() {
+                @Override
+                public void shutdownCompleted(ShutdownSignalException sse) {
+                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                            .put("connectionId", consumingConnection.getId())
+                            .text("Engine[${engineId}] consumingConnection[${connectionId}] has been shutdown")
+                            .stringify(true));
+                }
+            });
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedConsumingConnectionCreated")
                     .text("Engine[${engineId}] shared consumingConnection is created")
-                    .stringify());
-            consumingConnection = factory.newConnection();
+                    .stringify(true));
             exporter.incEngineConnectionGauge(factory, "consuming");
         }
         return consumingConnection;
