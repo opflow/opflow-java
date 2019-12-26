@@ -517,10 +517,11 @@ public class OpflowServerlet implements AutoCloseable {
                     for (Method method : methods) {
                         String methodId = OpflowUtil.getMethodSignature(method);
                         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                                .put("rpcWorkerId", rpcWorker.getIntanceId())
                                 .put("routineId", methodId)
                                 .put("methodId", methodId)
-                                .tags("Attach method to RpcWorker listener")
-                                .text("Attach method to RpcWorker listener")
+                                .tags("attach-method-to-RpcWorker-listener")
+                                .text("Attach the method[" + methodId + "] to the listener of RpcWorker[${rpcWorkerId}]")
                                 .stringify());
                         if (!routineIds.add(methodId) && !method.equals(methodRef.get(methodId))) {
                             throw new OpflowInterceptionException("routineId[" + methodId + "] is conflicted");

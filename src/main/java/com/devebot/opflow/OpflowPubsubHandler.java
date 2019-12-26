@@ -122,20 +122,23 @@ public class OpflowPubsubHandler implements AutoCloseable {
             options.put("requestId", requestId = OpflowUtil.getLogID());
         }
         
-        Map<String, Object> override = new HashMap<>();
-        if (routingKey != null) {
-            override.put("routingKey", routingKey);
-        }
-        
         OpflowLogTracer logPublish = null;
         if (logTracer.ready(LOG, "info")) {
             logPublish = logTracer.branch("requestId", requestId);
         }
-
-        if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
-                .put("routingKey", routingKey)
-                .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() - routingKey: ${routingKey}")
-                .stringify());
+        
+        Map<String, Object> override = new HashMap<>();
+        if (routingKey != null) {
+            override.put("routingKey", routingKey);
+            if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
+                    .put("routingKey", routingKey)
+                    .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() with overridden routingKey: ${routingKey}")
+                    .stringify());
+        } else {
+            if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
+                    .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish()")
+                    .stringify());
+        }
         
         engine.produce(body, options, override);
         

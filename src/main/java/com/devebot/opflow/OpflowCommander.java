@@ -364,7 +364,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("methodId", methodId)
                     .put("routineId", routineId)
                     .put("isAsync", isAsync)
-                    .text("Req[${requestId}] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
+                    .text("Request[${requestId}] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
                     .stringify());
 
             if (args == null) args = new Object[0];
@@ -373,12 +373,12 @@ public class OpflowCommander implements AutoCloseable {
             if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("args", args)
                     .put("body", body)
-                    .text("Req[${requestId}] - RpcInvocationHandler.invoke() details")
+                    .text("Request[${requestId}] - RpcInvocationHandler.invoke() details")
                     .stringify());
 
             if (this.publisher != null && isAsync && void.class.equals(method.getReturnType())) {
                 if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                        .text("Req[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
+                        .text("Request[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
                 this.publisher.publish(body, OpflowUtil.buildMap()
                         .put("requestId", requestId)
@@ -387,7 +387,7 @@ public class OpflowCommander implements AutoCloseable {
                 return null;
             } else {
                 if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                        .text("Req[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
+                        .text("Request[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
                         .stringify());
             }
 
@@ -420,7 +420,7 @@ public class OpflowCommander implements AutoCloseable {
             if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("returnType", method.getReturnType().getName())
                     .put("returnValue", rpcResult.getValueAsString())
-                    .text("Req[${requestId}] - RpcInvocationHandler.invoke() return the output")
+                    .text("Request[${requestId}] - RpcInvocationHandler.invoke() return the output")
                     .stringify());
 
             if (method.getReturnType() == void.class) return null;

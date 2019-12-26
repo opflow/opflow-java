@@ -10,6 +10,9 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.ShutdownListener;
 import com.rabbitmq.client.ShutdownSignalException;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +27,6 @@ import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowKeytool;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 
 /**
  *
@@ -957,7 +957,7 @@ public class OpflowEngine implements AutoCloseable {
                 public void shutdownCompleted(ShutdownSignalException sse) {
                     if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                             .put("channelNumber", producingChannel.getChannelNumber())
-                            .text("Engine[${engineId}] producingChannel has been shutdown")
+                            .text("Engine[${engineId}] producingChannel[${channelNumber}] has been shutdown")
                             .stringify());
                 }
             });
@@ -1006,7 +1006,7 @@ public class OpflowEngine implements AutoCloseable {
                 public void shutdownCompleted(ShutdownSignalException sse) {
                     if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                             .put("channelNumber", consumingChannel.getChannelNumber())
-                            .text("Engine[${engineId}] consumingChannel has been shutdown")
+                            .text("Engine[${engineId}] consumingChannel[${channelNumber}] has been shutdown")
                             .stringify());
                 }
             });
@@ -1031,7 +1031,7 @@ public class OpflowEngine implements AutoCloseable {
                     .put("exchangeName", _exchangeName)
                     .put("queueName", _queueName)
                     .put("routingKey", _routingKey)
-                    .text("Binds Exchange to Queue")
+                    .text("Engine[${engineId}] binds Exchange[${exchangeName}] to Queue[${queueName}] with routingKey[${routingKey}]")
                     .stringify());
         }
     }
