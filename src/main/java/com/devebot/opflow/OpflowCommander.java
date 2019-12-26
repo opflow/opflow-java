@@ -63,7 +63,7 @@ public class OpflowCommander implements AutoCloseable {
         commanderId = OpflowUtil.getOptionField(kwargs, "commanderId", true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", commanderId);
 
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new()")
                 .stringify());
 
@@ -141,7 +141,7 @@ public class OpflowCommander implements AutoCloseable {
 
         exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
 
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new() end!")
                 .stringify());
     }
@@ -182,7 +182,7 @@ public class OpflowCommander implements AutoCloseable {
 
     @Override
     public final void close() {
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close()")
                 .stringify());
 
@@ -192,7 +192,7 @@ public class OpflowCommander implements AutoCloseable {
         if (rpcMaster != null) rpcMaster.close();
         if (configurer != null) configurer.close();
 
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close() has done!")
                 .stringify());
     }
@@ -332,7 +332,7 @@ public class OpflowCommander implements AutoCloseable {
                         throw new OpflowInterceptionException("Alias[" + alias + "]/routineId[" + methodId + "] is duplicated");
                     }
                     aliasOfMethod.put(methodId, alias);
-                    if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                             .put("alias", alias)
                             .put("routineId", methodId)
                             .text("link alias to routineId")
@@ -455,12 +455,12 @@ public class OpflowCommander implements AutoCloseable {
     private RpcInvocationHandler getInvocationHandler(Class clazz, Object bean) {
         validateType(clazz);
         String clazzName = clazz.getName();
-        if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                 .put("className", clazzName)
                 .text("getInvocationHandler() get InvocationHandler by type")
                 .stringify());
         if (!handlers.containsKey(clazzName)) {
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
@@ -479,7 +479,7 @@ public class OpflowCommander implements AutoCloseable {
         boolean ok = true;
         if (OpflowUtil.isGenericDeclaration(type.toGenericString())) {
             ok = false;
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                     .put("typeString", type.toGenericString())
                     .text("generic types are unsupported")
                     .stringify());
@@ -488,7 +488,7 @@ public class OpflowCommander implements AutoCloseable {
         for(Method method:methods) {
             if (OpflowUtil.isGenericDeclaration(method.toGenericString())) {
                 ok = false;
-                if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+                if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                         .put("methodString", method.toGenericString())
                         .text("generic methods are unsupported")
                         .stringify());
@@ -506,19 +506,19 @@ public class OpflowCommander implements AutoCloseable {
 
     public <T> T registerType(Class<T> type, T bean) {
         try {
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                     .put("className", type.getName())
                     .put("classLoaderName", type.getClassLoader().getClass().getName())
                     .text("registerType() calls newProxyInstance()")
                     .stringify());
             T t = (T) Proxy.newProxyInstance(type.getClassLoader(), new Class[] {type}, getInvocationHandler(type, bean));
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                     .put("className", type.getName())
                     .text("newProxyInstance() has completed")
                     .stringify());
             return t;
         } catch (IllegalArgumentException exception) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("newProxyInstance() has failed")

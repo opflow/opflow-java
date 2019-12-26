@@ -44,7 +44,7 @@ public class OpflowServerlet implements AutoCloseable {
         serverletId = OpflowUtil.getOptionField(this.kwargs, "serverletId", true);
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", serverletId);
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].new()")
                 .stringify());
         
@@ -104,7 +104,7 @@ public class OpflowServerlet implements AutoCloseable {
         
         checkRecyclebin.retainAll(checkQueue);
         if (!checkRecyclebin.isEmpty()) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                 .text("duplicated_recyclebin_queue_name").toString());
             throw new OpflowBootstrapException("Invalid recyclebinName (duplicated with some queueNames)");
         }
@@ -113,7 +113,7 @@ public class OpflowServerlet implements AutoCloseable {
             if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
                 String pubsubHandlerId = OpflowUtil.getLogID();
                 configurerCfg.put("pubsubHandlerId", pubsubHandlerId);
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new configurer")
                         .stringify());
@@ -123,7 +123,7 @@ public class OpflowServerlet implements AutoCloseable {
             if (rpcWorkerCfg != null && !Boolean.FALSE.equals(rpcWorkerCfg.get("enabled"))) {
                 String rpcWorkerId = OpflowUtil.getLogID();
                 rpcWorkerCfg.put("rpcWorkerId", rpcWorkerId);
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("rpcWorkerId", rpcWorkerId)
                         .text("Serverlet[${serverletId}] creates a new rpcWorker")
                         .stringify());
@@ -133,7 +133,7 @@ public class OpflowServerlet implements AutoCloseable {
             if (subscriberCfg != null && !Boolean.FALSE.equals(subscriberCfg.get("enabled"))) {
                 String pubsubHandlerId = OpflowUtil.getLogID();
                 subscriberCfg.put("pubsubHandlerId", pubsubHandlerId);
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new subscriber")
                         .stringify());
@@ -154,13 +154,13 @@ public class OpflowServerlet implements AutoCloseable {
         
         exporter.changeComponentInstance("serverletId", serverletId, OpflowExporter.GaugeAction.INC);
 
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
     }
     
     public final void start() {
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].start()")
                 .stringify());
         
@@ -185,7 +185,7 @@ public class OpflowServerlet implements AutoCloseable {
         
         this.instantiateType(OpflowRpcCheckerWorker.class);
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].start() has completed!")
                 .stringify());
     }
@@ -218,7 +218,7 @@ public class OpflowServerlet implements AutoCloseable {
     
     @Override
     public final void close() {
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].close()")
                 .stringify());
         
@@ -226,7 +226,7 @@ public class OpflowServerlet implements AutoCloseable {
         if (rpcWorker != null) rpcWorker.close();
         if (subscriber != null) subscriber.close();
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].close() has completed!")
                 .stringify());
     }
@@ -484,7 +484,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowInterceptionException("The [type] parameter must not be null");
             }
             if (Modifier.isAbstract(type.getModifiers()) && target == null) {
-                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                         .text("Class should not be an abstract type")
                         .stringify());
                 throw new OpflowInterceptionException("Class should not be an abstract type");
@@ -502,7 +502,7 @@ public class OpflowServerlet implements AutoCloseable {
                                         " is conflicted with alias of routineId[" + methodOfAlias.get(alias) + "]");
                             }
                             methodOfAlias.put(alias, methodId);
-                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+                            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                                     .put("alias", alias)
                                     .put("routineId", methodId)
                                     .text("link alias to routineId")
@@ -516,7 +516,7 @@ public class OpflowServerlet implements AutoCloseable {
                     Method[] methods = clz.getDeclaredMethods();
                     for (Method method : methods) {
                         String methodId = OpflowUtil.getMethodSignature(method);
-                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+                        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                                 .put("routineId", methodId)
                                 .put("methodId", methodId)
                                 .tags("Attach method to RpcWorker listener")
@@ -530,28 +530,28 @@ public class OpflowServerlet implements AutoCloseable {
                     }
                 }
             } catch (InstantiationException except) {
-                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                         .put("errorType", except.getClass().getName())
                         .put("errorMessage", except.getMessage())
                         .text("Could not instantiate the class")
                         .stringify());
                 throw new OpflowInterceptionException("Could not instantiate the class", except);
             } catch (IllegalAccessException except) {
-                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                         .put("errorType", except.getClass().getName())
                         .put("errorMessage", except.getMessage())
                         .text("Constructor is not accessible")
                         .stringify());
                 throw new OpflowInterceptionException("Constructor is not accessible", except);
             } catch (SecurityException except) {
-                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                         .put("errorType", except.getClass().getName())
                         .put("errorMessage", except.getMessage())
                         .text("Class loaders is not the same or denies access")
                         .stringify());
                 throw new OpflowInterceptionException("Class loaders is not the same or denies access", except);
             } catch (Exception except) {
-                if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+                if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                         .put("errorType", except.getClass().getName())
                         .put("errorMessage", except.getMessage())
                         .text("Unknown exception")

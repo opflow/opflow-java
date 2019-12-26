@@ -45,7 +45,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
                 @Override
                 public void handleEvent() {
                     OpflowLogTracer logWatcher = null;
-                    if (OpflowLogTracer.has(LOG, "debug")) {
+                    if (logTracer.ready(LOG, "debug")) {
                         logWatcher = logTracer.copy();
                     }
                     if (logWatcher != null && logWatcher.ready(LOG, "debug")) LOG.debug(logWatcher
@@ -117,7 +117,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         checkTimestamp();
         if(isDone(message)) {
             OpflowLogTracer pushTrail = null;
-            if (OpflowLogTracer.has(LOG, "debug")) {
+            if (logTracer.ready(LOG, "debug")) {
                 pushTrail = logTracer.copy();
             }
             if (pushTrail != null && pushTrail.ready(LOG, "debug")) LOG.debug(pushTrail

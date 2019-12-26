@@ -99,13 +99,13 @@ public class OpflowTask {
                 if (tasks == null || tasks.isEmpty()) return;
                 long current = OpflowUtil.getCurrentTime();
                 OpflowLogTracer logTask = logTracer.branch("timestamp", current);
-                if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTask
+                if (logTask.ready(LOG, "debug")) LOG.debug(logTask
                         .put("taskListSize", tasks.size())
                         .put("threadCount", Thread.activeCount())
                         .text("Monitor[${monitorId}].run(), tasks: ${taskListSize}, threads: ${threadCount}")
                         .stringify());
                 for (String key : tasks.keySet()) {
-                    if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTask
+                    if (logTask.ready(LOG, "trace")) LOG.trace(logTask
                             .put("taskId", key)
                             .text("run() examine the task[${taskId}]")
                             .stringify());
@@ -113,7 +113,7 @@ public class OpflowTask {
                     if (task == null) continue;
                     long _timeout = task.getTimeout();
                     if (_timeout <= 0) _timeout = timeout;
-                    if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTask
+                    if (logTask.ready(LOG, "trace")) LOG.trace(logTask
                             .put("taskId", key)
                             .put("monitorTimeout", timeout)
                             .put("taskTimeout", task.getTimeout())
@@ -125,14 +125,14 @@ public class OpflowTask {
                         if (diff > _timeout) {
                             tasks.remove(key);
                             task.raiseTimeout();
-                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTask
+                            if (logTask.ready(LOG, "trace")) LOG.trace(logTask
                                     .put("taskId", key)
                                     .put("diff", diff)
                                     .put("timeout", _timeout)
                                     .text("run() task[${taskId}] is timeout (diff: ${diff} > ${timeout}), rejected")
                                     .stringify());
                         } else {
-                            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTask
+                            if (logTask.ready(LOG, "trace")) LOG.trace(logTask
                                     .put("taskId", key)
                                     .text("run() task[${taskId}] is good, keep running")
                                     .stringify());
@@ -160,7 +160,7 @@ public class OpflowTask {
             this.timeout = timeout;
             this.monitorId = (monitorId != null) ? monitorId : OpflowUtil.getLogID();
             logTracer = OpflowLogTracer.ROOT.branch("monitorId", this.monitorId);
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                     .put("interval", this.interval)
                     .put("timeout", this.timeout)
                     .text("Monitor[${monitorId}] has been created with interval: ${interval}, timeout: ${timeout}")
@@ -168,17 +168,17 @@ public class OpflowTask {
         }
         
         public void start() {
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                     .text("Monitor.start()")
                     .stringify());
             if (interval > 0) {
                 timer.scheduleAtFixedRate(timerTask, 0, interval);
-                if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+                if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                         .put("interval", interval)
                         .text("Monitor has been started with interval: ${interval}")
                         .stringify());
             } else {
-                if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+                if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                         .put("interval", interval)
                         .text("Monitor is not available. undefined interval")
                         .stringify());
@@ -186,7 +186,7 @@ public class OpflowTask {
         }
         
         public void stop() {
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                     .text("Monitor.stop()")
                     .stringify());
             timer.cancel();
@@ -227,10 +227,10 @@ public class OpflowTask {
                 try {
                     Thread.sleep(interval);
                     count += interval;
-                    if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                             .text("TimeoutWatcher is interrupted")
                             .stringify());
-                    if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                             .put("count", count)
                             .put("max", max)
                             .text("TimeoutWatcher.listener is requested")
@@ -239,7 +239,7 @@ public class OpflowTask {
                         if (this.listener != null) {
                             listener.handleEvent();
                         }
-                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+                        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                                 .text("TimeoutWatcher.listener is requested")
                                 .stringify());
                         this.interrupt();
@@ -254,7 +254,7 @@ public class OpflowTask {
 
         public void close() {
             this.done = true;
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                     .text("TimeoutWatcher is closed gracefully")
                     .stringify());
         }

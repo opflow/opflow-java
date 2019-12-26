@@ -46,7 +46,7 @@ public class OpflowBuilder {
     }
     
     public static OpflowRpcMaster createRpcMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", configFile)
                 .text("Create new OpflowRpcMaster with properties file")
                 .stringify());
@@ -66,7 +66,7 @@ public class OpflowBuilder {
         
         transformParameters(params);
         
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .text("OpflowRpcMaster has been created successfully")
                 .stringify());
         
@@ -86,7 +86,7 @@ public class OpflowBuilder {
     }
     
     public static OpflowRpcWorker createRpcWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", configFile)
                 .text("Create new OpflowRpcWorker with properties file")
                 .stringify());
@@ -110,7 +110,7 @@ public class OpflowBuilder {
         
         transformParameters(params);
         
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .text("OpflowRpcWorker has been created successfully")
                 .stringify());
         
@@ -130,7 +130,7 @@ public class OpflowBuilder {
     }
     
     public static OpflowPubsubHandler createPubsubHandler(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", configFile)
                 .text("Create new OpflowPubsubHandler with properties file")
                 .stringify());
@@ -156,7 +156,7 @@ public class OpflowBuilder {
         
         transformParameters(params);
         
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .text("OpflowPubsubHandler has been created successfully")
                 .stringify());
         
@@ -314,7 +314,7 @@ public class OpflowBuilder {
                 URL url = getConfigurationUrl(configFile);
                 if (url != null) {
                     String ext = getConfigurationExtension(url);
-                    if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+                    if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                             .put("configFile", url.getFile())
                             .put("extension", ext)
                             .text("load configuration file")
@@ -332,7 +332,7 @@ public class OpflowBuilder {
                     throw new FileNotFoundException("configuration file '" + configFile + "' not found");
                 }
             }
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+            if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                     .put("YAML", OpflowJsontool.toString(config))
                     .text("loaded properties content")
                     .stringify());
@@ -355,13 +355,13 @@ public class OpflowBuilder {
         if (cfgFromSystem == null) {
             cfgFromSystem = OpflowUtil.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
         }
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", cfgFromSystem)
                 .text("detected configuration file")
                 .stringify());
         if (cfgFromSystem == null) {
             url = OpflowUtil.getResource(DEFAULT_CONFIGURATION_FILE);
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+            if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", url)
                 .text("default configuration url")
                 .stringify());
@@ -374,7 +374,7 @@ public class OpflowBuilder {
                 url = OpflowUtil.getResource(cfgFromSystem);
             }
         }
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", url)
                 .text("final configuration url")
                 .stringify());
@@ -509,7 +509,7 @@ public class OpflowBuilder {
                     try {
                         params.put(key, Integer.parseInt(params.get(key).toString()));
                     } catch (NumberFormatException nfe) {
-                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+                        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                                 .put("fieldName", key)
                                 .text("transformParameters() - field is not an integer")
                                 .stringify());
@@ -522,7 +522,7 @@ public class OpflowBuilder {
                     try {
                         params.put(key, Long.parseLong(params.get(key).toString()));
                     } catch (NumberFormatException nfe) {
-                        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(LOG_TRACER
+                        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                                 .put("fieldName", key)
                                 .text("transformParameters() - field is not a longint")
                                 .stringify());

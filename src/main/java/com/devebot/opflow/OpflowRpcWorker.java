@@ -34,7 +34,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", rpcWorkerId);
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].new()")
                 .stringify());
         
@@ -62,7 +62,7 @@ public class OpflowRpcWorker implements AutoCloseable {
             executor.assertQueue(responseName);
         }
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("operatorName", operatorName)
                 .put("responseName", responseName)
                 .tags("RpcWorker.new() parameters")
@@ -73,7 +73,7 @@ public class OpflowRpcWorker implements AutoCloseable {
 
         exporter.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowExporter.GaugeAction.INC);
 
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].new() end!")
                 .stringify());
     }
@@ -115,7 +115,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     public OpflowEngine.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
         final String _consumerId = OpflowUtil.getLogID();
         final OpflowLogTracer logProcess = logTracer.branch("consumerId", _consumerId);
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logProcess
+        if (logProcess.ready(LOG, "info")) LOG.info(logProcess
                 .text("Consumer[${consumerId}] - RpcWorker[${rpcWorkerId}].process() is invoked")
                 .stringify());
         
@@ -138,7 +138,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 String requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
 
                 OpflowLogTracer logRequest = null;
-                if (OpflowLogTracer.has(LOG, "info")) {
+                if (logProcess.ready(LOG, "info")) {
                     logRequest = logProcess.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(properties.getHeaders()));
                 }
 
@@ -169,7 +169,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 opts.put("binding", Boolean.TRUE);
             }
         }).toMap());
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logProcess
+        if (logProcess.ready(LOG, "info")) LOG.info(logProcess
                 .text("Consumer[${consumerId}] - process() has completed")
                 .stringify());
         return consumerInfo;
@@ -188,14 +188,14 @@ public class OpflowRpcWorker implements AutoCloseable {
     
     @Override
     public void close() {
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].close()")
                 .stringify());
         if (engine != null) {
             engine.cancelConsumer(consumerInfo);
             engine.close();
         }
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].close() has completed")
                 .stringify());
     }

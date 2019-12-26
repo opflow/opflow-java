@@ -69,7 +69,7 @@ public class OpflowEngine implements AutoCloseable {
         engineId = OpflowUtil.getOptionField(params, "engineId", true);
         logTracer = OpflowLogTracer.ROOT.branch("engineId", engineId);
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Engine[${engineId}].new()")
                 .stringify());
         
@@ -113,13 +113,13 @@ public class OpflowEngine implements AutoCloseable {
             
             if (threadExecutor != null) {
                 factory.setSharedExecutor(threadExecutor);
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .put("threadPoolType", threadPoolType)
                     .put("threadPoolSize", threadPoolSize)
                     .text("Engine[${engineId}] use SharedExecutor type: ${threadPoolType} / ${threadPoolSize}")
                     .stringify());
             } else {
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .put("threadPoolType", threadPoolType)
                     .put("threadPoolSize", threadPoolSize)
                     .text("Engine[${engineId}] use default SharedExecutor")
@@ -129,7 +129,7 @@ public class OpflowEngine implements AutoCloseable {
             String uri = (String) params.get("uri");
             if (uri != null && uri.length() > 0) {
                 factory.setUri(uri);
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("uri", OpflowUtil.hidePasswordInUri(uri))
                         .text("Engine[${engineId}] make connection using URI: ${uri}")
                         .stringify());
@@ -157,7 +157,7 @@ public class OpflowEngine implements AutoCloseable {
                     factory.setPassword(password = (String) params.get("password"));
                 }
                 
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .put("host", host)
                     .put("port", port)
                     .put("virtualHost", virtualHost)
@@ -212,7 +212,7 @@ public class OpflowEngine implements AutoCloseable {
             String pkcs12File = null;
             if (params.get("pkcs12File") instanceof String) {
                 pkcs12File = (String) params.get("pkcs12File");
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("pkcs12File", pkcs12File)
                         .text("Engine[${engineId}] - PKCS12 file: ${pkcs12File}")
                         .stringify());
@@ -221,7 +221,7 @@ public class OpflowEngine implements AutoCloseable {
             String pkcs12Passphrase = null;
             if (params.get("pkcs12Passphrase") instanceof String) {
                 pkcs12Passphrase = (String) params.get("pkcs12Passphrase");
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("pkcs12Passphrase", OpflowUtil.maskPassword(pkcs12Passphrase))
                         .text("Engine[${engineId}] - PKCS12 passphrase: ${pkcs12Passphrase}")
                         .stringify());
@@ -230,7 +230,7 @@ public class OpflowEngine implements AutoCloseable {
             String caCertFile = null;
             if (params.get("caCertFile") instanceof String) {
                 caCertFile = (String) params.get("caCertFile");
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("caCertFile", caCertFile)
                         .text("Engine[${engineId}] - CA file: ${caCertFile}")
                         .stringify());
@@ -239,7 +239,7 @@ public class OpflowEngine implements AutoCloseable {
             String serverCertFile = null;
             if (params.get("serverCertFile") instanceof String) {
                 serverCertFile = (String) params.get("serverCertFile");
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("serverCertFile", serverCertFile)
                         .text("Engine[${engineId}] - server certificate file: ${serverCertFile}")
                         .stringify());
@@ -248,7 +248,7 @@ public class OpflowEngine implements AutoCloseable {
             String trustStoreFile = null;
             if (params.get("trustStoreFile") instanceof String) {
                 trustStoreFile = (String) params.get("trustStoreFile");
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("trustStoreFile", trustStoreFile)
                         .text("Engine[${engineId}] - trust keystore file: ${trustStoreFile}")
                         .stringify());
@@ -257,7 +257,7 @@ public class OpflowEngine implements AutoCloseable {
             String trustPassphrase = null;
             if (params.get("trustPassphrase") instanceof String) {
                 trustPassphrase = (String) params.get("trustPassphrase");
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("trustPassphrase", OpflowUtil.maskPassword(trustPassphrase))
                         .text("Engine[${engineId}] - trust keystore passphrase: ${trustPassphrase}")
                         .stringify());
@@ -277,16 +277,16 @@ public class OpflowEngine implements AutoCloseable {
 
             if (sslContext != null) {
                 factory.useSslProtocol(sslContext);
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("Engine[${engineId}] use SSL Protocol")
                     .stringify());
             } else {
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("Engine[${engineId}] SSL context is empty")
                     .stringify());
             }
 
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .put("channelMax", channelMax)
                     .put("frameMax", frameMax)
                     .put("heartbeat", heartbeat)
@@ -304,7 +304,7 @@ public class OpflowEngine implements AutoCloseable {
 
             this.assertConnection();
         } catch (IOException | URISyntaxException | KeyManagementException | NoSuchAlgorithmException | TimeoutException exception) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Engine[${engineId}] newConnection() has failed, exception[${exceptionClass}]: ${exceptionMessage}")
@@ -343,7 +343,7 @@ public class OpflowEngine implements AutoCloseable {
                 applicationId = (String) params.get("applicationId");
             }
             
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("exchangeName", exchangeName)
                         .put("exchangeType", exchangeType)
                         .put("exchangeDurable", exchangeDurable)
@@ -353,14 +353,14 @@ public class OpflowEngine implements AutoCloseable {
                         .text("Engine[${engineId}] exchangeName: '${exchangeName}' and routingKeys: ${routingKey}")
                         .stringify());
         } catch (IOException exception) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Engine[${engineId}] exchangeDeclare has failed, exception[${exceptionClass}]: ${exceptionMessage}")
                     .stringify());
             throw new OpflowBootstrapException("exchangeDeclare has failed", exception);
         } catch (TimeoutException exception) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Engine[${engineId}] exchangeDeclare is timeout, exception[${exceptionClass}]: ${exceptionMessage}")
@@ -368,7 +368,7 @@ public class OpflowEngine implements AutoCloseable {
             throw new OpflowBootstrapException("it maybe too slow or unstable network", exception);
         }
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Engine[${engineId}].new() end!")
                 .stringify());
         
@@ -439,7 +439,7 @@ public class OpflowEngine implements AutoCloseable {
             }
             propBuilder.headers(headers);
             
-            if (OpflowLogTracer.has(LOG, "info")) {
+            if (logTracer.ready(LOG, "info")) {
                 logProduce = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
             }
             
@@ -476,7 +476,7 @@ public class OpflowEngine implements AutoCloseable {
         final String _consumerId = OpflowUtil.getOptionField(opts, "consumerId", true);
         final OpflowLogTracer logConsume = logTracer.branch("consumerId", _consumerId);
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logConsume
+        if (logConsume.ready(LOG, "info")) LOG.info(logConsume
                 .text("Consumer[${consumerId}].consume() is invoked in Engine[${engineId}]")
                 .stringify());
         try {
@@ -509,14 +509,14 @@ public class OpflowEngine implements AutoCloseable {
             }
             _queueName = _declareOk.getQueue();
             final Integer _consumerLimit = (Integer) opts.get("consumerLimit");
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logConsume
+            if (logConsume.ready(LOG, "trace")) LOG.trace(logConsume
                     .put("consumerCount", _declareOk.getConsumerCount())
                     .put("consumerLimit", _consumerLimit)
                     .text("Consumer[${consumerId}].consume() - consumerCount(${consumerCount})/consumerLimit(${consumerLimit})")
                     .stringify());
             if (_consumerLimit != null && _consumerLimit > 0) {
                 if (_declareOk.getConsumerCount() >= _consumerLimit) {
-                    if (OpflowLogTracer.has(LOG, "error")) LOG.error(logConsume
+                    if (logConsume.ready(LOG, "error")) LOG.error(logConsume
                             .put("consumerCount", _declareOk.getConsumerCount())
                             .put("consumerLimit", _consumerLimit)
                             .text("Consumer[${consumerId}].consume() - consumerCount exceed limit")
@@ -650,7 +650,7 @@ public class OpflowEngine implements AutoCloseable {
                 
                 @Override
                 public void handleCancelOk(String consumerTag) {
-                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logConsume
+                    if (logConsume.ready(LOG, "info")) LOG.info(logConsume
                             .put("consumerTag", consumerTag)
                             .text("Consumer[${consumerId}].consume() - handle CancelOk event")
                             .stringify());
@@ -658,7 +658,7 @@ public class OpflowEngine implements AutoCloseable {
                 
                 @Override
                 public void handleShutdownSignal(String consumerTag, ShutdownSignalException sig) {
-                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logConsume
+                    if (logConsume.ready(LOG, "info")) LOG.info(logConsume
                             .put("consumerTag", consumerTag)
                             .text("Consumer[${consumerId}].consume() - handle ShutdownSignal event")
                             .stringify());
@@ -667,7 +667,7 @@ public class OpflowEngine implements AutoCloseable {
             
             final String _consumerTag = _channel.basicConsume(_queueName, _autoAck, _consumer);
             
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logConsume
+            if (logConsume.ready(LOG, "info")) LOG.info(logConsume
                     .put("queueName", _queueName)
                     .put("consumerTag", _consumerTag)
                     .put("channelNumber", _channel.getChannelNumber())
@@ -678,14 +678,14 @@ public class OpflowEngine implements AutoCloseable {
             if ("engine".equals(mode)) consumerInfos.add(info);
             return info;
         } catch(IOException exception) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logConsume
+            if (logConsume.ready(LOG, "error")) LOG.error(logConsume
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Consumer[${consumerId}].consume() - has failed")
                     .stringify());
             throw new OpflowOperationException(exception);
         } catch(TimeoutException exception) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logConsume
+            if (logConsume.ready(LOG, "error")) LOG.error(logConsume
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Consumer[${consumerId}].consume() - is timeout")
@@ -717,20 +717,20 @@ public class OpflowEngine implements AutoCloseable {
         if (consumerInfo == null) return;
         final OpflowLogTracer logCancel = logTracer.branch("consumerId", consumerInfo.getConsumerId());
         try {
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logCancel
+            if (logCancel.ready(LOG, "debug")) LOG.debug(logCancel
                     .put("queueName", consumerInfo.getQueueName())
                     .text("Consumer[${consumerId}].cancelConsumer() - consumer will be cancelled")
                     .stringify());
 
             consumerInfo.getChannel().basicCancel(consumerInfo.getConsumerTag());
 
-            if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logCancel
+            if (logCancel.ready(LOG, "debug")) LOG.debug(logCancel
                     .text("Consumer[${consumerId}].cancelConsumer() - consumer has been cancelled")
                     .stringify());
 
             if (!consumerInfo.isSharedConnection() || !consumerInfo.isSharedChannel()) {
                 if (consumerInfo.getChannel() != null && consumerInfo.getChannel().isOpen()) {
-                    if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logCancel
+                    if (logCancel.ready(LOG, "debug")) LOG.debug(logCancel
                             .tags("sharedConsumingChannelClosed")
                             .text("Consumer[${consumerId}] shared consumingChannel is closing")
                             .stringify());
@@ -740,7 +740,7 @@ public class OpflowEngine implements AutoCloseable {
 
             if (!consumerInfo.isSharedConnection()) {
                 if (consumerInfo.getConnection() != null && consumerInfo.getConnection().isOpen()) {
-                    if (OpflowLogTracer.has(LOG, "debug")) LOG.debug(logCancel
+                    if (logCancel.ready(LOG, "debug")) LOG.debug(logCancel
                             .tags("sharedConsumingConnectionClosed")
                             .text("Consumer[${consumerId}] shared consumingConnection is closing")
                             .stringify());
@@ -748,13 +748,13 @@ public class OpflowEngine implements AutoCloseable {
                 }
             }
         } catch (IOException ex) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logCancel
+            if (logCancel.ready(LOG, "error")) LOG.error(logCancel
                     .put("exceptionClass", ex.getClass().getName())
                     .put("exceptionMessage", ex.getMessage())
                     .text("Consumer[${consumerId}].cancelConsumer() - has failed")
                     .stringify());
         } catch (TimeoutException ex) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logCancel
+            if (logCancel.ready(LOG, "error")) LOG.error(logCancel
                     .put("exceptionClass", ex.getClass().getName())
                     .put("exceptionMessage", ex.getMessage())
                     .text("Consumer[${consumerId}].cancelConsumer() - is timeout")
@@ -868,18 +868,18 @@ public class OpflowEngine implements AutoCloseable {
     @Override
     public void close() {
         try {
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Engine[${engineId}].close() - close producingChannel, producingConnection")
                 .stringify());
             if (producingChannel != null && producingChannel.isOpen()) {
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .tags("sharedProducingChannelClosed")
                         .text("Engine[${engineId}].close() shared producingChannel is closing")
                         .stringify());
                 producingChannel.close();
             }
             if (producingConnection != null && producingConnection.isOpen()) {
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .tags("sharedProducingConnectionClosed")
                         .text("Engine[${engineId}].close() shared producingConnection is closing")
                         .stringify());
@@ -887,7 +887,7 @@ public class OpflowEngine implements AutoCloseable {
             }
             
             if ("engine".equals(mode)) {
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("mode", mode)
                         .text("Engine[${engineId}].close() - cancel consumers")
                         .stringify());
@@ -897,18 +897,18 @@ public class OpflowEngine implements AutoCloseable {
                 consumerInfos.clear();
             }
             
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Engine[${engineId}].close() - close consumingChannel, consumingConnection")
                 .stringify());
             if (consumingChannel != null && consumingChannel.isOpen()) {
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .tags("sharedConsumingChannelClosed")
                         .text("Engine[${engineId}].close() shared consumingChannel is closing")
                         .stringify());
                 consumingChannel.close();
             }
             if (consumingConnection != null && consumingConnection.isOpen()) {
-                if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .tags("sharedConsumingConnectionClosed")
                         .text("Engine[${engineId}].close() shared consumingConnection is closing")
                         .stringify());
@@ -916,12 +916,12 @@ public class OpflowEngine implements AutoCloseable {
             }
 
         } catch (IOException exception) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                     .text("Engine[${engineId}].close() has failed")
                     .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                     .text("Engine[${engineId}].close() is timeout")
                     .stringify());
             throw new OpflowOperationException(exception);
@@ -939,7 +939,7 @@ public class OpflowEngine implements AutoCloseable {
     
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedProducingConnectionCreated")
                     .text("Engine[${engineId}] shared producingConnection is created")
                     .stringify());
@@ -955,13 +955,13 @@ public class OpflowEngine implements AutoCloseable {
             producingChannel.addShutdownListener(new ShutdownListener() {
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                             .put("channelNumber", producingChannel.getChannelNumber())
                             .text("Engine[${engineId}] producingChannel has been shutdown")
                             .stringify());
                 }
             });
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedProducingChannelCreated")
                     .text("Engine[${engineId}] shared producingChannel is created")
                     .stringify());
@@ -971,14 +971,14 @@ public class OpflowEngine implements AutoCloseable {
     
     private Connection getConsumingConnection(boolean forceNewConnection) throws IOException, TimeoutException {
         if (forceNewConnection) {
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("privateConsumingConnectionCreated")
                     .text("Engine[${engineId}] private consumingConnection is created")
                     .stringify());
             return factory.newConnection();
         }
         if (consumingConnection == null || !consumingConnection.isOpen()) {
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedConsumingConnectionCreated")
                     .text("Engine[${engineId}] shared consumingConnection is created")
                     .stringify());
@@ -993,7 +993,7 @@ public class OpflowEngine implements AutoCloseable {
             return getConsumingConnection(forceNewConnection).createChannel();
         }
         if (forceNewChannel) {
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("privateConsumingChannelCreated")
                     .text("Engine[${engineId}] private consumingChannel is created")
                     .stringify());
@@ -1004,13 +1004,13 @@ public class OpflowEngine implements AutoCloseable {
             consumingChannel.addShutdownListener(new ShutdownListener() {
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                             .put("channelNumber", consumingChannel.getChannelNumber())
                             .text("Engine[${engineId}] consumingChannel has been shutdown")
                             .stringify());
                 }
             });
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedConsumingChannelCreated")
                     .text("Engine[${engineId}] shared consumingChannel is created")
                     .stringify());
@@ -1027,7 +1027,7 @@ public class OpflowEngine implements AutoCloseable {
         _channel.queueDeclarePassive(_queueName);
         for (String _routingKey : keys) {
             _channel.queueBind(_queueName, _exchangeName, _routingKey);
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                     .put("exchangeName", _exchangeName)
                     .put("queueName", _queueName)
                     .put("routingKey", _routingKey)

@@ -50,7 +50,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", rpcMasterId);
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new()")
                 .stringify());
         
@@ -119,7 +119,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             monitorTimeout = 0;
         }
 
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("responseName", responseName)
                 .put("responseDurable", responseDurable)
                 .put("responseExclusive", responseExclusive)
@@ -136,7 +136,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.INC);
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
                 .stringify());
     }
@@ -148,7 +148,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean forked) {
         final String _consumerId = OpflowUtil.getLogID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSession
+        if (logSession.ready(LOG, "info")) LOG.info(logSession
                 .put("forked", forked)
                 .text("initCallbackConsumer() is invoked")
                 .stringify());
@@ -166,7 +166,7 @@ public class OpflowRpcMaster implements AutoCloseable {
 
                 String requestId = OpflowUtil.getRequestId(headers, true);
                 OpflowLogTracer logResult = null;
-                if (OpflowLogTracer.has(LOG, "info")) {
+                if (logSession.ready(LOG, "info")) {
                     logResult = logSession.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                 }
 
@@ -358,36 +358,36 @@ public class OpflowRpcMaster implements AutoCloseable {
     @Override
     public void close() {
         lock.lock();
-        if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - obtain the lock")
                 .stringify());
         try {
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - check tasks.isEmpty()? and await...")
                 .stringify());
             while(!tasks.isEmpty()) idle.await();
             
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - cancel responseConsumer")
                 .stringify());
             if (responseConsumer != null) engine.cancelConsumer(responseConsumer);
             
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - stop timeoutMonitor")
                 .stringify());
             if (timeoutMonitor != null) timeoutMonitor.stop();
             
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - close broker/engine")
                 .stringify());
             if (engine != null) engine.close();
         } catch(InterruptedException ex) {
-            if (OpflowLogTracer.has(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - an interruption has been raised")
                 .stringify());
         } finally {
             lock.unlock();
-            if (OpflowLogTracer.has(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - lock has been released")
                 .stringify());
         }

@@ -36,7 +36,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         final String pubsubHandlerId = OpflowUtil.getOptionField(params, "pubsubHandlerId", true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", pubsubHandlerId);
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new()")
                 .stringify());
         
@@ -79,7 +79,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("subscriberName", subscriberName)
                 .put("recyclebinName", recyclebinName)
                 .put("prefetch", prefetch)
@@ -89,7 +89,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 .text("PubsubHandler[${pubsubHandlerId}].new() parameters")
                 .stringify());
         
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new() end!")
                 .stringify());
     }
@@ -128,7 +128,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         }
         
         OpflowLogTracer logPublish = null;
-        if (OpflowLogTracer.has(LOG, "info")) {
+        if (logTracer.ready(LOG, "info")) {
             logPublish = logTracer.branch("requestId", requestId);
         }
 
@@ -147,18 +147,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
     public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener newListener) {
         final String _consumerId = OpflowUtil.getLogID();
         final OpflowLogTracer logSubscribe = logTracer.branch("consumerId", _consumerId);
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSubscribe
+        if (logSubscribe.ready(LOG, "info")) LOG.info(logSubscribe
                 .text("Consumer[${consumerId}] - PubsubHandler[${pubsubHandlerId}].subscribe() is invoked")
                 .stringify());
         
         listener = (listener != null) ? listener : newListener;
         if (listener == null) {
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSubscribe
+            if (logSubscribe.ready(LOG, "info")) LOG.info(logSubscribe
                     .text("Consumer[${consumerId}] - subscribe() failed: PubsubListener should not be null")
                     .stringify());
             throw new IllegalArgumentException("PubsubListener should not be null");
         } else if (listener != newListener) {
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSubscribe
+            if (logSubscribe.ready(LOG, "info")) LOG.info(logSubscribe
                     .text("Consumer[${consumerId}] - subscribe() failed: supports only single PubsubListener")
                     .stringify());
             throw new OpflowOperationException("PubsubHandler supports only single PubsubListener");
@@ -171,13 +171,15 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 Map<String, Object> headers = properties.getHeaders();
                 String requestId = OpflowUtil.getRequestId(headers, true);
                 OpflowLogTracer logRequest = null;
-                if (OpflowLogTracer.has(LOG, "info")) logRequest = logSubscribe.branch("requestId", requestId);
-                if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                if (logSubscribe.ready(LOG, "info")) {
+                    logRequest = logSubscribe.branch("requestId", requestId);
+                }
+                if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                         .text("Request[${requestId}] - Consumer[${consumerId}].subscribe() receives a new request")
                         .stringify());
                 try {
                     listener.processMessage(new OpflowMessage(content, headers));
-                    if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                    if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .text("Request[${requestId}] - subscribe() request processing has completed")
                             .stringify());
                 } catch (Exception exception) {
@@ -191,26 +193,26 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     AMQP.BasicProperties.Builder propBuilder = copyBasicProperties(properties);
                     AMQP.BasicProperties props = propBuilder.headers(headers).build();
                     
-                    if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                    if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .put("redeliveredCount", redeliveredCount)
                             .put("redeliveredLimit", redeliveredLimit)
                             .text("Request[${requestId}] - subscribe() recycling failed request")
                             .stringify());
                     
                     if (redeliveredCount <= redeliveredLimit) {
-                        if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                        if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                                 .text("Request[${requestId}] - subscribe() requeue failed request")
                                 .stringify());
                         sendToQueue(content, props, subscriberName, channel);
                     } else {
                         if (recyclebinName != null) {
                             sendToQueue(content, props, recyclebinName, channel);
-                            if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                            if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                                     .put("recyclebinName", recyclebinName)
                                     .text("Request[${requestId}] - subscribe() enqueue failed request to recyclebin")
                                     .stringify());
                         } else {
-                            if (OpflowLogTracer.has(LOG, "info") && logRequest != null) LOG.info(logRequest
+                            if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                                     .text("Request[${requestId}] - subscribe() discard failed request (recyclebin not found)")
                                     .stringify());
                         }
@@ -229,7 +231,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
             }
         }).toMap());
         consumerInfos.add(consumer);
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logSubscribe
+        if (logSubscribe.ready(LOG, "info")) LOG.info(logSubscribe
                 .text("Consumer[${consumerId}] - subscribe() has completed")
                 .stringify());
         return consumer;
@@ -237,7 +239,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     
     @Override
     public void close() {
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].close()")
                 .stringify());
         if (engine != null) {
@@ -249,7 +251,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
             consumerInfos.clear();
             engine.close();
         }
-        if (OpflowLogTracer.has(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].close() has completed")
                 .stringify());
     }
