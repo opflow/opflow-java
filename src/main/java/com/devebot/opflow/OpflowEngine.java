@@ -586,19 +586,17 @@ public class OpflowEngine implements AutoCloseable {
                             .text("Request[${requestId}] - Consumer[${consumerId}] receives a message")
                             .stringify());
                     
-                    if (logRequest != null && logRequest.ready(LOG, "trace")) {
-                        if (body.length <= 4096) {
-                            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                                    .put("bodyHead", new String(body, "UTF-8"))
-                                    .put("bodyLength", body.length)
-                                    .text("Request[${requestId}] body head (4096 bytes)")
-                                    .stringify());
-                        } else {
-                            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                                    .put("bodyLength", body.length)
-                                    .text("Request[${requestId}] body size too large (>4KB)")
-                                    .stringify());
-                        }
+                    if (body.length <= 4096) {
+                        if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+                                .put("bodyHead", new String(body, "UTF-8"))
+                                .put("bodyLength", body.length)
+                                .text("Request[${requestId}] body head (4096 bytes)")
+                                .stringify());
+                    } else {
+                        if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+                                .put("bodyLength", body.length)
+                                .text("Request[${requestId}] body size too large (>4KB)")
+                                .stringify());
                     }
                     
                     try {

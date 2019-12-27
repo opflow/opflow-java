@@ -107,7 +107,7 @@ public class OpflowTask {
                 for (String key : tasks.keySet()) {
                     if (logTask.ready(LOG, "trace")) LOG.trace(logTask
                             .put("taskId", key)
-                            .text("run() examine the task[${taskId}]")
+                            .text("Monitor[${monitorId}].run() examine the task[${taskId}]")
                             .stringify());
                     Timeoutable task = tasks.get(key);
                     if (task == null) continue;
@@ -118,7 +118,7 @@ public class OpflowTask {
                             .put("monitorTimeout", timeout)
                             .put("taskTimeout", task.getTimeout())
                             .put("timeout", _timeout)
-                            .text("run() task[${taskId}]'s timeout: ${taskTimeout} | ${monitorTimeout} ~ ${timeout}")
+                            .text("Monitor[${monitorId}].run() task[${taskId}]'s timeout: ${taskTimeout} | ${monitorTimeout} ~ ${timeout}")
                             .stringify());
                     if (_timeout > 0) {
                         long diff = current - task.getTimestamp();
@@ -129,12 +129,12 @@ public class OpflowTask {
                                     .put("taskId", key)
                                     .put("diff", diff)
                                     .put("timeout", _timeout)
-                                    .text("run() task[${taskId}] is timeout (diff: ${diff} > ${timeout}), rejected")
+                                    .text("Monitor[${monitorId}].run() task[${taskId}] is timeout (diff: ${diff} > ${timeout}), rejected")
                                     .stringify());
                         } else {
                             if (logTask.ready(LOG, "trace")) LOG.trace(logTask
                                     .put("taskId", key)
-                                    .text("run() task[${taskId}] is good, keep running")
+                                    .text("Monitor[${monitorId}].run() task[${taskId}] is good, keep running")
                                     .stringify());
                         }
                     }
@@ -169,25 +169,25 @@ public class OpflowTask {
         
         public void start() {
             if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
-                    .text("Monitor.start()")
+                    .text("Monitor[${monitorId}].start()")
                     .stringify());
             if (interval > 0) {
                 timer.scheduleAtFixedRate(timerTask, 0, interval);
                 if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                         .put("interval", interval)
-                        .text("Monitor has been started with interval: ${interval}")
+                        .text("Monitor[${monitorId}] has been started with interval: ${interval}")
                         .stringify());
             } else {
                 if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                         .put("interval", interval)
-                        .text("Monitor is not available. undefined interval")
+                        .text("Monitor[${monitorId}] is not available (the interval is undefined)")
                         .stringify());
             }
         }
         
         public void stop() {
             if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
-                    .text("Monitor.stop()")
+                    .text("Monitor[${monitorId}].stop()")
                     .stringify());
             timer.cancel();
             timer.purge();
