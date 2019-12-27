@@ -29,7 +29,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final Lock lock = new ReentrantLock();
     private final Condition idle = lock.newCondition();
     
-    private final ReentrantReadWriteLock rwlock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock pushLock = new ReentrantReadWriteLock();
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
@@ -258,7 +258,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     }
     
     public OpflowRpcRequest request(final String routineId, byte[] body, Map<String, Object> options) {
-        ReentrantReadWriteLock.ReadLock rl = rwlock.readLock();
+        ReentrantReadWriteLock.ReadLock rl = pushLock.readLock();
         try {
             rl.lock();
             return _request(routineId, body, options);
@@ -302,10 +302,14 @@ public class OpflowRpcMaster implements AutoCloseable {
         final String taskId = OpflowUtil.getLogID();
         OpflowTask.Listener listener = new OpflowTask.Listener() {
             private OpflowLogTracer logTask = null;
+            
+            {
+                if (logRequest != null && logRequest.ready(LOG, "debug")) logTask = logRequest.copy();
+            }
+            
             @Override
             public void handleEvent() {
                 lock.lock();
-                if (logRequest != null && logRequest.ready(LOG, "debug")) logTask = logRequest.copy();
                 try {
                     tasks.remove(taskId);
                     if (tasks.isEmpty()) {
@@ -384,9 +388,9 @@ public class OpflowRpcMaster implements AutoCloseable {
     }
     
     public void pause() {
-        rwlock.writeLock().lock();
+        pushLock.writeLock().lock();
         try {
-            if(rwlock.isWriteLockedByCurrentThread()) {
+            if(pushLock.isWriteLockedByCurrentThread()) {
                 System.out.println("Waiting for 10 seconds");
                 Thread.sleep(10000);
             }
@@ -395,9 +399,9 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         finally {
             System.out.println("end ... ");
-            if(rwlock.isWriteLockedByCurrentThread()) {
+            if(pushLock.isWriteLockedByCurrentThread()) {
                 System.out.println("and done!");
-                rwlock.writeLock().unlock();
+                pushLock.writeLock().unlock();
             }
         }
     }
@@ -405,7 +409,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     @Override
     public void close() {
         lock.lock();
-        rwlock.writeLock().lock();
+        pushLock.writeLock().lock();
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - obtain the lock")
                 .stringify());
@@ -440,8 +444,8 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].close() - an interruption has been raised")
                 .stringify());
         } finally {
-            if(rwlock.isWriteLockedByCurrentThread()) {
-                rwlock.writeLock().unlock();
+            if(pushLock.isWriteLockedByCurrentThread()) {
+                pushLock.writeLock().unlock();
             }
             lock.unlock();
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
