@@ -6,8 +6,10 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.Headers;
+import io.undertow.util.PathTemplateMatch;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,6 +25,7 @@ public class OpflowRestServer implements AutoCloseable {
 
     private final String instanceId;
     private final OpflowInfoCollector infoCollector;
+    private final OpflowTaskSubmitter taskSubmitter;
     private final OpflowRpcChecker rpcChecker;
     private final Map<String, HttpHandler> defaultHandlers;
     private final String host;
@@ -31,12 +34,14 @@ public class OpflowRestServer implements AutoCloseable {
     private Undertow server;
 
     OpflowRestServer(OpflowInfoCollector _infoCollector,
+            OpflowTaskSubmitter _taskSubmitter,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs) throws OpflowBootstrapException {
-        this(_infoCollector, _rpcChecker, kwargs, null);
+        this(_infoCollector, _taskSubmitter, _rpcChecker, kwargs, null);
     }
     
     OpflowRestServer(OpflowInfoCollector _infoCollector,
+            OpflowTaskSubmitter _taskSubmitter,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs,
             Map<String, HttpHandler> httpHandlers) throws OpflowBootstrapException {
@@ -48,9 +53,11 @@ public class OpflowRestServer implements AutoCloseable {
         host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();
         
         infoCollector = _infoCollector;
+        taskSubmitter = _taskSubmitter;
         rpcChecker = _rpcChecker;
         
         defaultHandlers = new LinkedHashMap<>();
+        defaultHandlers.put("/exec/{action}", new BlockingHandler(new ExecHandler()));
         defaultHandlers.put("/info", new InfoHandler());
         defaultHandlers.put("/ping", new PingHandler());
     }
@@ -114,6 +121,31 @@ public class OpflowRestServer implements AutoCloseable {
         if (server != null) {
             server.stop();
             server = null;
+        }
+    }
+    
+    class ExecHandler implements HttpHandler {
+        @Override
+        public void handleRequest(HttpServerExchange exchange) throws Exception {
+            try {
+                PathTemplateMatch pathMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
+                Map<String, Object> result = OpflowUtil.buildOrderedMap().toMap();
+                String action = pathMatch.getParameters().get("action");
+                if (action != null && action.length() > 0) {
+                    switch(action) {
+                        case "reset":
+                            taskSubmitter.reset();
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                exchange.getResponseSender().send(OpflowJsontool.toString(result, getPrettyParam(exchange)));
+            } catch (Exception exception) {
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                exchange.setStatusCode(500).getResponseSender().send(exception.toString());
+            }
         }
     }
     

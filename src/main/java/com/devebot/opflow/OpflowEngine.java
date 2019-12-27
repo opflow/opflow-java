@@ -937,22 +937,27 @@ public class OpflowEngine implements AutoCloseable {
         });
     }
     
+    private String getConnectionId(Connection conn) {
+        return (conn != null) ? conn.getId() : null;
+    }
+    
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
             producingConnection = factory.newConnection();
             producingConnection.setId(OpflowUtil.getLogID());
             producingConnection.addShutdownListener(new ShutdownListener() {
+                private final OpflowLogTracer localLog = logTracer.copy();
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                            .put("connectionId", producingConnection.getId())
+                    if (localLog.ready(LOG, "info")) LOG.info(localLog
+                            .put("connectionId", getConnectionId(producingConnection))
                             .text("Engine[${engineId}] producingConnection[${connectionId}] has been shutdown")
-                            .stringify(true));
+                            .stringify());
                 }
             });
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedProducingConnectionCreated")
-                    .put("connectionId", producingConnection.getId())
+                    .put("connectionId", getConnectionId(producingConnection))
                     .text("Engine[${engineId}]shared producingConnection[${connectionId}] is created")
                     .stringify(true));
             exporter.incEngineConnectionGauge(factory, "producing");
@@ -993,17 +998,19 @@ public class OpflowEngine implements AutoCloseable {
             consumingConnection = factory.newConnection();
             consumingConnection.setId(OpflowUtil.getLogID());
             consumingConnection.addShutdownListener(new ShutdownListener() {
+                private final OpflowLogTracer localLog = logTracer.copy();
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                            .put("connectionId", consumingConnection.getId())
+                    if (localLog.ready(LOG, "info")) LOG.info(localLog
+                            .put("connectionId", getConnectionId(consumingConnection))
                             .text("Engine[${engineId}] consumingConnection[${connectionId}] has been shutdown")
-                            .stringify(true));
+                            .stringify());
                 }
             });
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedConsumingConnectionCreated")
-                    .text("Engine[${engineId}] shared consumingConnection is created")
+                    .put("connectionId", getConnectionId(consumingConnection))
+                    .text("Engine[${engineId}] shared consumingConnection[${connectionId}] is created")
                     .stringify(true));
             exporter.incEngineConnectionGauge(factory, "consuming");
         }

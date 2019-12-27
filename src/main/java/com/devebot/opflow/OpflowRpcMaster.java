@@ -383,12 +383,18 @@ public class OpflowRpcMaster implements AutoCloseable {
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - cancel responseConsumer")
                 .stringify());
-            if (responseConsumer != null) engine.cancelConsumer(responseConsumer);
+            if (responseConsumer != null) {
+                engine.cancelConsumer(responseConsumer);
+                responseConsumer = null;
+            }
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - stop timeoutMonitor")
                 .stringify());
-            if (timeoutMonitor != null) timeoutMonitor.stop();
+            if (timeoutMonitor != null) {
+                timeoutMonitor.stop();
+                timeoutMonitor = null;
+            }
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - close broker/engine")
