@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author acegik
  */
-public class OpflowInfoProvider implements AutoCloseable {
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowInfoProvider.class);
+public class OpflowRestServer implements AutoCloseable {
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRestServer.class);
 
     private final String instanceId;
     private final OpflowInfoCollector infoCollector;
@@ -30,13 +30,13 @@ public class OpflowInfoProvider implements AutoCloseable {
     private final Boolean enabled;
     private Undertow server;
 
-    OpflowInfoProvider(OpflowInfoCollector _infoCollector,
+    OpflowRestServer(OpflowInfoCollector _infoCollector,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs) throws OpflowBootstrapException {
         this(_infoCollector, _rpcChecker, kwargs, null);
     }
     
-    OpflowInfoProvider(OpflowInfoCollector _infoCollector,
+    OpflowRestServer(OpflowInfoCollector _infoCollector,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs,
             Map<String, HttpHandler> httpHandlers) throws OpflowBootstrapException {

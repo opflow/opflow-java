@@ -52,7 +52,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowPubsubHandler publisher;
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcWatcher rpcWatcher;
-    private OpflowInfoProvider infoProvider;
+    private OpflowRestServer restServer;
 
     public OpflowCommander() throws OpflowBootstrapException {
         this(null);
@@ -129,7 +129,7 @@ public class OpflowCommander implements AutoCloseable {
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, rpcMaster, handlers);
 
-            infoProvider = new OpflowInfoProvider(infoCollector, rpcChecker, OpflowUtil.buildMap(infoProviderCfg)
+            restServer = new OpflowRestServer(infoCollector, rpcChecker, OpflowUtil.buildMap(infoProviderCfg)
                     .put("instanceId", commanderId)
                     .toMap());
         } catch(OpflowBootstrapException exception) {
@@ -155,28 +155,28 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     public Map<String, HttpHandler> getInfoHttpHandlers() {
-        if (infoProvider != null) {
-            return infoProvider.getHttpHandlers();
+        if (restServer != null) {
+            return restServer.getHttpHandlers();
         }
         return null;
     }
 
     public OpflowRpcChecker.Info ping() {
-        if (infoProvider != null) {
-            return infoProvider.ping();
+        if (restServer != null) {
+            return restServer.ping();
         }
         return null;
     }
 
     public final void serve() {
-        if (infoProvider != null) {
-            infoProvider.serve();
+        if (restServer != null) {
+            restServer.serve();
         }
     }
 
     public final void serve(Map<String, HttpHandler> httpHandlers) {
-        if (infoProvider != null) {
-            infoProvider.serve(httpHandlers);
+        if (restServer != null) {
+            restServer.serve(httpHandlers);
         }
     }
 
@@ -186,7 +186,7 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].close()")
                 .stringify());
 
-        if (infoProvider != null) infoProvider.close();
+        if (restServer != null) restServer.close();
         if (rpcWatcher != null) rpcWatcher.close();
         if (publisher != null) publisher.close();
         if (rpcMaster != null) rpcMaster.close();
