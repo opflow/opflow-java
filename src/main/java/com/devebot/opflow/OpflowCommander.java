@@ -129,7 +129,9 @@ public class OpflowCommander implements AutoCloseable {
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, rpcMaster, handlers);
 
-            restServer = new OpflowRestServer(infoCollector, rpcChecker, OpflowUtil.buildMap(restServerCfg)
+            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(commanderId, rpcMaster);
+            
+            restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowUtil.buildMap(restServerCfg)
                     .put("instanceId", commanderId)
                     .toMap());
         } catch(OpflowBootstrapException exception) {
@@ -237,6 +239,35 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
 
+    private static class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
+
+        private final String instanceId;
+        private final OpflowLogTracer logTracer;
+        private final OpflowRpcMaster rpcMaster;
+
+        public OpflowTaskSubmitterMaster(String instanceId, OpflowRpcMaster rpcMaster) {
+            this.instanceId = instanceId;
+            this.rpcMaster = rpcMaster;
+            this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", instanceId);
+        }
+        
+        @Override
+        public void reset() {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("OpflowTaskSubmitter[${taskSubmitterId}].reset() is invoked")
+                    .stringify());
+            rpcMaster.close();
+        }
+
+        @Override
+        public void pause() {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("OpflowTaskSubmitter[${taskSubmitterId}].pause(true) is invoked")
+                    .stringify());
+            rpcMaster.pause();
+        }
+    }
+    
     private static class OpflowInfoCollectorMaster implements OpflowInfoCollector {
 
         private final String instanceId;

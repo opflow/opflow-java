@@ -114,16 +114,16 @@ public class OpflowEngine implements AutoCloseable {
             if (threadExecutor != null) {
                 factory.setSharedExecutor(threadExecutor);
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .put("threadPoolType", threadPoolType)
-                    .put("threadPoolSize", threadPoolSize)
-                    .text("Engine[${engineId}] use SharedExecutor type: ${threadPoolType} / ${threadPoolSize}")
-                    .stringify());
+                        .put("threadPoolType", threadPoolType)
+                        .put("threadPoolSize", threadPoolSize)
+                        .text("Engine[${engineId}] use SharedExecutor type: ${threadPoolType} / ${threadPoolSize}")
+                        .stringify());
             } else {
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .put("threadPoolType", threadPoolType)
-                    .put("threadPoolSize", threadPoolSize)
-                    .text("Engine[${engineId}] use default SharedExecutor")
-                    .stringify());
+                        .put("threadPoolType", threadPoolType)
+                        .put("threadPoolSize", threadPoolSize)
+                        .text("Engine[${engineId}] use default SharedExecutor")
+                        .stringify());
             }
             
             String uri = (String) params.get("uri");
@@ -158,13 +158,13 @@ public class OpflowEngine implements AutoCloseable {
                 }
                 
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .put("host", host)
-                    .put("port", port)
-                    .put("virtualHost", virtualHost)
-                    .put("username", username)
-                    .put("password", OpflowUtil.maskPassword(password))
-                    .text("Engine[${engineId}] make connection using parameters")
-                    .stringify());
+                        .put("host", host)
+                        .put("port", port)
+                        .put("virtualHost", virtualHost)
+                        .put("username", username)
+                        .put("password", OpflowUtil.maskPassword(password))
+                        .text("Engine[${engineId}] make connection using parameters")
+                        .stringify());
             }
             
             Integer channelMax = null;
@@ -278,12 +278,12 @@ public class OpflowEngine implements AutoCloseable {
             if (sslContext != null) {
                 factory.useSslProtocol(sslContext);
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .text("Engine[${engineId}] use SSL Protocol")
-                    .stringify());
+                        .text("Engine[${engineId}] use SSL Protocol")
+                        .stringify());
             } else {
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .text("Engine[${engineId}] SSL context is empty")
-                    .stringify());
+                        .text("Engine[${engineId}] SSL context is empty")
+                        .stringify());
             }
 
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -344,14 +344,14 @@ public class OpflowEngine implements AutoCloseable {
             }
             
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                        .put("exchangeName", exchangeName)
-                        .put("exchangeType", exchangeType)
-                        .put("exchangeDurable", exchangeDurable)
-                        .put("routingKey", routingKey)
-                        .put("otherKeys", otherKeys)
-                        .put("applicationId", applicationId)
-                        .text("Engine[${engineId}] exchangeName: '${exchangeName}' and routingKeys: ${routingKey}")
-                        .stringify());
+                    .put("exchangeName", exchangeName)
+                    .put("exchangeType", exchangeType)
+                    .put("exchangeDurable", exchangeDurable)
+                    .put("routingKey", routingKey)
+                    .put("otherKeys", otherKeys)
+                    .put("applicationId", applicationId)
+                    .text("Engine[${engineId}] exchangeName: '${exchangeName}' and routingKeys: ${routingKey}")
+                    .stringify());
         } catch (IOException exception) {
             if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
@@ -586,19 +586,17 @@ public class OpflowEngine implements AutoCloseable {
                             .text("Request[${requestId}] - Consumer[${consumerId}] receives a message")
                             .stringify());
                     
-                    if (logRequest != null && logRequest.ready(LOG, "trace")) {
-                        if (body.length <= 4096) {
-                            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                                    .put("bodyHead", new String(body, "UTF-8"))
-                                    .put("bodyLength", body.length)
-                                    .text("Request[${requestId}] body head (4096 bytes)")
-                                    .stringify());
-                        } else {
-                            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                                    .put("bodyLength", body.length)
-                                    .text("Request[${requestId}] body size too large (>4KB)")
-                                    .stringify());
-                        }
+                    if (body.length <= 4096) {
+                        if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+                                .put("bodyHead", new String(body, "UTF-8"))
+                                .put("bodyLength", body.length)
+                                .text("Request[${requestId}] body head (4096 bytes)")
+                                .stringify());
+                    } else {
+                        if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+                                .put("bodyLength", body.length)
+                                .text("Request[${requestId}] body size too large (>4KB)")
+                                .stringify());
                     }
                     
                     try {
@@ -937,22 +935,27 @@ public class OpflowEngine implements AutoCloseable {
         });
     }
     
+    private String getConnectionId(Connection conn) {
+        return (conn != null) ? conn.getId() : null;
+    }
+    
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
             producingConnection = factory.newConnection();
             producingConnection.setId(OpflowUtil.getLogID());
             producingConnection.addShutdownListener(new ShutdownListener() {
+                private final OpflowLogTracer localLog = logTracer.copy();
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                            .put("connectionId", producingConnection.getId())
+                    if (localLog.ready(LOG, "info")) LOG.info(localLog
+                            .put("connectionId", getConnectionId(producingConnection))
                             .text("Engine[${engineId}] producingConnection[${connectionId}] has been shutdown")
-                            .stringify(true));
+                            .stringify());
                 }
             });
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedProducingConnectionCreated")
-                    .put("connectionId", producingConnection.getId())
+                    .put("connectionId", getConnectionId(producingConnection))
                     .text("Engine[${engineId}]shared producingConnection[${connectionId}] is created")
                     .stringify(true));
             exporter.incEngineConnectionGauge(factory, "producing");
@@ -964,9 +967,10 @@ public class OpflowEngine implements AutoCloseable {
         if (producingChannel == null || !producingChannel.isOpen()) {
             producingChannel = getProducingConnection().createChannel();
             producingChannel.addShutdownListener(new ShutdownListener() {
+                private final OpflowLogTracer localLog = logTracer.copy();
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    if (localLog.ready(LOG, "info")) LOG.info(localLog
                             .put("channelNumber", producingChannel.getChannelNumber())
                             .text("Engine[${engineId}] producingChannel[${channelNumber}] has been shutdown")
                             .stringify());
@@ -993,17 +997,19 @@ public class OpflowEngine implements AutoCloseable {
             consumingConnection = factory.newConnection();
             consumingConnection.setId(OpflowUtil.getLogID());
             consumingConnection.addShutdownListener(new ShutdownListener() {
+                private final OpflowLogTracer localLog = logTracer.copy();
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                            .put("connectionId", consumingConnection.getId())
+                    if (localLog.ready(LOG, "info")) LOG.info(localLog
+                            .put("connectionId", getConnectionId(consumingConnection))
                             .text("Engine[${engineId}] consumingConnection[${connectionId}] has been shutdown")
-                            .stringify(true));
+                            .stringify());
                 }
             });
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .tags("sharedConsumingConnectionCreated")
-                    .text("Engine[${engineId}] shared consumingConnection is created")
+                    .put("connectionId", getConnectionId(consumingConnection))
+                    .text("Engine[${engineId}] shared consumingConnection[${connectionId}] is created")
                     .stringify(true));
             exporter.incEngineConnectionGauge(factory, "consuming");
         }
@@ -1024,9 +1030,10 @@ public class OpflowEngine implements AutoCloseable {
         if (consumingChannel == null || !consumingChannel.isOpen()) {
             consumingChannel = getConsumingConnection(false).createChannel();
             consumingChannel.addShutdownListener(new ShutdownListener() {
+                private final OpflowLogTracer localLog = logTracer.copy();
                 @Override
                 public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    if (localLog.ready(LOG, "info")) LOG.info(localLog
                             .put("channelNumber", consumingChannel.getChannelNumber())
                             .text("Engine[${engineId}] consumingChannel[${channelNumber}] has been shutdown")
                             .stringify());
