@@ -258,6 +258,14 @@ public class OpflowCommander implements AutoCloseable {
                     .stringify());
             rpcMaster.close();
         }
+
+        @Override
+        public void pause() {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("OpflowTaskSubmitter[${taskSubmitterId}].pause(true) is invoked")
+                    .stringify());
+            rpcMaster.pause();
+        }
     }
     
     private static class OpflowInfoCollectorMaster implements OpflowInfoCollector {

@@ -133,6 +133,9 @@ public class OpflowRestServer implements AutoCloseable {
                 String action = pathMatch.getParameters().get("action");
                 if (action != null && action.length() > 0) {
                     switch(action) {
+                        case "pause":
+                            taskSubmitter.pause();
+                            break;
                         case "reset":
                             taskSubmitter.reset();
                             break;
