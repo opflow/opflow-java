@@ -6,6 +6,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
+import com.devebot.opflow.supports.OpflowDateTime;
 import io.undertow.server.HttpHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -234,7 +235,7 @@ public class OpflowCommander implements AutoCloseable {
             pong.getParameters().put("requestId", requestId);
             pong.getParameters().put("startTime", OpflowUtil.toISO8601UTC(startTime));
             pong.getParameters().put("endTime", OpflowUtil.toISO8601UTC(endTime));
-            pong.getParameters().put("duration", endTime.getTime() - startTime.getTime());
+            pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
             return pong;
         }
     }
@@ -284,11 +285,13 @@ public class OpflowCommander implements AutoCloseable {
         private final String instanceId;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
+        private final Date startTime;
 
         OpflowInfoCollectorMaster(String instanceId, OpflowRpcMaster rpcMaster, Map<String, RpcInvocationHandler> mappings) {
             this.instanceId = instanceId;
             this.rpcMaster = rpcMaster;
             this.handlers = mappings;
+            this.startTime = new Date();
         }
 
         @Override
@@ -347,6 +350,14 @@ public class OpflowCommander implements AutoCloseable {
                     opts.put("request", OpflowUtil.buildOrderedMap()
                             .put("expiration", rpcMaster.getExpiration())
                             .toMap());
+                    
+                    // start-time & uptime
+                    if (label == Scope.FULL) {
+                        Date currentTime = new Date();
+                        opts.put("start-time", OpflowUtil.toISO8601UTC(startTime));
+                        opts.put("current-time", OpflowUtil.toISO8601UTC(currentTime));
+                        opts.put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime));
+                    }
                 }
             }).toMap();
         }

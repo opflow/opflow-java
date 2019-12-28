@@ -9,7 +9,8 @@ import java.util.Map;
  * @author acegik
  */
 public abstract class OpflowRpcChecker {
-
+    public static final String[] REQUEST_ATTRS = new String[] { "requestId", "startTime", "endTime", "elapsedTime" };
+    
     public abstract Pong send(Ping info) throws Throwable;
     
     private static String sendMethodName = "";
@@ -91,17 +92,10 @@ public abstract class OpflowRpcChecker {
                     source.put("request", OpflowUtil.buildOrderedMap().toMap());
                 }
                 Map<String, Object> requestInfo = (Map<String, Object>)source.get("request");
-                if (result.getParameters().containsKey("requestId")) {
-                    requestInfo.put("requestId", result.getParameters().get("requestId"));
-                }
-                if (result.getParameters().containsKey("startTime")) {
-                    requestInfo.put("startTime", result.getParameters().get("startTime"));
-                }
-                if (result.getParameters().containsKey("endTime")) {
-                    requestInfo.put("endTime", result.getParameters().get("endTime"));
-                }
-                if (result.getParameters().containsKey("duration")) {
-                    requestInfo.put("duration", result.getParameters().get("duration"));
+                for (String key : REQUEST_ATTRS) {
+                    if (result.getParameters().containsKey(key)) {
+                        requestInfo.put(key, result.getParameters().get(key));
+                    }
                 }
             }
             switch (status) {

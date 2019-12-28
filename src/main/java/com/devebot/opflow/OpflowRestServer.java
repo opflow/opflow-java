@@ -56,7 +56,7 @@ public class OpflowRestServer implements AutoCloseable {
         
         // detect the avaiable port
         Integer[] ports = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "ports", new Integer[] {
-            8787, 8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
+            8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
         }), (new Integer[0]).getClass());
         port = OpflowNetTool.detectFreePort(ports);
         
