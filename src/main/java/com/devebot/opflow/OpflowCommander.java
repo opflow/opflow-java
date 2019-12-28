@@ -260,11 +260,11 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         @Override
-        public void pause() {
+        public void pause(long duration) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].pause(true) is invoked")
                     .stringify());
-            rpcMaster.pause();
+            rpcMaster.pause(duration);
         }
     }
     

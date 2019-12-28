@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowUtil.MapBuilder;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
 import io.undertow.Handlers;
@@ -129,12 +130,15 @@ public class OpflowRestServer implements AutoCloseable {
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
                 PathTemplateMatch pathMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
-                Map<String, Object> result = OpflowUtil.buildOrderedMap().toMap();
+                MapBuilder result = OpflowUtil.buildOrderedMap();
                 String action = pathMatch.getParameters().get("action");
                 if (action != null && action.length() > 0) {
                     switch(action) {
                         case "pause":
-                            taskSubmitter.pause();
+                            Long duration = getQueryParam(exchange, "duration", Long.class, 10000l);
+                            taskSubmitter.pause(duration);
+                            result.put("duration", duration);
+                            result.put("message", "Pausing in " + duration + " milliseconds");
                             break;
                         case "reset":
                             taskSubmitter.reset();
@@ -144,7 +148,7 @@ public class OpflowRestServer implements AutoCloseable {
                     }
                 }
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                exchange.getResponseSender().send(OpflowJsontool.toString(result, getPrettyParam(exchange)));
+                exchange.getResponseSender().send(OpflowJsontool.toString(result.toMap(), getPrettyParam(exchange)));
             } catch (Exception exception) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());
@@ -185,11 +189,14 @@ public class OpflowRestServer implements AutoCloseable {
     }
     
     private boolean getPrettyParam(HttpServerExchange exchange) {
-        boolean pretty = false;
-        Deque<String> prettyVals = exchange.getQueryParameters().get("pretty");
-        if (prettyVals != null && !prettyVals.isEmpty()) {
-            pretty = true;
+        return getQueryParam(exchange, "pretty", Boolean.class, Boolean.FALSE);
+    }
+    
+    private <T> T getQueryParam(HttpServerExchange exchange, String name, Class<T> type, T defaultVal) {
+        Deque<String> vals = exchange.getQueryParameters().get(name);
+        if (vals != null && !vals.isEmpty()) {
+            return OpflowConverter.convert(vals.getFirst(), type);
         }
-        return pretty;
+        return defaultVal;
     }
 }

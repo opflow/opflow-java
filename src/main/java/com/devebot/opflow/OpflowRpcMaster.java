@@ -387,23 +387,47 @@ public class OpflowRpcMaster implements AutoCloseable {
         return state;
     }
     
-    public void pause() {
-        pushLock.writeLock().lock();
-        try {
-            if(pushLock.isWriteLockedByCurrentThread()) {
-                System.out.println("Waiting for 10 seconds");
-                Thread.sleep(10000);
+    public void pause(final long duration) {
+        if (duration <= 0) return;
+        if (pushLock.isWriteLocked()) return;
+        
+        final OpflowLogTracer pauseLog = logTracer.copy();
+        
+        if (pauseLog.ready(LOG, "trace")) LOG.trace(pauseLog
+                .put("duration", duration)
+                .text("RpcMaster[${rpcMasterId}].pause() in ${duration} ms")
+                .stringify());
+        
+        Thread pauseThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                pushLock.writeLock().lock();
+                try {
+                    if(pushLock.isWriteLockedByCurrentThread()) {
+                        if (pauseLog.ready(LOG, "trace")) LOG.trace(pauseLog
+                                .put("duration", duration)
+                                .text("RpcMaster[${rpcMasterId}].pause() sleeping")
+                                .stringify());
+                        Thread.sleep(duration);
+                    }
+                }
+                catch (InterruptedException e) {
+                }
+                finally {
+                    if (pauseLog.ready(LOG, "trace")) LOG.trace(pauseLog
+                            .text("RpcMaster[${rpcMasterId}].pause() wake up")
+                            .stringify());
+                    if(pushLock.isWriteLockedByCurrentThread()) {
+                        if (pauseLog.ready(LOG, "trace")) LOG.trace(pauseLog
+                                .text("RpcMaster[${rpcMasterId}].pause() done!")
+                                .stringify());
+                        pushLock.writeLock().unlock();
+                    }
+                }
             }
-        }
-        catch (InterruptedException e) {
-        }
-        finally {
-            System.out.println("end ... ");
-            if(pushLock.isWriteLockedByCurrentThread()) {
-                System.out.println("and done!");
-                pushLock.writeLock().unlock();
-            }
-        }
+        });
+        
+        pauseThread.start();
     }
     
     @Override

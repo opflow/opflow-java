@@ -59,6 +59,14 @@ public final class OpflowConverter {
     private static String integerToString(Integer value) {
         return value.toString();
     }
+    
+    private static Long stringToLong(String value) {
+        return Long.valueOf(value);
+    }
+    
+    private static String longToString(Long value) {
+        return value.toString();
+    }
 
     private static Boolean stringToBoolean(String value) {
         return Boolean.valueOf(value);
