@@ -1,6 +1,5 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowEnvtool;
 import com.rabbitmq.client.ConnectionFactory;

@@ -166,7 +166,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
         if (logSession.ready(LOG, "info")) LOG.info(logSession
                 .put("forked", forked)
-                .text("initCallbackConsumer() is invoked")
+                .text("initCallbackConsumer() is invoked with [forked]: ${forked}")
                 .stringify());
         return engine.consume(new OpflowListener() {
             @Override
@@ -312,10 +312,10 @@ public class OpflowRpcMaster implements AutoCloseable {
                 lock.lock();
                 try {
                     tasks.remove(taskId);
+                    if (forked) {
+                        engine.cancelConsumer(consumerInfo);
+                    }
                     if (tasks.isEmpty()) {
-                        if (forked) {
-                            engine.cancelConsumer(consumerInfo);
-                        }
                         idle.signal();
                     }
                     if (logTask != null && logTask.ready(LOG, "debug")) LOG.debug(logTask
