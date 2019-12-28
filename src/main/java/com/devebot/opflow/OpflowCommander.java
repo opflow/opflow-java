@@ -33,7 +33,7 @@ public class OpflowCommander implements AutoCloseable {
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
-        "infoProvider", "rpcWatcher"
+        "restServer", "rpcWatcher"
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
@@ -77,7 +77,7 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get("rpcMaster");
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get("publisher");
         Map<String, Object> rpcWatcherCfg = (Map<String, Object>)kwargs.get("rpcWatcher");
-        Map<String, Object> infoProviderCfg = (Map<String, Object>)kwargs.get("infoProvider");
+        Map<String, Object> restServerCfg = (Map<String, Object>)kwargs.get("restServer");
 
         HashSet<String> checkExchange = new HashSet<>();
 
@@ -131,7 +131,7 @@ public class OpflowCommander implements AutoCloseable {
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(commanderId, rpcMaster);
             
-            restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowUtil.buildMap(infoProviderCfg)
+            restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowUtil.buildMap(restServerCfg)
                     .put("instanceId", commanderId)
                     .toMap());
         } catch(OpflowBootstrapException exception) {

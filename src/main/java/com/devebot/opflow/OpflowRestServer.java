@@ -3,6 +3,7 @@ package com.devebot.opflow;
 import com.devebot.opflow.OpflowUtil.MapBuilder;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
+import com.devebot.opflow.supports.OpflowNetTool;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -25,6 +26,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRestServer.class);
 
     private final String instanceId;
+    private final OpflowLogTracer logTracer;
     private final OpflowInfoCollector infoCollector;
     private final OpflowTaskSubmitter taskSubmitter;
     private final OpflowRpcChecker rpcChecker;
@@ -50,8 +52,15 @@ public class OpflowRestServer implements AutoCloseable {
 
         instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
         enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", null), Boolean.class);
-        port = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "port", 8989), Integer.class);
         host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();
+        
+        // detect the avaiable port
+        Integer[] ports = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "ports", new Integer[] {
+            8787, 8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
+        }), (new Integer[0]).getClass());
+        port = OpflowNetTool.detectFreePort(ports);
+        
+        logTracer = OpflowLogTracer.ROOT.branch("restServerId", instanceId);
         
         infoCollector = _infoCollector;
         taskSubmitter = _taskSubmitter;
@@ -92,9 +101,21 @@ public class OpflowRestServer implements AutoCloseable {
     
     public void serve(Map<String, HttpHandler> httpHandlers, Map<String, Object> kwargs) {
         if (enabled != null && Boolean.FALSE.equals(enabled)) {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("RestServer[${restServerId}].serve() is disable")
+                    .stringify());
+            return;
+        }
+        if (port == null) {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("RestServer[${restServerId}].serve() all of the ports are busy")
+                    .stringify());
             return;
         }
         if (httpHandlers != null || kwargs != null) {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("RestServer[${restServerId}].serve() stop the current service")
+                    .stringify());
             this.close();
         }
         if (server == null) {
@@ -113,7 +134,15 @@ public class OpflowRestServer implements AutoCloseable {
                     .addHttpListener(port, host)
                     .setHandler(ptHandler)
                     .build();
+            
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("RestServer[${restServerId}].serve() a new HTTP server is created")
+                    .stringify());
         }
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                .put("port", port)
+                .text("RestServer[${restServerId}].serve() Server listening on port ${port}")
+                .stringify());
         server.start();
     }
     

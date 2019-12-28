@@ -195,9 +195,9 @@ public class OpflowBuilder {
             if ("rpcWatcher".equals(componentName)) {
                 componentCfg.put("interval", componentNode.get("interval"));
             }
-            if ("infoProvider".equals(componentName)) {
+            if ("restServer".equals(componentName)) {
                 componentCfg.put("host", componentNode.get("host"));
-                componentCfg.put("port", componentNode.get("port"));
+                componentCfg.put("ports", componentNode.get("ports"));
             }
             transformParameters(componentCfg);
             params.put(componentName, componentCfg);
@@ -339,6 +339,8 @@ public class OpflowBuilder {
         "prefetch", "subscriberLimit", "redeliveredLimit", "monitorInterval", "threadPoolSize"
     };
     
+    private static final String[] INTEGER_ARRAY_FIELDS = new String[] { "ports" };
+    
     private static final String[] LONGINT_FIELDS = new String[] {
         "expiration", "interval", "monitorTimeout"
     };
@@ -366,6 +368,11 @@ public class OpflowBuilder {
                                 .stringify());
                         params.put(key, null);
                     }
+                }
+            }
+            if (OpflowUtil.arrayContains(INTEGER_ARRAY_FIELDS, key)) {
+                if (params.get(key) instanceof String) {
+                    params.put(key, OpflowUtil.splitByComma((String)params.get(key), Integer.class));
                 }
             }
             if (OpflowUtil.arrayContains(LONGINT_FIELDS, key)) {
