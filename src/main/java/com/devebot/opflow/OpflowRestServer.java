@@ -140,6 +140,9 @@ public class OpflowRestServer implements AutoCloseable {
                             result.put("duration", duration);
                             result.put("message", "Pausing in " + duration + " milliseconds");
                             break;
+                        case "unpause":
+                            taskSubmitter.unpause();
+                            break;
                         case "reset":
                             taskSubmitter.reset();
                             break;

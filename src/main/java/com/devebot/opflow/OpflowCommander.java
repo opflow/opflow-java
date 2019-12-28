@@ -252,19 +252,30 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         @Override
-        public void reset() {
+        public Map<String, Object> reset() {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].reset() is invoked")
                     .stringify());
             rpcMaster.close();
+            return null;
         }
 
         @Override
-        public void pause(long duration) {
+        public Map<String, Object> pause(long duration) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].pause(true) is invoked")
                     .stringify());
             rpcMaster.pause(duration);
+            return null;
+        }
+        
+        @Override
+        public Map<String, Object> unpause() {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("OpflowTaskSubmitter[${taskSubmitterId}].unpause() is invoked")
+                    .stringify());
+            rpcMaster.unpause();
+            return null;
         }
     }
     

@@ -387,47 +387,68 @@ public class OpflowRpcMaster implements AutoCloseable {
         return state;
     }
     
-    public void pause(final long duration) {
-        if (duration <= 0) return;
-        if (pushLock.isWriteLocked()) return;
+    private class PauseThread extends Thread {
+        private final ReentrantReadWriteLock rwlock;
+        private final OpflowLogTracer tracer;
+        private long duration = 0;
         
-        final OpflowLogTracer pauseLog = logTracer.copy();
+        public long getDuration() {
+            return duration;
+        }
         
-        if (pauseLog.ready(LOG, "trace")) LOG.trace(pauseLog
-                .put("duration", duration)
-                .text("RpcMaster[${rpcMasterId}].pause() in ${duration} ms")
-                .stringify());
+        public void setDuration(long duration) {
+            this.duration = duration;
+        }
         
-        Thread pauseThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                pushLock.writeLock().lock();
-                try {
-                    if(pushLock.isWriteLockedByCurrentThread()) {
-                        if (pauseLog.ready(LOG, "trace")) LOG.trace(pauseLog
-                                .put("duration", duration)
-                                .text("RpcMaster[${rpcMasterId}].pause() sleeping")
-                                .stringify());
-                        Thread.sleep(duration);
-                    }
-                }
-                catch (InterruptedException e) {
-                }
-                finally {
-                    if (pauseLog.ready(LOG, "trace")) LOG.trace(pauseLog
-                            .text("RpcMaster[${rpcMasterId}].pause() wake up")
+        PauseThread(OpflowLogTracer logTracer, ReentrantReadWriteLock pushLock, long duration) {
+            this.rwlock = pushLock;
+            this.tracer = logTracer.copy();
+            this.duration = duration;
+        }
+        
+        @Override
+        public void run() {
+            if (duration <= 0) return;
+            if (rwlock.isWriteLocked()) return;
+            rwlock.writeLock().lock();
+            try {
+                if(rwlock.isWriteLockedByCurrentThread()) {
+                    if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                            .put("duration", duration)
+                            .text("PauseThread[${rpcMasterId}].run() sleeping in ${duration} ms")
                             .stringify());
-                    if(pushLock.isWriteLockedByCurrentThread()) {
-                        if (pauseLog.ready(LOG, "trace")) LOG.trace(pauseLog
-                                .text("RpcMaster[${rpcMasterId}].pause() done!")
-                                .stringify());
-                        pushLock.writeLock().unlock();
-                    }
+                    Thread.sleep(duration);
                 }
             }
-        });
-        
-        pauseThread.start();
+            catch (InterruptedException e) {
+            }
+            finally {
+                if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                        .text("PauseThread[${rpcMasterId}].run() wake-up")
+                        .stringify());
+                if(rwlock.isWriteLockedByCurrentThread()) {
+                    if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                            .text("PauseThread[${rpcMasterId}].run() done!")
+                            .stringify());
+                    rwlock.writeLock().unlock();
+                }
+            }
+        }
+    }
+    
+    private PauseThread pauseThread;
+    
+    public void pause(final long duration) {
+        if (pauseThread == null || !pauseThread.isAlive()) {
+            pauseThread = new PauseThread(logTracer, pushLock, duration);
+            pauseThread.start();
+        }
+    }
+    
+    public void unpause() {
+        if (pauseThread != null && pauseThread.isAlive()) {
+            pauseThread.interrupt();
+        }
     }
     
     @Override
