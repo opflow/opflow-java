@@ -58,19 +58,19 @@ public abstract class OpflowRpcChecker {
     
     public static class Info {
         private String status = "";
-        private Map<String, Object> source;
-        private Pong result;
+        private Map<String, Object> commanderMap;
+        private Pong processorObj;
         private Throwable exception;
 
         public Info (Map<String, Object> source, Pong result) {
             this.status = "ok";
-            this.source = source;
-            this.result = result;
+            this.commanderMap = source;
+            this.processorObj = result;
         }
         
         public Info (Map<String, Object> source, Throwable exception) {
             this.status = "failed";
-            this.source = source;
+            this.commanderMap = source;
             this.exception = exception;
         }
 
@@ -84,24 +84,26 @@ public abstract class OpflowRpcChecker {
         }
         
         public String toString(boolean pretty) {
-            OpflowUtil.MapBuilder builder = OpflowUtil.buildOrderedMap()
-                    .put("status", status)
-                    .put("commander", source);
-            if (result != null) {
-                if (!source.containsKey("request") || !(source.get("request") instanceof HashMap)) {
-                    source.put("request", OpflowUtil.buildOrderedMap().toMap());
+            OpflowUtil.MapBuilder builder = OpflowUtil.buildOrderedMap().put("status", status);
+            
+            Map<String, Object> commanderInfo = (Map<String, Object>)commanderMap.get("commander");
+            if (commanderInfo != null && processorObj != null) {
+                if (!commanderInfo.containsKey("request") || !(commanderInfo.get("request") instanceof HashMap)) {
+                    commanderInfo.put("request", OpflowUtil.buildOrderedMap().toMap());
                 }
-                Map<String, Object> requestInfo = (Map<String, Object>)source.get("request");
+                Map<String, Object> requestInfo = (Map<String, Object>)commanderInfo.get("request");
                 for (String key : REQUEST_ATTRS) {
-                    if (result.getParameters().containsKey(key)) {
-                        requestInfo.put(key, result.getParameters().get(key));
+                    if (processorObj.getParameters().containsKey(key)) {
+                        requestInfo.put(key, processorObj.getParameters().get(key));
                     }
                 }
             }
+            builder.put("commander", commanderInfo);
+            
             switch (status) {
                 case "ok":
                     builder
-                            .put("serverlet", result.getAccumulator())
+                            .put("serverlet", processorObj.getAccumulator())
                             .put("summary", "The connection is ok");
                     break;
                 case "failed":

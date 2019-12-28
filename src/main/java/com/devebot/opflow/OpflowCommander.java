@@ -302,7 +302,10 @@ public class OpflowCommander implements AutoCloseable {
         @Override
         public Map<String, Object> collect(Scope scope) {
             final Scope label = (scope == null) ? Scope.BASIC : scope;
-            return OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+            
+            MapBuilder root = OpflowUtil.buildOrderedMap();
+            
+            root.put("commander", OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     OpflowEngine engine = rpcMaster.getEngine();
@@ -350,16 +353,18 @@ public class OpflowCommander implements AutoCloseable {
                     opts.put("request", OpflowUtil.buildOrderedMap()
                             .put("expiration", rpcMaster.getExpiration())
                             .toMap());
-                    
-                    // start-time & uptime
-                    if (label == Scope.FULL) {
-                        Date currentTime = new Date();
-                        opts.put("start-time", OpflowUtil.toISO8601UTC(startTime));
-                        opts.put("current-time", OpflowUtil.toISO8601UTC(currentTime));
-                        opts.put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime));
-                    }
                 }
-            }).toMap();
+            }).toMap());
+
+            // start-time & uptime
+            if (label == Scope.FULL) {
+                Date currentTime = new Date();
+                root.put("start-time", OpflowUtil.toISO8601UTC(startTime));
+                root.put("current-time", OpflowUtil.toISO8601UTC(currentTime));
+                root.put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime));
+            }
+            
+            return root.toMap();
         }
     }
 

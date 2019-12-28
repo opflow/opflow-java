@@ -73,9 +73,7 @@ public class OpflowRestServer implements AutoCloseable {
     }
 
     public Map<String, Object> info() {
-        return OpflowUtil.buildOrderedMap()
-                .put("commander", infoCollector.collect(OpflowInfoCollector.Scope.FULL))
-                .toMap();
+        return infoCollector.collect(OpflowInfoCollector.Scope.FULL);
     }
     
     public OpflowRpcChecker.Info ping() {
