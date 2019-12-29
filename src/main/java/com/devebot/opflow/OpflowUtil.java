@@ -418,6 +418,10 @@ public class OpflowUtil {
         return passwordPattern.matcher(uri).replaceAll(":******@");
     }
     
+    public static boolean isComponentEnabled(Map<String, Object> cfg) {
+        return cfg != null && !Boolean.FALSE.equals(cfg.get("enabled"));
+    }
+    
     public static boolean isAMQPEntrypointNull(Map<String, Object> cfg) {
         return cfg.get("exchangeName") == null || cfg.get("routingKey") == null;
     }

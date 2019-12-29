@@ -138,7 +138,8 @@ public class OpflowRestServer implements AutoCloseable {
         }
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("port", port)
-                .text("RestServer[${restServerId}].serve() Server listening on port ${port}")
+                .put("host", host)
+                .text("RestServer[${restServerId}].serve() Server listening on (http://${host}:${port})")
                 .stringify());
         server.start();
     }

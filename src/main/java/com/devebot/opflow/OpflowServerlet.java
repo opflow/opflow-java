@@ -61,7 +61,7 @@ public class OpflowServerlet implements AutoCloseable {
         HashSet<String> checkQueue = new HashSet<>();
         HashSet<String> checkRecyclebin = new HashSet<>();
         
-        if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
+        if (OpflowUtil.isComponentEnabled(configurerCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(configurerCfg)) {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
             } 
@@ -74,7 +74,7 @@ public class OpflowServerlet implements AutoCloseable {
             if (configurerCfg.get("recyclebinName") != null) checkRecyclebin.add(configurerCfg.get("recyclebinName").toString());
         }
 
-        if (rpcWorkerCfg != null && !Boolean.FALSE.equals(rpcWorkerCfg.get("enabled"))) {
+        if (OpflowUtil.isComponentEnabled(rpcWorkerCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(rpcWorkerCfg)) {
                 throw new OpflowBootstrapException("Invalid RpcWorker connection parameters");
             }
@@ -89,7 +89,7 @@ public class OpflowServerlet implements AutoCloseable {
             }
         }
         
-        if (subscriberCfg != null && !Boolean.FALSE.equals(subscriberCfg.get("enabled"))) {
+        if (OpflowUtil.isComponentEnabled(subscriberCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(subscriberCfg)) {
                 throw new OpflowBootstrapException("Invalid Subscriber connection parameters");
             }
@@ -110,7 +110,7 @@ public class OpflowServerlet implements AutoCloseable {
         }
         
         try {
-            if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
+            if (OpflowUtil.isComponentEnabled(configurerCfg)) {
                 String pubsubHandlerId = OpflowUtil.getLogID();
                 configurerCfg.put("pubsubHandlerId", pubsubHandlerId);
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -120,7 +120,7 @@ public class OpflowServerlet implements AutoCloseable {
                 configurer = new OpflowPubsubHandler(configurerCfg);
             }
 
-            if (rpcWorkerCfg != null && !Boolean.FALSE.equals(rpcWorkerCfg.get("enabled"))) {
+            if (OpflowUtil.isComponentEnabled(rpcWorkerCfg)) {
                 String rpcWorkerId = OpflowUtil.getLogID();
                 rpcWorkerCfg.put("rpcWorkerId", rpcWorkerId);
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -130,7 +130,7 @@ public class OpflowServerlet implements AutoCloseable {
                 rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
             }
 
-            if (subscriberCfg != null && !Boolean.FALSE.equals(subscriberCfg.get("enabled"))) {
+            if (OpflowUtil.isComponentEnabled(subscriberCfg)) {
                 String pubsubHandlerId = OpflowUtil.getLogID();
                 subscriberCfg.put("pubsubHandlerId", pubsubHandlerId);
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer

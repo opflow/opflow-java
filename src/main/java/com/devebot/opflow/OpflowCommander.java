@@ -82,7 +82,7 @@ public class OpflowCommander implements AutoCloseable {
 
         HashSet<String> checkExchange = new HashSet<>();
 
-        if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
+        if (OpflowUtil.isComponentEnabled(configurerCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(configurerCfg)) {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
             }
@@ -91,7 +91,7 @@ public class OpflowCommander implements AutoCloseable {
             }
         }
 
-        if (rpcMasterCfg != null && !Boolean.FALSE.equals(rpcMasterCfg.get("enabled"))) {
+        if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(rpcMasterCfg)) {
                 throw new OpflowBootstrapException("Invalid RpcMaster connection parameters");
             }
@@ -100,7 +100,7 @@ public class OpflowCommander implements AutoCloseable {
             }
         }
 
-        if (publisherCfg != null && !Boolean.FALSE.equals(publisherCfg.get("enabled"))) {
+        if (OpflowUtil.isComponentEnabled(publisherCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(publisherCfg)) {
                 throw new OpflowBootstrapException("Invalid Publisher connection parameters");
             }
@@ -110,13 +110,13 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         try {
-            if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
+            if (OpflowUtil.isComponentEnabled(configurerCfg)) {
                 configurer = new OpflowPubsubHandler(configurerCfg);
             }
-            if (rpcMasterCfg != null && !Boolean.FALSE.equals(rpcMasterCfg.get("enabled"))) {
+            if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
                 rpcMaster = new OpflowRpcMaster(rpcMasterCfg);
             }
-            if (publisherCfg != null && !Boolean.FALSE.equals(publisherCfg.get("enabled"))) {
+            if (OpflowUtil.isComponentEnabled(publisherCfg)) {
                 publisher = new OpflowPubsubHandler(publisherCfg);
             }
 
