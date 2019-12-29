@@ -56,7 +56,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRestServer restServer;
 
     public OpflowCommander() throws OpflowBootstrapException {
-        this(null);
+        this((Map<String, Object>) null);
     }
 
     public OpflowCommander(Map<String, Object> kwargs) throws OpflowBootstrapException {

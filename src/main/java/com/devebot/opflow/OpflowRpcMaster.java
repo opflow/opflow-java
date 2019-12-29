@@ -284,6 +284,10 @@ public class OpflowRpcMaster implements AutoCloseable {
             options.put("routineId", routineId);
         }
         
+        if (expiration > 0) {
+            options.put("timeout", expiration + DELAY_TIMEOUT);
+        }
+        
         if (timeoutMonitor == null) {
             timeoutMonitor = initTimeoutMonitor();
         }
@@ -300,7 +304,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         final String taskId = OpflowUtil.getLogID();
-        OpflowTask.Listener listener = new OpflowTask.Listener() {
+        OpflowRpcRequest task = new OpflowRpcRequest(options, new OpflowTask.Listener() {
             private OpflowLogTracer logTask = null;
             
             {
@@ -328,13 +332,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     lock.unlock();
                 }
             }
-        };
-        
-        if (expiration > 0) {
-            options.put("timeout", expiration + DELAY_TIMEOUT);
-        }
-        
-        OpflowRpcRequest task = new OpflowRpcRequest(options, listener);
+        });
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<>();
