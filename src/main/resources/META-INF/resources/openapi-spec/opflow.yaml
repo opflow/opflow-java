@@ -1,0 +1,83 @@
+swagger: '2.0'
+info:
+  title: Monitoring API
+  version: 0.1.25
+schemes:
+  - http
+  - https
+produces:
+  - application/json
+basePath: "/"
+paths:
+  /info:
+    get:
+      tags:
+      - "Monitoring"
+      summary: "Show the information of the RPC commander"
+      description: "Collect and summarize the states of RPC master and workers"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/InfoResult"
+  /ping:
+    get:
+      tags:
+      - "Monitoring"
+      summary: "Send a ping message to the workers"
+      description: "Send a ping message and receive the result"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/PingResult"
+  /exec/reset:
+    get:
+      tags:
+      - "Operation"
+      summary: "Reset the connections"
+      description: "Close the connections and make them available for a new call"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/PingResult"
+definitions:
+  InfoResult:
+    type: "object"
+    properties:
+      status:
+        type: "string"
+        description: "The status of the RPC master"
+        enum:
+        - "ok"
+        - "failed"
+      commander:
+        type: "object"
+      serverlet:
+        type: "object"
+      complete:
+        type: "boolean"
+        default: false
+  PingResult:
+    type: "object"
+    properties:
+      status:
+        type: "string"
+        description: "The status of the RPC master"
+        enum:
+        - "ok"
+        - "failed"
+      commander:
+        type: "object"
+      serverlet:
+        type: "object"
+      complete:
+        type: "boolean"
+        default: false

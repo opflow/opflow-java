@@ -8,10 +8,18 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.PathTemplateHandler;
+import io.undertow.server.handlers.RedirectHandler;
+import io.undertow.server.handlers.cache.DirectBufferCache;
+import io.undertow.server.handlers.resource.CachingResourceManager;
+import io.undertow.server.handlers.resource.ClassPathResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
+import java.nio.file.Paths;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,6 +38,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final OpflowInfoCollector infoCollector;
     private final OpflowTaskSubmitter taskSubmitter;
     private final OpflowRpcChecker rpcChecker;
+    private final RoutingHandler defaultHandler;
     private final Map<String, HttpHandler> defaultHandlers;
     private final String host;
     private final Integer port;
@@ -70,6 +79,11 @@ public class OpflowRestServer implements AutoCloseable {
         defaultHandlers.put("/exec/{action}", new BlockingHandler(new ExecHandler()));
         defaultHandlers.put("/info", new InfoHandler());
         defaultHandlers.put("/ping", new PingHandler());
+        
+        defaultHandler = new RoutingHandler();
+        defaultHandler.put("/exec/{action}", new BlockingHandler(new ExecHandler()))
+                .get("/info", new InfoHandler())
+                .get("/ping", new PingHandler());
     }
 
     public Map<String, Object> info() {
@@ -85,8 +99,13 @@ public class OpflowRestServer implements AutoCloseable {
         }
     }
     
+    @Deprecated
     public Map<String, HttpHandler> getHttpHandlers() {
         return defaultHandlers;
+    }
+    
+    public RoutingHandler getRoutingHandler() {
+        return defaultHandler;
     }
     
     public void serve() {
@@ -121,16 +140,24 @@ public class OpflowRestServer implements AutoCloseable {
             for(Map.Entry<String, HttpHandler> entry:defaultHandlers.entrySet()) {
                 ptHandler.add(entry.getKey(), entry.getValue());
             }
-
+            
             if (httpHandlers != null) {
                 for(Map.Entry<String, HttpHandler> entry:httpHandlers.entrySet()) {
                     ptHandler.add(entry.getKey(), entry.getValue());
                 }
             }
             
+            RoutingHandler routes = new RoutingHandler()
+                    .addAll(defaultHandler)
+                    .get("/opflow.yaml", buildResourceHandler("/openapi-spec"))
+                    .get("/api-ui/*", buildResourceHandler("/openapi-ui"))
+                    .get("/api-ui/", new RedirectHandler("/api-ui/index.html"))
+                    .get("/", new RedirectHandler("/api-ui/"))
+                    .setFallbackHandler(new PageNotFoundHandler());
+                    
             server = Undertow.builder()
                     .addHttpListener(port, host)
-                    .setHandler(ptHandler)
+                    .setHandler(routes)
                     .build();
             
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -149,6 +176,35 @@ public class OpflowRestServer implements AutoCloseable {
         if (server != null) {
             server.stop();
             server = null;
+        }
+    }
+    
+    public HttpHandler buildResourceHandler(String prefix) {
+        return buildResourceHandler(prefix, 30000);
+    }
+    
+    public HttpHandler buildResourceHandler(String prefix, int cacheTime) {
+        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                .put("prefix", prefix)
+                .text("Using ClasspathPathResourceManager with prefix: ${prefix}")
+                .stringify());
+        ResourceManager classPathManager = new ClassPathResourceManager(OpflowRestServer.class.getClassLoader(),
+                Paths.get("META-INF/resources", prefix).toString());
+        ResourceManager resourceManager = new CachingResourceManager(100, 65536,
+                new DirectBufferCache(1024, 10, 10480),
+                classPathManager,
+                cacheTime);
+        ResourceHandler handler = new ResourceHandler(resourceManager);
+        handler.setCacheTime(cacheTime);
+        return handler;
+    }
+    
+    class PageNotFoundHandler implements HttpHandler {
+        @Override
+        public void handleRequest(HttpServerExchange exchange) throws Exception {
+            exchange.setStatusCode(404);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+            exchange.getResponseSender().send("Page Not Found");
         }
     }
     
