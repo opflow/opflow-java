@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,9 @@ import org.slf4j.LoggerFactory;
 public class OpflowPubsubHandler implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
     private final OpflowLogTracer logTracer;
-
+    
+    private final ReentrantReadWriteLock pushLock = new ReentrantReadWriteLock();
+    
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
     private final String subscriberName;
@@ -115,6 +118,17 @@ public class OpflowPubsubHandler implements AutoCloseable {
     }
     
     public void publish(byte[] body, Map<String, Object> options, String routingKey) {
+        ReentrantReadWriteLock.ReadLock rl = pushLock.readLock();
+        try {
+            rl.lock();
+            _publish(body, options, routingKey);
+        }
+        finally {
+            rl.unlock();
+        }
+    }
+    
+    private void _publish(byte[] body, Map<String, Object> options, String routingKey) {
         options = OpflowUtil.ensureNotNull(options);
         
         Object requestId = options.get("requestId");
@@ -242,21 +256,32 @@ public class OpflowPubsubHandler implements AutoCloseable {
     
     @Override
     public void close() {
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                .text("PubsubHandler[${pubsubHandlerId}].close()")
-                .stringify());
-        if (engine != null) {
-            for(OpflowEngine.ConsumerInfo consumerInfo:consumerInfos) {
-                if (consumerInfo != null) {
-                    engine.cancelConsumer(consumerInfo);
+        pushLock.writeLock().lock();
+        try {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("PubsubHandler[${pubsubHandlerId}].close()")
+                    .stringify());
+            if (engine != null) {
+                for(OpflowEngine.ConsumerInfo consumerInfo:consumerInfos) {
+                    if (consumerInfo != null) {
+                        engine.cancelConsumer(consumerInfo);
+                    }
                 }
+                consumerInfos.clear();
+                engine.close();
             }
-            consumerInfos.clear();
-            engine.close();
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("PubsubHandler[${pubsubHandlerId}].close() has completed")
+                    .stringify());
         }
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                .text("PubsubHandler[${pubsubHandlerId}].close() has completed")
+        finally {
+            if(pushLock.isWriteLockedByCurrentThread()) {
+                pushLock.writeLock().unlock();
+            }
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                .text("PubsubHandler[${pubsubHandlerId}].close() - lock has been released")
                 .stringify());
+        }
     }
     
     public State check() {

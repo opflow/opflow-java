@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowUtil.MapBuilder;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowNetTool;
@@ -7,10 +8,18 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.PathTemplateHandler;
+import io.undertow.server.handlers.RedirectHandler;
+import io.undertow.server.handlers.cache.DirectBufferCache;
+import io.undertow.server.handlers.resource.CachingResourceManager;
+import io.undertow.server.handlers.resource.ClassPathResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
+import java.nio.file.Paths;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -29,6 +38,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final OpflowInfoCollector infoCollector;
     private final OpflowTaskSubmitter taskSubmitter;
     private final OpflowRpcChecker rpcChecker;
+    private final RoutingHandler defaultHandler;
     private final Map<String, HttpHandler> defaultHandlers;
     private final String host;
     private final Integer port;
@@ -55,7 +65,7 @@ public class OpflowRestServer implements AutoCloseable {
         
         // detect the avaiable port
         Integer[] ports = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "ports", new Integer[] {
-            8787, 8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
+            8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
         }), (new Integer[0]).getClass());
         port = OpflowNetTool.detectFreePort(ports);
         
@@ -69,12 +79,15 @@ public class OpflowRestServer implements AutoCloseable {
         defaultHandlers.put("/exec/{action}", new BlockingHandler(new ExecHandler()));
         defaultHandlers.put("/info", new InfoHandler());
         defaultHandlers.put("/ping", new PingHandler());
+        
+        defaultHandler = new RoutingHandler();
+        defaultHandler.put("/exec/{action}", new BlockingHandler(new ExecHandler()))
+                .get("/info", new InfoHandler())
+                .get("/ping", new PingHandler());
     }
 
     public Map<String, Object> info() {
-        return OpflowUtil.buildOrderedMap()
-                .put("commander", infoCollector.collect(OpflowInfoCollector.Scope.FULL))
-                .toMap();
+        return infoCollector.collect(OpflowInfoCollector.Scope.FULL);
     }
     
     public OpflowRpcChecker.Info ping() {
@@ -86,8 +99,13 @@ public class OpflowRestServer implements AutoCloseable {
         }
     }
     
+    @Deprecated
     public Map<String, HttpHandler> getHttpHandlers() {
         return defaultHandlers;
+    }
+    
+    public RoutingHandler getRoutingHandler() {
+        return defaultHandler;
     }
     
     public void serve() {
@@ -122,16 +140,24 @@ public class OpflowRestServer implements AutoCloseable {
             for(Map.Entry<String, HttpHandler> entry:defaultHandlers.entrySet()) {
                 ptHandler.add(entry.getKey(), entry.getValue());
             }
-
+            
             if (httpHandlers != null) {
                 for(Map.Entry<String, HttpHandler> entry:httpHandlers.entrySet()) {
                     ptHandler.add(entry.getKey(), entry.getValue());
                 }
             }
             
+            RoutingHandler routes = new RoutingHandler()
+                    .addAll(defaultHandler)
+                    .get("/opflow.yaml", buildResourceHandler("/openapi-spec"))
+                    .get("/api-ui/*", buildResourceHandler("/openapi-ui"))
+                    .get("/api-ui/", new RedirectHandler("/api-ui/index.html"))
+                    .get("/", new RedirectHandler("/api-ui/"))
+                    .setFallbackHandler(new PageNotFoundHandler());
+                    
             server = Undertow.builder()
                     .addHttpListener(port, host)
-                    .setHandler(ptHandler)
+                    .setHandler(routes)
                     .build();
             
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -153,17 +179,52 @@ public class OpflowRestServer implements AutoCloseable {
         }
     }
     
+    public HttpHandler buildResourceHandler(String prefix) {
+        return buildResourceHandler(prefix, 30000);
+    }
+    
+    public HttpHandler buildResourceHandler(String prefix, int cacheTime) {
+        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                .put("prefix", prefix)
+                .text("Using ClasspathPathResourceManager with prefix: ${prefix}")
+                .stringify());
+        ResourceManager classPathManager = new ClassPathResourceManager(OpflowRestServer.class.getClassLoader(),
+                Paths.get("META-INF/resources", prefix).toString());
+        ResourceManager resourceManager = new CachingResourceManager(100, 65536,
+                new DirectBufferCache(1024, 10, 10480),
+                classPathManager,
+                cacheTime);
+        ResourceHandler handler = new ResourceHandler(resourceManager);
+        handler.setCacheTime(cacheTime);
+        return handler;
+    }
+    
+    class PageNotFoundHandler implements HttpHandler {
+        @Override
+        public void handleRequest(HttpServerExchange exchange) throws Exception {
+            exchange.setStatusCode(404);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+            exchange.getResponseSender().send("Page Not Found");
+        }
+    }
+    
     class ExecHandler implements HttpHandler {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
                 PathTemplateMatch pathMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
-                Map<String, Object> result = OpflowUtil.buildOrderedMap().toMap();
+                MapBuilder result = OpflowUtil.buildOrderedMap();
                 String action = pathMatch.getParameters().get("action");
                 if (action != null && action.length() > 0) {
                     switch(action) {
                         case "pause":
-                            taskSubmitter.pause();
+                            Long duration = getQueryParam(exchange, "duration", Long.class, 10000l);
+                            taskSubmitter.pause(duration);
+                            result.put("duration", duration);
+                            result.put("message", "Pausing in " + duration + " milliseconds");
+                            break;
+                        case "unpause":
+                            taskSubmitter.unpause();
                             break;
                         case "reset":
                             taskSubmitter.reset();
@@ -173,7 +234,7 @@ public class OpflowRestServer implements AutoCloseable {
                     }
                 }
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                exchange.getResponseSender().send(OpflowJsontool.toString(result, getPrettyParam(exchange)));
+                exchange.getResponseSender().send(OpflowJsontool.toString(result.toMap(), getPrettyParam(exchange)));
             } catch (Exception exception) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());
@@ -214,11 +275,14 @@ public class OpflowRestServer implements AutoCloseable {
     }
     
     private boolean getPrettyParam(HttpServerExchange exchange) {
-        boolean pretty = false;
-        Deque<String> prettyVals = exchange.getQueryParameters().get("pretty");
-        if (prettyVals != null && !prettyVals.isEmpty()) {
-            pretty = true;
+        return getQueryParam(exchange, "pretty", Boolean.class, Boolean.FALSE);
+    }
+    
+    private <T> T getQueryParam(HttpServerExchange exchange, String name, Class<T> type, T defaultVal) {
+        Deque<String> vals = exchange.getQueryParameters().get(name);
+        if (vals != null && !vals.isEmpty()) {
+            return OpflowConverter.convert(vals.getFirst(), type);
         }
-        return pretty;
+        return defaultVal;
     }
 }

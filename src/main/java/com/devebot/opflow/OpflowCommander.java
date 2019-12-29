@@ -6,6 +6,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
+import com.devebot.opflow.supports.OpflowDateTime;
 import io.undertow.server.HttpHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -234,7 +235,7 @@ public class OpflowCommander implements AutoCloseable {
             pong.getParameters().put("requestId", requestId);
             pong.getParameters().put("startTime", OpflowUtil.toISO8601UTC(startTime));
             pong.getParameters().put("endTime", OpflowUtil.toISO8601UTC(endTime));
-            pong.getParameters().put("duration", endTime.getTime() - startTime.getTime());
+            pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
             return pong;
         }
     }
@@ -252,19 +253,30 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         @Override
-        public void reset() {
+        public Map<String, Object> reset() {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].reset() is invoked")
                     .stringify());
             rpcMaster.close();
+            return null;
         }
 
         @Override
-        public void pause() {
+        public Map<String, Object> pause(long duration) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].pause(true) is invoked")
                     .stringify());
-            rpcMaster.pause();
+            rpcMaster.pause(duration);
+            return null;
+        }
+        
+        @Override
+        public Map<String, Object> unpause() {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("OpflowTaskSubmitter[${taskSubmitterId}].unpause() is invoked")
+                    .stringify());
+            rpcMaster.unpause();
+            return null;
         }
     }
     
@@ -273,11 +285,13 @@ public class OpflowCommander implements AutoCloseable {
         private final String instanceId;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
+        private final Date startTime;
 
         OpflowInfoCollectorMaster(String instanceId, OpflowRpcMaster rpcMaster, Map<String, RpcInvocationHandler> mappings) {
             this.instanceId = instanceId;
             this.rpcMaster = rpcMaster;
             this.handlers = mappings;
+            this.startTime = new Date();
         }
 
         @Override
@@ -288,7 +302,10 @@ public class OpflowCommander implements AutoCloseable {
         @Override
         public Map<String, Object> collect(Scope scope) {
             final Scope label = (scope == null) ? Scope.BASIC : scope;
-            return OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+            
+            MapBuilder root = OpflowUtil.buildOrderedMap();
+            
+            root.put("commander", OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     OpflowEngine engine = rpcMaster.getEngine();
@@ -337,7 +354,17 @@ public class OpflowCommander implements AutoCloseable {
                             .put("expiration", rpcMaster.getExpiration())
                             .toMap());
                 }
-            }).toMap();
+            }).toMap());
+
+            // start-time & uptime
+            if (label == Scope.FULL) {
+                Date currentTime = new Date();
+                root.put("start-time", OpflowUtil.toISO8601UTC(startTime));
+                root.put("current-time", OpflowUtil.toISO8601UTC(currentTime));
+                root.put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime));
+            }
+            
+            return root.toMap();
         }
     }
 
