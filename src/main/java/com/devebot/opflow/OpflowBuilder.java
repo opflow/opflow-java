@@ -39,7 +39,7 @@ public class OpflowBuilder {
                 .text("Create new OpflowRpcMaster with properties file")
                 .stringify());
         
-        config = OpflowConfigLoader.loadConfiguration(config, configFile, useDefaultFile);
+        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
         Map<String, Object> params = new HashMap<>();
         
         String[] handlerPath = new String[] {"opflow", "master"};
@@ -79,7 +79,7 @@ public class OpflowBuilder {
                 .text("Create new OpflowRpcWorker with properties file")
                 .stringify());
         
-        config = OpflowConfigLoader.loadConfiguration(config, configFile, useDefaultFile);
+        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
         Map<String, Object> params = new HashMap<>();
         
         String[] handlerPath = new String[] {"opflow", "worker"};
@@ -123,7 +123,7 @@ public class OpflowBuilder {
                 .text("Create new OpflowPubsubHandler with properties file")
                 .stringify());
         
-        config = OpflowConfigLoader.loadConfiguration(config, configFile, useDefaultFile);
+        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
         Map<String, Object> params = new HashMap<>();
         
         String[] handlerPath = new String[] {"opflow", "pubsub"};
@@ -165,7 +165,7 @@ public class OpflowBuilder {
     
     public static OpflowCommander createCommander(Map<String, Object> config,
             String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        config = OpflowConfigLoader.loadConfiguration(config, configFile, useDefaultFile);
+        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
         
         Map<String, Object> params = new HashMap<>();
         String[] componentPath = new String[] {"opflow", "commander", ""};
@@ -243,7 +243,7 @@ public class OpflowBuilder {
     
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        config = OpflowConfigLoader.loadConfiguration(config, configFile, useDefaultFile);
+        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
         
         Map<String, Object> params = new HashMap<>();
         String[] componentNames = new String[] {"configurer", "rpcWorker", "subscriber"};
