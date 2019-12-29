@@ -359,9 +359,12 @@ public class OpflowCommander implements AutoCloseable {
             // start-time & uptime
             if (label == Scope.FULL) {
                 Date currentTime = new Date();
-                root.put("start-time", OpflowUtil.toISO8601UTC(startTime));
-                root.put("current-time", OpflowUtil.toISO8601UTC(currentTime));
-                root.put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime));
+                root.put("miscellaneous", OpflowUtil.buildOrderedMap()
+                        .put("threadCount", Thread.activeCount())
+                        .put("startTime", OpflowUtil.toISO8601UTC(startTime))
+                        .put("currentTime", OpflowUtil.toISO8601UTC(currentTime))
+                        .put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime))
+                        .toMap());
             }
             
             return root.toMap();

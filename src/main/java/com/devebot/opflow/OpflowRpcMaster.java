@@ -159,7 +159,7 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();
     
-    private OpflowEngine.ConsumerInfo responseConsumer;
+    private OpflowEngine.ConsumerInfo callbackConsumer;
 
     private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean forked) {
         final String _consumerId = OpflowUtil.getLogID();
@@ -293,10 +293,10 @@ public class OpflowRpcMaster implements AutoCloseable {
         if (forked) {
             consumerInfo = initCallbackConsumer(true);
         } else {
-            if (responseConsumer == null) {
-                responseConsumer = initCallbackConsumer(false);
+            if (callbackConsumer == null) {
+                callbackConsumer = initCallbackConsumer(false);
             }
-            consumerInfo = responseConsumer;
+            consumerInfo = callbackConsumer;
         }
         
         final String taskId = OpflowUtil.getLogID();
@@ -465,11 +465,11 @@ public class OpflowRpcMaster implements AutoCloseable {
             while(!tasks.isEmpty()) idle.await();
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - cancel responseConsumer")
+                .text("RpcMaster[${rpcMasterId}].close() - close CallbackConsumer")
                 .stringify());
-            if (responseConsumer != null) {
-                engine.cancelConsumer(responseConsumer);
-                responseConsumer = null;
+            if (callbackConsumer != null) {
+                engine.cancelConsumer(callbackConsumer);
+                callbackConsumer = null;
             }
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
