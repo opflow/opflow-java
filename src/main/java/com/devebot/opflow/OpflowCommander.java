@@ -7,7 +7,7 @@ import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.supports.OpflowDateTime;
-import io.undertow.server.HttpHandler;
+import io.undertow.server.RoutingHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -157,9 +157,9 @@ public class OpflowCommander implements AutoCloseable {
         this.reserveWorkerEnabled = enabled;
     }
 
-    public Map<String, HttpHandler> getInfoHttpHandlers() {
+    public RoutingHandler getDefaultHandlers() {
         if (restServer != null) {
-            return restServer.getHttpHandlers();
+            return restServer.getDefaultHandlers();
         }
         return null;
     }
@@ -177,7 +177,7 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
 
-    public final void serve(Map<String, HttpHandler> httpHandlers) {
+    public final void serve(RoutingHandler httpHandlers) {
         if (restServer != null) {
             restServer.serve(httpHandlers);
         }
