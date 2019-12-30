@@ -68,6 +68,18 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].new()")
                 .stringify());
 
+        this.init(kwargs);
+
+        exporter = OpflowExporter.getInstance();
+
+        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
+
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                .text("Commander[${commanderId}].new() end!")
+                .stringify());
+    }
+
+    private void init(Map<String, Object> kwargs) throws OpflowBootstrapException {
         if (kwargs.get(PARAM_RESERVE_WORKER_ENABLED) != null && kwargs.get(PARAM_RESERVE_WORKER_ENABLED) instanceof Boolean) {
             reserveWorkerEnabled = (Boolean) kwargs.get(PARAM_RESERVE_WORKER_ENABLED);
         } else {
@@ -139,16 +151,8 @@ public class OpflowCommander implements AutoCloseable {
             this.close();
             throw exception;
         }
-
-        exporter = OpflowExporter.getInstance();
-
-        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
-
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                .text("Commander[${commanderId}].new() end!")
-                .stringify());
     }
-
+    
     public boolean isReserveWorkerEnabled() {
         return this.reserveWorkerEnabled;
     }
