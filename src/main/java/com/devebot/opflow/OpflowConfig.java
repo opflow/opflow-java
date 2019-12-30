@@ -24,7 +24,11 @@ public class OpflowConfig {
     public final static String DEFAULT_CONFIGURATION_KEY = "opflow.configuration";
     public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
-
+    
+    public interface Loader {
+        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException;
+    }
+    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowConfig.class);
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     

@@ -165,45 +165,8 @@ public class OpflowBuilder {
     
     public static OpflowCommander createCommander(Map<String, Object> config,
             String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
-        
-        Map<String, Object> params = new HashMap<>();
-        String[] componentPath = new String[] {"opflow", "commander", ""};
-        for(String componentName:OpflowCommander.ALL_BEAN_NAMES) {
-            componentPath[2] = componentName;
-            Map<String, Object> componentCfg = new HashMap<>();
-            Map<String, Object> componentNode;
-            if (OpflowCommander.SERVICE_BEAN_NAMES.contains(componentName)) {
-                extractEngineParameters(componentCfg, config, componentPath);
-                componentNode = getChildMapByPath(config, componentPath);
-            } else {
-                componentNode = getChildMapByPath(config, componentPath, false);
-            }
-            componentCfg.put("enabled", componentNode.get("enabled"));
-            if ("rpcMaster".equals(componentName)) {
-                componentCfg.put("expiration", componentNode.get("expiration"));
-                componentCfg.put("responseName", componentNode.get("responseName"));
-                componentCfg.put("responseDurable", componentNode.get("responseDurable"));
-                componentCfg.put("responseExclusive", componentNode.get("responseExclusive"));
-                componentCfg.put("responseAutoDelete", componentNode.get("responseAutoDelete"));
-                componentCfg.put("responseQueueSuffix", componentNode.get("responseQueueSuffix"));
-                componentCfg.put("monitorId", componentNode.get("monitorId"));
-                componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
-                componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
-                componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
-            }
-            if ("rpcWatcher".equals(componentName)) {
-                componentCfg.put("interval", componentNode.get("interval"));
-            }
-            if ("restServer".equals(componentName)) {
-                componentCfg.put("host", componentNode.get("host"));
-                componentCfg.put("ports", componentNode.get("ports"));
-            }
-            transformParameters(componentCfg);
-            params.put(componentName, componentCfg);
-        }
-        
-        return new OpflowCommander(params);
+        CommanderConfigLoader loader = new CommanderConfigLoader(config, configFile, useDefaultFile);
+        return new OpflowCommander(loader.loadConfiguration());
     }
     
     public static OpflowServerlet createServerlet()
@@ -388,6 +351,61 @@ public class OpflowBuilder {
                     }
                 }
             }
+        }
+    }
+    
+    public static class CommanderConfigLoader implements OpflowConfig.Loader {
+        
+        private Map<String, Object> config;
+        private String configFile;
+        private boolean useDefaultFile;
+        
+        public CommanderConfigLoader(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            this.config = config;
+            this.configFile = configFile;
+            this.useDefaultFile = useDefaultFile;
+        }
+        
+        @Override
+        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+
+            Map<String, Object> params = new HashMap<>();
+            String[] componentPath = new String[] {"opflow", "commander", ""};
+            for(String componentName:OpflowCommander.ALL_BEAN_NAMES) {
+                componentPath[2] = componentName;
+                Map<String, Object> componentCfg = new HashMap<>();
+                Map<String, Object> componentNode;
+                if (OpflowCommander.SERVICE_BEAN_NAMES.contains(componentName)) {
+                    extractEngineParameters(componentCfg, config, componentPath);
+                    componentNode = getChildMapByPath(config, componentPath);
+                } else {
+                    componentNode = getChildMapByPath(config, componentPath, false);
+                }
+                componentCfg.put("enabled", componentNode.get("enabled"));
+                if ("rpcMaster".equals(componentName)) {
+                    componentCfg.put("expiration", componentNode.get("expiration"));
+                    componentCfg.put("responseName", componentNode.get("responseName"));
+                    componentCfg.put("responseDurable", componentNode.get("responseDurable"));
+                    componentCfg.put("responseExclusive", componentNode.get("responseExclusive"));
+                    componentCfg.put("responseAutoDelete", componentNode.get("responseAutoDelete"));
+                    componentCfg.put("responseQueueSuffix", componentNode.get("responseQueueSuffix"));
+                    componentCfg.put("monitorId", componentNode.get("monitorId"));
+                    componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
+                    componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
+                    componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
+                }
+                if ("rpcWatcher".equals(componentName)) {
+                    componentCfg.put("interval", componentNode.get("interval"));
+                }
+                if ("restServer".equals(componentName)) {
+                    componentCfg.put("host", componentNode.get("host"));
+                    componentCfg.put("ports", componentNode.get("ports"));
+                }
+                transformParameters(componentCfg);
+                params.put(componentName, componentCfg);
+            }
+            return params;
         }
     }
 }
