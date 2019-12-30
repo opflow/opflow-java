@@ -7,7 +7,7 @@ import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.supports.OpflowDateTime;
-import io.undertow.server.HttpHandler;
+import io.undertow.server.RoutingHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -56,7 +56,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRestServer restServer;
 
     public OpflowCommander() throws OpflowBootstrapException {
-        this(null);
+        this((Map<String, Object>) null);
     }
 
     public OpflowCommander(Map<String, Object> kwargs) throws OpflowBootstrapException {
@@ -68,6 +68,18 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].new()")
                 .stringify());
 
+        this.init(kwargs);
+
+        exporter = OpflowExporter.getInstance();
+
+        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
+
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                .text("Commander[${commanderId}].new() end!")
+                .stringify());
+    }
+
+    private void init(Map<String, Object> kwargs) throws OpflowBootstrapException {
         if (kwargs.get(PARAM_RESERVE_WORKER_ENABLED) != null && kwargs.get(PARAM_RESERVE_WORKER_ENABLED) instanceof Boolean) {
             reserveWorkerEnabled = (Boolean) kwargs.get(PARAM_RESERVE_WORKER_ENABLED);
         } else {
@@ -82,7 +94,7 @@ public class OpflowCommander implements AutoCloseable {
 
         HashSet<String> checkExchange = new HashSet<>();
 
-        if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
+        if (OpflowUtil.isComponentEnabled(configurerCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(configurerCfg)) {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
             }
@@ -91,7 +103,7 @@ public class OpflowCommander implements AutoCloseable {
             }
         }
 
-        if (rpcMasterCfg != null && !Boolean.FALSE.equals(rpcMasterCfg.get("enabled"))) {
+        if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(rpcMasterCfg)) {
                 throw new OpflowBootstrapException("Invalid RpcMaster connection parameters");
             }
@@ -100,7 +112,7 @@ public class OpflowCommander implements AutoCloseable {
             }
         }
 
-        if (publisherCfg != null && !Boolean.FALSE.equals(publisherCfg.get("enabled"))) {
+        if (OpflowUtil.isComponentEnabled(publisherCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(publisherCfg)) {
                 throw new OpflowBootstrapException("Invalid Publisher connection parameters");
             }
@@ -110,13 +122,13 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         try {
-            if (configurerCfg != null && !Boolean.FALSE.equals(configurerCfg.get("enabled"))) {
+            if (OpflowUtil.isComponentEnabled(configurerCfg)) {
                 configurer = new OpflowPubsubHandler(configurerCfg);
             }
-            if (rpcMasterCfg != null && !Boolean.FALSE.equals(rpcMasterCfg.get("enabled"))) {
+            if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
                 rpcMaster = new OpflowRpcMaster(rpcMasterCfg);
             }
-            if (publisherCfg != null && !Boolean.FALSE.equals(publisherCfg.get("enabled"))) {
+            if (OpflowUtil.isComponentEnabled(publisherCfg)) {
                 publisher = new OpflowPubsubHandler(publisherCfg);
             }
 
@@ -139,16 +151,8 @@ public class OpflowCommander implements AutoCloseable {
             this.close();
             throw exception;
         }
-
-        exporter = OpflowExporter.getInstance();
-
-        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
-
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                .text("Commander[${commanderId}].new() end!")
-                .stringify());
     }
-
+    
     public boolean isReserveWorkerEnabled() {
         return this.reserveWorkerEnabled;
     }
@@ -157,9 +161,9 @@ public class OpflowCommander implements AutoCloseable {
         this.reserveWorkerEnabled = enabled;
     }
 
-    public Map<String, HttpHandler> getInfoHttpHandlers() {
+    public RoutingHandler getDefaultHandlers() {
         if (restServer != null) {
-            return restServer.getHttpHandlers();
+            return restServer.getDefaultHandlers();
         }
         return null;
     }
@@ -177,7 +181,7 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
 
-    public final void serve(Map<String, HttpHandler> httpHandlers) {
+    public final void serve(RoutingHandler httpHandlers) {
         if (restServer != null) {
             restServer.serve(httpHandlers);
         }
@@ -359,9 +363,12 @@ public class OpflowCommander implements AutoCloseable {
             // start-time & uptime
             if (label == Scope.FULL) {
                 Date currentTime = new Date();
-                root.put("start-time", OpflowUtil.toISO8601UTC(startTime));
-                root.put("current-time", OpflowUtil.toISO8601UTC(currentTime));
-                root.put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime));
+                root.put("miscellaneous", OpflowUtil.buildOrderedMap()
+                        .put("threadCount", Thread.activeCount())
+                        .put("startTime", OpflowUtil.toISO8601UTC(startTime))
+                        .put("currentTime", OpflowUtil.toISO8601UTC(currentTime))
+                        .put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime))
+                        .toMap());
             }
             
             return root.toMap();

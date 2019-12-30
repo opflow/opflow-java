@@ -4,13 +4,11 @@ import com.devebot.opflow.OpflowUtil.MapBuilder;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowNetTool;
-import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.BlockingHandler;
-import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.server.handlers.RedirectHandler;
 import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.resource.CachingResourceManager;
@@ -21,7 +19,6 @@ import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
 import java.nio.file.Paths;
 import java.util.Deque;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +35,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final OpflowInfoCollector infoCollector;
     private final OpflowTaskSubmitter taskSubmitter;
     private final OpflowRpcChecker rpcChecker;
-    private final RoutingHandler defaultHandler;
-    private final Map<String, HttpHandler> defaultHandlers;
+    private final RoutingHandler defaultHandlers;
     private final String host;
     private final Integer port;
     private final Boolean enabled;
@@ -49,14 +45,6 @@ public class OpflowRestServer implements AutoCloseable {
             OpflowTaskSubmitter _taskSubmitter,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs) throws OpflowBootstrapException {
-        this(_infoCollector, _taskSubmitter, _rpcChecker, kwargs, null);
-    }
-    
-    OpflowRestServer(OpflowInfoCollector _infoCollector,
-            OpflowTaskSubmitter _taskSubmitter,
-            OpflowRpcChecker _rpcChecker,
-            Map<String, Object> kwargs,
-            Map<String, HttpHandler> httpHandlers) throws OpflowBootstrapException {
         kwargs = OpflowUtil.ensureNotNull(kwargs);
 
         instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
@@ -75,13 +63,8 @@ public class OpflowRestServer implements AutoCloseable {
         taskSubmitter = _taskSubmitter;
         rpcChecker = _rpcChecker;
         
-        defaultHandlers = new LinkedHashMap<>();
-        defaultHandlers.put("/exec/{action}", new BlockingHandler(new ExecHandler()));
-        defaultHandlers.put("/info", new InfoHandler());
-        defaultHandlers.put("/ping", new PingHandler());
-        
-        defaultHandler = new RoutingHandler();
-        defaultHandler.put("/exec/{action}", new BlockingHandler(new ExecHandler()))
+        defaultHandlers = new RoutingHandler();
+        defaultHandlers.put("/exec/{action}", new BlockingHandler(new ExecHandler()))
                 .get("/info", new InfoHandler())
                 .get("/ping", new PingHandler());
     }
@@ -99,24 +82,19 @@ public class OpflowRestServer implements AutoCloseable {
         }
     }
     
-    @Deprecated
-    public Map<String, HttpHandler> getHttpHandlers() {
+    public RoutingHandler getDefaultHandlers() {
         return defaultHandlers;
-    }
-    
-    public RoutingHandler getRoutingHandler() {
-        return defaultHandler;
     }
     
     public void serve() {
         serve(null, null);
     }
 
-    public void serve(Map<String, HttpHandler> httpHandlers) {
+    public void serve(RoutingHandler httpHandlers) {
         serve(httpHandlers, null);
     }
     
-    public void serve(Map<String, HttpHandler> httpHandlers, Map<String, Object> kwargs) {
+    public void serve(RoutingHandler extraHandlers, Map<String, Object> kwargs) {
         if (enabled != null && Boolean.FALSE.equals(enabled)) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("RestServer[${restServerId}].serve() is disable")
@@ -129,26 +107,20 @@ public class OpflowRestServer implements AutoCloseable {
                     .stringify());
             return;
         }
-        if (httpHandlers != null || kwargs != null) {
+        if (extraHandlers != null || kwargs != null) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("RestServer[${restServerId}].serve() stop the current service")
                     .stringify());
             this.close();
         }
         if (server == null) {
-            PathTemplateHandler ptHandler = Handlers.pathTemplate();
-            for(Map.Entry<String, HttpHandler> entry:defaultHandlers.entrySet()) {
-                ptHandler.add(entry.getKey(), entry.getValue());
+            RoutingHandler routes = new RoutingHandler();
+            
+            if (extraHandlers != null) {
+                routes.addAll(extraHandlers);
             }
             
-            if (httpHandlers != null) {
-                for(Map.Entry<String, HttpHandler> entry:httpHandlers.entrySet()) {
-                    ptHandler.add(entry.getKey(), entry.getValue());
-                }
-            }
-            
-            RoutingHandler routes = new RoutingHandler()
-                    .addAll(defaultHandler)
+            routes.addAll(defaultHandlers)
                     .get("/opflow.yaml", buildResourceHandler("/openapi-spec"))
                     .get("/api-ui/*", buildResourceHandler("/openapi-ui"))
                     .get("/api-ui/", new RedirectHandler("/api-ui/index.html"))
@@ -166,7 +138,8 @@ public class OpflowRestServer implements AutoCloseable {
         }
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("port", port)
-                .text("RestServer[${restServerId}].serve() Server listening on port ${port}")
+                .put("host", host)
+                .text("RestServer[${restServerId}].serve() Server listening on (http://${host}:${port})")
                 .stringify());
         server.start();
     }

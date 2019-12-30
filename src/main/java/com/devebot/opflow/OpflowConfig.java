@@ -20,12 +20,12 @@ import org.yaml.snakeyaml.scanner.ScannerException;
  *
  * @author acegik
  */
-public class OpflowConfigLoader {
+public class OpflowConfig {
     public final static String DEFAULT_CONFIGURATION_KEY = "opflow.configuration";
     public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
 
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowConfigLoader.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowConfig.class);
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
     public static Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
