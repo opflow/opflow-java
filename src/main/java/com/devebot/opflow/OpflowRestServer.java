@@ -64,7 +64,7 @@ public class OpflowRestServer implements AutoCloseable {
         rpcChecker = _rpcChecker;
         
         defaultHandlers = new RoutingHandler();
-        defaultHandlers.put("/exec/{action}", new BlockingHandler(new ExecHandler()))
+        defaultHandlers.get("/exec/{action}", new BlockingHandler(new ExecHandler()))
                 .get("/info", new InfoHandler())
                 .get("/ping", new PingHandler());
     }

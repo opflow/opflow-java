@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -26,9 +28,9 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final int PREFETCH_NUM = 1;
     private final int CONSUMER_MAX = 1;
 
+    private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
     private final Lock lock = new ReentrantLock();
     private final Condition idle = lock.newCondition();
-    
     private final ReentrantReadWriteLock pushLock = new ReentrantReadWriteLock();
     
     private final OpflowEngine engine;
@@ -389,19 +391,25 @@ public class OpflowRpcMaster implements AutoCloseable {
         private final ReentrantReadWriteLock rwlock;
         private final OpflowLogTracer tracer;
         private long duration = 0;
+        private long count = 0;
+        private boolean running = true;
         
-        public long getDuration() {
-            return duration;
-        }
-        
-        public void setDuration(long duration) {
+        public void init(long duration) {
             this.duration = duration;
+            this.count = 0;
+            this.running = true;
         }
         
-        PauseThread(OpflowLogTracer logTracer, ReentrantReadWriteLock pushLock, long duration) {
+        public void terminate() {
+            running = false;
+        }
+        
+        PauseThread(OpflowLogTracer logTracer, ReentrantReadWriteLock pushLock) {
             this.rwlock = pushLock;
             this.tracer = logTracer.copy();
-            this.duration = duration;
+            if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                    .text("PauseThread[${rpcMasterId}] constructed")
+                    .stringify());
         }
         
         @Override
@@ -415,10 +423,16 @@ public class OpflowRpcMaster implements AutoCloseable {
                             .put("duration", duration)
                             .text("PauseThread[${rpcMasterId}].run() sleeping in ${duration} ms")
                             .stringify());
-                    Thread.sleep(duration);
+                    while (running && count < duration) {
+                        count += 1000;
+                        Thread.sleep(1000);
+                    }
                 }
             }
             catch (InterruptedException e) {
+                if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                        .text("PauseThread[${rpcMasterId}].run() is interrupted")
+                        .stringify());
             }
             finally {
                 if (tracer.ready(LOG, "trace")) LOG.trace(tracer
@@ -437,15 +451,16 @@ public class OpflowRpcMaster implements AutoCloseable {
     private PauseThread pauseThread;
     
     public void pause(final long duration) {
-        if (pauseThread == null || !pauseThread.isAlive()) {
-            pauseThread = new PauseThread(logTracer, pushLock, duration);
-            pauseThread.start();
+        if (pauseThread == null) {
+            pauseThread = new PauseThread(logTracer, pushLock);
         }
+        pauseThread.init(duration);
+        threadExecutor.execute(pauseThread);
     }
     
     public void unpause() {
-        if (pauseThread != null && pauseThread.isAlive()) {
-            pauseThread.interrupt();
+        if (pauseThread != null) {
+            pauseThread.terminate();
         }
     }
     
