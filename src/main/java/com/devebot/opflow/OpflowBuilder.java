@@ -165,8 +165,7 @@ public class OpflowBuilder {
     
     public static OpflowCommander createCommander(Map<String, Object> config,
             String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        CommanderConfigLoader loader = new CommanderConfigLoader(config, configFile, useDefaultFile);
-        return new OpflowCommander(loader.loadConfiguration());
+        return new OpflowCommander(new CommanderConfigLoader(config, configFile, useDefaultFile));
     }
     
     public static OpflowServerlet createServerlet()
