@@ -281,14 +281,13 @@ public class OpflowCommander implements AutoCloseable {
             rpcMaster.close();
             return null;
         }
-
+        
         @Override
         public Map<String, Object> pause(long duration) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].pause(true) is invoked")
                     .stringify());
-            rpcMaster.pause(duration);
-            return null;
+            return rpcMaster.pause(duration);
         }
         
         @Override
@@ -296,8 +295,7 @@ public class OpflowCommander implements AutoCloseable {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].unpause() is invoked")
                     .stringify());
-            rpcMaster.unpause();
-            return null;
+            return rpcMaster.unpause();
         }
     }
     

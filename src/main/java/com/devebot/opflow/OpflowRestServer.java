@@ -1,6 +1,5 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.OpflowUtil.MapBuilder;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowNetTool;
@@ -186,28 +185,27 @@ public class OpflowRestServer implements AutoCloseable {
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
                 PathTemplateMatch pathMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
-                MapBuilder result = OpflowUtil.buildOrderedMap();
+                Map<String, Object> result = OpflowUtil.buildOrderedMap().toMap();
                 String action = pathMatch.getParameters().get("action");
                 if (action != null && action.length() > 0) {
                     switch(action) {
                         case "pause":
                             Long duration = getQueryParam(exchange, "duration", Long.class, 10000l);
-                            taskSubmitter.pause(duration);
-                            result.put("duration", duration);
+                            result = taskSubmitter.pause(duration);
                             result.put("message", "Pausing in " + duration + " milliseconds");
                             break;
                         case "unpause":
-                            taskSubmitter.unpause();
+                            result = taskSubmitter.unpause();
                             break;
                         case "reset":
-                            taskSubmitter.reset();
+                            result = taskSubmitter.reset();
                             break;
                         default:
                             break;
                     }
                 }
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                exchange.getResponseSender().send(OpflowJsontool.toString(result.toMap(), getPrettyParam(exchange)));
+                exchange.getResponseSender().send(OpflowJsontool.toString(result, getPrettyParam(exchange)));
             } catch (Exception exception) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());

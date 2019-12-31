@@ -25,10 +25,12 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowServerlet implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
-    private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
     
     private final String serverletId;
+    private final OpflowLogTracer logTracer;
+    private final OpflowExporter exporter;
+    private final OpflowConfig.Loader configLoader;
+    
     private OpflowPubsubHandler configurer;
     private OpflowRpcWorker rpcWorker;
     private OpflowPubsubHandler subscriber;
@@ -38,9 +40,26 @@ public class OpflowServerlet implements AutoCloseable {
     
     private final Map<String, Object> kwargs;
     
+    public OpflowServerlet(ListenerDescriptor listeners, OpflowConfig.Loader loader) throws OpflowBootstrapException {
+        this(listeners, loader, null);
+    }
+    
     public OpflowServerlet(ListenerDescriptor listeners, Map<String, Object> kwargs) throws OpflowBootstrapException {
+        this(listeners, null, kwargs);
+    }
+    
+    public OpflowServerlet(ListenerDescriptor listeners, OpflowConfig.Loader loader, Map<String, Object> kwargs) throws OpflowBootstrapException {
+        if (loader != null) {
+            configLoader = loader;
+        } else {
+            configLoader = null;
+        }
+        if (configLoader != null) {
+            kwargs = configLoader.loadConfiguration();
+        }
+        
         this.kwargs = OpflowUtil.ensureNotNull(kwargs);
-
+        
         serverletId = OpflowUtil.getOptionField(this.kwargs, "serverletId", true);
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", serverletId);
         

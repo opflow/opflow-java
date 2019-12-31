@@ -165,7 +165,7 @@ public class OpflowBuilder {
     
     public static OpflowCommander createCommander(Map<String, Object> config,
             String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        return new OpflowCommander(new CommanderConfigLoader(config, configFile, useDefaultFile));
+        return new OpflowCommander(new LoaderImplCommander(config, configFile, useDefaultFile));
     }
     
     public static OpflowServerlet createServerlet()
@@ -205,32 +205,50 @@ public class OpflowBuilder {
     
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
-        
-        Map<String, Object> params = new HashMap<>();
-        String[] componentNames = new String[] {"configurer", "rpcWorker", "subscriber"};
-        String[] componentPath = new String[] {"opflow", "serverlet", ""};
-        for(String componentName:componentNames) {
-            componentPath[2] = componentName;
-            Map<String, Object> componentCfg = new HashMap<>();
-            extractEngineParameters(componentCfg, config, componentPath);
-            Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
-            componentCfg.put("enabled", componentNode.get("enabled"));
-            if ("rpcWorker".equals(componentName)) {
-                componentCfg.put("operatorName", componentNode.get("operatorName"));
-                componentCfg.put("responseName", componentNode.get("responseName"));
-            }
-            if ("subscriber".equals(componentName)) {
-                componentCfg.put("subscriberName", componentNode.get("subscriberName"));
-                componentCfg.put("recyclebinName", componentNode.get("recyclebinName"));
-            }
-            transformParameters(componentCfg);
-            params.put(componentName, componentCfg);
-        }
-        
-        return new OpflowServerlet(listeners, params);
+        return new OpflowServerlet(listeners, new LoaderImplServerlet(config, configFile, useDefaultFile));
     }
     
+    public static class LoaderImplServerlet implements OpflowConfig.Loader {
+        
+        private Map<String, Object> config;
+        private final String configFile;
+        private final boolean useDefaultFile;
+        
+        public LoaderImplServerlet(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            this.config = config;
+            this.configFile = configFile;
+            this.useDefaultFile = useDefaultFile;
+        }
+        
+        @Override
+        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        
+            Map<String, Object> params = new HashMap<>();
+            String[] componentNames = new String[] {"configurer", "rpcWorker", "subscriber"};
+            String[] componentPath = new String[] {"opflow", "serverlet", ""};
+            for(String componentName:componentNames) {
+                componentPath[2] = componentName;
+                Map<String, Object> componentCfg = new HashMap<>();
+                extractEngineParameters(componentCfg, config, componentPath);
+                Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
+                componentCfg.put("enabled", componentNode.get("enabled"));
+                if ("rpcWorker".equals(componentName)) {
+                    componentCfg.put("operatorName", componentNode.get("operatorName"));
+                    componentCfg.put("responseName", componentNode.get("responseName"));
+                }
+                if ("subscriber".equals(componentName)) {
+                    componentCfg.put("subscriberName", componentNode.get("subscriberName"));
+                    componentCfg.put("recyclebinName", componentNode.get("recyclebinName"));
+                }
+                transformParameters(componentCfg);
+                params.put(componentName, componentCfg);
+            }
+
+            return params;
+        }
+    }
+
     private static String getPropertyAsString(Properties prop) {
         StringWriter writer = new StringWriter();
         prop.list(new PrintWriter(writer));
@@ -353,13 +371,13 @@ public class OpflowBuilder {
         }
     }
     
-    public static class CommanderConfigLoader implements OpflowConfig.Loader {
+    public static class LoaderImplCommander implements OpflowConfig.Loader {
         
         private Map<String, Object> config;
-        private String configFile;
-        private boolean useDefaultFile;
+        private final String configFile;
+        private final boolean useDefaultFile;
         
-        public CommanderConfigLoader(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+        public LoaderImplCommander(Map<String, Object> config, String configFile, boolean useDefaultFile) {
             this.config = config;
             this.configFile = configFile;
             this.useDefaultFile = useDefaultFile;
