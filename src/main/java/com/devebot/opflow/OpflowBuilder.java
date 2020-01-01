@@ -34,31 +34,39 @@ public class OpflowBuilder {
     }
     
     public static OpflowRpcMaster createRpcMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
-                .put("configFile", configFile)
-                .text("Create new OpflowRpcMaster with properties file")
-                .stringify());
+        return new OpflowRpcMaster((new LoaderImplRpcMaster(config, configFile, useDefaultFile)).loadConfiguration());
+    }
+    
+    public static class LoaderImplRpcMaster implements OpflowConfig.Loader {
         
-        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
-        Map<String, Object> params = new HashMap<>();
+        private Map<String, Object> config;
+        private final String configFile;
+        private final boolean useDefaultFile;
         
-        String[] handlerPath = new String[] {"opflow", "master"};
-        extractEngineParameters(params, config, handlerPath);
-        Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
+        public LoaderImplRpcMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            this.config = config;
+            this.configFile = configFile;
+            this.useDefaultFile = useDefaultFile;
+        }
         
-        params.put("responseName", handlerNode.get("responseName"));
-        params.put("responseQueueSuffix", handlerNode.get("responseQueueSuffix"));
-        params.put("responseDurable", handlerNode.get("responseDurable"));
-        params.put("responseExclusive", handlerNode.get("responseExclusive"));
-        params.put("responseAutoDelete", handlerNode.get("responseAutoDelete"));
-        
-        transformParameters(params);
-        
-        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
-                .text("OpflowRpcMaster has been created successfully")
-                .stringify());
-        
-        return new OpflowRpcMaster(params);
+        @Override
+        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+            Map<String, Object> params = new HashMap<>();
+
+            String[] handlerPath = new String[] {"opflow", "master"};
+            extractEngineParameters(params, config, handlerPath);
+            Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
+
+            params.put("responseName", handlerNode.get("responseName"));
+            params.put("responseQueueSuffix", handlerNode.get("responseQueueSuffix"));
+            params.put("responseDurable", handlerNode.get("responseDurable"));
+            params.put("responseExclusive", handlerNode.get("responseExclusive"));
+            params.put("responseAutoDelete", handlerNode.get("responseAutoDelete"));
+
+            transformParameters(params);
+            return params;
+        }
     }
     
     public static OpflowRpcWorker createRpcWorker() throws OpflowBootstrapException {
@@ -74,35 +82,43 @@ public class OpflowBuilder {
     }
     
     public static OpflowRpcWorker createRpcWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
-                .put("configFile", configFile)
-                .text("Create new OpflowRpcWorker with properties file")
-                .stringify());
+        return new OpflowRpcWorker((new LoaderImplRpcWorker(config, configFile, useDefaultFile)).loadConfiguration());
+    }
+    
+    public static class LoaderImplRpcWorker implements OpflowConfig.Loader {
         
-        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
-        Map<String, Object> params = new HashMap<>();
+        private Map<String, Object> config;
+        private final String configFile;
+        private final boolean useDefaultFile;
         
-        String[] handlerPath = new String[] {"opflow", "worker"};
-        extractEngineParameters(params, config, handlerPath);
-        Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
-        Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {"opflow"});
-        
-        if (handlerNode.get("operatorName") != null) {
-            params.put("operatorName", handlerNode.get("operatorName"));
-        } else {
-            params.put("operatorName", opflowNode.get("queueName"));
+        public LoaderImplRpcWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            this.config = config;
+            this.configFile = configFile;
+            this.useDefaultFile = useDefaultFile;
         }
         
-        params.put("responseName", handlerNode.get("responseName"));
-        params.put("prefetch", handlerNode.get("prefetch"));
-        
-        transformParameters(params);
-        
-        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
-                .text("OpflowRpcWorker has been created successfully")
-                .stringify());
-        
-        return new OpflowRpcWorker(params);
+        @Override
+        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+            Map<String, Object> params = new HashMap<>();
+
+            String[] handlerPath = new String[] {"opflow", "worker"};
+            extractEngineParameters(params, config, handlerPath);
+            Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
+            Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {"opflow"});
+
+            if (handlerNode.get("operatorName") != null) {
+                params.put("operatorName", handlerNode.get("operatorName"));
+            } else {
+                params.put("operatorName", opflowNode.get("queueName"));
+            }
+
+            params.put("responseName", handlerNode.get("responseName"));
+            params.put("prefetch", handlerNode.get("prefetch"));
+
+            transformParameters(params);
+            return params;
+        }
     }
     
     public static OpflowPubsubHandler createPubsubHandler() throws OpflowBootstrapException {
@@ -118,37 +134,45 @@ public class OpflowBuilder {
     }
     
     public static OpflowPubsubHandler createPubsubHandler(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
-                .put("configFile", configFile)
-                .text("Create new OpflowPubsubHandler with properties file")
-                .stringify());
+        return new OpflowPubsubHandler((new LoaderImplPubsubHandler(config, configFile, useDefaultFile)).loadConfiguration());
+    }
+    
+    public static class LoaderImplPubsubHandler implements OpflowConfig.Loader {
         
-        config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
-        Map<String, Object> params = new HashMap<>();
+        private Map<String, Object> config;
+        private final String configFile;
+        private final boolean useDefaultFile;
         
-        String[] handlerPath = new String[] {"opflow", "pubsub"};
-        extractEngineParameters(params, config, handlerPath);
-        Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
-        Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {"opflow"});
-        
-        if (handlerNode.get("subscriberName") != null) {
-            params.put("subscriberName", handlerNode.get("subscriberName"));
-        } else {
-            params.put("subscriberName", opflowNode.get("queueName"));
+        public LoaderImplPubsubHandler(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            this.config = config;
+            this.configFile = configFile;
+            this.useDefaultFile = useDefaultFile;
         }
         
-        params.put("recyclebinName", handlerNode.get("recyclebinName"));
-        params.put("prefetch", handlerNode.get("prefetch"));
-        params.put("subscriberLimit", handlerNode.get("subscriberLimit"));
-        params.put("redeliveredLimit", handlerNode.get("redeliveredLimit"));
-        
-        transformParameters(params);
-        
-        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
-                .text("OpflowPubsubHandler has been created successfully")
-                .stringify());
-        
-        return new OpflowPubsubHandler(params);
+        @Override
+        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+            Map<String, Object> params = new HashMap<>();
+
+            String[] handlerPath = new String[] {"opflow", "pubsub"};
+            extractEngineParameters(params, config, handlerPath);
+            Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
+            Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {"opflow"});
+
+            if (handlerNode.get("subscriberName") != null) {
+                params.put("subscriberName", handlerNode.get("subscriberName"));
+            } else {
+                params.put("subscriberName", opflowNode.get("queueName"));
+            }
+
+            params.put("recyclebinName", handlerNode.get("recyclebinName"));
+            params.put("prefetch", handlerNode.get("prefetch"));
+            params.put("subscriberLimit", handlerNode.get("subscriberLimit"));
+            params.put("redeliveredLimit", handlerNode.get("redeliveredLimit"));
+
+            transformParameters(params);
+            return params;
+        }
     }
     
     public static OpflowCommander createCommander() throws OpflowBootstrapException {
