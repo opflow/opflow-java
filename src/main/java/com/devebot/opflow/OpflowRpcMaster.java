@@ -494,8 +494,26 @@ public class OpflowRpcMaster implements AutoCloseable {
         return result;
     }
     
+    private void assertClearTasks() {
+        if (tasks.size() > 0) {
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    tasks.clear();
+                    idle.signal();
+                }
+            }, (expiration + DELAY_TIMEOUT) * tasks.size());
+        }
+    }
+    
+    private void cancelClearTasks() {
+        timer.cancel();
+        timer.purge();
+    }
+    
     @Override
     public void close() {
+        assertClearTasks();
         lock.lock();
         pushLock.writeLock().lock();
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
@@ -506,6 +524,8 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].close() - check tasks.isEmpty()? and await...")
                 .stringify());
             while(!tasks.isEmpty()) idle.await();
+            
+            cancelClearTasks();
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - close CallbackConsumer")
