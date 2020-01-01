@@ -19,12 +19,15 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowPubsubHandler implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
+
+    private final String pubsubHandlerId;
     private final OpflowLogTracer logTracer;
     
     private final ReentrantReadWriteLock pushLock = new ReentrantReadWriteLock();
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
+
     private final String subscriberName;
     private final String recyclebinName;
     private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<>();
@@ -36,7 +39,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        final String pubsubHandlerId = OpflowUtil.getOptionField(params, "pubsubHandlerId", true);
+        pubsubHandlerId = OpflowUtil.getOptionField(params, "pubsubHandlerId", true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", pubsubHandlerId);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer

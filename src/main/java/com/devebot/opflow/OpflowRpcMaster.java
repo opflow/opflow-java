@@ -22,12 +22,15 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcMaster implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
-    private final OpflowLogTracer logTracer;
     
     private final long DELAY_TIMEOUT = 1000;
     private final int PREFETCH_NUM = 1;
     private final int CONSUMER_MAX = 1;
-
+    
+    private final String rpcMasterId;
+    private final OpflowLogTracer logTracer;
+    private final OpflowExporter exporter;
+    
     private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
     private final Lock lock = new ReentrantLock();
     private final Condition idle = lock.newCondition();
@@ -35,9 +38,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
-    private final OpflowExporter exporter;
     
-    private final String rpcMasterId;
     private final long expiration;
     private final String responseName;
     private final Boolean responseDurable;

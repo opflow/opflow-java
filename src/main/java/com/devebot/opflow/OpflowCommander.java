@@ -61,14 +61,14 @@ public class OpflowCommander implements AutoCloseable {
     }
     
     public OpflowCommander(OpflowConfig.Loader loader) throws OpflowBootstrapException {
-        this(null, loader);
+        this(loader, null);
     }
 
     public OpflowCommander(Map<String, Object> kwargs) throws OpflowBootstrapException {
-        this(kwargs, null);
+        this(null, kwargs);
     }
 
-    private OpflowCommander(Map<String, Object> kwargs, OpflowConfig.Loader loader) throws OpflowBootstrapException {
+    private OpflowCommander(OpflowConfig.Loader loader, Map<String, Object> kwargs) throws OpflowBootstrapException {
         if (loader != null) {
             configLoader = loader;
         } else {

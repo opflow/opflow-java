@@ -5,17 +5,12 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author drupalex
  */
 public class OpflowBuilder {
-
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowBuilder.class);
-    private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
     public static OpflowRpcMaster createRpcMaster() throws OpflowBootstrapException {
         return createRpcMaster(null, null, true);
