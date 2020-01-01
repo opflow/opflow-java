@@ -6,6 +6,8 @@ import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,6 +33,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final OpflowLogTracer logTracer;
     private final OpflowExporter exporter;
     
+    private final Timer timer = new Timer(true);
     private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
     private final Lock lock = new ReentrantLock();
     private final Condition idle = lock.newCondition();
@@ -390,10 +393,19 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     private class PauseThread extends Thread {
         private final ReentrantReadWriteLock rwlock;
+        private final String instanceId;
         private final OpflowLogTracer tracer;
         private long duration = 0;
         private long count = 0;
         private boolean running = true;
+        
+        public String getInstanceId() {
+            return instanceId;
+        }
+        
+        public boolean isLocked() {
+            return rwlock.isWriteLocked();
+        }
         
         public void init(long duration) {
             this.duration = duration;
@@ -407,6 +419,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         PauseThread(OpflowLogTracer logTracer, ReentrantReadWriteLock pushLock) {
             this.rwlock = pushLock;
+            this.instanceId = OpflowUtil.getLogID();
             this.tracer = logTracer.copy();
             if (tracer.ready(LOG, "trace")) LOG.trace(tracer
                     .text("PauseThread[${rpcMasterId}] constructed")
@@ -455,18 +468,30 @@ public class OpflowRpcMaster implements AutoCloseable {
         if (pauseThread == null) {
             pauseThread = new PauseThread(logTracer, pushLock);
         }
-        pauseThread.init(duration);
-        threadExecutor.execute(pauseThread);
-        return OpflowUtil.buildOrderedMap()
-                .put("duration", duration)
+        Map<String, Object> result = OpflowUtil.buildOrderedMap()
+                .put("threadId", pauseThread.getInstanceId())
+                .put("status", "skipped")
                 .toMap();
+        if (!pauseThread.isLocked()) {
+            pauseThread.init(duration);
+            threadExecutor.execute(pauseThread);
+            result.put("duration", duration);
+            result.put("status", "locking");
+        }
+        return result;
     }
     
     public Map<String, Object> unpause() {
-        if (pauseThread != null) {
+        Map<String, Object> result = OpflowUtil.buildOrderedMap()
+                .put("threadId", pauseThread.getInstanceId())
+                .toMap();
+        if (pauseThread == null) {
+            result.put("status", "free");
+        } else {
             pauseThread.terminate();
+            result.put("status", pauseThread.isLocked() ? "unlocking" : "unlocked");
         }
-        return null;
+        return result;
     }
     
     @Override
