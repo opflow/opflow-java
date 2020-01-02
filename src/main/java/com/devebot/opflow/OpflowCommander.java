@@ -173,25 +173,22 @@ public class OpflowCommander implements AutoCloseable {
     public boolean isReserveWorkerEnabled() {
         return this.reserveWorkerEnabled;
     }
-
+    
     public void setReserveWorkerEnabled(boolean enabled) {
         this.reserveWorkerEnabled = enabled;
     }
-
+    
     public RoutingHandler getDefaultHandlers() {
         if (restServer != null) {
             return restServer.getDefaultHandlers();
         }
         return null;
     }
-
-    public OpflowRpcChecker.Info ping() {
-        if (restServer != null) {
-            return restServer.ping();
-        }
-        return null;
+    
+    public void ping(String query) throws Throwable {
+        rpcChecker.send(new OpflowRpcChecker.Ping(query));
     }
-
+    
     public final void serve() {
         if (restServer != null) {
             restServer.serve();
@@ -354,16 +351,23 @@ public class OpflowCommander implements AutoCloseable {
                                 .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete());
                     }
                     opts.put("rpcMaster", mb1.toMap());
-
+                    
                     // RPC mappings
                     if (label == Scope.FULL) {
                         List<Map<String, Object>> mappingInfos = new ArrayList<>();
-                        for(Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
-                            mappingInfos.add(OpflowUtil.buildOrderedMap()
-                                    .put("class", entry.getKey())
-                                    .put("methods", entry.getValue().getMethodNames())
-                                    .put("isReserveWorkerReady", entry.getValue().hasReserveWorker())
-                                    .toMap());
+                        for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
+                            final RpcInvocationHandler val = entry.getValue();
+                            mappingInfos.add(OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+                                @Override
+                                public void transform(Map<String, Object> opts) {
+                                    opts.put("class", entry.getKey());
+                                    opts.put("methods", val.getMethodNames());
+                                    opts.put("isReserveWorkerReady", val.hasReserveWorker());
+                                    if (val.getReserveWorkerClassName() != null) {
+                                        opts.put("reserveWorkerClassName", val.getReserveWorkerClassName());
+                                    }
+                                }
+                            }).toMap());
                         }
                         opts.put("mappings", mappingInfos);
                     }
@@ -371,6 +375,7 @@ public class OpflowCommander implements AutoCloseable {
                     // request information
                     opts.put("request", OpflowUtil.buildOrderedMap()
                             .put("expiration", rpcMaster.getExpiration())
+                            .put("isLocked", rpcMaster.isLocked())
                             .toMap());
                 }
             }).toMap());
@@ -428,6 +433,11 @@ public class OpflowCommander implements AutoCloseable {
             return this.reserveWorker != null && this.reserveWorkerEnabled;
         }
 
+        public String getReserveWorkerClassName() {
+            if (this.reserveWorker == null) return null;
+            return this.reserveWorker.getClass().getName();
+        }
+        
         public Set<String> getMethodNames() {
             return methodIsAsync.keySet();
         }

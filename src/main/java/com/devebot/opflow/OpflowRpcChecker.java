@@ -23,6 +23,21 @@ public abstract class OpflowRpcChecker {
     }
     
     public static class Ping {
+        String q;
+
+        public Ping() {}
+        
+        public Ping(String q) {
+            this.q = q;
+        }
+
+        public String getQ() {
+            return q;
+        }
+
+        public void setQ(String q) {
+            this.q = q;
+        }
     }
     
     public static class Pong {

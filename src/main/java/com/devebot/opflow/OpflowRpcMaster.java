@@ -478,6 +478,13 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     private PauseThread pauseThread;
     
+    public boolean isLocked() {
+        if (pauseThread == null) {
+            return false;
+        }
+        return pauseThread.isLocked();
+    }
+    
     public Map<String, Object> pause(final long duration) {
         if (pauseThread == null) {
             pauseThread = new PauseThread(logTracer, pushLock);
