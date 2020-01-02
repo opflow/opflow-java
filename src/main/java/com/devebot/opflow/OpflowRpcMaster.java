@@ -13,7 +13,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +25,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
     
     private final long DELAY_TIMEOUT = 1000;
+    private final long PAUSE_SLEEPING_INTERVAL = 1000;
     private final int PREFETCH_NUM = 1;
     private final int CONSUMER_MAX = 1;
     
@@ -35,9 +35,11 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     private final Timer timer = new Timer(true);
     private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
-    private final Lock lock = new ReentrantLock();
-    private final Condition idle = lock.newCondition();
     private final ReentrantReadWriteLock pushLock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock taskLock = new ReentrantReadWriteLock();
+    private final Lock closeLock = taskLock.writeLock();
+    private final Condition closeBarrier = closeLock.newCondition();
+    private final boolean useDuplexLock = true;
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
@@ -264,7 +266,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     }
     
     public OpflowRpcRequest request(final String routineId, byte[] body, Map<String, Object> options) {
-        ReentrantReadWriteLock.ReadLock rl = pushLock.readLock();
+        Lock rl = pushLock.readLock();
         try {
             rl.lock();
             return _request(routineId, body, options);
@@ -314,28 +316,40 @@ public class OpflowRpcMaster implements AutoCloseable {
             private OpflowLogTracer logTask = null;
             
             {
-                if (logRequest != null && logRequest.ready(LOG, "debug")) logTask = logRequest.copy();
+                if (logRequest != null && logRequest.ready(LOG, "debug")) logTask = logRequest.branch("taskId", taskId);
             }
             
             @Override
             public void handleEvent() {
-                lock.lock();
+                Lock eventLock = useDuplexLock ? taskLock.readLock() : closeLock;
+                eventLock.lock();
                 try {
                     tasks.remove(taskId);
                     if (forked) {
                         engine.cancelConsumer(consumerInfo);
                     }
                     if (tasks.isEmpty()) {
-                        idle.signal();
+                        try {
+                            if (eventLock != closeLock) {
+                                eventLock.unlock();
+                                closeLock.lock();
+                            }
+                            closeBarrier.signal();
+                        }
+                        finally {
+                            if (eventLock != closeLock) {
+                                closeLock.unlock();
+                                eventLock.lock();
+                            }
+                        }
                     }
                     if (logTask != null && logTask.ready(LOG, "debug")) LOG.debug(logTask
-                            .put("taskId", taskId)
                             .put("taskListSize", tasks.size())
                             .text("Request[${requestId}] - RpcMaster[${rpcMasterId}]"
                                     + "- tasksize after removing task[${taskId}]: ${taskListSize}")
                             .stringify());
                 } finally {
-                    lock.unlock();
+                    eventLock.unlock();
                 }
             }
         });
@@ -438,8 +452,8 @@ public class OpflowRpcMaster implements AutoCloseable {
                             .text("PauseThread[${rpcMasterId}].run() sleeping in ${duration} ms")
                             .stringify());
                     while (running && count < duration) {
-                        count += 1000;
-                        Thread.sleep(1000);
+                        count += PAUSE_SLEEPING_INTERVAL;
+                        Thread.sleep(PAUSE_SLEEPING_INTERVAL);
                     }
                 }
             }
@@ -500,7 +514,13 @@ public class OpflowRpcMaster implements AutoCloseable {
                 @Override
                 public void run() {
                     tasks.clear();
-                    idle.signal();
+                    closeLock.lock();
+                    try {
+                        closeBarrier.signal();
+                    }
+                    finally {
+                        closeLock.unlock();
+                    }
                 }
             }, (expiration + DELAY_TIMEOUT) * tasks.size());
         }
@@ -514,7 +534,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     @Override
     public void close() {
         assertClearTasks();
-        lock.lock();
+        closeLock.lock();
         pushLock.writeLock().lock();
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - obtain the lock")
@@ -523,7 +543,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - check tasks.isEmpty()? and await...")
                 .stringify());
-            while(!tasks.isEmpty()) idle.await();
+            while(!tasks.isEmpty()) closeBarrier.await();
             
             cancelClearTasks();
             
@@ -555,7 +575,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             if(pushLock.isWriteLockedByCurrentThread()) {
                 pushLock.writeLock().unlock();
             }
-            lock.unlock();
+            closeLock.unlock();
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - lock has been released")
                 .stringify());
