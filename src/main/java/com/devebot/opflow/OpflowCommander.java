@@ -42,10 +42,11 @@ public class OpflowCommander implements AutoCloseable {
     public final static String PARAM_RESERVE_WORKER_ENABLED = "reserveWorkerEnabled";
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
-    private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
 
     private final String commanderId;
+    private final OpflowLogTracer logTracer;
+    private final OpflowExporter exporter;
+    private final OpflowConfig.Loader configLoader;
 
     private boolean reserveWorkerEnabled;
     private OpflowPubsubHandler configurer;
@@ -56,10 +57,26 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRestServer restServer;
 
     public OpflowCommander() throws OpflowBootstrapException {
-        this((Map<String, Object>) null);
+        this(null, null);
+    }
+    
+    public OpflowCommander(OpflowConfig.Loader loader) throws OpflowBootstrapException {
+        this(loader, null);
     }
 
     public OpflowCommander(Map<String, Object> kwargs) throws OpflowBootstrapException {
+        this(null, kwargs);
+    }
+
+    private OpflowCommander(OpflowConfig.Loader loader, Map<String, Object> kwargs) throws OpflowBootstrapException {
+        if (loader != null) {
+            configLoader = loader;
+        } else {
+            configLoader = null;
+        }
+        if (configLoader != null) {
+            kwargs = configLoader.loadConfiguration();
+        }
         kwargs = OpflowUtil.ensureNotNull(kwargs);
         commanderId = OpflowUtil.getOptionField(kwargs, "commanderId", true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", commanderId);
@@ -78,7 +95,7 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].new() end!")
                 .stringify());
     }
-
+    
     private void init(Map<String, Object> kwargs) throws OpflowBootstrapException {
         if (kwargs.get(PARAM_RESERVE_WORKER_ENABLED) != null && kwargs.get(PARAM_RESERVE_WORKER_ENABLED) instanceof Boolean) {
             reserveWorkerEnabled = (Boolean) kwargs.get(PARAM_RESERVE_WORKER_ENABLED);
@@ -264,14 +281,13 @@ public class OpflowCommander implements AutoCloseable {
             rpcMaster.close();
             return null;
         }
-
+        
         @Override
         public Map<String, Object> pause(long duration) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].pause(true) is invoked")
                     .stringify());
-            rpcMaster.pause(duration);
-            return null;
+            return rpcMaster.pause(duration);
         }
         
         @Override
@@ -279,8 +295,7 @@ public class OpflowCommander implements AutoCloseable {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].unpause() is invoked")
                     .stringify());
-            rpcMaster.unpause();
-            return null;
+            return rpcMaster.unpause();
         }
     }
     

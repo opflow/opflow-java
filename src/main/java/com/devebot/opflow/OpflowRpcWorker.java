@@ -18,13 +18,14 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcWorker implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcWorker.class);
+    
+    private final String rpcWorkerId;
     private final OpflowLogTracer logTracer;
+    private final OpflowExporter exporter;
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
-    private final OpflowExporter exporter;
     
-    private final String rpcWorkerId;
     private final String operatorName;
     private final String responseName;
     

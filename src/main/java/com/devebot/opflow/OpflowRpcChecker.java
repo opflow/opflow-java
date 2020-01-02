@@ -13,10 +13,10 @@ public abstract class OpflowRpcChecker {
     
     public abstract Pong send(Ping info) throws Throwable;
     
-    private static String sendMethodName = "";
+    private static String sendMethodName = null;
     
     public static String getSendMethodName() throws NoSuchMethodException {
-        if (sendMethodName.length() == 0) {
+        if (sendMethodName == null) {
             sendMethodName = OpflowRpcChecker.class.getMethod("send", Ping.class).toString();
         }
         return sendMethodName;
