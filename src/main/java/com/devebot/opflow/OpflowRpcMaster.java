@@ -242,12 +242,12 @@ public class OpflowRpcMaster implements AutoCloseable {
         }).toMap());
     }
     
-    private OpflowTask.TimeoutMonitor timeoutMonitor = null;
+    private OpflowTimeout.Monitor timeoutMonitor = null;
     
-    private OpflowTask.TimeoutMonitor initTimeoutMonitor() {
-        OpflowTask.TimeoutMonitor monitor = null;
+    private OpflowTimeout.Monitor initTimeoutMonitor() {
+        OpflowTimeout.Monitor monitor = null;
         if (monitorEnabled) {
-            monitor = new OpflowTask.TimeoutMonitor(tasks, monitorInterval, monitorTimeout, monitorId);
+            monitor = new OpflowTimeout.Monitor(tasks, monitorInterval, monitorTimeout, monitorId);
             monitor.start();
         }
         return monitor;
@@ -312,7 +312,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         final String taskId = OpflowUtil.getLogID();
-        OpflowRpcRequest task = new OpflowRpcRequest(options, new OpflowTask.Listener() {
+        OpflowRpcRequest task = new OpflowRpcRequest(options, new OpflowTimeout.Listener() {
             private OpflowLogTracer logTask = null;
             
             {

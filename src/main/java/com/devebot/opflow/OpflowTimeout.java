@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowTask {
+public class OpflowTimeout {
     
     public interface Listener {
         public void handleEvent();
@@ -85,8 +85,8 @@ public class OpflowTask {
         void raiseTimeout();
     }
     
-    public static class TimeoutMonitor {
-        private final static Logger LOG = LoggerFactory.getLogger(TimeoutMonitor.class);
+    public static class Monitor {
+        private final static Logger LOG = LoggerFactory.getLogger(Monitor.class);
         private final OpflowLogTracer logTracer;
         private long timeout;
         private final String monitorId;
@@ -142,19 +142,19 @@ public class OpflowTask {
             }
         };
         
-        public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks) {
+        public Monitor(Map<String, ? extends Timeoutable> tasks) {
             this(tasks, 2000);
         }
         
-        public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks, int interval) {
+        public Monitor(Map<String, ? extends Timeoutable> tasks, int interval) {
             this(tasks, interval, 1000l);
         }
         
-        public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks, int interval, long timeout) {
+        public Monitor(Map<String, ? extends Timeoutable> tasks, int interval, long timeout) {
             this(tasks, interval, timeout, null);
         }
         
-        public TimeoutMonitor(Map<String, ? extends Timeoutable> tasks, int interval, long timeout, String monitorId) {
+        public Monitor(Map<String, ? extends Timeoutable> tasks, int interval, long timeout, String monitorId) {
             this.tasks = tasks;
             this.interval = interval;
             this.timeout = timeout;
@@ -194,11 +194,11 @@ public class OpflowTask {
         }
     }
     
-    public static class TimeoutWatcher extends Thread {
-        private final static Logger LOG = LoggerFactory.getLogger(TimeoutWatcher.class);
+    public static class Watcher extends Thread {
+        private final static Logger LOG = LoggerFactory.getLogger(Watcher.class);
         private final OpflowLogTracer logTracer;
         
-        public TimeoutWatcher(String requestId, long max, Listener listener) {
+        public Watcher(String requestId, long max, Listener listener) {
             this.requestId = requestId;
             logTracer = OpflowLogTracer.ROOT.branch("requestId", this.requestId);
             if (max > 0) {
@@ -207,7 +207,7 @@ public class OpflowTask {
             this.listener = listener;
         }
 
-        public TimeoutWatcher(String taskId, long interval, long max, Listener listener) {
+        public Watcher(String taskId, long interval, long max, Listener listener) {
             this(taskId, max, listener);
             if (interval > 0) {
                 this.interval = interval;
@@ -228,19 +228,19 @@ public class OpflowTask {
                     Thread.sleep(interval);
                     count += interval;
                     if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                            .text("TimeoutWatcher is interrupted")
+                            .text("Watcher is interrupted")
                             .stringify());
                     if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                             .put("count", count)
                             .put("max", max)
-                            .text("TimeoutWatcher.listener is requested")
+                            .text("Watcher.listener is requested")
                             .stringify());
                     if (count >= max) {
                         if (this.listener != null) {
                             listener.handleEvent();
                         }
                         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                                .text("TimeoutWatcher.listener is requested")
+                                .text("Watcher.listener is requested")
                                 .stringify());
                         this.interrupt();
                     }
@@ -255,7 +255,7 @@ public class OpflowTask {
         public void close() {
             this.done = true;
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                    .text("TimeoutWatcher is closed gracefully")
+                    .text("Watcher is closed gracefully")
                     .stringify());
         }
     }

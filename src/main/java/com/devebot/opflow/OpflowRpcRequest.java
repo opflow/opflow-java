@@ -15,17 +15,17 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
+public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final OpflowLogTracer logTracer;
     private final String requestId;
     private final String routineId;
     private final long timeout;
-    private final OpflowTask.Listener completeListener;
-    private OpflowTask.TimeoutWatcher timeoutWatcher;
+    private final OpflowTimeout.Listener completeListener;
+    private OpflowTimeout.Watcher timeoutWatcher;
     private long timestamp;
     
-    public OpflowRpcRequest(Map<String, Object> options, final OpflowTask.Listener completeListener) {
+    public OpflowRpcRequest(Map<String, Object> options, final OpflowTimeout.Listener completeListener) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         this.requestId = OpflowUtil.getRequestId(opts);
         this.routineId = OpflowUtil.getRoutineId(opts);
@@ -41,7 +41,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTask.Timeoutable {
         logTracer = OpflowLogTracer.ROOT.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
         this.completeListener = completeListener;
         if (Boolean.TRUE.equals(opts.get("watcherEnabled")) && completeListener != null && this.timeout > 0) {
-            timeoutWatcher = new OpflowTask.TimeoutWatcher(requestId, this.timeout, new OpflowTask.Listener() {
+            timeoutWatcher = new OpflowTimeout.Watcher(requestId, this.timeout, new OpflowTimeout.Listener() {
                 @Override
                 public void handleEvent() {
                     OpflowLogTracer logWatcher = null;
