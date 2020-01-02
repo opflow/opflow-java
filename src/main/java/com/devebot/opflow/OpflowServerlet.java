@@ -359,6 +359,31 @@ public class OpflowServerlet implements AutoCloseable {
                         
                         String pingSignature = OpflowRpcCheckerWorker.getSendMethodName();
                         if (pingSignature.equals(routineId)) {
+                            if (args.length > 0) {
+                                OpflowRpcChecker.Ping p = (OpflowRpcChecker.Ping) args[0];
+                                if (p.q != null) {
+                                    String q = p.q;
+                                    if (q.equals(getClassNameLabel(IllegalAccessException.class))) {
+                                        throw new IllegalAccessException();
+                                    }
+                                    if (q.equals(getClassNameLabel(IllegalArgumentException.class))) {
+                                        throw new IllegalArgumentException();
+                                    }
+                                    if (q.equals(getClassNameLabel(NoSuchMethodException.class))) {
+                                        throw new NoSuchMethodException();
+                                    }
+                                    if (q.equals(getClassNameLabel(SecurityException.class))) {
+                                        throw new SecurityException();
+                                    }
+                                    if (q.equals(getClassNameLabel(UnsupportedOperationException.class))) {
+                                        throw new UnsupportedOperationException();
+                                    }
+                                    if (q.equals(getClassNameLabel(JsonSyntaxException.class))) {
+                                        OpflowJsontool.toObject("{opflow}", OpflowRpcChecker.Ping.class);
+                                        throw new Exception();
+                                    }
+                                }
+                            }
                             returnValue = new OpflowRpcChecker.Pong(OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
                                 @Override
                                 public void transform(Map<String, Object> opts) {
@@ -395,25 +420,34 @@ public class OpflowServerlet implements AutoCloseable {
                             .text("Request[${requestId}] - Method call has completed")
                             .stringify());
                     } catch (JsonSyntaxException error) {
+                        error.getStackTrace();
                         response.emitFailed(OpflowUtil.buildMap()
+                                .put("exceptionClass", error.getClass().getName())
+                                .put("exceptionPayload", OpflowJsontool.toString(error))
                                 .put("type", error.getClass().getName())
                                 .put("message", error.getMessage())
                                 .toString());
-                        throw error;
+                        // throw error;
                     } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException ex) {
-                        LOG.error(null, ex);
+                        LOG.error(null, ex); // not expected to happen
+                        ex.getStackTrace();
                         response.emitFailed(OpflowUtil.buildMap()
+                                .put("exceptionClass", ex.getClass().getName())
+                                .put("exceptionPayload", OpflowJsontool.toString(ex))
                                 .put("type", ex.getClass().getName())
                                 .put("message", ex.getMessage())
                                 .toString());
                     } catch (InvocationTargetException ex) {
-                        Throwable catched = (Exception) ex.getCause();
-                        catched.getStackTrace();
+                        Throwable cause = (Exception) ex.getCause();
+                        if (cause == null) {
+                            cause = ex;
+                        }
+                        cause.getStackTrace();
                         response.emitFailed(OpflowUtil.buildMap()
-                                .put("exceptionClass", catched.getClass().getName())
-                                .put("exceptionPayload", OpflowJsontool.toString(catched))
-                                .put("type", catched.getClass().getName())
-                                .put("message", catched.getMessage())
+                                .put("exceptionClass", cause.getClass().getName())
+                                .put("exceptionPayload", OpflowJsontool.toString(cause))
+                                .put("type", cause.getClass().getName())
+                                .put("message", cause.getMessage())
                                 .toString());
                     } catch (UnsupportedOperationException ex) {
                         ex.getStackTrace();
@@ -599,6 +633,10 @@ public class OpflowServerlet implements AutoCloseable {
         }
     }
 
+    private static String getClassNameLabel(Class clazz) {
+        return "throw-" + OpflowUtil.getClassSimpleName(clazz);
+    }
+    
     @Override
     protected void finalize() throws Throwable {
         exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);

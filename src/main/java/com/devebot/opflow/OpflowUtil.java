@@ -429,4 +429,8 @@ public class OpflowUtil {
     public static String getAMQPEntrypointCode(Map<String, Object> cfg) {
         return cfg.get("exchangeName").toString() + cfg.get("routingKey").toString();
     }
+    
+    public static String getClassSimpleName(Class clazz) {
+        return clazz.getSimpleName();
+    }
 }
