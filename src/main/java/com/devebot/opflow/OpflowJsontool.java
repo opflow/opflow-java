@@ -14,18 +14,14 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author drupalex
  */
 public class OpflowJsontool {
-    private static final Logger LOG = LoggerFactory.getLogger(OpflowJsontool.class);
     private static final Gson GSON = new Gson();
     private static final Gson PSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final JsonParser JSON_PARSER = new JsonParser();
     
     public static String toString(Object jsonObj) {
         return toString(jsonObj, false);
@@ -86,7 +82,7 @@ public class OpflowJsontool {
     
     public static Object[] toObjectArray(String arrayString, Class[] types) {
         if (arrayString == null) return new Object[0];
-        JsonArray array = JSON_PARSER.parse(arrayString).getAsJsonArray();
+        JsonArray array = JsonParser.parseString(arrayString).getAsJsonArray();
         Object[] args = new Object[types.length];
         for(int i=0; i<types.length; i++) {
             args[i] = GSON.fromJson(array.get(i), types[i]);
@@ -96,7 +92,7 @@ public class OpflowJsontool {
     
     public static <T> T extractField(String json, String fieldName, Class<T> type) {
         try {
-            JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
+            JsonObject jsonObject = (JsonObject)JsonParser.parseString(json);
             return type.cast(jsonObject.get(fieldName));
         } catch (ClassCastException | JsonSyntaxException e) {
             throw new OpflowJsonTransformationException(e);
@@ -105,7 +101,7 @@ public class OpflowJsontool {
     
     public static int extractFieldAsInt(String json, String fieldName) {
         try {
-            JsonObject jsonObject = (JsonObject)JSON_PARSER.parse(json);
+            JsonObject jsonObject = (JsonObject)JsonParser.parseString(json);
             return jsonObject.get(fieldName).getAsInt();
         } catch (JsonSyntaxException e) {
             throw new OpflowJsonTransformationException(e);

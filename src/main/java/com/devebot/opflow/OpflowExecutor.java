@@ -102,6 +102,10 @@ public class OpflowExecutor {
         }
     }
     
+    public AMQP.Exchange.DeclareOk defineExchange(final String exchangeName) {
+        return defineExchange(exchangeName, null);
+    }
+    
     public AMQP.Exchange.DeclareOk defineExchange(final String exchangeName, final String exchangeType) {
         try {
             return declareExchange(exchangeName, exchangeType);

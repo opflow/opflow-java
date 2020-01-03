@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowRequestWaitingException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -54,6 +56,8 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final String monitorId;
     private final int monitorInterval;
     private final long monitorTimeout;
+    
+    private final long waitingTimeout;
     
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
@@ -145,6 +149,12 @@ public class OpflowRpcMaster implements AutoCloseable {
         } else {
             monitorTimeout = 0;
         }
+        
+        if (params.get("waitingTimeout") != null && params.get("waitingTimeout") instanceof Long) {
+            waitingTimeout = (Long) params.get("waitingTimeout");
+        } else {
+            waitingTimeout = 0;
+        }
 
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("responseName", responseName)
@@ -155,6 +165,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .put("monitorEnabled", monitorEnabled)
                 .put("monitorInterval", monitorInterval)
                 .put("monitorTimeout", monitorTimeout)
+                .put("waitingTimeout", waitingTimeout)
                 .tags("RpcMaster.new() parameters")
                 .text("RpcMaster[${rpcMasterId}].new() parameters")
                 .stringify());
@@ -275,12 +286,30 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     public OpflowRpcRequest request(final String routineId, byte[] body, Map<String, Object> options) {
         Lock rl = pushLock.readLock();
-        try {
+        if (waitingTimeout > 0) {
+            try {
+                if (rl.tryLock(waitingTimeout, TimeUnit.MILLISECONDS)) {
+                    try {
+                        return _request(routineId, body, options);
+                    }
+                    finally {
+                        rl.unlock();
+                    }
+                } else {
+                    throw new OpflowRequestWaitingException("tryLock() return false - the lock is not available");
+                }
+            }
+            catch (InterruptedException exception) {
+                throw new OpflowRequestWaitingException("tryLock() is interrupted", exception);
+            }
+        } else {
             rl.lock();
-            return _request(routineId, body, options);
-        }
-        finally {
-            rl.unlock();
+            try {
+                return _request(routineId, body, options);
+            }
+            finally {
+                rl.unlock();
+            }
         }
     }
     

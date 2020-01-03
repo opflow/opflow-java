@@ -181,6 +181,7 @@ public class OpflowConfig {
                     componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
                     componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
                     componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
+                    componentCfg.put("waitingTimeout", componentNode.get("waitingTimeout"));
                 }
                 if ("rpcWatcher".equals(componentName)) {
                     componentCfg.put("interval", componentNode.get("interval"));
@@ -304,7 +305,7 @@ public class OpflowConfig {
     private static final String[] INTEGER_ARRAY_FIELDS = new String[] { "ports" };
     
     private static final String[] LONGINT_FIELDS = new String[] {
-        "expiration", "interval", "monitorTimeout"
+        "expiration", "interval", "monitorTimeout", "waitingTimeout"
     };
     
     private static void transformParameters(Map<String, Object> params) {
