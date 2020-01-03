@@ -242,12 +242,19 @@ public class OpflowRpcMaster implements AutoCloseable {
         }).toMap());
     }
     
-    private OpflowTask.TimeoutMonitor timeoutMonitor = null;
+    private void cancelCallbackConsumer() {
+        if (callbackConsumer != null) {
+            engine.cancelConsumer(callbackConsumer);
+            callbackConsumer = null;
+        }
+    }
     
-    private OpflowTask.TimeoutMonitor initTimeoutMonitor() {
-        OpflowTask.TimeoutMonitor monitor = null;
+    private OpflowTimeout.Monitor timeoutMonitor = null;
+    
+    private OpflowTimeout.Monitor initTimeoutMonitor() {
+        OpflowTimeout.Monitor monitor = null;
         if (monitorEnabled) {
-            monitor = new OpflowTask.TimeoutMonitor(tasks, monitorInterval, monitorTimeout, monitorId);
+            monitor = new OpflowTimeout.Monitor(tasks, monitorInterval, monitorTimeout, monitorId);
             monitor.start();
         }
         return monitor;
@@ -312,7 +319,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         final String taskId = OpflowUtil.getLogID();
-        OpflowRpcRequest task = new OpflowRpcRequest(options, new OpflowTask.Listener() {
+        OpflowRpcRequest task = new OpflowRpcRequest(options, new OpflowTimeout.Listener() {
             private OpflowLogTracer logTask = null;
             
             {
@@ -515,14 +522,15 @@ public class OpflowRpcMaster implements AutoCloseable {
         return result;
     }
     
-    private void assertClearTasks() {
+    private void scheduleClearTasks() {
         if (tasks.size() > 0) {
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    tasks.clear();
                     closeLock.lock();
                     try {
+                        cancelCallbackConsumer();
+                        tasks.clear();
                         closeBarrier.signal();
                     }
                     finally {
@@ -533,14 +541,13 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
     }
     
-    private void cancelClearTasks() {
+    private void completeClearTasks() {
         timer.cancel();
         timer.purge();
     }
     
     @Override
     public void close() {
-        assertClearTasks();
         closeLock.lock();
         pushLock.writeLock().lock();
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
@@ -550,17 +557,17 @@ public class OpflowRpcMaster implements AutoCloseable {
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - check tasks.isEmpty()? and await...")
                 .stringify());
+            
+            scheduleClearTasks();
+            
             while(!tasks.isEmpty()) closeBarrier.await();
             
-            cancelClearTasks();
+            completeClearTasks();
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - close CallbackConsumer")
+                .text("RpcMaster[${rpcMasterId}].close() - cancelCallbackConsumer")
                 .stringify());
-            if (callbackConsumer != null) {
-                engine.cancelConsumer(callbackConsumer);
-                callbackConsumer = null;
-            }
+            cancelCallbackConsumer();
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - stop timeoutMonitor")
