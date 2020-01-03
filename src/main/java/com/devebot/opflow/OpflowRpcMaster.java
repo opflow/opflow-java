@@ -12,6 +12,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -56,6 +57,12 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final String monitorId;
     private final int monitorInterval;
     private final long monitorTimeout;
+    
+    private final boolean semaphoreEnabled;
+    private final int semaphoreLimit;
+    private final long semaphoreTimeout;
+    
+    private final Semaphore semaphore;
     
     private final long waitingTimeout;
     
@@ -155,7 +162,32 @@ public class OpflowRpcMaster implements AutoCloseable {
         } else {
             waitingTimeout = 0;
         }
-
+        
+        if (params.get("semaphoreEnabled") != null && params.get("semaphoreEnabled") instanceof Boolean) {
+            semaphoreEnabled = (Boolean) params.get("semaphoreEnabled");
+        } else {
+            semaphoreEnabled = false;
+        }
+        
+        if (params.get("semaphoreLimit") != null && params.get("semaphoreLimit") instanceof Integer) {
+            int _limit = (Integer) params.get("semaphoreLimit");
+            semaphoreLimit = (_limit > 0) ? _limit : 100;
+        } else {
+            semaphoreLimit = 100;
+        }
+        
+        if (params.get("semaphoreTimeout") != null && params.get("semaphoreTimeout") instanceof Long) {
+            semaphoreTimeout = (Long) params.get("semaphoreTimeout");
+        } else {
+            semaphoreTimeout = 0;
+        }
+        
+        if (semaphoreEnabled) {
+            semaphore = new Semaphore(semaphoreLimit);
+        } else {
+            semaphore = null;
+        }
+        
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("responseName", responseName)
                 .put("responseDurable", responseDurable)
@@ -314,7 +346,25 @@ public class OpflowRpcMaster implements AutoCloseable {
     }
     
     private OpflowRpcRequest _request(final String routineId, byte[] body, Map<String, Object> options) {
-
+        if (semaphoreEnabled) {
+            try {
+                semaphore.acquire();
+                try {
+                    return _request_safe(routineId, body, options);
+                }
+                finally {
+                    semaphore.release();
+                }
+            }
+            catch (InterruptedException exception) {
+                throw new OpflowRequestWaitingException("semaphore.acquire() is interrupted", exception);
+            }
+        } else {
+            return _request_safe(routineId, body, options);
+        }
+    }
+    
+    private OpflowRpcRequest _request_safe(final String routineId, byte[] body, Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
         
         Object requestIdVal = options.get("requestId");
