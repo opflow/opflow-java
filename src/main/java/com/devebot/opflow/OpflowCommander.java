@@ -45,7 +45,7 @@ public class OpflowCommander implements AutoCloseable {
 
     private final String commanderId;
     private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
+    private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
 
     private boolean reserveWorkerEnabled;
@@ -85,11 +85,11 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].new()")
                 .stringify());
 
+        measurer = OpflowPromMeasurer.getInstance();
+        
         this.init(kwargs);
 
-        exporter = OpflowExporter.getInstance();
-
-        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.INC);
+        measurer.changeComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.INC);
 
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new() end!")
@@ -140,13 +140,28 @@ public class OpflowCommander implements AutoCloseable {
 
         try {
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-                configurer = new OpflowPubsubHandler(configurerCfg);
+                configurer = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, configurerCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
-                rpcMaster = new OpflowRpcMaster(rpcMasterCfg);
+                rpcMaster = new OpflowRpcMaster(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, rpcMasterCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(publisherCfg)) {
-                publisher = new OpflowPubsubHandler(publisherCfg);
+                publisher = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, publisherCfg).toMap());
             }
 
             rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
@@ -630,6 +645,6 @@ public class OpflowCommander implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        exporter.changeComponentInstance("commander", commanderId, OpflowExporter.GaugeAction.DEC);
+        measurer.changeComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

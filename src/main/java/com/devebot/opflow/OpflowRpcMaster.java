@@ -31,7 +31,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     private final String rpcMasterId;
     private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
+    private final OpflowPromMeasurer measurer;
     
     private final Timer timer = new Timer(true);
     private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
@@ -59,6 +59,8 @@ public class OpflowRpcMaster implements AutoCloseable {
         params = OpflowUtil.ensureNotNull(params);
         
         rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
+        
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", rpcMasterId);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -68,6 +70,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("engineId", rpcMasterId);
+        brokerParams.put("measurer", measurer);
         brokerParams.put("mode", "rpc_master");
         brokerParams.put("exchangeType", "direct");
         
@@ -156,9 +159,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].new() parameters")
                 .stringify());
 
-        exporter = OpflowExporter.getInstance();
-        
-        exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.INC);
+        measurer.changeComponentInstance("rpc_master", rpcMasterId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
@@ -394,7 +395,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             builder.expiration(String.valueOf(expiration));
         }
         
-        exporter.incRpcInvocationEvent("rpc_master", rpcMasterId, routineId, "request");
+        measurer.incRpcInvocationEvent("rpc_master", rpcMasterId, routineId, "request");
         
         engine.produce(body, headers, builder);
         
@@ -630,6 +631,6 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.DEC);
+        measurer.changeComponentInstance("rpc_master", rpcMasterId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

@@ -28,7 +28,7 @@ public class OpflowServerlet implements AutoCloseable {
     
     private final String serverletId;
     private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
+    private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
     
     private OpflowPubsubHandler configurer;
@@ -71,6 +71,8 @@ public class OpflowServerlet implements AutoCloseable {
             throw new OpflowBootstrapException("Listener definitions must not be null");
         }
         listenerMap = listeners;
+        
+        measurer = OpflowPromMeasurer.getInstance();
         
         Map<String, Object> configurerCfg = (Map<String, Object>)this.kwargs.get("configurer");
         Map<String, Object> rpcWorkerCfg = (Map<String, Object>)this.kwargs.get("rpcWorker");
@@ -136,7 +138,12 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new configurer")
                         .stringify());
-                configurer = new OpflowPubsubHandler(configurerCfg);
+                configurer = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, configurerCfg).toMap());
             }
 
             if (OpflowUtil.isComponentEnabled(rpcWorkerCfg)) {
@@ -146,7 +153,12 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("rpcWorkerId", rpcWorkerId)
                         .text("Serverlet[${serverletId}] creates a new rpcWorker")
                         .stringify());
-                rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
+                rpcWorker = new OpflowRpcWorker(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, rpcWorkerCfg).toMap());
             }
 
             if (OpflowUtil.isComponentEnabled(subscriberCfg)) {
@@ -156,7 +168,12 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new subscriber")
                         .stringify());
-                subscriber = new OpflowPubsubHandler(subscriberCfg);
+                subscriber = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, subscriberCfg).toMap());
             }
             
             if (rpcWorker != null || subscriber != null) {
@@ -169,13 +186,11 @@ public class OpflowServerlet implements AutoCloseable {
             throw exception;
         }
         
-        exporter = OpflowExporter.getInstance();
-        
-        exporter.changeComponentInstance("serverletId", serverletId, OpflowExporter.GaugeAction.INC);
-
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
+        
+        measurer.changeComponentInstance("serverletId", serverletId, OpflowPromMeasurer.GaugeAction.INC);
     }
     
     public final void start() {
@@ -639,6 +654,6 @@ public class OpflowServerlet implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);
+        measurer.changeComponentInstance("serverlet", serverletId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

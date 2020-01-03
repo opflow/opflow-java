@@ -16,28 +16,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author acegik
+ * @author topops
  */
-public class OpflowExporter {
-
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowExporter.class);
+public class OpflowPromExporter extends OpflowPromMeasurer {
     
-    public final static String DEFAULT_PROM_EXPORTER_PORT_VAL = "9450";
-    public final static String DEFAULT_PROM_EXPORTER_PORT_KEY = "opflow.exporter.port";
-    public final static String DEFAULT_PROM_EXPORTER_PORT_ENV = "OPFLOW_EXPORTER_PORT";
-
-    public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_VAL = "localhost:9091";
-    public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_KEY = "opflow.pushgateway.addr";
-    public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_ENV = "OPFLOW_PUSHGATEWAY_ADDR";
-    public static final String DEFAULT_PROM_PUSHGATEWAY_JOBNAME = "opflow-push-gateway";
-
-    public static enum GaugeAction {
-        INC,
-        DEC;
-    }
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowPromMeasurer.class);
     
-    private static OpflowExporter instance;
-
     private final CollectorRegistry pushRegistry = new CollectorRegistry();
     private PushGateway pushGateway;
 
@@ -66,6 +50,7 @@ public class OpflowExporter {
         return componentInstanceGauge;
     }
     
+    @Override
     public void changeComponentInstance(String instanceType, String instanceId, GaugeAction action) {
         Gauge.Child metric = assertComponentInstanceGauge().labels(instanceType, instanceId);
         switch(action) {
@@ -81,6 +66,7 @@ public class OpflowExporter {
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
+    @Override
     public void removeComponentInstance(String instanceType, String instanceId) {
         if (pushGateway != null) {
             assertComponentInstanceGauge().remove(instanceType, instanceId);
@@ -104,11 +90,13 @@ public class OpflowExporter {
         return engineConnectionGauge;
     }
     
+    @Override
     public void incEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
         assertEngineConnectionGauge().labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), connectionType).inc();
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
+    @Override
     public void decEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
         assertEngineConnectionGauge().labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), connectionType).dec();
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
@@ -131,6 +119,7 @@ public class OpflowExporter {
         return activeChannelGauge;
     }
     
+    @Override
     public void changeActiveChannel(String instanceType, String instanceId, GaugeAction action) {
         Gauge.Child metric = assertActiveChannelGauge().labels(instanceType, instanceId);
         switch(action) {
@@ -173,6 +162,7 @@ public class OpflowExporter {
         return assertRpcInvocationCounterGauge().labels(values);
     }
     
+    @Override
     public void incRpcInvocationEvent(String module_name, String engineId, String routineId, String status) {
         assertRpcInvocationCounterGauge().labels(module_name, engineId, routineId, status).inc();
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
@@ -190,7 +180,7 @@ public class OpflowExporter {
         return ("default".equals(addr2) ? DEFAULT_PROM_PUSHGATEWAY_ADDR_VAL : addr2);
     }
     
-    private OpflowExporter() throws OpflowOperationException {
+    public OpflowPromExporter() throws OpflowOperationException {
         // Initialize the PushGateway
         String pushAddr = getPushGatewayAddr();
         if (pushAddr != null) {
@@ -215,12 +205,5 @@ public class OpflowExporter {
         
         // Initialize the metrics
         assertEngineConnectionGauge();
-    }
- 
-    public static OpflowExporter getInstance() throws OpflowOperationException {
-        if (instance == null) {
-            instance = new OpflowExporter();
-        }
-        return instance;
     }
 }
