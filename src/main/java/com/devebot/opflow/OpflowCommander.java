@@ -175,7 +175,7 @@ public class OpflowCommander implements AutoCloseable {
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, rpcMaster, handlers);
 
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(commanderId, rpcMaster);
+            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(commanderId, rpcMaster, handlers);
             
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowUtil.buildMap(restServerCfg)
                     .put("instanceId", commanderId)
@@ -193,7 +193,7 @@ public class OpflowCommander implements AutoCloseable {
     public void setReserveWorkerEnabled(boolean enabled) {
         this.reserveWorkerEnabled = enabled;
     }
-    
+
     public RoutingHandler getDefaultHandlers() {
         if (restServer != null) {
             return restServer.getDefaultHandlers();
@@ -279,20 +279,13 @@ public class OpflowCommander implements AutoCloseable {
         private final String instanceId;
         private final OpflowLogTracer logTracer;
         private final OpflowRpcMaster rpcMaster;
+        private final Map<String, RpcInvocationHandler> handlers;
 
-        public OpflowTaskSubmitterMaster(String instanceId, OpflowRpcMaster rpcMaster) {
+        public OpflowTaskSubmitterMaster(String instanceId, OpflowRpcMaster rpcMaster, Map<String, RpcInvocationHandler> mappings) {
             this.instanceId = instanceId;
             this.rpcMaster = rpcMaster;
+            this.handlers = mappings;
             this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", instanceId);
-        }
-        
-        @Override
-        public Map<String, Object> reset() {
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .text("OpflowTaskSubmitter[${taskSubmitterId}].reset() is invoked")
-                    .stringify());
-            rpcMaster.close();
-            return null;
         }
         
         @Override
@@ -309,6 +302,37 @@ public class OpflowCommander implements AutoCloseable {
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].unpause() is invoked")
                     .stringify());
             return rpcMaster.unpause();
+        }
+        
+        @Override
+        public Map<String, Object> reset() {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("OpflowTaskSubmitter[${taskSubmitterId}].reset() is invoked")
+                    .stringify());
+            rpcMaster.close();
+            return null;
+        }
+
+        @Override
+        public Map<String, Object> state(Map<String, Object> opts) {
+            String clazz = (String) OpflowUtil.getOptionField(opts, "type", null);
+            Boolean status = (Boolean) OpflowUtil.getOptionField(opts, "status", Boolean.TRUE);
+            for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
+                final String key = entry.getKey();
+                final RpcInvocationHandler val = entry.getValue();
+                if (clazz != null) {
+                    if (clazz.equals(key)) {
+                        val.setReserveWorkerForced(status);
+                        break;
+                    }
+                } else {
+                    val.setReserveWorkerForced(status);
+                }
+            }
+            OpflowInfoCollectorMaster collector = new OpflowInfoCollectorMaster(instanceId, rpcMaster, handlers);
+            return OpflowUtil.buildOrderedMap()
+                    .put("mappings", collector.readRpcInvocationHandlerInfos())
+                    .toMap();
         }
     }
     
@@ -370,22 +394,7 @@ public class OpflowCommander implements AutoCloseable {
                     
                     // RPC mappings
                     if (label == Scope.FULL) {
-                        List<Map<String, Object>> mappingInfos = new ArrayList<>();
-                        for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
-                            final RpcInvocationHandler val = entry.getValue();
-                            mappingInfos.add(OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
-                                @Override
-                                public void transform(Map<String, Object> opts) {
-                                    opts.put("class", entry.getKey());
-                                    opts.put("methods", val.getMethodNames());
-                                    opts.put("isReserveWorkerReady", val.hasReserveWorker());
-                                    if (val.getReserveWorkerClassName() != null) {
-                                        opts.put("reserveWorkerClassName", val.getReserveWorkerClassName());
-                                    }
-                                }
-                            }).toMap());
-                        }
-                        opts.put("mappings", mappingInfos);
+                        opts.put("mappings", readRpcInvocationHandlerInfos());
                     }
 
                     // request information
@@ -409,6 +418,26 @@ public class OpflowCommander implements AutoCloseable {
             
             return root.toMap();
         }
+        
+        public List<Map<String, Object>> readRpcInvocationHandlerInfos() {
+            List<Map<String, Object>> mappingInfos = new ArrayList<>();
+            for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
+                final RpcInvocationHandler val = entry.getValue();
+                mappingInfos.add(OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("class", entry.getKey());
+                        opts.put("methods", val.getMethodNames());
+                        opts.put("isReserveWorkerReady", val.hasReserveWorker());
+                        opts.put("forceUseReserveWorker", val.isReserveWorkerForced());
+                        if (val.getReserveWorkerClassName() != null) {
+                            opts.put("reserveWorkerClassName", val.getReserveWorkerClassName());
+                        }
+                    }
+                }).toMap());
+            }
+            return mappingInfos;
+        }
     }
 
     private class RpcInvocationHandler implements InvocationHandler {
@@ -419,7 +448,17 @@ public class OpflowCommander implements AutoCloseable {
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
         private final OpflowRpcMaster rpcMaster;
         private final OpflowPubsubHandler publisher;
+        
+        private boolean reserveWorkerForced = false;
 
+        public boolean isReserveWorkerForced() {
+            return reserveWorkerForced;
+        }
+        
+        public void setReserveWorkerForced(boolean reserveWorkerForced) {
+            this.reserveWorkerForced = reserveWorkerForced;
+        }
+        
         public RpcInvocationHandler(OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher, Class clazz, Object reserveWorker, boolean reserveWorkerEnabled) {
             this.clazz = clazz;
             this.reserveWorker = reserveWorker;
@@ -460,7 +499,6 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            final String pingSignature = OpflowRpcCheckerMaster.getSendMethodName();
             final String requestId = OpflowUtil.getLogID();
             final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
             String methodId = OpflowUtil.getMethodSignature(method);
@@ -498,7 +536,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             // rpc switching
-            if (rpcWatcher.isCongested() && !pingSignature.equals(routineId)) {
+            if (rpcWatcher.isCongested() || reserveWorkerForced) {
                 if (this.hasReserveWorker()) {
                     return method.invoke(this.reserveWorker, args);
                 }
