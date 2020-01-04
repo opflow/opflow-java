@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -398,7 +399,7 @@ public class OpflowConfig {
                 }
             }
             if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
-                    .put("YAML", OpflowJsontool.toString(config))
+                    .put("YAML", OpflowJsonTool.toString(config))
                     .text("loaded properties content")
                     .stringify());
             return config;
