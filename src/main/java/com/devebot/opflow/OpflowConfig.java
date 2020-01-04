@@ -181,7 +181,7 @@ public class OpflowConfig {
                     componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
                     componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
                     componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
-                    componentCfg.put("waitingTimeout", componentNode.get("waitingTimeout"));
+                    componentCfg.put("suspendTimeout", componentNode.get("suspendTimeout"));
                     componentCfg.put("semaphoreEnabled", componentNode.get("semaphoreEnabled"));
                     componentCfg.put("semaphoreLimit", componentNode.get("semaphoreLimit"));
                     componentCfg.put("semaphoreTimeout", componentNode.get("semaphoreTimeout"));
@@ -308,7 +308,7 @@ public class OpflowConfig {
     private static final String[] INTEGER_ARRAY_FIELDS = new String[] { "ports" };
     
     private static final String[] LONGINT_FIELDS = new String[] {
-        "expiration", "interval", "monitorTimeout", "semaphoreTimeout", "waitingTimeout"
+        "expiration", "interval", "monitorTimeout", "semaphoreTimeout", "suspendTimeout"
     };
     
     private static void transformParameters(Map<String, Object> params) {
