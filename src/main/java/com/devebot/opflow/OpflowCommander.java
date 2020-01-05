@@ -649,6 +649,12 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     public <T> T registerType(Class<T> type, T bean) {
+        if (type == null) {
+            throw new OpflowInterceptionException("The [type] parameter must not be null");
+        }
+        if (OpflowRpcChecker.class.equals(type)) {
+            throw new OpflowInterceptionException("Can not register the OpflowRpcChecker type");
+        }
         try {
             if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                     .put("className", type.getName())

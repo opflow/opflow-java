@@ -559,7 +559,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowInterceptionException("Class should not be an abstract type");
             }
             try {
-                if (target == null) target = type.newInstance();
+                if (target == null) target = type.getDeclaredConstructor().newInstance();
                 for (Method method : type.getDeclaredMethods()) {
                     String methodId = OpflowUtil.getMethodSignature(method);
                     OpflowTargetRoutine routine = extractMethodInfo(method);
