@@ -21,7 +21,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     
     private final String rpcWorkerId;
     private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
+    private final OpflowPromMeasurer measurer;
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
@@ -33,6 +33,8 @@ public class OpflowRpcWorker implements AutoCloseable {
         params = OpflowUtil.ensureNotNull(params);
         
         rpcWorkerId = OpflowUtil.getOptionField(params, "rpcWorkerId", true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
+        
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", rpcWorkerId);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -42,6 +44,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("engineId", rpcWorkerId);
+        brokerParams.put("measurer", measurer);
         brokerParams.put("mode", "rpc_worker");
         brokerParams.put("exchangeType", "direct");
         
@@ -70,13 +73,11 @@ public class OpflowRpcWorker implements AutoCloseable {
                 .text("RpcWorker[${rpcWorkerId}].new() operatorName: '${operatorName}', responseName: '${responseName}'")
                 .stringify());
         
-        exporter = OpflowExporter.getInstance();
-
-        exporter.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowExporter.GaugeAction.INC);
-
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].new() end!")
                 .stringify());
+    
+        measurer.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
@@ -151,7 +152,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
                         count++;
-                        exporter.incRpcInvocationEvent("rpc_worker", rpcWorkerId, routineId, "process");
+                        measurer.incRpcInvocationEvent("rpc_worker", rpcWorkerId, routineId, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
@@ -252,6 +253,6 @@ public class OpflowRpcWorker implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        exporter.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowExporter.GaugeAction.DEC);
+        measurer.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

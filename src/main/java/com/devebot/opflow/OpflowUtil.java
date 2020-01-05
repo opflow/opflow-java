@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowJsonTool;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
@@ -44,42 +45,42 @@ public class OpflowUtil {
     
     @Deprecated
     public static String jsonObjectToString(Object jsonObj) {
-        return OpflowJsontool.toString(jsonObj);
+        return OpflowJsonTool.toString(jsonObj);
     }
     
     @Deprecated
     public static <T> T jsonStringToObject(String json, Class<T> type) {
-        return OpflowJsontool.toObject(json, type);
+        return OpflowJsonTool.toObject(json, type);
     }
     
     @Deprecated
     public static String jsonMapToString(Map<String, Object> jsonMap) {
-        return OpflowJsontool.toString(jsonMap);
+        return OpflowJsonTool.toString(jsonMap);
     }
     
     @Deprecated
     public static Map<String, Object> jsonStringToMap(String json) {
-        return OpflowJsontool.toObjectMap(json);
+        return OpflowJsonTool.toObjectMap(json);
     }
     
     @Deprecated
     public static <T> T jsonMessageToObject(OpflowMessage message, Class<T> type) {
-        return OpflowJsontool.toObject(message, type);
+        return OpflowJsonTool.toObject(message, type);
     }
     
     @Deprecated
     public static Object[] jsonStringToArray(String arrayString, Class[] types) {
-        return OpflowJsontool.toObjectArray(arrayString, types);
+        return OpflowJsonTool.toObjectArray(arrayString, types);
     }
     
     @Deprecated
     public static <T> T jsonExtractField(String json, String fieldName, Class<T> type) {
-        return OpflowJsontool.extractField(json, fieldName, type);
+        return OpflowJsonTool.extractField(json, fieldName, type);
     }
     
     @Deprecated
     public static int jsonExtractFieldAsInt(String json, String fieldName) {
-        return OpflowJsontool.extractFieldAsInt(json, fieldName);
+        return OpflowJsonTool.extractFieldAsInt(json, fieldName);
     }
     
     public static String toISO8601UTC(Date date) {
@@ -212,7 +213,7 @@ public class OpflowUtil {
         }
         
         public String toString(boolean pretty) {
-            return OpflowJsontool.toString(fields, pretty);
+            return OpflowJsonTool.toString(fields, pretty);
         }
     }
     

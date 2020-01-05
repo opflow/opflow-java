@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -181,6 +182,10 @@ public class OpflowConfig {
                     componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
                     componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
                     componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
+                    componentCfg.put("suspendTimeout", componentNode.get("suspendTimeout"));
+                    componentCfg.put("semaphoreEnabled", componentNode.get("semaphoreEnabled"));
+                    componentCfg.put("semaphoreLimit", componentNode.get("semaphoreLimit"));
+                    componentCfg.put("semaphoreTimeout", componentNode.get("semaphoreTimeout"));
                 }
                 if ("rpcWatcher".equals(componentName)) {
                     componentCfg.put("interval", componentNode.get("interval"));
@@ -287,7 +292,7 @@ public class OpflowConfig {
     
     private static final String[] BOOLEAN_FIELDS = new String[] {
         "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled", "monitorEnabled",
-        "responseDurable", "responseExclusive", "responseAutoDelete"
+        "semaphoreEnabled", "responseDurable", "responseExclusive", "responseAutoDelete"
     };
 
     private static final String[] STRING_FIELDS = new String[] {
@@ -297,14 +302,14 @@ public class OpflowConfig {
     private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };
     
     private static final String[] INTEGER_FIELDS = new String[] {
-        "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", 
+        "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", "semaphoreLimit",
         "prefetch", "subscriberLimit", "redeliveredLimit", "monitorInterval", "threadPoolSize"
     };
     
     private static final String[] INTEGER_ARRAY_FIELDS = new String[] { "ports" };
     
     private static final String[] LONGINT_FIELDS = new String[] {
-        "expiration", "interval", "monitorTimeout"
+        "expiration", "interval", "monitorTimeout", "semaphoreTimeout", "suspendTimeout"
     };
     
     private static void transformParameters(Map<String, Object> params) {
@@ -394,7 +399,7 @@ public class OpflowConfig {
                 }
             }
             if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
-                    .put("YAML", OpflowJsontool.toString(config))
+                    .put("YAML", OpflowJsonTool.toString(config))
                     .text("loaded properties content")
                     .stringify());
             return config;

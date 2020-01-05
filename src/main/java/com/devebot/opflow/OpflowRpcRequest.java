@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -169,7 +170,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                 case "progress":
                     if (includeProgress) {
                         try {
-                            int percent = OpflowJsontool.extractFieldAsInt(msg.getBodyAsString(), "percent");
+                            int percent = OpflowJsonTool.extractFieldAsInt(msg.getBodyAsString(), "percent");
                             steps.add(new OpflowRpcResult.Step(percent));
                         } catch (OpflowJsonTransformationException jse) {
                             steps.add(new OpflowRpcResult.Step());

@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.annotation.OpflowTargetRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
@@ -28,7 +29,7 @@ public class OpflowServerlet implements AutoCloseable {
     
     private final String serverletId;
     private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
+    private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
     
     private OpflowPubsubHandler configurer;
@@ -71,6 +72,8 @@ public class OpflowServerlet implements AutoCloseable {
             throw new OpflowBootstrapException("Listener definitions must not be null");
         }
         listenerMap = listeners;
+        
+        measurer = OpflowPromMeasurer.getInstance();
         
         Map<String, Object> configurerCfg = (Map<String, Object>)this.kwargs.get("configurer");
         Map<String, Object> rpcWorkerCfg = (Map<String, Object>)this.kwargs.get("rpcWorker");
@@ -136,7 +139,12 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new configurer")
                         .stringify());
-                configurer = new OpflowPubsubHandler(configurerCfg);
+                configurer = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, configurerCfg).toMap());
             }
 
             if (OpflowUtil.isComponentEnabled(rpcWorkerCfg)) {
@@ -146,7 +154,12 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("rpcWorkerId", rpcWorkerId)
                         .text("Serverlet[${serverletId}] creates a new rpcWorker")
                         .stringify());
-                rpcWorker = new OpflowRpcWorker(rpcWorkerCfg);
+                rpcWorker = new OpflowRpcWorker(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, rpcWorkerCfg).toMap());
             }
 
             if (OpflowUtil.isComponentEnabled(subscriberCfg)) {
@@ -156,7 +169,12 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new subscriber")
                         .stringify());
-                subscriber = new OpflowPubsubHandler(subscriberCfg);
+                subscriber = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("measurer", measurer);
+                    }
+                }, subscriberCfg).toMap());
             }
             
             if (rpcWorker != null || subscriber != null) {
@@ -169,13 +187,11 @@ public class OpflowServerlet implements AutoCloseable {
             throw exception;
         }
         
-        exporter = OpflowExporter.getInstance();
-        
-        exporter.changeComponentInstance("serverletId", serverletId, OpflowExporter.GaugeAction.INC);
-
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
+        
+        measurer.changeComponentInstance("serverletId", serverletId, OpflowPromMeasurer.GaugeAction.INC);
     }
     
     public final void start() {
@@ -353,7 +369,7 @@ public class OpflowServerlet implements AutoCloseable {
                                 .put("arguments", json)
                                 .text("Request[${requestId}] - Method arguments in json string")
                                 .stringify());
-                        Object[] args = OpflowJsontool.toObjectArray(json, method.getParameterTypes());
+                        Object[] args = OpflowJsonTool.toObjectArray(json, method.getParameterTypes());
                         
                         Object returnValue;
                         
@@ -379,7 +395,7 @@ public class OpflowServerlet implements AutoCloseable {
                                         throw new UnsupportedOperationException();
                                     }
                                     if (q.equals(getClassNameLabel(JsonSyntaxException.class))) {
-                                        OpflowJsontool.toObject("{opflow}", OpflowRpcChecker.Ping.class);
+                                        OpflowJsonTool.toObject("{opflow}", OpflowRpcChecker.Ping.class);
                                         throw new Exception();
                                     }
                                 }
@@ -409,7 +425,7 @@ public class OpflowServerlet implements AutoCloseable {
                             returnValue = method.invoke(target, args);
                         }
                         
-                        String result = OpflowJsontool.toString(returnValue);
+                        String result = OpflowJsonTool.toString(returnValue);
                         if (listenerTrail.ready(LOG, "trace")) LOG.trace(listenerTrail
                                 .put("return", OpflowUtil.truncate(result))
                                 .text("Request[${requestId}] - Return the output of the method")
@@ -423,7 +439,7 @@ public class OpflowServerlet implements AutoCloseable {
                         error.getStackTrace();
                         response.emitFailed(OpflowUtil.buildMap()
                                 .put("exceptionClass", error.getClass().getName())
-                                .put("exceptionPayload", OpflowJsontool.toString(error))
+                                .put("exceptionPayload", OpflowJsonTool.toString(error))
                                 .put("type", error.getClass().getName())
                                 .put("message", error.getMessage())
                                 .toString());
@@ -433,7 +449,7 @@ public class OpflowServerlet implements AutoCloseable {
                         ex.getStackTrace();
                         response.emitFailed(OpflowUtil.buildMap()
                                 .put("exceptionClass", ex.getClass().getName())
-                                .put("exceptionPayload", OpflowJsontool.toString(ex))
+                                .put("exceptionPayload", OpflowJsonTool.toString(ex))
                                 .put("type", ex.getClass().getName())
                                 .put("message", ex.getMessage())
                                 .toString());
@@ -445,7 +461,7 @@ public class OpflowServerlet implements AutoCloseable {
                         cause.getStackTrace();
                         response.emitFailed(OpflowUtil.buildMap()
                                 .put("exceptionClass", cause.getClass().getName())
-                                .put("exceptionPayload", OpflowJsontool.toString(cause))
+                                .put("exceptionPayload", OpflowJsonTool.toString(cause))
                                 .put("type", cause.getClass().getName())
                                 .put("message", cause.getMessage())
                                 .toString());
@@ -453,7 +469,7 @@ public class OpflowServerlet implements AutoCloseable {
                         ex.getStackTrace();
                         response.emitFailed(OpflowUtil.buildMap()
                                 .put("exceptionClass", ex.getClass().getName())
-                                .put("exceptionPayload", OpflowJsontool.toString(ex))
+                                .put("exceptionPayload", OpflowJsonTool.toString(ex))
                                 .put("type", ex.getClass().getName())
                                 .put("message", ex.getMessage())
                                 .toString());
@@ -493,7 +509,7 @@ public class OpflowServerlet implements AutoCloseable {
                                 .put("arguments", json)
                                 .text("Request[${requestId}] - Method arguments in json string")
                                 .stringify());
-                        Object[] args = OpflowJsontool.toObjectArray(json, method.getParameterTypes());
+                        Object[] args = OpflowJsonTool.toObjectArray(json, method.getParameterTypes());
                         
                         method.invoke(target, args);
                         
@@ -639,6 +655,6 @@ public class OpflowServerlet implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        exporter.changeComponentInstance("serverlet", serverletId, OpflowExporter.GaugeAction.DEC);
+        measurer.changeComponentInstance("serverlet", serverletId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

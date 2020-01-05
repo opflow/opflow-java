@@ -1,6 +1,8 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowRequestWaitingException;
+import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -11,6 +13,8 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -31,7 +35,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     private final String rpcMasterId;
     private final OpflowLogTracer logTracer;
-    private final OpflowExporter exporter;
+    private final OpflowPromMeasurer measurer;
     
     private final Timer timer = new Timer(true);
     private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
@@ -55,10 +59,20 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final int monitorInterval;
     private final long monitorTimeout;
     
+    private final boolean semaphoreEnabled;
+    private final int semaphoreLimit;
+    private final long semaphoreTimeout;
+    
+    private final Semaphore semaphore;
+    
+    private final long suspendTimeout;
+    
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
         rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
+        
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", rpcMasterId);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -68,6 +82,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put("engineId", rpcMasterId);
+        brokerParams.put("measurer", measurer);
         brokerParams.put("mode", "rpc_master");
         brokerParams.put("exchangeType", "direct");
         
@@ -142,7 +157,38 @@ public class OpflowRpcMaster implements AutoCloseable {
         } else {
             monitorTimeout = 0;
         }
-
+        
+        if (params.get("suspendTimeout") != null && params.get("suspendTimeout") instanceof Long) {
+            suspendTimeout = (Long) params.get("suspendTimeout");
+        } else {
+            suspendTimeout = 0;
+        }
+        
+        if (params.get("semaphoreEnabled") != null && params.get("semaphoreEnabled") instanceof Boolean) {
+            semaphoreEnabled = (Boolean) params.get("semaphoreEnabled");
+        } else {
+            semaphoreEnabled = false;
+        }
+        
+        if (params.get("semaphoreLimit") != null && params.get("semaphoreLimit") instanceof Integer) {
+            int _limit = (Integer) params.get("semaphoreLimit");
+            semaphoreLimit = (_limit > 0) ? _limit : 100;
+        } else {
+            semaphoreLimit = 100;
+        }
+        
+        if (params.get("semaphoreTimeout") != null && params.get("semaphoreTimeout") instanceof Long) {
+            semaphoreTimeout = (Long) params.get("semaphoreTimeout");
+        } else {
+            semaphoreTimeout = 0;
+        }
+        
+        if (semaphoreEnabled) {
+            semaphore = new Semaphore(semaphoreLimit);
+        } else {
+            semaphore = null;
+        }
+        
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("responseName", responseName)
                 .put("responseDurable", responseDurable)
@@ -152,13 +198,12 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .put("monitorEnabled", monitorEnabled)
                 .put("monitorInterval", monitorInterval)
                 .put("monitorTimeout", monitorTimeout)
+                .put("suspendTimeout", suspendTimeout)
                 .tags("RpcMaster.new() parameters")
                 .text("RpcMaster[${rpcMasterId}].new() parameters")
                 .stringify());
 
-        exporter = OpflowExporter.getInstance();
-        
-        exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.INC);
+        measurer.changeComponentInstance("rpc_master", rpcMasterId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
@@ -274,17 +319,66 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     public OpflowRpcRequest request(final String routineId, byte[] body, Map<String, Object> options) {
         Lock rl = pushLock.readLock();
-        try {
+        if (suspendTimeout > 0) {
+            try {
+                if (rl.tryLock(suspendTimeout, TimeUnit.MILLISECONDS)) {
+                    try {
+                        return _request(routineId, body, options);
+                    }
+                    finally {
+                        rl.unlock();
+                    }
+                } else {
+                    throw new OpflowRequestSuspendException("tryLock() return false - the lock is not available");
+                }
+            }
+            catch (InterruptedException exception) {
+                throw new OpflowRequestSuspendException("tryLock() is interrupted", exception);
+            }
+        } else {
             rl.lock();
-            return _request(routineId, body, options);
-        }
-        finally {
-            rl.unlock();
+            try {
+                return _request(routineId, body, options);
+            }
+            finally {
+                rl.unlock();
+            }
         }
     }
     
     private OpflowRpcRequest _request(final String routineId, byte[] body, Map<String, Object> options) {
-
+        if (semaphoreEnabled) {
+            try {
+                if (semaphoreTimeout > 0) {
+                    if (semaphore.tryAcquire(semaphoreTimeout, TimeUnit.MILLISECONDS)) {
+                        try {
+                            return _request_safe(routineId, body, options);
+                        }
+                        finally {
+                            semaphore.release();
+                        }
+                    } else {
+                        throw new OpflowRequestWaitingException("There are no permits available");
+                    }
+                } else {
+                    semaphore.acquire();
+                    try {
+                        return _request_safe(routineId, body, options);
+                    }
+                    finally {
+                        semaphore.release();
+                    }
+                }
+            }
+            catch (InterruptedException exception) {
+                throw new OpflowRequestWaitingException("semaphore.acquire() is interrupted", exception);
+            }
+        } else {
+            return _request_safe(routineId, body, options);
+        }
+    }
+    
+    private OpflowRpcRequest _request_safe(final String routineId, byte[] body, Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
         
         Object requestIdVal = options.get("requestId");
@@ -394,7 +488,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             builder.expiration(String.valueOf(expiration));
         }
         
-        exporter.incRpcInvocationEvent("rpc_master", rpcMasterId, routineId, "request");
+        measurer.incRpcInvocationEvent("rpc_master", rpcMasterId, routineId, "request");
         
         engine.produce(body, headers, builder);
         
@@ -630,6 +724,6 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        exporter.changeComponentInstance("rpc_master", rpcMasterId, OpflowExporter.GaugeAction.DEC);
+        measurer.changeComponentInstance("rpc_master", rpcMasterId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }
