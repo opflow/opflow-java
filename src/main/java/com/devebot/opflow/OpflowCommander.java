@@ -48,7 +48,7 @@ public class OpflowCommander implements AutoCloseable {
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
-
+    
     private boolean reserveWorkerEnabled;
     private OpflowPubsubHandler configurer;
     private OpflowRpcMaster rpcMaster;
@@ -368,33 +368,41 @@ public class OpflowCommander implements AutoCloseable {
             root.put("commander", OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
                 @Override
                 public void transform(Map<String, Object> opts) {
-                    OpflowEngine engine = rpcMaster.getEngine();
+                    final OpflowEngine engine = rpcMaster.getEngine();
                     opts.put("instanceId", instanceId);
 
                     // rpcMaster information
-                    MapBuilder mb1 = OpflowUtil.buildOrderedMap()
-                            .put("instanceId", rpcMaster.getInstanceId())
-                            .put("applicationId", engine.getApplicationId())
-                            .put("exchangeName", engine.getExchangeName());
+                    opts.put("rpcMaster", OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+                        @Override
+                        public void transform(Map<String, Object> opt2) {
+                            opt2.put("instanceId", rpcMaster.getInstanceId());
+                            opt2.put("applicationId", engine.getApplicationId());
+                            opt2.put("exchangeName", engine.getExchangeName());
+                            
+                            if (label == Scope.FULL) {
+                                opt2.put("exchangeDurable", engine.getExchangeDurable());
+                            }
+                            
+                            opt2.put("routingKey", engine.getRoutingKey());
 
-                    if (label == Scope.FULL) {
-                        mb1.put("exchangeDurable", engine.getExchangeDurable());
-                    }
+                            if (label == Scope.FULL) {
+                                opt2.put("otherKeys", engine.getOtherKeys());
+                            }
 
-                    mb1.put("routingKey", engine.getRoutingKey());
+                            opt2.put("callbackQueue", rpcMaster.getCallbackName());
 
-                    if (label == Scope.FULL) {
-                        mb1.put("otherKeys", engine.getOtherKeys());
-                    }
-
-                    mb1.put("callbackQueue", rpcMaster.getCallbackName());
-
-                    if (label == Scope.FULL) {
-                        mb1.put("callbackDurable", rpcMaster.getCallbackDurable())
-                                .put("callbackExclusive", rpcMaster.getCallbackExclusive())
-                                .put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete());
-                    }
-                    opts.put("rpcMaster", mb1.toMap());
+                            if (label == Scope.FULL) {
+                                opt2.put("callbackDurable", rpcMaster.getCallbackDurable());
+                                opt2.put("callbackExclusive", rpcMaster.getCallbackExclusive());
+                                opt2.put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete());
+                            }
+                            
+                            opt2.put("request", OpflowUtil.buildOrderedMap()
+                                    .put("expiration", rpcMaster.getExpiration())
+                                    .put("isLocked", rpcMaster.isLocked())
+                                    .toMap());
+                        }
+                    }).toMap());
                     
                     // RPC mappings
                     if (label == Scope.FULL) {
@@ -410,12 +418,6 @@ public class OpflowCommander implements AutoCloseable {
                                 .put("congested", rpcWatcher.isCongested())
                                 .toMap());
                     }
-
-                    // request information
-                    opts.put("request", OpflowUtil.buildOrderedMap()
-                            .put("expiration", rpcMaster.getExpiration())
-                            .put("isLocked", rpcMaster.isLocked())
-                            .toMap());
                 }
             }).toMap());
 
