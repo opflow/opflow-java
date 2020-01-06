@@ -16,12 +16,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author pnhung177
  */
-public class OpflowRestrictor {
+public class OpflowRestrictor implements AutoCloseable {
     public interface Action<T> {
         public T process();
     }
     
-    private final long PAUSE_SLEEPING_INTERVAL = 1000;
+    private final long PAUSE_SLEEPING_INTERVAL = 500;
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictor.class);
     
     private final String instanceId;
@@ -49,6 +49,8 @@ public class OpflowRestrictor {
         
         if (options.get("pauseTimeout") instanceof Long) {
             pauseTimeout = (Long) options.get("pauseTimeout");
+        } else if (options.get("pauseTimeout") instanceof Integer) {
+            pauseTimeout = (Integer) options.get("pauseTimeout");
         } else {
             pauseTimeout = 30000;
         }
@@ -66,8 +68,10 @@ public class OpflowRestrictor {
             semaphoreEnabled = true;
         }
         
-        if (options.get("semaphoreTimeout") instanceof Long) {
+        if (options.get("semaphoreTimeout") instanceof Long ) {
             semaphoreTimeout = (Long) options.get("semaphoreTimeout");
+        } else if (options.get("semaphoreTimeout") instanceof Integer) {
+            semaphoreTimeout = (Integer) options.get("semaphoreTimeout");
         } else {
             semaphoreTimeout = 0;
         }
@@ -78,22 +82,42 @@ public class OpflowRestrictor {
     public <T> T filter(Action<T> action) {
         Lock rl = pauseLock.readLock();
         if (pauseTimeout > 0) {
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                    .put("pauseTimeout", pauseTimeout)
+                    .text("Restrictor[${restrictorId}].filter() pauseTimeout: ${pauseTimeout} ms")
+                    .stringify());
             try {
                 if (rl.tryLock(pauseTimeout, TimeUnit.MILLISECONDS)) {
                     try {
+                        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                                .text("Restrictor[${restrictorId}].filter() try")
+                                .stringify());
                         return _filter(action);
                     }
                     finally {
+                        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                                .text("Restrictor[${restrictorId}].filter() finally")
+                                .stringify());
                         rl.unlock();
                     }
                 } else {
+                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                            .text("Restrictor[${restrictorId}].filter() tryLock() is timeout")
+                            .stringify());
                     throw new OpflowRequestSuspendException("tryLock() return false - the lock is not available");
                 }
             }
             catch (InterruptedException exception) {
+                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                        .text("Restrictor[${restrictorId}].filter() tryLock() is interrupted")
+                        .stringify());
                 throw new OpflowRequestSuspendException("tryLock() is interrupted", exception);
             }
         } else {
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                    .put("pauseTimeout", pauseTimeout)
+                    .text("Restrictor[${restrictorId}].filter() without pauseTimeout")
+                    .stringify());
             rl.lock();
             try {
                 return _filter(action);
@@ -131,7 +155,7 @@ public class OpflowRestrictor {
             catch (InterruptedException exception) {
                 throw new OpflowRequestWaitingException("semaphore.acquire() is interrupted", exception);
             }
-        } else {
+        } else { 
             return action.process();
         }
     }
@@ -182,9 +206,14 @@ public class OpflowRestrictor {
                             .put("duration", duration)
                             .text("PauseThread[${restrictorId}].run() sleeping in ${duration} ms")
                             .stringify());
-                    while (running && count < duration) {
-                        count += PAUSE_SLEEPING_INTERVAL;
-                        Thread.sleep(PAUSE_SLEEPING_INTERVAL);
+                    count = duration;
+                    while (running && count > 0) {
+                        if (count < PAUSE_SLEEPING_INTERVAL) {
+                            Thread.sleep(count);
+                        } else {
+                            Thread.sleep(PAUSE_SLEEPING_INTERVAL);
+                        }
+                        count -= PAUSE_SLEEPING_INTERVAL;
                     }
                 }
             }
@@ -254,5 +283,10 @@ public class OpflowRestrictor {
         if(pauseLock.isWriteLockedByCurrentThread()) {
             pauseLock.writeLock().unlock();
         }
+    }
+    
+    @Override
+    public void close() {
+        threadExecutor.shutdown();
     }
 }
