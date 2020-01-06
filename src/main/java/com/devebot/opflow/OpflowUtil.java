@@ -434,4 +434,10 @@ public class OpflowUtil {
     public static String getClassSimpleName(Class clazz) {
         return clazz.getSimpleName();
     }
+    
+    public static void sleep(long duration) {
+        try {
+            Thread.sleep(duration);
+        } catch (InterruptedException ex) {}
+    }
 }

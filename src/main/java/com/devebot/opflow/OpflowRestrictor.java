@@ -47,6 +47,10 @@ public class OpflowRestrictor implements AutoCloseable {
         instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
         logTracer = OpflowLogTracer.ROOT.branch("restrictorId", instanceId);
         
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                .text("Restrictor[${restrictorId}].new()")
+                .stringify());
+        
         if (options.get("pauseTimeout") instanceof Long) {
             pauseTimeout = (Long) options.get("pauseTimeout");
         } else if (options.get("pauseTimeout") instanceof Integer) {
@@ -77,6 +81,10 @@ public class OpflowRestrictor implements AutoCloseable {
         }
         
         this.semaphore = new Semaphore(this.semaphoreLimit);
+        
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                .text("Restrictor[${restrictorId}].new() end!")
+                .stringify());
     }
     
     public <T> T filter(Action<T> action) {
@@ -208,11 +216,7 @@ public class OpflowRestrictor implements AutoCloseable {
                             .stringify());
                     count = duration;
                     while (running && count > 0) {
-                        if (count < PAUSE_SLEEPING_INTERVAL) {
-                            Thread.sleep(count);
-                        } else {
-                            Thread.sleep(PAUSE_SLEEPING_INTERVAL);
-                        }
+                        Thread.sleep((count < PAUSE_SLEEPING_INTERVAL) ? count : PAUSE_SLEEPING_INTERVAL);
                         count -= PAUSE_SLEEPING_INTERVAL;
                     }
                 }
@@ -257,7 +261,7 @@ public class OpflowRestrictor implements AutoCloseable {
             pauseThread.init(duration);
             threadExecutor.execute(pauseThread);
             result.put("duration", duration);
-            result.put("status", "locking");
+            result.put("status", pauseThread.isLocked() ? "locked" : "locking");
         }
         return result;
     }
