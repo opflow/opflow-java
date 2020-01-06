@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -25,7 +23,6 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
     
     private final long DELAY_TIMEOUT = 1000;
-    private final long PAUSE_SLEEPING_INTERVAL = 1000;
     private final int PREFETCH_NUM = 1;
     private final int CONSUMER_MAX = 1;
     
@@ -34,8 +31,6 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final OpflowPromMeasurer measurer;
     
     private final Timer timer = new Timer(true);
-    private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
-    private final ReentrantReadWriteLock pushLock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock taskLock = new ReentrantReadWriteLock();
     private final Lock closeLock = taskLock.writeLock();
     private final Condition closeBarrier = closeLock.newCondition();
@@ -54,9 +49,6 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final String monitorId;
     private final int monitorInterval;
     private final long monitorTimeout;
-    
-    private final int semaphoreLimit;
-    private final long suspendTimeout;
     
     private final OpflowRestrictor restrictor;
     
@@ -151,23 +143,12 @@ public class OpflowRpcMaster implements AutoCloseable {
             monitorTimeout = 0;
         }
         
-        if (params.get("suspendTimeout") != null && params.get("suspendTimeout") instanceof Long) {
-            suspendTimeout = (Long) params.get("suspendTimeout");
-        } else {
-            suspendTimeout = 0;
-        }
-        
-        if (params.get("semaphoreLimit") != null && params.get("semaphoreLimit") instanceof Integer) {
-            int _limit = (Integer) params.get("semaphoreLimit");
-            semaphoreLimit = (_limit > 0) ? _limit : 100;
-        } else {
-            semaphoreLimit = 100;
-        }
-        
-        restrictor = new OpflowRestrictor(pushLock, semaphoreLimit, OpflowUtil.buildMap()
-                .put("pauseTimeout", params.get("suspendTimeout"))
+        restrictor = new OpflowRestrictor(OpflowUtil.buildMap()
+                .put("instanceId", rpcMasterId)
+                .put("semaphoreLimit", params.get("semaphoreLimit"))
                 .put("semaphoreEnabled", params.get("semaphoreEnabled"))
                 .put("semaphoreTimeout", params.get("semaphoreTimeout"))
+                .put("pauseTimeout", params.get("suspendTimeout"))
                 .toMap());
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -179,11 +160,10 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .put("monitorEnabled", monitorEnabled)
                 .put("monitorInterval", monitorInterval)
                 .put("monitorTimeout", monitorTimeout)
-                .put("suspendTimeout", suspendTimeout)
                 .tags("RpcMaster.new() parameters")
                 .text("RpcMaster[${rpcMasterId}].new() parameters")
                 .stringify());
-
+        
         measurer.changeComponentInstance("rpc_master", rpcMasterId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -435,114 +415,16 @@ public class OpflowRpcMaster implements AutoCloseable {
         return state;
     }
     
-    private class PauseThread extends Thread {
-        private final ReentrantReadWriteLock rwlock;
-        private final String instanceId;
-        private final OpflowLogTracer tracer;
-        private long duration = 0;
-        private long count = 0;
-        private boolean running = true;
-        
-        public String getInstanceId() {
-            return instanceId;
-        }
-        
-        public boolean isLocked() {
-            return rwlock.isWriteLocked();
-        }
-        
-        public void init(long duration) {
-            this.duration = duration;
-            this.count = 0;
-            this.running = true;
-        }
-        
-        public void terminate() {
-            running = false;
-        }
-        
-        PauseThread(OpflowLogTracer logTracer, ReentrantReadWriteLock pushLock) {
-            this.rwlock = pushLock;
-            this.instanceId = OpflowUtil.getLogID();
-            this.tracer = logTracer.copy();
-            if (tracer.ready(LOG, "trace")) LOG.trace(tracer
-                    .text("PauseThread[${rpcMasterId}] constructed")
-                    .stringify());
-        }
-        
-        @Override
-        public void run() {
-            if (duration <= 0) return;
-            if (rwlock.isWriteLocked()) return;
-            rwlock.writeLock().lock();
-            try {
-                if(rwlock.isWriteLockedByCurrentThread()) {
-                    if (tracer.ready(LOG, "trace")) LOG.trace(tracer
-                            .put("duration", duration)
-                            .text("PauseThread[${rpcMasterId}].run() sleeping in ${duration} ms")
-                            .stringify());
-                    while (running && count < duration) {
-                        count += PAUSE_SLEEPING_INTERVAL;
-                        Thread.sleep(PAUSE_SLEEPING_INTERVAL);
-                    }
-                }
-            }
-            catch (InterruptedException e) {
-                if (tracer.ready(LOG, "trace")) LOG.trace(tracer
-                        .text("PauseThread[${rpcMasterId}].run() is interrupted")
-                        .stringify());
-            }
-            finally {
-                if (tracer.ready(LOG, "trace")) LOG.trace(tracer
-                        .text("PauseThread[${rpcMasterId}].run() wake-up")
-                        .stringify());
-                if(rwlock.isWriteLockedByCurrentThread()) {
-                    if (tracer.ready(LOG, "trace")) LOG.trace(tracer
-                            .text("PauseThread[${rpcMasterId}].run() done!")
-                            .stringify());
-                    rwlock.writeLock().unlock();
-                }
-            }
-        }
+    public boolean isPaused() {
+        return restrictor.isPaused();
     }
     
-    private PauseThread pauseThread;
-    
-    public boolean isLocked() {
-        if (pauseThread == null) {
-            return false;
-        }
-        return pauseThread.isLocked();
-    }
-    
-    public Map<String, Object> pause(final long duration) {
-        if (pauseThread == null) {
-            pauseThread = new PauseThread(logTracer, pushLock);
-        }
-        Map<String, Object> result = OpflowUtil.buildOrderedMap()
-                .put("threadId", pauseThread.getInstanceId())
-                .put("status", "skipped")
-                .toMap();
-        if (!pauseThread.isLocked()) {
-            pauseThread.init(duration);
-            threadExecutor.execute(pauseThread);
-            result.put("duration", duration);
-            result.put("status", "locking");
-        }
-        return result;
+    public Map<String, Object> pause(long duration) {
+        return restrictor.pause(duration);
     }
     
     public Map<String, Object> unpause() {
-        Map<String, Object> result = OpflowUtil.buildOrderedMap()
-                .put("threadId", pauseThread.getInstanceId())
-                .toMap();
-        if (pauseThread == null) {
-            result.put("status", "free");
-        } else {
-            pauseThread.terminate();
-            result.put("status", pauseThread.isLocked() ? "unlocking" : "unlocked");
-        }
-        return result;
+        return restrictor.unpause();
     }
     
     private void scheduleClearTasks() {
@@ -572,7 +454,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     @Override
     public void close() {
         closeLock.lock();
-        pushLock.writeLock().lock();
+        restrictor.lock();
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - obtain the lock")
                 .stringify());
@@ -609,9 +491,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].close() - an interruption has been raised")
                 .stringify());
         } finally {
-            if(pushLock.isWriteLockedByCurrentThread()) {
-                pushLock.writeLock().unlock();
-            }
+            restrictor.unlock();
             closeLock.unlock();
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - lock has been released")
@@ -649,6 +529,10 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     public Boolean getCallbackAutoDelete() {
         return responseAutoDelete;
+    }
+
+    public OpflowRestrictor getRestrictor() {
+        return restrictor;
     }
 
     @Override

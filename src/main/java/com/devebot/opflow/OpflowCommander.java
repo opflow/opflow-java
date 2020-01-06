@@ -399,7 +399,7 @@ public class OpflowCommander implements AutoCloseable {
                             
                             opt2.put("request", OpflowUtil.buildOrderedMap()
                                     .put("expiration", rpcMaster.getExpiration())
-                                    .put("isLocked", rpcMaster.isLocked())
+                                    .put("suspended", rpcMaster.isPaused())
                                     .toMap());
                         }
                     }).toMap());
