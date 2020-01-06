@@ -1,8 +1,6 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
-import com.devebot.opflow.exception.OpflowRequestWaitingException;
-import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -13,8 +11,6 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -59,13 +55,10 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final int monitorInterval;
     private final long monitorTimeout;
     
-    private final boolean semaphoreEnabled;
     private final int semaphoreLimit;
-    private final long semaphoreTimeout;
-    
-    private final Semaphore semaphore;
-    
     private final long suspendTimeout;
+    
+    private final OpflowRestrictor restrictor;
     
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
@@ -164,12 +157,6 @@ public class OpflowRpcMaster implements AutoCloseable {
             suspendTimeout = 0;
         }
         
-        if (params.get("semaphoreEnabled") != null && params.get("semaphoreEnabled") instanceof Boolean) {
-            semaphoreEnabled = (Boolean) params.get("semaphoreEnabled");
-        } else {
-            semaphoreEnabled = false;
-        }
-        
         if (params.get("semaphoreLimit") != null && params.get("semaphoreLimit") instanceof Integer) {
             int _limit = (Integer) params.get("semaphoreLimit");
             semaphoreLimit = (_limit > 0) ? _limit : 100;
@@ -177,17 +164,11 @@ public class OpflowRpcMaster implements AutoCloseable {
             semaphoreLimit = 100;
         }
         
-        if (params.get("semaphoreTimeout") != null && params.get("semaphoreTimeout") instanceof Long) {
-            semaphoreTimeout = (Long) params.get("semaphoreTimeout");
-        } else {
-            semaphoreTimeout = 0;
-        }
-        
-        if (semaphoreEnabled) {
-            semaphore = new Semaphore(semaphoreLimit);
-        } else {
-            semaphore = null;
-        }
+        restrictor = new OpflowRestrictor(pushLock, semaphoreLimit, OpflowUtil.buildMap()
+                .put("pauseTimeout", params.get("suspendTimeout"))
+                .put("semaphoreEnabled", params.get("semaphoreEnabled"))
+                .put("semaphoreTimeout", params.get("semaphoreTimeout"))
+                .toMap());
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("responseName", responseName)
@@ -317,65 +298,13 @@ public class OpflowRpcMaster implements AutoCloseable {
         return request(routineId, body, null);
     }
     
-    public OpflowRpcRequest request(final String routineId, byte[] body, Map<String, Object> options) {
-        Lock rl = pushLock.readLock();
-        if (suspendTimeout > 0) {
-            try {
-                if (rl.tryLock(suspendTimeout, TimeUnit.MILLISECONDS)) {
-                    try {
-                        return _request(routineId, body, options);
-                    }
-                    finally {
-                        rl.unlock();
-                    }
-                } else {
-                    throw new OpflowRequestSuspendException("tryLock() return false - the lock is not available");
-                }
+    public OpflowRpcRequest request(final String routineId, final byte[] body, final Map<String, Object> options) {
+        return restrictor.filter(new OpflowRestrictor.Action<OpflowRpcRequest>() {
+            @Override
+            public OpflowRpcRequest process() {
+                return _request_safe(routineId, body, options);
             }
-            catch (InterruptedException exception) {
-                throw new OpflowRequestSuspendException("tryLock() is interrupted", exception);
-            }
-        } else {
-            rl.lock();
-            try {
-                return _request(routineId, body, options);
-            }
-            finally {
-                rl.unlock();
-            }
-        }
-    }
-    
-    private OpflowRpcRequest _request(final String routineId, byte[] body, Map<String, Object> options) {
-        if (semaphoreEnabled) {
-            try {
-                if (semaphoreTimeout > 0) {
-                    if (semaphore.tryAcquire(semaphoreTimeout, TimeUnit.MILLISECONDS)) {
-                        try {
-                            return _request_safe(routineId, body, options);
-                        }
-                        finally {
-                            semaphore.release();
-                        }
-                    } else {
-                        throw new OpflowRequestWaitingException("There are no permits available");
-                    }
-                } else {
-                    semaphore.acquire();
-                    try {
-                        return _request_safe(routineId, body, options);
-                    }
-                    finally {
-                        semaphore.release();
-                    }
-                }
-            }
-            catch (InterruptedException exception) {
-                throw new OpflowRequestWaitingException("semaphore.acquire() is interrupted", exception);
-            }
-        } else {
-            return _request_safe(routineId, body, options);
-        }
+        });
     }
     
     private OpflowRpcRequest _request_safe(final String routineId, byte[] body, Map<String, Object> options) {

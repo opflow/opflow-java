@@ -23,30 +23,35 @@ public class OpflowRpcWatcher implements AutoCloseable {
     private final boolean enabled;
     private final long interval;
     private final Timer timer = new Timer(true);
-    private final TimerTask timerTask;
+    private final MyTimerTask timerTask;
     
     private boolean congested = false;
     
-    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker) {
-        this(_rpcChecker, null);
-    }
-    
-    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker, Map<String, Object> kwargs) {
-        if (kwargs == null) {
-            instanceId = OpflowUtil.getLogID();
-            enabled = true;
-            interval = RPC_DETECTION_INTERVAL;
-        } else {
-            instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
-            enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", Boolean.TRUE), Boolean.class);
-            interval = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "interval", RPC_DETECTION_INTERVAL), Long.class);
+    public class MyTimerTask extends TimerTask {
+
+        private boolean active = true;
+        private long count = 0;
+
+        public MyTimerTask() {
+            super();
+        }
+
+        public boolean isActive() {
+            return active;
+        }
+
+        public void setActive(boolean active) {
+            this.active = active;
         }
         
-        logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", instanceId);
-        rpcChecker = _rpcChecker;
-        timerTask = new TimerTask() {
-            @Override
-            public void run() {
+        public long getCount() {
+            return count;
+        }
+
+        @Override
+        public void run() {
+            if (active) {
+                count++;
                 long current = OpflowUtil.getCurrentTime();
                 OpflowLogTracer logTask = logTracer.branch("timestamp", current);
                 if (logTask.ready(LOG, "debug")) LOG.debug(logTask
@@ -66,9 +71,44 @@ public class OpflowRpcWatcher implements AutoCloseable {
                             .stringify());
                 }
             }
-        };
+        }
     }
     
+    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker) {
+        this(_rpcChecker, null);
+    }
+    
+    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker, Map<String, Object> kwargs) {
+        if (kwargs == null) {
+            instanceId = OpflowUtil.getLogID();
+            enabled = true;
+            interval = RPC_DETECTION_INTERVAL;
+        } else {
+            instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
+            enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", Boolean.TRUE), Boolean.class);
+            interval = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "interval", RPC_DETECTION_INTERVAL), Long.class);
+        }
+        
+        logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", instanceId);
+        rpcChecker = _rpcChecker;
+        timerTask = new MyTimerTask();
+    }
+
+    public long getCount() {
+        if (timerTask == null) {
+            return 0;
+        }
+        return timerTask.getCount();
+    }
+    
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public long getInterval() {
+        return interval;
+    }
+
     public boolean isCongested() {
         return congested;
     }

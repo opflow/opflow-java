@@ -201,6 +201,12 @@ public class OpflowRestServer implements AutoCloseable {
                         case "reset":
                             result = taskSubmitter.reset();
                             break;
+                        case "set-reserve-worker-always":
+                            result = taskSubmitter.state(OpflowUtil.buildMap()
+                                    .put("type", getQueryParam(exchange, "type"))
+                                    .put("status", getQueryParam(exchange, "status", Boolean.class, true))
+                                    .toMap());
+                            break;
                         default:
                             break;
                     }
@@ -248,6 +254,10 @@ public class OpflowRestServer implements AutoCloseable {
     
     private boolean getPrettyParam(HttpServerExchange exchange) {
         return getQueryParam(exchange, "pretty", Boolean.class, Boolean.FALSE);
+    }
+    
+    private String getQueryParam(HttpServerExchange exchange, String name) {
+        return getQueryParam(exchange, name, String.class, null);
     }
     
     private <T> T getQueryParam(HttpServerExchange exchange, String name, Class<T> type, T defaultVal) {
