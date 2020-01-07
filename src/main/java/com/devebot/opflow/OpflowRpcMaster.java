@@ -1,6 +1,8 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.exception.OpflowRestrictionException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -29,6 +31,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final String rpcMasterId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
+    private final OpflowRestrictor restrictor;
     
     private final Timer timer = new Timer(true);
     private final ReentrantReadWriteLock taskLock = new ReentrantReadWriteLock();
@@ -50,13 +53,12 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final int monitorInterval;
     private final long monitorTimeout;
     
-    private final OpflowRestrictor restrictor;
-    
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
         rpcMasterId = OpflowUtil.getOptionField(params, "rpcMasterId", true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
+        restrictor = (OpflowRestrictor) OpflowUtil.getOptionField(params, "restrictor", null);
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", rpcMasterId);
         
@@ -142,14 +144,6 @@ public class OpflowRpcMaster implements AutoCloseable {
         } else {
             monitorTimeout = 0;
         }
-        
-        restrictor = new OpflowRestrictor(OpflowUtil.buildMap()
-                .put("instanceId", rpcMasterId)
-                .put("semaphoreLimit", params.get("semaphoreLimit"))
-                .put("semaphoreEnabled", params.get("semaphoreEnabled"))
-                .put("semaphoreTimeout", params.get("semaphoreTimeout"))
-                .put("pauseTimeout", params.get("suspendTimeout"))
-                .toMap());
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("responseName", responseName)
@@ -279,12 +273,23 @@ public class OpflowRpcMaster implements AutoCloseable {
     }
     
     public OpflowRpcRequest request(final String routineId, final byte[] body, final Map<String, Object> options) {
-        return restrictor.filter(new OpflowRestrictor.Action<OpflowRpcRequest>() {
-            @Override
-            public OpflowRpcRequest process() {
-                return _request_safe(routineId, body, options);
-            }
-        });
+        if (restrictor == null) {
+            return _request_safe(routineId, body, options);
+        }
+        try {
+            return restrictor.filter(new OpflowRestrictor.Action<OpflowRpcRequest>() {
+                @Override
+                public OpflowRpcRequest process() throws Throwable {
+                    return _request_safe(routineId, body, options);
+                }
+            });
+        }
+        catch (OpflowOperationException opflowException) {
+            throw opflowException;
+        }
+        catch (Throwable e) {
+            throw new OpflowRestrictionException(e);
+        }
     }
     
     private OpflowRpcRequest _request_safe(final String routineId, byte[] body, Map<String, Object> options) {
@@ -415,18 +420,6 @@ public class OpflowRpcMaster implements AutoCloseable {
         return state;
     }
     
-    public boolean isPaused() {
-        return restrictor.isPaused();
-    }
-    
-    public Map<String, Object> pause(long duration) {
-        return restrictor.pause(duration);
-    }
-    
-    public Map<String, Object> unpause() {
-        return restrictor.unpause();
-    }
-    
     private void scheduleClearTasks() {
         if (tasks.size() > 0) {
             timer.schedule(new TimerTask() {
@@ -454,7 +447,9 @@ public class OpflowRpcMaster implements AutoCloseable {
     @Override
     public void close() {
         closeLock.lock();
-        restrictor.lock();
+        if (restrictor != null) {
+            restrictor.lock();
+        }
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - obtain the lock")
                 .stringify());
@@ -491,7 +486,9 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].close() - an interruption has been raised")
                 .stringify());
         } finally {
-            restrictor.unlock();
+            if (restrictor != null) {
+                restrictor.unlock();
+            }
             closeLock.unlock();
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - lock has been released")

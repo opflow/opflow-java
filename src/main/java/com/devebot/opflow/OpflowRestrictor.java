@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRestrictor implements AutoCloseable {
     public interface Action<T> {
-        public T process();
+        public T process() throws Throwable;
     }
     
     private final long PAUSE_SLEEPING_INTERVAL = 500;
@@ -28,7 +28,7 @@ public class OpflowRestrictor implements AutoCloseable {
     private final OpflowLogTracer logTracer;
     
     private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
-    private final ReentrantReadWriteLock pauseLock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock pauseLock;
     private long pauseTimeout;
     
     private final int semaphoreLimit;
@@ -37,11 +37,25 @@ public class OpflowRestrictor implements AutoCloseable {
     
     private final Semaphore semaphore;
     
+    private boolean active;
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean enabled) {
+        this.active = enabled;
+    }
+    
     public OpflowRestrictor() {
-        this(null);
+        this(null, null);
     }
     
     public OpflowRestrictor(Map<String, Object> options) {
+        this(null, options);
+    }
+    
+    public OpflowRestrictor(ReentrantReadWriteLock sharedLock, Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
         
         instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
@@ -50,6 +64,20 @@ public class OpflowRestrictor implements AutoCloseable {
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Restrictor[${restrictorId}].new()")
                 .stringify());
+        
+        if (sharedLock != null) {
+            pauseLock = sharedLock;
+        } else {
+            pauseLock = new ReentrantReadWriteLock();
+        }
+        
+        if (options.get("active") instanceof Boolean) {
+            active = (Boolean) options.get("active");
+        } if (options.get("enabled") instanceof Boolean) {
+            active = (Boolean) options.get("enabled");
+        } else {
+            active = true;
+        }
         
         if (options.get("pauseTimeout") instanceof Long) {
             pauseTimeout = (Long) options.get("pauseTimeout");
@@ -87,7 +115,10 @@ public class OpflowRestrictor implements AutoCloseable {
                 .stringify());
     }
     
-    public <T> T filter(Action<T> action) {
+    public <T> T filter(Action<T> action) throws Throwable {
+        if (!isActive()) {
+            return action.process();
+        }
         Lock rl = pauseLock.readLock();
         if (pauseTimeout > 0) {
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
@@ -136,7 +167,7 @@ public class OpflowRestrictor implements AutoCloseable {
         }
     }
     
-    private <T> T _filter(Action<T> action) {
+    private <T> T _filter(Action<T> action) throws Throwable {
         if (semaphoreEnabled) {
             try {
                 if (semaphoreTimeout > 0) {
