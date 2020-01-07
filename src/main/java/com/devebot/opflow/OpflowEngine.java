@@ -27,6 +27,7 @@ import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowKeytool;
+import com.devebot.opflow.supports.OpflowSysInfo;
 
 /**
  *
@@ -88,6 +89,9 @@ public class OpflowEngine implements AutoCloseable {
                 threadPoolSize = (Integer)params.get("threadPoolSize");
             }
             if (threadPoolSize == null || threadPoolSize <= 0) {
+                threadPoolSize = OpflowSysInfo.getNumberOfProcessors();
+            }
+            if (threadPoolSize <= 0) {
                 threadPoolSize = 2;
             }
             
