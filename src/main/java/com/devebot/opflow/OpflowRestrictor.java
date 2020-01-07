@@ -26,26 +26,19 @@ public class OpflowRestrictor implements AutoCloseable {
     
     private final String instanceId;
     private final OpflowLogTracer logTracer;
-    
-    private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
+    private boolean active;
+
     private final ReentrantReadWriteLock pauseLock;
+    private boolean pauseEnabled;
     private long pauseTimeout;
+    private PauseThread pauseThread;
+    private ExecutorService threadExecutor;
     
     private final int semaphoreLimit;
     private boolean semaphoreEnabled;
     private long semaphoreTimeout;
     
     private final Semaphore semaphore;
-    
-    private boolean active;
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean enabled) {
-        this.active = enabled;
-    }
     
     public OpflowRestrictor() {
         this(null, null);
@@ -77,6 +70,12 @@ public class OpflowRestrictor implements AutoCloseable {
             active = (Boolean) options.get("enabled");
         } else {
             active = true;
+        }
+        
+        if (options.get("pauseEnabled") instanceof Boolean) {
+            pauseEnabled = (Boolean) options.get("pauseEnabled");
+        } else {
+            pauseEnabled = true;
         }
         
         if (options.get("pauseTimeout") instanceof Long) {
@@ -113,6 +112,42 @@ public class OpflowRestrictor implements AutoCloseable {
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Restrictor[${restrictorId}].new() end!")
                 .stringify());
+    }
+    
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean enabled) {
+        this.active = enabled;
+    }
+
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public boolean isPauseEnabled() {
+        return pauseEnabled;
+    }
+
+    public long getPauseTimeout() {
+        return pauseTimeout;
+    }
+    
+    public int getSemaphoreLimit() {
+        return semaphoreLimit;
+    }
+    
+    public int getSemaphorePermits() {
+        return semaphore.availablePermits();
+    }
+    
+    public boolean isSemaphoreEnabled() {
+        return semaphoreEnabled;
+    }
+    
+    public long getSemaphoreTimeout() {
+        return semaphoreTimeout;
     }
     
     public <T> T filter(Action<T> action) throws Throwable {
@@ -271,8 +306,6 @@ public class OpflowRestrictor implements AutoCloseable {
         }
     }
     
-    private PauseThread pauseThread;
-    
     public boolean isPaused() {
         if (pauseThread == null) {
             return false;
@@ -281,8 +314,10 @@ public class OpflowRestrictor implements AutoCloseable {
     }
     
     public Map<String, Object> pause(final long duration) {
-        if (pauseThread == null) {
-            pauseThread = new PauseThread(logTracer, pauseLock);
+        synchronized(this) {
+            if (pauseThread == null) {
+                pauseThread = new PauseThread(logTracer, pauseLock);
+            }
         }
         Map<String, Object> result = OpflowUtil.buildOrderedMap()
                 .put("threadId", pauseThread.getInstanceId())
@@ -290,6 +325,11 @@ public class OpflowRestrictor implements AutoCloseable {
                 .toMap();
         if (!pauseThread.isLocked()) {
             pauseThread.init(duration);
+            synchronized(this) {
+                if (threadExecutor == null) {
+                    threadExecutor = Executors.newSingleThreadExecutor();
+                }
+            }
             threadExecutor.execute(pauseThread);
             result.put("duration", duration);
             result.put("status", pauseThread.isLocked() ? "locked" : "locking");
@@ -321,7 +361,36 @@ public class OpflowRestrictor implements AutoCloseable {
     }
     
     @Override
-    public void close() {
+    public synchronized void close() {
+        if (threadExecutor == null) return;
+        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                .text("Restrictor[${restrictorId}].close() disable new tasks from being submitted")
+                .stringify());
         threadExecutor.shutdown();
+        try {
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                    .text("Restrictor[${restrictorId}].close() wait a while for existing tasks to terminate")
+                    .stringify());
+            if (!threadExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                        .text("Restrictor[${restrictorId}].close() cancel currently executing tasks")
+                        .stringify());
+                threadExecutor.shutdownNow();
+                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                        .text("Restrictor[${restrictorId}].close() wait a while for tasks to respond to being cancelled")
+                        .stringify());
+                if (!threadExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                            .text("Restrictor[${restrictorId}].close() threadExecutor did not terminate")
+                            .stringify());
+                }
+            }
+        } catch (InterruptedException ie) {
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                    .text("Restrictor[${restrictorId}].close() (re-)cancel if current thread also interrupted")
+                    .stringify());
+            threadExecutor.shutdownNow();
+        }
+        threadExecutor = null;
     }
 }

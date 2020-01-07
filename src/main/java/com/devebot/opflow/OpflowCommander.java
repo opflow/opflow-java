@@ -40,6 +40,8 @@ public class OpflowCommander implements AutoCloseable {
 
     public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
 
+    public static enum RestrictionScope { ALL, RPC }
+    
     public final static String PARAM_RESERVE_WORKER_ENABLED = "reserveWorkerEnabled";
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
@@ -48,6 +50,9 @@ public class OpflowCommander implements AutoCloseable {
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
+
+    private RestrictionScope restrictorScope = RestrictionScope.ALL;
+    private OpflowRestrictor restrictor;
     
     private boolean reserveWorkerEnabled;
     private OpflowPubsubHandler configurer;
@@ -56,7 +61,6 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcWatcher rpcWatcher;
     private OpflowRestServer restServer;
-    private OpflowRestrictor restrictor;
 
     public OpflowCommander() throws OpflowBootstrapException {
         this(null, null);
@@ -162,7 +166,9 @@ public class OpflowCommander implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("measurer", measurer);
-                        opts.put("restrictor", restrictor);
+                        if (restrictorScope == RestrictionScope.RPC) {
+                            opts.put("restrictor", restrictor);
+                        }
                     }
                 }, rpcMasterCfg).toMap());
             }
@@ -194,6 +200,10 @@ public class OpflowCommander implements AutoCloseable {
             this.close();
             throw exception;
         }
+    }
+    
+    public boolean isRestrictorAvailable() {
+        return restrictor != null && restrictorScope == RestrictionScope.ALL;
     }
     
     public boolean isReserveWorkerEnabled() {
@@ -235,9 +245,24 @@ public class OpflowCommander implements AutoCloseable {
 
         if (restServer != null) restServer.close();
         if (rpcWatcher != null) rpcWatcher.close();
-        if (publisher != null) publisher.close();
-        if (rpcMaster != null) rpcMaster.close();
-        if (configurer != null) configurer.close();
+        
+        if (isRestrictorAvailable()) {
+            restrictor.lock();
+        }
+        try {
+            if (publisher != null) publisher.close();
+            if (rpcMaster != null) rpcMaster.close();
+            if (configurer != null) configurer.close();
+        }
+        finally {
+            if (isRestrictorAvailable()) {
+                restrictor.unlock();
+            }
+        }
+        
+        if (isRestrictorAvailable()) {
+            restrictor.close();
+        }
 
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close() has done!")
@@ -406,17 +431,27 @@ public class OpflowCommander implements AutoCloseable {
                     opts.put("instanceId", instanceId);
 
                     // restrictor information
-                    if (restrictor != null) {
-                        opts.put("restrictor", OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
-                            @Override
-                            public void transform(Map<String, Object> opt2) {
-                                opt2.put("paused", restrictor.isPaused());
-                            }
-                        }).toMap());
-                    } else {
-                        opts.put("restrictor", OpflowUtil.buildOrderedMap()
-                                .put("enabled", false)
-                                .toMap());
+                    if (label == Scope.FULL) {
+                        if (restrictor != null) {
+                            opts.put("restrictor", OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+                                @Override
+                                public void transform(Map<String, Object> opt2) {
+                                    int availablePermits = restrictor.getSemaphorePermits();
+                                    opt2.put("semaphoreLimit", restrictor.getSemaphoreLimit());
+                                    opt2.put("semaphoreUsedPermits", restrictor.getSemaphoreLimit() - availablePermits);
+                                    opt2.put("semaphoreFreePermits", availablePermits);
+                                    opt2.put("semaphoreEnabled", restrictor.isSemaphoreEnabled());
+                                    opt2.put("semaphoreTimeout", restrictor.getSemaphoreTimeout());
+                                    opt2.put("pauseEnabled", restrictor.isPauseEnabled());
+                                    opt2.put("pauseTimeout", restrictor.getPauseTimeout());
+                                    opt2.put("pauseStatus", restrictor.isPaused() ? "on" : "off");
+                                }
+                            }).toMap());
+                        } else {
+                            opts.put("restrictor", OpflowUtil.buildOrderedMap()
+                                    .put("enabled", false)
+                                    .toMap());
+                        }
                     }
                     
                     // rpcMaster information
@@ -566,7 +601,15 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
-            return _invoke(proxy, method, args);
+            if (isRestrictorAvailable()) {
+                return _invoke(proxy, method, args);
+            }
+            return restrictor.filter(new OpflowRestrictor.Action<Object>() {
+                @Override
+                public Object process() throws Throwable {
+                    return _invoke(proxy, method, args);
+                }
+            });
         }
         
         private Object _invoke(Object proxy, Method method, Object[] args) throws Throwable {
