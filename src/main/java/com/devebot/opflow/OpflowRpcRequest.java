@@ -152,7 +152,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         if (extractTrail != null && extractTrail.ready(LOG, "trace")) LOG.trace(extractTrail
                 .text("Request[${requestId}] - extracting result")
                 .stringify());
-        String workerTag = null;
+        String consumerTag = null;
         boolean failed = false;
         byte[] error = null;
         boolean completed = false;
@@ -177,12 +177,12 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                         }
                     }   break;
                 case "failed":
-                    workerTag = OpflowUtil.getMessageField(msg, "workerTag");
+                    consumerTag = OpflowUtil.getMessageField(msg, "consumerTag");
                     failed = true;
                     error = msg.getBody();
                     break;
                 case "completed":
-                    workerTag = OpflowUtil.getMessageField(msg, "workerTag");
+                    consumerTag = OpflowUtil.getMessageField(msg, "consumerTag");
                     completed = true;
                     value = msg.getBody();
                     break;
@@ -194,7 +194,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                 .text("Request[${requestId}] - extracting result has completed")
                 .stringify());
         if (!includeProgress) steps = null;
-        return new OpflowRpcResult(routineId, requestId, workerTag, steps, failed, error, completed, value);
+        return new OpflowRpcResult(routineId, requestId, consumerTag, steps, failed, error, completed, value);
     }
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });

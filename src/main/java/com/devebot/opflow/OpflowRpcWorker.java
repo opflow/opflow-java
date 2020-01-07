@@ -132,10 +132,10 @@ public class OpflowRpcWorker implements AutoCloseable {
                     AMQP.BasicProperties properties,
                     String queueName,
                     Channel channel,
-                    String workerTag
+                    String consumerTag
             ) throws IOException {
                 OpflowMessage request = new OpflowMessage(body, properties.getHeaders());
-                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, workerTag, queueName);
+                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, consumerTag, queueName);
                 String routineId = OpflowUtil.getRoutineId(properties.getHeaders(), false);
                 String requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
 

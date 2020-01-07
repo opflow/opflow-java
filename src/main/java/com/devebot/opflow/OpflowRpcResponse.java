@@ -18,16 +18,16 @@ public class OpflowRpcResponse {
     private final OpflowLogTracer logTracer;
     private final Channel channel;
     private final AMQP.BasicProperties properties;
-    private final String workerTag;
+    private final String consumerTag;
     private final String replyQueueName;
     private final String requestId;
     private final String messageScope;
     private final Boolean progressEnabled;
     
-    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String workerTag, String replyQueueName) {
+    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String consumerTag, String replyQueueName) {
         this.channel = channel;
         this.properties = properties;
-        this.workerTag = workerTag;
+        this.consumerTag = consumerTag;
         this.requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
         
         logTracer = OpflowLogTracer.ROOT.branch("requestId", this.requestId, new OpflowLogTracer.OmitPingLogs(properties.getHeaders()));
@@ -42,7 +42,7 @@ public class OpflowRpcResponse {
         this.progressEnabled = (Boolean) OpflowUtil.getOptionField(properties.getHeaders(), "progressEnabled", null);
         
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                .put("workerTag", this.workerTag)
+                .put("consumerTag", this.consumerTag)
                 .put("replyTo", this.replyQueueName)
                 .put("progressEnabled", this.progressEnabled)
                 .text("Request[${requestId}] - RpcResponse is created")
@@ -61,8 +61,8 @@ public class OpflowRpcResponse {
         return replyQueueName;
     }
 
-    public String getWorkerTag() {
-        return workerTag;
+    public String getConsumerTag() {
+        return consumerTag;
     }
     
     public void emitStarted() {
@@ -164,7 +164,7 @@ public class OpflowRpcResponse {
             headers.put("messageScope", this.messageScope);
         }
         if (finished) {
-            headers.put("workerTag", this.workerTag);
+            headers.put("consumerTag", this.consumerTag);
         }
         return headers;
     }

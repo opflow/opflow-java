@@ -149,7 +149,6 @@ public class OpflowCommander implements AutoCloseable {
             if (OpflowUtil.isComponentEnabled(restrictorCfg)) {
                 restrictor = new OpflowRestrictor(OpflowUtil.buildMap(restrictorCfg)
                         .put("instanceId", commanderId)
-                        .put("pauseTimeout", OpflowUtil.getOptionField(restrictorCfg, "suspendTimeout", null))
                         .toMap());
             }
 

@@ -183,7 +183,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     AMQP.BasicProperties properties,
                     String queueName,
                     Channel channel,
-                    String workerTag
+                    String consumerTag
             ) throws IOException {
                 String taskId = properties.getCorrelationId();
                 Map<String, Object> headers = properties.getHeaders();
