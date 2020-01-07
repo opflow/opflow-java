@@ -26,9 +26,11 @@ public class OpflowRestrictor implements AutoCloseable {
     
     private final String instanceId;
     private final OpflowLogTracer logTracer;
-    
+    private boolean active;
+
     private final ExecutorService threadExecutor = Executors.newSingleThreadExecutor();
     private final ReentrantReadWriteLock pauseLock;
+    private boolean pauseEnabled;
     private long pauseTimeout;
     
     private final int semaphoreLimit;
@@ -36,16 +38,6 @@ public class OpflowRestrictor implements AutoCloseable {
     private long semaphoreTimeout;
     
     private final Semaphore semaphore;
-    
-    private boolean active;
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean enabled) {
-        this.active = enabled;
-    }
     
     public OpflowRestrictor() {
         this(null, null);
@@ -77,6 +69,12 @@ public class OpflowRestrictor implements AutoCloseable {
             active = (Boolean) options.get("enabled");
         } else {
             active = true;
+        }
+        
+        if (options.get("pauseEnabled") instanceof Boolean) {
+            pauseEnabled = (Boolean) options.get("pauseEnabled");
+        } else {
+            pauseEnabled = true;
         }
         
         if (options.get("pauseTimeout") instanceof Long) {
@@ -113,6 +111,42 @@ public class OpflowRestrictor implements AutoCloseable {
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Restrictor[${restrictorId}].new() end!")
                 .stringify());
+    }
+    
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean enabled) {
+        this.active = enabled;
+    }
+
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public boolean isPauseEnabled() {
+        return pauseEnabled;
+    }
+
+    public long getPauseTimeout() {
+        return pauseTimeout;
+    }
+    
+    public int getSemaphoreLimit() {
+        return semaphoreLimit;
+    }
+    
+    public int getSemaphorePermits() {
+        return semaphore.availablePermits();
+    }
+    
+    public boolean isSemaphoreEnabled() {
+        return semaphoreEnabled;
+    }
+    
+    public long getSemaphoreTimeout() {
+        return semaphoreTimeout;
     }
     
     public <T> T filter(Action<T> action) throws Throwable {
