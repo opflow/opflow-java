@@ -412,12 +412,12 @@ public class OpflowServerlet implements AutoCloseable {
                                             .put("routingKey", engine.getRoutingKey())
                                             .put("otherKeys", engine.getOtherKeys())
                                             .put("dispatchQueue", rpcWorker.getDispatchName())
-                                            .toMap());
-                                    opts.put("handler", OpflowUtil.buildOrderedMap()
-                                            .put("requestId", requestId)
-                                            .put("applicationId", response.getApplicationId())
-                                            .put("replyToQueue", response.getReplyQueueName())
-                                            .put("consumerTag", response.getWorkerTag())
+                                            .put("handler", OpflowUtil.buildOrderedMap()
+                                                    .put("requestId", requestId)
+                                                    .put("applicationId", response.getApplicationId())
+                                                    .put("replyToQueue", response.getReplyQueueName())
+                                                    .put("consumerTag", response.getWorkerTag())
+                                                    .toMap())
                                             .toMap());
                                 }
                             }).toMap());
