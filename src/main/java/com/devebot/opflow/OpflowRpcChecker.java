@@ -1,6 +1,5 @@
 package com.devebot.opflow;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -103,17 +102,28 @@ public abstract class OpflowRpcChecker {
             
             Map<String, Object> commanderInfo = (Map<String, Object>)commanderMap.get("commander");
             if (commanderInfo != null && processorObj != null) {
-                if (!commanderInfo.containsKey("request") || !(commanderInfo.get("request") instanceof HashMap)) {
-                    commanderInfo.put("request", OpflowUtil.buildOrderedMap().toMap());
-                }
-                Map<String, Object> requestInfo = (Map<String, Object>)commanderInfo.get("request");
-                for (String key : REQUEST_ATTRS) {
-                    if (processorObj.getParameters().containsKey(key)) {
-                        requestInfo.put(key, processorObj.getParameters().get(key));
+                builder.put("commander", OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        // asserts the rpcMaster Map
+                        if (!opts.containsKey("rpcMaster") || !(opts.get("rpcMaster") instanceof Map)) {
+                            opts.put("rpcMaster", new LinkedHashMap<String, Object>());
+                        }
+                        Map<String, Object> rpcMasterMap = (Map<String, Object>) opts.get("rpcMaster");
+                        // asserts the request Map
+                        if (!rpcMasterMap.containsKey("request") || !(rpcMasterMap.get("request") instanceof Map)) {
+                            rpcMasterMap.put("request", new LinkedHashMap<String, Object>());
+                        }
+                        Map<String, Object> requestInfo = (Map<String, Object>)rpcMasterMap.get("request");
+                        // copy the attributes
+                        for (String key : REQUEST_ATTRS) {
+                            if (processorObj.getParameters().containsKey(key)) {
+                                requestInfo.put(key, processorObj.getParameters().get(key));
+                            }
+                        }
                     }
-                }
+                }, commanderInfo).toMap());
             }
-            builder.put("commander", commanderInfo);
             
             switch (status) {
                 case "ok":

@@ -182,10 +182,12 @@ public class OpflowConfig {
                     componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
                     componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
                     componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
-                    componentCfg.put("suspendTimeout", componentNode.get("suspendTimeout"));
+                }
+                if ("restrictor".equals(componentName)) {
                     componentCfg.put("semaphoreEnabled", componentNode.get("semaphoreEnabled"));
                     componentCfg.put("semaphoreLimit", componentNode.get("semaphoreLimit"));
                     componentCfg.put("semaphoreTimeout", componentNode.get("semaphoreTimeout"));
+                    componentCfg.put("suspendTimeout", componentNode.get("suspendTimeout"));
                 }
                 if ("rpcWatcher".equals(componentName)) {
                     componentCfg.put("interval", componentNode.get("interval"));
