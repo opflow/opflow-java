@@ -10,15 +10,6 @@ import java.util.Map;
  */
 public abstract class OpflowPromMeasurer {
 
-    public final static String DEFAULT_PROM_EXPORTER_PORT_VAL = "9450";
-    public final static String DEFAULT_PROM_EXPORTER_PORT_KEY = "opflow.exporter.port";
-    public final static String DEFAULT_PROM_EXPORTER_PORT_ENV = "OPFLOW_EXPORTER_PORT";
-
-    public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_VAL = "localhost:9091";
-    public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_KEY = "opflow.pushgateway.addr";
-    public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_ENV = "OPFLOW_PUSHGATEWAY_ADDR";
-    public static final String DEFAULT_PROM_PUSHGATEWAY_JOBNAME = "opflow-push-gateway";
-
     public static enum GaugeAction { INC, DEC }
     
     public abstract void updateComponentInstance(String instanceType, String instanceId, GaugeAction action);

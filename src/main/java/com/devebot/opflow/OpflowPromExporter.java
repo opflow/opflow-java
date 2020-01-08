@@ -1,7 +1,8 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
-import com.devebot.opflow.supports.OpflowEnvtool;
+import com.devebot.opflow.supports.OpflowConverter;
+import com.devebot.opflow.supports.OpflowNetTool;
 import com.rabbitmq.client.ConnectionFactory;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
@@ -20,8 +21,36 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPromExporter.class);
     
+    private final String host;
+    private final Integer port;
+    
     private Gauge componentInstanceGauge;
-
+    private Gauge engineConnectionGauge;
+    private Gauge activeChannelGauge;
+    private Counter rpcInvocationCounter;
+    
+    public OpflowPromExporter(Map<String, Object> kwargs) throws OpflowOperationException {
+        kwargs = OpflowUtil.ensureNotNull(kwargs);
+        
+        // get the host from configuration
+        host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();
+        
+        // detect the avaiable port
+        Integer[] ports = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "ports", new Integer[] {
+            9450, 9451, 9452, 9453, 9454, 9455, 9456, 9457, 9458, 9459
+        }), (new Integer[0]).getClass());
+        port = OpflowNetTool.detectFreePort(ports);
+        
+        if (port != null) {
+            try {
+                DefaultExports.initialize();
+                HTTPServer server = new HTTPServer(host, port);
+            } catch (IOException exception) {
+                throw new OpflowOperationException("Exporter connection refused, port: " + port, exception);
+            }
+        }
+    }
+    
     private Gauge assertComponentInstanceGauge() {
         if (componentInstanceGauge == null) {
             Gauge.Builder builder = Gauge.build()
@@ -53,8 +82,6 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
         assertComponentInstanceGauge().remove(instanceType, instanceId);
     }
     
-    private Gauge engineConnectionGauge;
-
     private Gauge assertEngineConnectionGauge() {
         if (engineConnectionGauge == null) {
             Gauge.Builder builder = Gauge.build()
@@ -81,8 +108,6 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
         }
     }
 
-    private Gauge activeChannelGauge;
-
     private Gauge assertActiveChannelGauge() {
         if (activeChannelGauge == null) {
             Gauge.Builder builder = Gauge.build()
@@ -108,8 +133,6 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
                 break;
         }
     }
-    
-    private Counter rpcInvocationCounter;
     
     private long rpcInvocation_Master = 0;
     private long rpcInvocation_DirectWorker = 0;
@@ -161,31 +184,5 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
             }
         }
         return 0;
-    }
-    
-    private static String getExporterPort() {
-        String port1 = OpflowEnvtool.instance.getEnvironVariable(DEFAULT_PROM_EXPORTER_PORT_ENV, null);
-        String port2 = OpflowEnvtool.instance.getSystemProperty(DEFAULT_PROM_EXPORTER_PORT_KEY, port1);
-        return ("default".equals(port2) ? DEFAULT_PROM_EXPORTER_PORT_VAL : port2);
-    }
-    
-    private static String getPushGatewayAddr() {
-        String addr1 = OpflowEnvtool.instance.getEnvironVariable(DEFAULT_PROM_PUSHGATEWAY_ADDR_ENV, null);
-        String addr2 = OpflowEnvtool.instance.getSystemProperty(DEFAULT_PROM_PUSHGATEWAY_ADDR_KEY, addr1);
-        return ("default".equals(addr2) ? DEFAULT_PROM_PUSHGATEWAY_ADDR_VAL : addr2);
-    }
-    
-    public OpflowPromExporter(Map<String, Object> kwargs) throws OpflowOperationException {
-        kwargs = OpflowUtil.ensureNotNull(kwargs);
-        
-        String portStr = getExporterPort();
-        if (portStr != null) {
-            try {
-                DefaultExports.initialize();
-                HTTPServer server = new HTTPServer(Integer.parseInt(portStr));
-            } catch (IOException | NumberFormatException exception) {
-                throw new OpflowOperationException("Exporter connection refused, port: " + portStr, exception);
-            }
-        }
     }
 }
