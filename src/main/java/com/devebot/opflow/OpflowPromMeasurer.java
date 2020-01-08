@@ -19,10 +19,7 @@ public abstract class OpflowPromMeasurer {
     public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_ENV = "OPFLOW_PUSHGATEWAY_ADDR";
     public static final String DEFAULT_PROM_PUSHGATEWAY_JOBNAME = "opflow-push-gateway";
 
-    public static enum GaugeAction {
-        INC,
-        DEC;
-    }
+    public static enum GaugeAction { INC, DEC }
     
     public abstract void updateComponentInstance(String instanceType, String instanceId, GaugeAction action);
     
@@ -44,7 +41,7 @@ public abstract class OpflowPromMeasurer {
     
     public static OpflowPromMeasurer getInstance(Map<String, Object> kwargs) throws OpflowOperationException {
         if (instance == null) {
-            instance = new OpflowPromExporter();
+            instance = new OpflowPromExporter(kwargs);
         }
         return instance;
     }

@@ -91,7 +91,7 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].new()")
                 .stringify());
 
-        measurer = OpflowPromMeasurer.getInstance();
+        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get("promExporter"));
         
         this.init(kwargs);
 

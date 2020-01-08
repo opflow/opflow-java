@@ -3,11 +3,9 @@ package com.devebot.opflow;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowEnvtool;
 import com.rabbitmq.client.ConnectionFactory;
-import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.HTTPServer;
-import io.prometheus.client.exporter.PushGateway;
 import io.prometheus.client.hotspot.DefaultExports;
 import java.io.IOException;
 import java.util.Map;
@@ -22,30 +20,15 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPromExporter.class);
     
-    private final CollectorRegistry pushRegistry = new CollectorRegistry();
-    private PushGateway pushGateway;
-
-    private void finish(String jobName) {
-        if (pushGateway != null) {
-            try {
-                pushGateway.push(pushRegistry, DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
-            } catch (IOException exception) {}
-        }
-    }
-    
     private Gauge componentInstanceGauge;
 
     private Gauge assertComponentInstanceGauge() {
         if (componentInstanceGauge == null) {
             Gauge.Builder builder = Gauge.build()
-            .name("opflow_component_instance")
-            .help("Number of component instances.")
-            .labelNames("instance_type", "instance_id");
-            if (pushGateway != null) {
-                componentInstanceGauge = builder.register(pushRegistry);
-            } else {
-                componentInstanceGauge = builder.register();
-            }
+                    .name("opflow_component_instance")
+                    .help("Number of component instances.")
+                    .labelNames("instance_type", "instance_id");
+            componentInstanceGauge = builder.register();
         }
         return componentInstanceGauge;
     }
@@ -63,14 +46,11 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
             default:
                 break;
         }
-        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
     @Override
     public void removeComponentInstance(String instanceType, String instanceId) {
-        if (pushGateway != null) {
-            assertComponentInstanceGauge().remove(instanceType, instanceId);
-        }
+        assertComponentInstanceGauge().remove(instanceType, instanceId);
     }
     
     private Gauge engineConnectionGauge;
@@ -78,14 +58,10 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     private Gauge assertEngineConnectionGauge() {
         if (engineConnectionGauge == null) {
             Gauge.Builder builder = Gauge.build()
-            .name("opflow_engine_connection")
-            .help("Number of active connections.")
-            .labelNames("host", "port", "virtual_host", "connection_type");
-            if (pushGateway != null) {
-                engineConnectionGauge = builder.register(pushRegistry);
-            } else {
-                engineConnectionGauge = builder.register();
-            }
+                    .name("opflow_engine_connection")
+                    .help("Number of active connections.")
+                    .labelNames("host", "port", "virtual_host", "connection_type");
+            engineConnectionGauge = builder.register();
         }
         return engineConnectionGauge;
     }
@@ -110,14 +86,10 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     private Gauge assertActiveChannelGauge() {
         if (activeChannelGauge == null) {
             Gauge.Builder builder = Gauge.build()
-            .name("opflow_active_channel")
-            .help("Number of active channels.")
-            .labelNames("instance_type", "instance_id");
-            if (pushGateway != null) {
-                activeChannelGauge = builder.register(pushRegistry);
-            } else {
-                activeChannelGauge = builder.register();
-            }
+                    .name("opflow_active_channel")
+                    .help("Number of active channels.")
+                    .labelNames("instance_type", "instance_id");
+            activeChannelGauge = builder.register();
         }
         return activeChannelGauge;
     }
@@ -135,7 +107,6 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
             default:
                 break;
         }
-        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
     private Counter rpcInvocationCounter;
@@ -147,14 +118,10 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     private Counter assertRpcInvocationCounter() {
         if (rpcInvocationCounter == null) {
             Counter.Builder builder = Counter.build()
-                .name("opflow_rpc_invocation_total")
-                .help("The total of the RPC invocation events")
-                .labelNames(new String[] { "module_name", "event_name", "routine_id", "status" });
-            if (pushGateway != null) {
-                rpcInvocationCounter = builder.register(pushRegistry);
-            } else {
-                rpcInvocationCounter = builder.register();
-            }
+                    .name("opflow_rpc_invocation_total")
+                    .help("The total of the RPC invocation events")
+                    .labelNames(new String[] { "module_name", "event_name", "routine_id", "status" });
+            rpcInvocationCounter = builder.register();
         }
         return rpcInvocationCounter;
     }
@@ -208,30 +175,17 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
         return ("default".equals(addr2) ? DEFAULT_PROM_PUSHGATEWAY_ADDR_VAL : addr2);
     }
     
-    public OpflowPromExporter() throws OpflowOperationException {
-        // Initialize the PushGateway
-        String pushAddr = getPushGatewayAddr();
-        if (pushAddr != null) {
-            pushGateway = new PushGateway(pushAddr);
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info("Exporter - pushgateway address: " + pushAddr);
-        } else {
-            if (OpflowLogTracer.has(LOG, "info")) LOG.info("Exporter - pushgateway is empty");
-        }
-
-        // Initialize the HTTP Exporter
-        if (pushGateway == null) {
-            String portStr = getExporterPort();
-            if (portStr != null) {
-                try {
-                    DefaultExports.initialize();
-                    HTTPServer server = new HTTPServer(Integer.parseInt(portStr));
-                } catch (IOException | NumberFormatException exception) {
-                    throw new OpflowOperationException("Exporter connection refused, port: " + portStr, exception);
-                }
+    public OpflowPromExporter(Map<String, Object> kwargs) throws OpflowOperationException {
+        kwargs = OpflowUtil.ensureNotNull(kwargs);
+        
+        String portStr = getExporterPort();
+        if (portStr != null) {
+            try {
+                DefaultExports.initialize();
+                HTTPServer server = new HTTPServer(Integer.parseInt(portStr));
+            } catch (IOException | NumberFormatException exception) {
+                throw new OpflowOperationException("Exporter connection refused, port: " + portStr, exception);
             }
         }
-        
-        // Initialize the metrics
-        assertEngineConnectionGauge();
     }
 }
