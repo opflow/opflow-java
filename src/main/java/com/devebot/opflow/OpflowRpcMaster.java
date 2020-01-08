@@ -158,7 +158,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].new() parameters")
                 .stringify());
         
-        measurer.changeComponentInstance("rpc_master", rpcMasterId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("rpc_master", rpcMasterId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
@@ -183,7 +183,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     AMQP.BasicProperties properties,
                     String queueName,
                     Channel channel,
-                    String consumerTag
+                    String workerTag
             ) throws IOException {
                 String taskId = properties.getCorrelationId();
                 Map<String, Object> headers = properties.getHeaders();
@@ -402,7 +402,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             builder.expiration(String.valueOf(expiration));
         }
         
-        measurer.incRpcInvocationEvent("rpc_master", rpcMasterId, routineId, "request");
+        measurer.countRpcInvocation("rpc_master", "request", routineId, "begin");
         
         engine.produce(body, headers, builder);
         
@@ -534,6 +534,6 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.changeComponentInstance("rpc_master", rpcMasterId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("rpc_master", rpcMasterId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

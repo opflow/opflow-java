@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.rabbitmq.client.ConnectionFactory;
+import java.util.Map;
 
 /**
  *
@@ -23,21 +24,25 @@ public abstract class OpflowPromMeasurer {
         DEC;
     }
     
-    public abstract void changeComponentInstance(String instanceType, String instanceId, GaugeAction action);
+    public abstract void updateComponentInstance(String instanceType, String instanceId, GaugeAction action);
     
     public abstract void removeComponentInstance(String instanceType, String instanceId);
     
-    public abstract void incEngineConnectionGauge(ConnectionFactory factory, String connectionType);
+    public abstract void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action);
     
-    public abstract void decEngineConnectionGauge(ConnectionFactory factory, String connectionType);
+    public abstract void updateActiveChannel(String instanceType, String instanceId, GaugeAction action);
     
-    public abstract void changeActiveChannel(String instanceType, String instanceId, GaugeAction action);
+    public abstract void countRpcInvocation(String moduleName, String eventName, String routineId, String status);
     
-    public abstract void incRpcInvocationEvent(String module_name, String engineId, String routineId, String status);
+    public abstract double getRpcInvocationTotal(String moduleName, String eventName);
     
     private static OpflowPromMeasurer instance;
 
     public static OpflowPromMeasurer getInstance() throws OpflowOperationException {
+        return getInstance(null);
+    }
+    
+    public static OpflowPromMeasurer getInstance(Map<String, Object> kwargs) throws OpflowOperationException {
         if (instance == null) {
             instance = new OpflowPromExporter();
         }
@@ -47,7 +52,7 @@ public abstract class OpflowPromMeasurer {
     static class DevNull extends OpflowPromMeasurer {
 
         @Override
-        public void changeComponentInstance(String instanceType, String instanceId, GaugeAction action) {
+        public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
         }
 
         @Override
@@ -55,19 +60,20 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void incEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
+        public void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action) {
         }
 
         @Override
-        public void decEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
+        public void updateActiveChannel(String instanceType, String instanceId, GaugeAction action) {
         }
 
         @Override
-        public void changeActiveChannel(String instanceType, String instanceId, GaugeAction action) {
+        public void countRpcInvocation(String moduleName, String eventName, String routineId, String status) {
         }
-
+        
         @Override
-        public void incRpcInvocationEvent(String module_name, String engineId, String routineId, String status) {
+        public double getRpcInvocationTotal(String moduleName, String eventName) {
+            return 0;
         }
     }
     

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowPromExporter extends OpflowPromMeasurer {
     
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowPromMeasurer.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowPromExporter.class);
     
     private final CollectorRegistry pushRegistry = new CollectorRegistry();
     private PushGateway pushGateway;
@@ -51,7 +51,7 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     }
     
     @Override
-    public void changeComponentInstance(String instanceType, String instanceId, GaugeAction action) {
+    public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
         Gauge.Child metric = assertComponentInstanceGauge().labels(instanceType, instanceId);
         switch(action) {
             case INC:
@@ -91,15 +91,18 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     }
     
     @Override
-    public void incEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
-        assertEngineConnectionGauge().labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), connectionType).inc();
-        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
-    }
-    
-    @Override
-    public void decEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
-        assertEngineConnectionGauge().labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), connectionType).dec();
-        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
+    public void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action) {
+        Gauge.Child metric = assertEngineConnectionGauge().labels(factory.getHost(), String.valueOf(factory.getPort()), factory.getVirtualHost(), connectionType);
+        switch(action) {
+            case INC:
+                metric.inc();
+                break;
+            case DEC:
+                metric.dec();
+                break;
+            default:
+                break;
+        }
     }
 
     private Gauge activeChannelGauge;
@@ -120,7 +123,7 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     }
     
     @Override
-    public void changeActiveChannel(String instanceType, String instanceId, GaugeAction action) {
+    public void updateActiveChannel(String instanceType, String instanceId, GaugeAction action) {
         Gauge.Child metric = assertActiveChannelGauge().labels(instanceType, instanceId);
         switch(action) {
             case INC:
@@ -135,37 +138,62 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
         finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
     }
     
-    private Counter rpcInvocationCounterGauge;
+    private Counter rpcInvocationCounter;
     
-    private final String[] rpcInvocationEventLabels = new String[] { "module_name", "engineId", "routineId", "status" };
+    private long rpcInvocation_Master = 0;
+    private long rpcInvocation_DirectWorker = 0;
+    private long rpcInvocation_RemoteWorker = 0;
     
-    private Counter assertRpcInvocationCounterGauge() {
-        if (rpcInvocationCounterGauge == null) {
+    private Counter assertRpcInvocationCounter() {
+        if (rpcInvocationCounter == null) {
             Counter.Builder builder = Counter.build()
                 .name("opflow_rpc_invocation_total")
                 .help("The total of the RPC invocation events")
-                .labelNames(rpcInvocationEventLabels);
+                .labelNames(new String[] { "module_name", "event_name", "routine_id", "status" });
             if (pushGateway != null) {
-                rpcInvocationCounterGauge = builder.register(pushRegistry);
+                rpcInvocationCounter = builder.register(pushRegistry);
             } else {
-                rpcInvocationCounterGauge = builder.register();
+                rpcInvocationCounter = builder.register();
             }
         }
-        return rpcInvocationCounterGauge;
-    }
-    
-    private Counter.Child getRpcInvocationChildEvent(Map<String, String> labels) {
-        String[] values = new String[rpcInvocationEventLabels.length];
-        for (int i=0; i<rpcInvocationEventLabels.length; i++) {
-            values[i] = labels.get(rpcInvocationEventLabels[i]);
-        }
-        return assertRpcInvocationCounterGauge().labels(values);
+        return rpcInvocationCounter;
     }
     
     @Override
-    public void incRpcInvocationEvent(String module_name, String engineId, String routineId, String status) {
-        assertRpcInvocationCounterGauge().labels(module_name, engineId, routineId, status).inc();
-        finish(DEFAULT_PROM_PUSHGATEWAY_JOBNAME);
+    public void countRpcInvocation(String moduleName, String eventName, String routineId, String status) {
+        if ("commander".equals(moduleName)) {
+            switch (eventName) {
+                case "master":
+                    rpcInvocation_Master++;
+                    break;
+                case "direct_worker":
+                    rpcInvocation_DirectWorker++;
+                    break;
+                case "remote_worker":
+                    rpcInvocation_RemoteWorker++;
+                    break;
+                default:
+                    break;
+            }
+        }
+        assertRpcInvocationCounter().labels(moduleName, eventName, routineId, status).inc();
+    }
+    
+    @Override
+    public double getRpcInvocationTotal(String moduleName, String eventName) {
+        if ("commander".equals(moduleName)) {
+            switch (eventName) {
+                case "master":
+                    return rpcInvocation_Master;
+                case "direct_worker":
+                    return rpcInvocation_DirectWorker;
+                case "remote_worker":
+                    return rpcInvocation_RemoteWorker;
+                default:
+                    break;
+            }
+        }
+        return 0;
     }
     
     private static String getExporterPort() {

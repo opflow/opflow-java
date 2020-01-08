@@ -10,20 +10,20 @@ import java.util.List;
 public class OpflowRpcResult implements Serializable {
     private final String routineId;
     private final String requestId;
-    private final String consumerTag;
+    private final String workerTag;
     private final List<Step> progress;
     private final boolean failed;
     private final byte[] error;
     private final boolean completed;
     private final byte[] value;
     
-    public OpflowRpcResult(String routineId, String requestId, String consumerTag, 
+    public OpflowRpcResult(String routineId, String requestId, String workerTag, 
             List<Step> progress, 
             boolean failed, byte[] error, 
             boolean completed, byte[] value) {
         this.routineId = routineId;
         this.requestId = requestId;
-        this.consumerTag = consumerTag;
+        this.workerTag = workerTag;
         this.progress = progress;
         this.failed = failed;
         this.error = error;
@@ -39,8 +39,8 @@ public class OpflowRpcResult implements Serializable {
         return requestId;
     }
     
-    public String getConsumerTag() {
-        return consumerTag;
+    public String getWorkerTag() {
+        return workerTag;
     }
     
     public boolean isTimeout() {

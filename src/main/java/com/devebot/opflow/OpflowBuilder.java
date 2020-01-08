@@ -116,4 +116,10 @@ public class OpflowBuilder {
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
         return new OpflowServerlet(listeners, new OpflowConfig.LoaderImplServerlet(config, configFile, useDefaultFile));
     }
+    
+    private static String getPropertyAsString(Properties prop) {
+        StringWriter writer = new StringWriter();
+        prop.list(new PrintWriter(writer));
+        return writer.getBuffer().toString();
+    }
 }

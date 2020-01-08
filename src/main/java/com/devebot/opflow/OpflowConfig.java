@@ -4,8 +4,6 @@ import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -173,6 +171,13 @@ public class OpflowConfig {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
                 componentCfg.put("enabled", componentNode.get("enabled"));
+                if ("restrictor".equals(componentName)) {
+                    componentCfg.put("pauseEnabled", componentNode.get("pauseEnabled"));
+                    componentCfg.put("pauseTimeout", componentNode.get("pauseTimeout"));
+                    componentCfg.put("semaphoreEnabled", componentNode.get("semaphoreEnabled"));
+                    componentCfg.put("semaphoreLimit", componentNode.get("semaphoreLimit"));
+                    componentCfg.put("semaphoreTimeout", componentNode.get("semaphoreTimeout"));
+                }
                 if ("rpcMaster".equals(componentName)) {
                     componentCfg.put("expiration", componentNode.get("expiration"));
                     componentCfg.put("responseName", componentNode.get("responseName"));
@@ -185,15 +190,12 @@ public class OpflowConfig {
                     componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
                     componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
                 }
-                if ("restrictor".equals(componentName)) {
-                    componentCfg.put("semaphoreEnabled", componentNode.get("semaphoreEnabled"));
-                    componentCfg.put("semaphoreLimit", componentNode.get("semaphoreLimit"));
-                    componentCfg.put("semaphoreTimeout", componentNode.get("semaphoreTimeout"));
-                    componentCfg.put("pauseEnabled", componentNode.get("pauseEnabled"));
-                    componentCfg.put("pauseTimeout", componentNode.get("pauseTimeout"));
-                }
                 if ("rpcWatcher".equals(componentName)) {
                     componentCfg.put("interval", componentNode.get("interval"));
+                }
+                if ("promExporter".equals(componentName)) {
+                    componentCfg.put("host", componentNode.get("host"));
+                    componentCfg.put("ports", componentNode.get("ports"));
                 }
                 if ("restServer".equals(componentName)) {
                     componentCfg.put("host", componentNode.get("host"));
@@ -296,8 +298,9 @@ public class OpflowConfig {
     }
     
     private static final String[] BOOLEAN_FIELDS = new String[] {
-        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled", "monitorEnabled",
-        "pauseEnabled", "semaphoreEnabled", "responseDurable", "responseExclusive", "responseAutoDelete"
+        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled",
+        "monitorEnabled", "pauseEnabled", "semaphoreEnabled",
+        "responseDurable", "responseExclusive", "responseAutoDelete"
     };
 
     private static final String[] STRING_FIELDS = new String[] {
@@ -314,7 +317,7 @@ public class OpflowConfig {
     private static final String[] INTEGER_ARRAY_FIELDS = new String[] { "ports" };
     
     private static final String[] LONGINT_FIELDS = new String[] {
-        "expiration", "interval", "monitorTimeout", "semaphoreTimeout", "pauseTimeout"
+        "expiration", "interval", "monitorTimeout", "pauseTimeout", "semaphoreTimeout"
     };
     
     private static void transformParameters(Map<String, Object> params) {
@@ -502,11 +505,5 @@ public class OpflowConfig {
             throw new OpflowBootstrapException(exception);
         }
         return props;
-    }
-    
-    private static String getPropertiesAsString(Properties prop) {
-        StringWriter writer = new StringWriter();
-        prop.list(new PrintWriter(writer));
-        return writer.getBuffer().toString();
     }
 }

@@ -95,7 +95,7 @@ public class OpflowCommander implements AutoCloseable {
         
         this.init(kwargs);
 
-        measurer.changeComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.INC);
 
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new() end!")
@@ -149,7 +149,6 @@ public class OpflowCommander implements AutoCloseable {
             if (OpflowUtil.isComponentEnabled(restrictorCfg)) {
                 restrictor = new OpflowRestrictor(OpflowUtil.buildMap(restrictorCfg)
                         .put("instanceId", commanderId)
-                        .put("pauseTimeout", OpflowUtil.getOptionField(restrictorCfg, "suspendTimeout", null))
                         .toMap());
             }
 
@@ -429,6 +428,17 @@ public class OpflowCommander implements AutoCloseable {
                 public void transform(Map<String, Object> opts) {
                     opts.put("instanceId", instanceId);
 
+                    // statistics
+                    if (label == Scope.FULL) {
+                        if (measurer != null) {
+                            opts.put("invocation", OpflowUtil.buildOrderedMap()
+                                    .put("rpcInvocationTotal", measurer.getRpcInvocationTotal("commander", "master"))
+                                    .put("rpcOverDirectWorkerTotal", measurer.getRpcInvocationTotal("commander", "direct_worker"))
+                                    .put("rpcOverRemoteWorkerTotal", measurer.getRpcInvocationTotal("commander", "remote_worker"))
+                                    .toMap());
+                        }
+                    }
+
                     // restrictor information
                     if (label == Scope.FULL) {
                         if (restrictor != null) {
@@ -647,10 +657,13 @@ public class OpflowCommander implements AutoCloseable {
                         .text("Request[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
                         .stringify());
             }
+            
+            measurer.countRpcInvocation("commander", "master", routineId, "begin");
 
             // rpc switching
             if (rpcWatcher.isCongested() || reserveWorkerForced) {
                 if (this.hasReserveWorker()) {
+                    measurer.countRpcInvocation("commander", "direct_worker", routineId, "begin");
                     return method.invoke(this.reserveWorker, args);
                 }
             }
@@ -664,12 +677,15 @@ public class OpflowCommander implements AutoCloseable {
             if (rpcResult.isTimeout()) {
                 rpcWatcher.setCongested(true);
                 if (this.hasReserveWorker()) {
+                    measurer.countRpcInvocation("commander", "direct_worker", routineId, "begin");
                     return method.invoke(this.reserveWorker, args);
                 }
+                measurer.countRpcInvocation("commander", "remote_worker", routineId, "timeout");
                 throw new OpflowRequestTimeoutException();
             }
 
             if (rpcResult.isFailed()) {
+                measurer.countRpcInvocation("commander", "remote_worker", routineId, "failed");
                 Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcResult.getErrorAsString());
                 throw rebuildInvokerException(errorMap);
             }
@@ -679,6 +695,8 @@ public class OpflowCommander implements AutoCloseable {
                     .put("returnValue", rpcResult.getValueAsString())
                     .text("Request[${requestId}] - RpcInvocationHandler.invoke() return the output")
                     .stringify());
+
+            measurer.countRpcInvocation("commander", "remote_worker", routineId, "ok");
 
             if (method.getReturnType() == void.class) return null;
 
@@ -803,6 +821,6 @@ public class OpflowCommander implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.changeComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }
