@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.rabbitmq.client.ConnectionFactory;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -24,6 +25,12 @@ public abstract class OpflowPromMeasurer {
     
     public abstract double getRpcInvocationTotal(String moduleName, String eventName);
     
+    private Date startTime = new Date();
+    
+    public Date getStartTime() {
+        return startTime;
+    }
+
     private static PipeMeasurer instance = new PipeMeasurer();
 
     public static OpflowPromMeasurer getInstance() throws OpflowOperationException {
@@ -125,7 +132,7 @@ public abstract class OpflowPromMeasurer {
     }
     
     static class NullMeasurer extends OpflowPromMeasurer {
-        
+
         @Override
         public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
         }

@@ -428,13 +428,14 @@ public class OpflowCommander implements AutoCloseable {
                 public void transform(Map<String, Object> opts) {
                     opts.put("instanceId", instanceId);
 
-                    // statistics
+                    // measurement
                     if (label == Scope.FULL) {
                         if (measurer != null) {
-                            opts.put("invocation", OpflowUtil.buildOrderedMap()
+                            opts.put("measurement", OpflowUtil.buildOrderedMap()
                                     .put("rpcInvocationTotal", measurer.getRpcInvocationTotal("commander", "master"))
                                     .put("rpcOverDirectWorkerTotal", measurer.getRpcInvocationTotal("commander", "direct_worker"))
                                     .put("rpcOverRemoteWorkerTotal", measurer.getRpcInvocationTotal("commander", "remote_worker"))
+                                    .put("startTime", OpflowUtil.toISO8601UTC(measurer.getStartTime()))
                                     .toMap());
                         }
                     }
