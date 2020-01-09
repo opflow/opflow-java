@@ -134,10 +134,6 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
         }
     }
     
-    private long rpcInvocation_Master = 0;
-    private long rpcInvocation_DirectWorker = 0;
-    private long rpcInvocation_RemoteWorker = 0;
-    
     private Counter assertRpcInvocationCounter() {
         if (rpcInvocationCounter == null) {
             Counter.Builder builder = Counter.build()
@@ -151,38 +147,11 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     
     @Override
     public void countRpcInvocation(String moduleName, String eventName, String routineId, String status) {
-        if ("commander".equals(moduleName)) {
-            switch (eventName) {
-                case "master":
-                    rpcInvocation_Master++;
-                    break;
-                case "direct_worker":
-                    rpcInvocation_DirectWorker++;
-                    break;
-                case "remote_worker":
-                    rpcInvocation_RemoteWorker++;
-                    break;
-                default:
-                    break;
-            }
-        }
         assertRpcInvocationCounter().labels(moduleName, eventName, routineId, status).inc();
     }
     
     @Override
     public double getRpcInvocationTotal(String moduleName, String eventName) {
-        if ("commander".equals(moduleName)) {
-            switch (eventName) {
-                case "master":
-                    return rpcInvocation_Master;
-                case "direct_worker":
-                    return rpcInvocation_DirectWorker;
-                case "remote_worker":
-                    return rpcInvocation_RemoteWorker;
-                default:
-                    break;
-            }
-        }
-        return 0;
+        return -1;
     }
 }
