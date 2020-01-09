@@ -77,7 +77,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 .text("RpcWorker[${rpcWorkerId}].new() end!")
                 .stringify());
     
-        measurer.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("rpc_worker", rpcWorkerId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
@@ -132,10 +132,10 @@ public class OpflowRpcWorker implements AutoCloseable {
                     AMQP.BasicProperties properties,
                     String queueName,
                     Channel channel,
-                    String workerTag
+                    String consumerTag
             ) throws IOException {
                 OpflowMessage request = new OpflowMessage(body, properties.getHeaders());
-                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, workerTag, queueName);
+                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, consumerTag, queueName);
                 String routineId = OpflowUtil.getRoutineId(properties.getHeaders(), false);
                 String requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
 
@@ -152,7 +152,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineId)) {
                         count++;
-                        measurer.incRpcInvocationEvent("rpc_worker", rpcWorkerId, routineId, "process");
+                        measurer.countRpcInvocation("rpc_worker", rpcWorkerId, routineId, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
@@ -253,6 +253,6 @@ public class OpflowRpcWorker implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        measurer.changeComponentInstance("rpc_worker", rpcWorkerId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("rpc_worker", rpcWorkerId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

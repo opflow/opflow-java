@@ -2,6 +2,8 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.rabbitmq.client.ConnectionFactory;
+import java.util.Date;
+import java.util.Map;
 
 /**
  *
@@ -9,45 +11,130 @@ import com.rabbitmq.client.ConnectionFactory;
  */
 public abstract class OpflowPromMeasurer {
 
-    public final static String DEFAULT_PROM_EXPORTER_PORT_VAL = "9450";
-    public final static String DEFAULT_PROM_EXPORTER_PORT_KEY = "opflow.exporter.port";
-    public final static String DEFAULT_PROM_EXPORTER_PORT_ENV = "OPFLOW_EXPORTER_PORT";
-
-    public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_VAL = "localhost:9091";
-    public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_KEY = "opflow.pushgateway.addr";
-    public final static String DEFAULT_PROM_PUSHGATEWAY_ADDR_ENV = "OPFLOW_PUSHGATEWAY_ADDR";
-    public static final String DEFAULT_PROM_PUSHGATEWAY_JOBNAME = "opflow-push-gateway";
-
-    public static enum GaugeAction {
-        INC,
-        DEC;
-    }
+    public static enum GaugeAction { INC, DEC }
     
-    public abstract void changeComponentInstance(String instanceType, String instanceId, GaugeAction action);
+    public abstract void updateComponentInstance(String instanceType, String instanceId, GaugeAction action);
     
     public abstract void removeComponentInstance(String instanceType, String instanceId);
     
-    public abstract void incEngineConnectionGauge(ConnectionFactory factory, String connectionType);
+    public abstract void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action);
     
-    public abstract void decEngineConnectionGauge(ConnectionFactory factory, String connectionType);
+    public abstract void updateActiveChannel(String instanceType, String instanceId, GaugeAction action);
     
-    public abstract void changeActiveChannel(String instanceType, String instanceId, GaugeAction action);
+    public abstract void countRpcInvocation(String moduleName, String eventName, String routineId, String status);
     
-    public abstract void incRpcInvocationEvent(String module_name, String engineId, String routineId, String status);
+    public abstract double getRpcInvocationTotal(String moduleName, String eventName);
     
-    private static OpflowPromMeasurer instance;
+    private Date startTime = new Date();
+    
+    public Date getStartTime() {
+        return startTime;
+    }
+
+    private static PipeMeasurer instance = new PipeMeasurer();
 
     public static OpflowPromMeasurer getInstance() throws OpflowOperationException {
-        if (instance == null) {
-            instance = new OpflowPromExporter();
+        return instance;
+    }
+    
+    public static OpflowPromMeasurer getInstance(Map<String, Object> kwargs) throws OpflowOperationException {
+        if (OpflowUtil.isComponentEnabled(kwargs)) {
+            instance.setShadow(new OpflowPromExporter(kwargs));
         }
         return instance;
     }
     
-    static class DevNull extends OpflowPromMeasurer {
+    static class PipeMeasurer extends OpflowPromMeasurer {
+
+        private OpflowPromMeasurer shadow = null;
+
+        private long rpcInvocation_Master = 0;
+        private long rpcInvocation_DirectWorker = 0;
+        private long rpcInvocation_RemoteWorker = 0;
+
+        public PipeMeasurer() {
+        }
+
+        public PipeMeasurer(OpflowPromMeasurer shadow) {
+            this.shadow = shadow;
+        }
+
+        public void setShadow(OpflowPromMeasurer shadow) {
+            this.shadow = shadow;
+        }
 
         @Override
-        public void changeComponentInstance(String instanceType, String instanceId, GaugeAction action) {
+        public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
+            if (shadow != null) {
+                shadow.removeComponentInstance(instanceType, instanceId);
+            }
+        }
+
+        @Override
+        public void removeComponentInstance(String instanceType, String instanceId) {
+            if (shadow != null) {
+                shadow.removeComponentInstance(instanceType, instanceId);
+            }
+        }
+
+        @Override
+        public void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action) {
+            if (shadow != null) {
+                shadow.updateEngineConnection(factory, connectionType, action);
+            }
+        }
+
+        @Override
+        public void updateActiveChannel(String instanceType, String instanceId, GaugeAction action) {
+            if (shadow != null) {
+                shadow.updateActiveChannel(instanceType, instanceId, action);
+            }
+        }
+
+        @Override
+        public void countRpcInvocation(String moduleName, String eventName, String routineId, String status) {
+            if (shadow != null) {
+                shadow.countRpcInvocation(moduleName, eventName, routineId, status);
+            }
+            if ("commander".equals(moduleName)) {
+                switch (eventName) {
+                    case "master":
+                        rpcInvocation_Master++;
+                        break;
+                    case "direct_worker":
+                        rpcInvocation_DirectWorker++;
+                        break;
+                    case "remote_worker":
+                        rpcInvocation_RemoteWorker++;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        
+        @Override
+        public double getRpcInvocationTotal(String moduleName, String eventName) {
+            if ("commander".equals(moduleName)) {
+                switch (eventName) {
+                    case "master":
+                        return rpcInvocation_Master;
+                    case "direct_worker":
+                        return rpcInvocation_DirectWorker;
+                    case "remote_worker":
+                        return rpcInvocation_RemoteWorker;
+                    default:
+                        break;
+                }
+            }
+            return 0;
+        }
+    }
+    
+    static class NullMeasurer extends OpflowPromMeasurer {
+
+        @Override
+        public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
         }
 
         @Override
@@ -55,21 +142,22 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void incEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
+        public void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action) {
         }
 
         @Override
-        public void decEngineConnectionGauge(ConnectionFactory factory, String connectionType) {
+        public void updateActiveChannel(String instanceType, String instanceId, GaugeAction action) {
         }
 
         @Override
-        public void changeActiveChannel(String instanceType, String instanceId, GaugeAction action) {
+        public void countRpcInvocation(String moduleName, String eventName, String routineId, String status) {
         }
-
+        
         @Override
-        public void incRpcInvocationEvent(String module_name, String engineId, String routineId, String status) {
+        public double getRpcInvocationTotal(String moduleName, String eventName) {
+            return 0;
         }
     }
     
-    public static final OpflowPromMeasurer NULL = new DevNull();
+    public static final OpflowPromMeasurer NULL = new NullMeasurer();
 }

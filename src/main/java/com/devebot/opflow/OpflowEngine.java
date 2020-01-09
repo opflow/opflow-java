@@ -377,7 +377,7 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Engine[${engineId}].new() end!")
                 .stringify());
         
-        measurer.changeComponentInstance("engine", engineId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("engine", engineId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     public String getExchangeName() {
@@ -963,7 +963,7 @@ public class OpflowEngine implements AutoCloseable {
                     .put("connectionId", getConnectionId(producingConnection))
                     .text("Engine[${engineId}]shared producingConnection[${connectionId}] is created")
                     .stringify(true));
-            measurer.incEngineConnectionGauge(factory, "producing");
+            measurer.updateEngineConnection(factory, "producing", OpflowPromMeasurer.GaugeAction.INC);
         }
         return producingConnection;
     }
@@ -1016,7 +1016,7 @@ public class OpflowEngine implements AutoCloseable {
                     .put("connectionId", getConnectionId(consumingConnection))
                     .text("Engine[${engineId}] shared consumingConnection[${connectionId}] is created")
                     .stringify(true));
-            measurer.incEngineConnectionGauge(factory, "consuming");
+            measurer.updateEngineConnection(factory, "consuming", OpflowPromMeasurer.GaugeAction.INC);
         }
         return consumingConnection;
     }
@@ -1072,6 +1072,6 @@ public class OpflowEngine implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        measurer.changeComponentInstance("engine", engineId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("engine", engineId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

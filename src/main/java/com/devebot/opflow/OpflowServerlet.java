@@ -191,7 +191,7 @@ public class OpflowServerlet implements AutoCloseable {
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
         
-        measurer.changeComponentInstance("serverletId", serverletId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("serverletId", serverletId, OpflowPromMeasurer.GaugeAction.INC);
     }
     
     public final void start() {
@@ -416,7 +416,7 @@ public class OpflowServerlet implements AutoCloseable {
                                                     .put("requestId", requestId)
                                                     .put("applicationId", response.getApplicationId())
                                                     .put("replyToQueue", response.getReplyQueueName())
-                                                    .put("consumerTag", response.getWorkerTag())
+                                                    .put("consumerTag", response.getConsumerTag())
                                                     .toMap())
                                             .toMap());
                                 }
@@ -655,6 +655,6 @@ public class OpflowServerlet implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        measurer.changeComponentInstance("serverlet", serverletId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("serverlet", serverletId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }
