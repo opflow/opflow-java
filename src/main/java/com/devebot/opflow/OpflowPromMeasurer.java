@@ -39,7 +39,9 @@ public abstract class OpflowPromMeasurer {
     
     public static OpflowPromMeasurer getInstance(Map<String, Object> kwargs) throws OpflowOperationException {
         if (OpflowUtil.isComponentEnabled(kwargs)) {
-            instance.setShadow(new OpflowPromExporter(kwargs));
+            if (!instance.hasShadow()) {
+                instance.setShadow(new OpflowPromExporter(kwargs));
+            }
         }
         return instance;
     }
@@ -59,6 +61,10 @@ public abstract class OpflowPromMeasurer {
             this.shadow = shadow;
         }
 
+        public boolean hasShadow() {
+            return this.shadow != null;
+        }
+        
         public void setShadow(OpflowPromMeasurer shadow) {
             this.shadow = shadow;
         }

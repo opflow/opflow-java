@@ -25,6 +25,16 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowServerlet implements AutoCloseable {
+    public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
+        "configurer", "rpcWorker", "subscriber"
+    });
+
+    public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
+        "promExporter"
+    });
+
+    public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
+    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
     
     private final String serverletId;
@@ -73,7 +83,7 @@ public class OpflowServerlet implements AutoCloseable {
         }
         listenerMap = listeners;
         
-        measurer = OpflowPromMeasurer.getInstance();
+        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get("promExporter"));
         
         Map<String, Object> configurerCfg = (Map<String, Object>)this.kwargs.get("configurer");
         Map<String, Object> rpcWorkerCfg = (Map<String, Object>)this.kwargs.get("rpcWorker");
@@ -191,7 +201,7 @@ public class OpflowServerlet implements AutoCloseable {
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
         
-        measurer.updateComponentInstance("serverletId", serverletId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("serverlet", serverletId, OpflowPromMeasurer.GaugeAction.INC);
     }
     
     public final void start() {

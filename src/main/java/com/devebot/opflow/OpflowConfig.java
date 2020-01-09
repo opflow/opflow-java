@@ -227,9 +227,8 @@ public class OpflowConfig {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
         
             Map<String, Object> params = new HashMap<>();
-            String[] componentNames = new String[] {"configurer", "rpcWorker", "subscriber"};
             String[] componentPath = new String[] {"opflow", "serverlet", ""};
-            for(String componentName:componentNames) {
+            for(String componentName:OpflowServerlet.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
                 extractEngineParameters(componentCfg, config, componentPath);
@@ -242,6 +241,10 @@ public class OpflowConfig {
                 if ("subscriber".equals(componentName)) {
                     componentCfg.put("subscriberName", componentNode.get("subscriberName"));
                     componentCfg.put("recyclebinName", componentNode.get("recyclebinName"));
+                }
+                if ("promExporter".equals(componentName)) {
+                    componentCfg.put("host", componentNode.get("host"));
+                    componentCfg.put("ports", componentNode.get("ports"));
                 }
                 transformParameters(componentCfg);
                 params.put(componentName, componentCfg);
