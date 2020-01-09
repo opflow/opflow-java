@@ -617,7 +617,7 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
-            if (isRestrictorAvailable()) {
+            if (!isRestrictorAvailable()) {
                 return _invoke(proxy, method, args);
             }
             return restrictor.filter(new OpflowRestrictor.Action<Object>() {
