@@ -1,7 +1,7 @@
 swagger: '2.0'
 info:
   title: API Dashboard
-  version: 0.1.25
+  version: 0.1.26
 schemes:
   - http
   - https
@@ -35,6 +35,81 @@ paths:
           description: "Ok"
           schema:
             $ref: "#/definitions/PingResult"
+  /exec/pause:
+    get:
+      tags:
+      - "Operation"
+      summary: "Pause the RPC requests"
+      description: "Pause all of the RPC requests"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "duration"
+        in: "query"
+        description: "The period of pausing (in milliseconds)"
+        required: true
+        type: "integer"
+        default: 10000
+      responses:
+        200:
+          description: "Ok"
+  /exec/unpause:
+    get:
+      tags:
+      - "Operation"
+      summary: "Unpause the suspended RPC invocation"
+      description: "Unpause the suspended RPC invocation"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Ok"
+  /exec/activate-detached-worker:
+    get:
+      tags:
+      - "Operation"
+      summary: "Switch on/off the using of detached worker(s)"
+      description: "Switch on/off the using of detached worker(s)"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "state"
+        in: "query"
+        description: "The state of the worker's state"
+        required: true
+        type: "boolean"
+        default: false
+      - name: "class"
+        in: "query"
+        description: "The name of class will be affected"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "Ok"
+  /exec/activate-embedded-worker:
+    get:
+      tags:
+      - "Operation"
+      summary: "Switch on/off the using of embedded worker"
+      description: "Switch on/off the using of embedded worker"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "state"
+        in: "query"
+        description: "The state of the worker's state"
+        required: true
+        type: "boolean"
+        default: false
+      - name: "class"
+        in: "query"
+        description: "The name of class will be affected"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "Ok"
   /exec/reset:
     get:
       tags:
@@ -46,8 +121,6 @@ paths:
       responses:
         200:
           description: "Ok"
-          schema:
-            $ref: "#/definitions/PingResult"
 definitions:
   InfoResult:
     type: "object"

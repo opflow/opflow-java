@@ -48,9 +48,9 @@ public abstract class OpflowPromMeasurer {
     
     static class RpcInvocationCounter {
         public long total = 0;
-        public long directWorker = 0;
-        public long remoteWorker = 0;
-        
+        public long direct = 0;
+        public long remote = 0;
+
         public RpcInvocationCounter() {
             this(null);
         }
@@ -58,8 +58,8 @@ public abstract class OpflowPromMeasurer {
         public RpcInvocationCounter(RpcInvocationCounter counter) {
             if (counter != null) {
                 this.total = counter.total;
-                this.directWorker = counter.directWorker;
-                this.remoteWorker = counter.remoteWorker;
+                this.direct = counter.direct;
+                this.remote = counter.remote;
             }
         }
     }
@@ -121,13 +121,13 @@ public abstract class OpflowPromMeasurer {
                 case "commander": {
                     synchronized(counter) {
                         switch (eventName) {
-                            case "direct_worker":
+                            case "reserved_worker":
                                 counter.total++;
-                                counter.directWorker++;
+                                counter.direct++;
                                 break;
-                            case "remote_worker":
+                            case "detached_worker":
                                 counter.total++;
-                                counter.remoteWorker++;
+                                counter.remote++;
                                 break;
                             default:
                                 break;
