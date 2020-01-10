@@ -20,10 +20,10 @@ public class OpflowRestrictor implements AutoCloseable {
     public interface Action<T> {
         public T process() throws Throwable;
     }
-    
+
     private final long PAUSE_SLEEPING_INTERVAL = 500;
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictor.class);
-    
+
     private final String instanceId;
     private final OpflowLogTracer logTracer;
     private boolean active;
@@ -134,6 +134,20 @@ public class OpflowRestrictor implements AutoCloseable {
         return pauseTimeout;
     }
     
+    public long getPauseDuration() {
+        if (pauseThread == null) {
+            return 0;
+        }
+        return pauseThread.getDuration();
+    }
+    
+    public long getPauseElapsed() {
+        if (pauseThread == null) {
+            return 0;
+        }
+        return pauseThread.getElapsed();
+    }
+    
     public int getSemaphoreLimit() {
         return semaphoreLimit;
     }
@@ -239,27 +253,36 @@ public class OpflowRestrictor implements AutoCloseable {
         private final String instanceId;
         private final OpflowLogTracer tracer;
         private long duration = 0;
+        private long elapsed = 0;
         private long count = 0;
         private boolean running = true;
-        
+
         public String getInstanceId() {
             return instanceId;
         }
-        
+
+        public long getDuration() {
+            return duration;
+        }
+
+        public long getElapsed() {
+            return elapsed;
+        }
+
         public boolean isLocked() {
             return rwlock.isWriteLocked();
         }
-        
+
         public void init(long duration) {
             this.duration = duration;
             this.count = 0;
             this.running = true;
         }
-        
+
         public void terminate() {
             running = false;
         }
-        
+
         PauseThread(OpflowLogTracer logTracer, ReentrantReadWriteLock rwlock) {
             this.rwlock = rwlock;
             this.instanceId = OpflowUtil.getLogID();
@@ -284,6 +307,7 @@ public class OpflowRestrictor implements AutoCloseable {
                     while (running && count > 0) {
                         Thread.sleep((count < PAUSE_SLEEPING_INTERVAL) ? count : PAUSE_SLEEPING_INTERVAL);
                         count -= PAUSE_SLEEPING_INTERVAL;
+                        elapsed = duration - count;
                     }
                 }
             }
