@@ -201,9 +201,9 @@ public class OpflowRestServer implements AutoCloseable {
                         case "reset":
                             result = taskSubmitter.reset();
                             break;
-                        case "use-direct-worker":
+                        case "activate-reserved-worker":
                             result = taskSubmitter.state(OpflowUtil.buildMap()
-                                    .put("state", "reserveWorkerForced")
+                                    .put("state", "activateReservedWorker")
                                     .put("class", getQueryParam(exchange, "class"))
                                     .put("value", getQueryParam(exchange, "value", Boolean.class, true))
                                     .toMap());
