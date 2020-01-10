@@ -367,29 +367,22 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         @Override
-        public Map<String, Object> state(Map<String, Object> opts) {
-            String state = (String) OpflowUtil.getOptionField(opts, "state", "");
-            if (state.equals("activateReservedWorker")) {
-                String clazz = (String) OpflowUtil.getOptionField(opts, "class", null);
-                Boolean value = (Boolean) OpflowUtil.getOptionField(opts, "value", Boolean.TRUE);
-                for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
-                    final String key = entry.getKey();
-                    final RpcInvocationHandler val = entry.getValue();
-                    if (clazz != null) {
-                        if (clazz.equals(key)) {
-                            val.setReservedWorkerActive(value);
-                            break;
-                        }
-                    } else {
-                        val.setReservedWorkerActive(value);
+        public Map<String, Object> activateReservedWorker(boolean state, Map<String, Object> opts) {
+            String clazz = (String) OpflowUtil.getOptionField(opts, "class", null);
+            for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
+                final String key = entry.getKey();
+                final RpcInvocationHandler val = entry.getValue();
+                if (clazz != null) {
+                    if (clazz.equals(key)) {
+                        val.setReservedWorkerActive(state);
+                        break;
                     }
+                } else {
+                    val.setReservedWorkerActive(state);
                 }
-                return OpflowUtil.buildOrderedMap()
-                        .put("mappings", OpflowInfoCollectorMaster.renderRpcInvocationHandlers(handlers))
-                        .toMap();
             }
             return OpflowUtil.buildOrderedMap()
-                    .put("message", "Unsupported action: [" + state + "]")
+                    .put("mappings", OpflowInfoCollectorMaster.renderRpcInvocationHandlers(handlers))
                     .toMap();
         }
     }

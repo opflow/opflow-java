@@ -10,5 +10,5 @@ public interface OpflowTaskSubmitter {
     Map<String, Object> pause(long duration);
     Map<String, Object> unpause();
     Map<String, Object> reset();
-    Map<String, Object> state(Map<String, Object> opts);
+    Map<String, Object> activateReservedWorker(boolean state, Map<String, Object> opts);
 }
