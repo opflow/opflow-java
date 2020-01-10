@@ -191,31 +191,40 @@ public class OpflowRestServer implements AutoCloseable {
                 if (action != null && action.length() > 0) {
                     switch(action) {
                         case "pause":
-                            Long duration = getQueryParam(exchange, "duration", Long.class, 10000l);
-                            result = taskSubmitter.pause(duration);
-                            result.put("message", "Pausing in " + duration + " milliseconds");
+                            Long period = getQueryParam(exchange, "period", Long.class, null);
+                            if (period == null) {
+                                period = getQueryParam(exchange, "duration", Long.class, 10000l);
+                            }
+                            result = taskSubmitter.pause(period);
+                            result.put("message", "Pausing in " + period + " milliseconds");
                             break;
+
                         case "unpause":
                             result = taskSubmitter.unpause();
                             break;
+
                         case "reset":
                             result = taskSubmitter.reset();
                             break;
+
                         case "activate-remote-worker":
                         case "activate-detached-worker":
-                            boolean state1 = getQueryParam(exchange, "value", Boolean.class, true);
+                            boolean state1 = getQueryParam(exchange, "state", Boolean.class, true);
                             result = taskSubmitter.activateDetachedWorker(state1, OpflowUtil.buildMap()
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
+
                         case "activate-backup-worker":
                         case "activate-direct-worker":
+                        case "activate-embedded-worker":
                         case "activate-reserved-worker":
-                            boolean state2 = getQueryParam(exchange, "value", Boolean.class, true);
+                            boolean state2 = getQueryParam(exchange, "state", Boolean.class, true);
                             result = taskSubmitter.activateReservedWorker(state2, OpflowUtil.buildMap()
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
+
                         default:
                             break;
                     }
