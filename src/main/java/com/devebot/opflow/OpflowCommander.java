@@ -367,23 +367,42 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         @Override
+        public Map<String, Object> activateDetachedWorker(boolean state, Map<String, Object> opts) {
+            return activateWorker("DetachedWorker", state, opts);
+        }
+        
+        @Override
         public Map<String, Object> activateReservedWorker(boolean state, Map<String, Object> opts) {
+            return activateWorker("ReservedWorker", state, opts);
+        }
+        
+        private Map<String, Object> activateWorker(String type, boolean state, Map<String, Object> opts) {
             String clazz = (String) OpflowUtil.getOptionField(opts, "class", null);
             for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
                 final String key = entry.getKey();
                 final RpcInvocationHandler val = entry.getValue();
                 if (clazz != null) {
                     if (clazz.equals(key)) {
-                        val.setReservedWorkerActive(state);
-                        break;
+                        activateWorkerForRpcInvocation(val, type, state);
                     }
                 } else {
-                    val.setReservedWorkerActive(state);
+                    activateWorkerForRpcInvocation(val, type, state);
                 }
             }
             return OpflowUtil.buildOrderedMap()
                     .put("mappings", OpflowInfoCollectorMaster.renderRpcInvocationHandlers(handlers))
                     .toMap();
+        }
+        
+        private void activateWorkerForRpcInvocation(RpcInvocationHandler val, String type, boolean state) {
+            switch (type) {
+                case "DetachedWorker":
+                    val.setDetachedWorkerActive(state);
+                    break;
+                case "ReservedWorker":
+                    val.setReservedWorkerActive(state);
+                    break;
+            }
         }
     }
 
@@ -435,8 +454,8 @@ public class OpflowCommander implements AutoCloseable {
                             if (counter != null) {
                                 opts.put("measurement", OpflowUtil.buildOrderedMap()
                                         .put("rpcInvocationTotal", counter.total)
-                                        .put("rpcOverDirectWorkerTotal", counter.directWorker)
-                                        .put("rpcOverRemoteWorkerTotal", counter.remoteWorker)
+                                        .put("rpcOverDirectWorkerTotal", counter.direct)
+                                        .put("rpcOverRemoteWorkerTotal", counter.remote)
                                         .put("startTime", OpflowUtil.toISO8601UTC(measurer.getStartTime()))
                                         .toMap());
                             }
@@ -677,7 +696,7 @@ public class OpflowCommander implements AutoCloseable {
             // rpc switching
             if (rpcWatcher.isCongested() || !detachedWorkerActive) {
                 if (this.isReservedWorkerAvailable()) {
-                    measurer.countRpcInvocation("commander", "direct_worker", routineId, "begin");
+                    measurer.countRpcInvocation("commander", "reserved_worker", routineId, "begin");
                     return method.invoke(this.reservedWorker, args);
                 }
             }
@@ -695,15 +714,15 @@ public class OpflowCommander implements AutoCloseable {
             if (rpcResult.isTimeout()) {
                 rpcWatcher.setCongested(true);
                 if (this.isReservedWorkerAvailable()) {
-                    measurer.countRpcInvocation("commander", "direct_worker", routineId, "begin");
+                    measurer.countRpcInvocation("commander", "reserved_worker", routineId, "begin");
                     return method.invoke(this.reservedWorker, args);
                 }
-                measurer.countRpcInvocation("commander", "remote_worker", routineId, "timeout");
+                measurer.countRpcInvocation("commander", "detached_worker", routineId, "timeout");
                 throw new OpflowRequestTimeoutException();
             }
 
             if (rpcResult.isFailed()) {
-                measurer.countRpcInvocation("commander", "remote_worker", routineId, "failed");
+                measurer.countRpcInvocation("commander", "detached_worker", routineId, "failed");
                 Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcResult.getErrorAsString());
                 throw rebuildInvokerException(errorMap);
             }
@@ -714,7 +733,7 @@ public class OpflowCommander implements AutoCloseable {
                     .text("Request[${requestId}] - RpcInvocationHandler.invoke() return the output")
                     .stringify());
 
-            measurer.countRpcInvocation("commander", "remote_worker", routineId, "ok");
+            measurer.countRpcInvocation("commander", "detached_worker", routineId, "ok");
 
             if (method.getReturnType() == void.class) return null;
 
