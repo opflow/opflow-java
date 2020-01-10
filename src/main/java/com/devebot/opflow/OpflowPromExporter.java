@@ -152,6 +152,11 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     
     @Override
     public RpcInvocationCounter getRpcInvocationCounter(String moduleName) {
-        return null;
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public Map<String, Object> resetRpcInvocationCounter() {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 }

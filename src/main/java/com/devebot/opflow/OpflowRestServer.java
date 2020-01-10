@@ -225,6 +225,10 @@ public class OpflowRestServer implements AutoCloseable {
                                     .toMap());
                             break;
 
+                        case "reset-counter":
+                            result = taskSubmitter.resetRpcInvocationCounter();
+                            break;
+
                         default:
                             break;
                     }

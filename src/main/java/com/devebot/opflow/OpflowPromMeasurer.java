@@ -25,12 +25,8 @@ public abstract class OpflowPromMeasurer {
     
     public abstract RpcInvocationCounter getRpcInvocationCounter(String moduleName);
     
-    private Date startTime = new Date();
+    public abstract Map<String, Object> resetRpcInvocationCounter();
     
-    public Date getStartTime() {
-        return startTime;
-    }
-
     private static PipeMeasurer instance = new PipeMeasurer();
 
     public static OpflowPromMeasurer getInstance() throws OpflowOperationException {
@@ -46,21 +42,48 @@ public abstract class OpflowPromMeasurer {
         return instance;
     }
     
-    static class RpcInvocationCounter {
-        public long total = 0;
-        public long direct = 0;
-        public long remote = 0;
+    public static class RpcInvocationCounter {
+        private Date startTime = new Date();
+        private long total = 0;
+        private long direct = 0;
+        private long remote = 0;
 
         public RpcInvocationCounter() {
-            this(null);
         }
         
-        public RpcInvocationCounter(RpcInvocationCounter counter) {
-            if (counter != null) {
-                this.total = counter.total;
-                this.direct = counter.direct;
-                this.remote = counter.remote;
-            }
+        public synchronized void incDirect() {
+            this.total++;
+            this.direct++;
+        }
+        
+        public synchronized void incRemote() {
+            this.total++;
+            this.remote++;
+        }
+        
+        public synchronized RpcInvocationCounter copy() {
+            RpcInvocationCounter that = new RpcInvocationCounter();
+            that.startTime = this.startTime;
+            that.total = this.total;
+            that.direct = this.direct;
+            that.remote = this.remote;
+            return that;
+        }
+        
+        public synchronized void reset() {
+            this.startTime = new Date();
+            this.total = 0;
+            this.direct = 0;
+            this.remote = 0;
+        }
+        
+        public synchronized Map<String, Object> toMap() {
+            return OpflowUtil.buildOrderedMap()
+                    .put("rpcInvocationTotal", this.total)
+                    .put("rpcOverDirectWorkerTotal", this.direct)
+                    .put("rpcOverRemoteWorkerTotal", this.remote)
+                    .put("startTime", OpflowUtil.toISO8601UTC(this.startTime))
+                    .toMap();
         }
     }
     
@@ -119,19 +142,15 @@ public abstract class OpflowPromMeasurer {
             }
             switch (moduleName) {
                 case "commander": {
-                    synchronized(counter) {
-                        switch (eventName) {
-                            case "reserved_worker":
-                                counter.total++;
-                                counter.direct++;
-                                break;
-                            case "detached_worker":
-                                counter.total++;
-                                counter.remote++;
-                                break;
-                            default:
-                                break;
-                        }
+                    switch (eventName) {
+                        case "reserved_worker":
+                            counter.incDirect();
+                            break;
+                        case "detached_worker":
+                            counter.incRemote();
+                            break;
+                        default:
+                            break;
                     }
                     break;
                 }
@@ -140,9 +159,13 @@ public abstract class OpflowPromMeasurer {
         
         @Override
         public RpcInvocationCounter getRpcInvocationCounter(String moduleName) {
-            synchronized(counter) {
-                return new RpcInvocationCounter(counter);
-            }
+            return counter.copy();
+        }
+
+        @Override
+        public Map<String, Object> resetRpcInvocationCounter() {
+            counter.reset();
+            return counter.toMap();
         }
     }
     
@@ -170,6 +193,11 @@ public abstract class OpflowPromMeasurer {
         
         @Override
         public RpcInvocationCounter getRpcInvocationCounter(String moduleName) {
+            return null;
+        }
+
+        @Override
+        public Map<String, Object> resetRpcInvocationCounter() {
             return null;
         }
     }

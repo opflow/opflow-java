@@ -191,7 +191,7 @@ public class OpflowCommander implements AutoCloseable {
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(commanderId, measurer, restrictor, rpcWatcher, rpcMaster, handlers);
 
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(commanderId, restrictor, rpcMaster, handlers);
+            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(commanderId, measurer, restrictor, rpcMaster, handlers);
             
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowUtil.buildMap(restServerCfg)
                     .put("instanceId", commanderId)
@@ -312,16 +312,19 @@ public class OpflowCommander implements AutoCloseable {
     private static class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
 
         private final String instanceId;
+        private final OpflowPromMeasurer measurer;
         private final OpflowLogTracer logTracer;
         private final OpflowRestrictor restrictor;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
 
         public OpflowTaskSubmitterMaster(String instanceId,
+                OpflowPromMeasurer measurer,
                 OpflowRestrictor restrictor,
                 OpflowRpcMaster rpcMaster,
                 Map<String, RpcInvocationHandler> mappings) {
             this.instanceId = instanceId;
+            this.measurer = measurer;
             this.restrictor = restrictor;
             this.rpcMaster = rpcMaster;
             this.handlers = mappings;
@@ -363,6 +366,13 @@ public class OpflowCommander implements AutoCloseable {
                     .stringify());
             rpcMaster.close();
             return OpflowUtil.buildOrderedMap()
+                    .toMap();
+        }
+        
+        @Override
+        public Map<String, Object> resetRpcInvocationCounter() {
+            return OpflowUtil.buildOrderedMap()
+                    .put("measurement", measurer.resetRpcInvocationCounter())
                     .toMap();
         }
 
@@ -452,12 +462,7 @@ public class OpflowCommander implements AutoCloseable {
                         if (measurer != null) {
                             OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
                             if (counter != null) {
-                                opts.put("measurement", OpflowUtil.buildOrderedMap()
-                                        .put("rpcInvocationTotal", counter.total)
-                                        .put("rpcOverDirectWorkerTotal", counter.direct)
-                                        .put("rpcOverRemoteWorkerTotal", counter.remote)
-                                        .put("startTime", OpflowUtil.toISO8601UTC(measurer.getStartTime()))
-                                        .toMap());
+                                opts.put("measurement", counter.toMap());
                             }
                         }
                     }
