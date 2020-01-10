@@ -1,7 +1,6 @@
 package com.devebot.opflow.supports;
 
 import com.devebot.opflow.OpflowMessage;
-import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

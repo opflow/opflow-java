@@ -23,7 +23,7 @@ public abstract class OpflowPromMeasurer {
     
     public abstract void countRpcInvocation(String moduleName, String eventName, String routineId, String status);
     
-    public abstract double getRpcInvocationTotal(String moduleName, String eventName);
+    public abstract RpcInvocationCounter getRpcInvocationCounter(String moduleName);
     
     private Date startTime = new Date();
     
@@ -46,13 +46,28 @@ public abstract class OpflowPromMeasurer {
         return instance;
     }
     
+    static class RpcInvocationCounter {
+        public long total = 0;
+        public long directWorker = 0;
+        public long remoteWorker = 0;
+        
+        public RpcInvocationCounter() {
+            this(null);
+        }
+        
+        public RpcInvocationCounter(RpcInvocationCounter counter) {
+            if (counter != null) {
+                this.total = counter.total;
+                this.directWorker = counter.directWorker;
+                this.remoteWorker = counter.remoteWorker;
+            }
+        }
+    }
+    
     static class PipeMeasurer extends OpflowPromMeasurer {
 
         private OpflowPromMeasurer shadow = null;
-
-        private long rpcInvocation_Master = 0;
-        private long rpcInvocation_DirectWorker = 0;
-        private long rpcInvocation_RemoteWorker = 0;
+        private final RpcInvocationCounter counter = new RpcInvocationCounter();
 
         public PipeMeasurer() {
         }
@@ -102,38 +117,32 @@ public abstract class OpflowPromMeasurer {
             if (shadow != null) {
                 shadow.countRpcInvocation(moduleName, eventName, routineId, status);
             }
-            if ("commander".equals(moduleName)) {
-                switch (eventName) {
-                    case "master":
-                        rpcInvocation_Master++;
-                        break;
-                    case "direct_worker":
-                        rpcInvocation_DirectWorker++;
-                        break;
-                    case "remote_worker":
-                        rpcInvocation_RemoteWorker++;
-                        break;
-                    default:
-                        break;
+            switch (moduleName) {
+                case "commander": {
+                    synchronized(counter) {
+                        switch (eventName) {
+                            case "direct_worker":
+                                counter.total++;
+                                counter.directWorker++;
+                                break;
+                            case "remote_worker":
+                                counter.total++;
+                                counter.remoteWorker++;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
                 }
             }
         }
         
         @Override
-        public double getRpcInvocationTotal(String moduleName, String eventName) {
-            if ("commander".equals(moduleName)) {
-                switch (eventName) {
-                    case "master":
-                        return rpcInvocation_Master;
-                    case "direct_worker":
-                        return rpcInvocation_DirectWorker;
-                    case "remote_worker":
-                        return rpcInvocation_RemoteWorker;
-                    default:
-                        break;
-                }
+        public RpcInvocationCounter getRpcInvocationCounter(String moduleName) {
+            synchronized(counter) {
+                return new RpcInvocationCounter(counter);
             }
-            return 0;
         }
     }
     
@@ -160,8 +169,8 @@ public abstract class OpflowPromMeasurer {
         }
         
         @Override
-        public double getRpcInvocationTotal(String moduleName, String eventName) {
-            return 0;
+        public RpcInvocationCounter getRpcInvocationCounter(String moduleName) {
+            return null;
         }
     }
     

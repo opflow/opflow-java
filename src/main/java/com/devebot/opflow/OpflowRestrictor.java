@@ -313,11 +313,9 @@ public class OpflowRestrictor implements AutoCloseable {
         return pauseThread.isLocked();
     }
     
-    public Map<String, Object> pause(final long duration) {
-        synchronized(this) {
-            if (pauseThread == null) {
-                pauseThread = new PauseThread(logTracer, pauseLock);
-            }
+    public synchronized Map<String, Object> pause(final long duration) {
+        if (pauseThread == null) {
+            pauseThread = new PauseThread(logTracer, pauseLock);
         }
         Map<String, Object> result = OpflowUtil.buildOrderedMap()
                 .put("threadId", pauseThread.getInstanceId())
@@ -325,10 +323,8 @@ public class OpflowRestrictor implements AutoCloseable {
                 .toMap();
         if (!pauseThread.isLocked()) {
             pauseThread.init(duration);
-            synchronized(this) {
-                if (threadExecutor == null) {
-                    threadExecutor = Executors.newSingleThreadExecutor();
-                }
+            if (threadExecutor == null) {
+                threadExecutor = Executors.newSingleThreadExecutor();
             }
             threadExecutor.execute(pauseThread);
             result.put("duration", duration);
@@ -337,7 +333,7 @@ public class OpflowRestrictor implements AutoCloseable {
         return result;
     }
     
-    public Map<String, Object> unpause() {
+    public synchronized Map<String, Object> unpause() {
         Map<String, Object> result = OpflowUtil.buildOrderedMap()
                 .put("threadId", pauseThread.getInstanceId())
                 .toMap();

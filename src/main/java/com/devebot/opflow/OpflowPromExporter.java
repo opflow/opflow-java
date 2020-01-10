@@ -151,7 +151,7 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     }
     
     @Override
-    public double getRpcInvocationTotal(String moduleName, String eventName) {
-        return -1;
+    public RpcInvocationCounter getRpcInvocationCounter(String moduleName) {
+        return null;
     }
 }

@@ -7,6 +7,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
+import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
 import com.devebot.opflow.supports.OpflowDateTime;
 import io.undertow.server.RoutingHandler;
 import java.lang.annotation.Annotation;
@@ -367,26 +368,32 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Map<String, Object> state(Map<String, Object> opts) {
-            String clazz = (String) OpflowUtil.getOptionField(opts, "type", null);
-            Boolean status = (Boolean) OpflowUtil.getOptionField(opts, "status", Boolean.TRUE);
-            for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
-                final String key = entry.getKey();
-                final RpcInvocationHandler val = entry.getValue();
-                if (clazz != null) {
-                    if (clazz.equals(key)) {
-                        val.setReserveWorkerForced(status);
-                        break;
+            String state = (String) OpflowUtil.getOptionField(opts, "state", "");
+            if (state.equals("activateReservedWorker")) {
+                String clazz = (String) OpflowUtil.getOptionField(opts, "class", null);
+                Boolean value = (Boolean) OpflowUtil.getOptionField(opts, "value", Boolean.TRUE);
+                for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
+                    final String key = entry.getKey();
+                    final RpcInvocationHandler val = entry.getValue();
+                    if (clazz != null) {
+                        if (clazz.equals(key)) {
+                            val.setReservedWorkerActive(value);
+                            break;
+                        }
+                    } else {
+                        val.setReservedWorkerActive(value);
                     }
-                } else {
-                    val.setReserveWorkerForced(status);
                 }
+                return OpflowUtil.buildOrderedMap()
+                        .put("mappings", OpflowInfoCollectorMaster.renderRpcInvocationHandlers(handlers))
+                        .toMap();
             }
             return OpflowUtil.buildOrderedMap()
-                    .put("mappings", OpflowInfoCollectorMaster.renderRpcInvocationHandlers(handlers))
+                    .put("message", "Unsupported action: [" + state + "]")
                     .toMap();
         }
     }
-    
+
     private static class OpflowInfoCollectorMaster implements OpflowInfoCollector {
 
         private final String instanceId;
@@ -431,12 +438,15 @@ public class OpflowCommander implements AutoCloseable {
                     // measurement
                     if (label == Scope.FULL) {
                         if (measurer != null) {
-                            opts.put("measurement", OpflowUtil.buildOrderedMap()
-                                    .put("rpcInvocationTotal", measurer.getRpcInvocationTotal("commander", "master"))
-                                    .put("rpcOverDirectWorkerTotal", measurer.getRpcInvocationTotal("commander", "direct_worker"))
-                                    .put("rpcOverRemoteWorkerTotal", measurer.getRpcInvocationTotal("commander", "remote_worker"))
-                                    .put("startTime", OpflowUtil.toISO8601UTC(measurer.getStartTime()))
-                                    .toMap());
+                            OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
+                            if (counter != null) {
+                                opts.put("measurement", OpflowUtil.buildOrderedMap()
+                                        .put("rpcInvocationTotal", counter.total)
+                                        .put("rpcOverDirectWorkerTotal", counter.directWorker)
+                                        .put("rpcOverRemoteWorkerTotal", counter.remoteWorker)
+                                        .put("startTime", OpflowUtil.toISO8601UTC(measurer.getStartTime()))
+                                        .toMap());
+                            }
                         }
                     }
 
@@ -540,10 +550,11 @@ public class OpflowCommander implements AutoCloseable {
                     public void transform(Map<String, Object> opts) {
                         opts.put("class", entry.getKey());
                         opts.put("methods", val.getMethodNames());
-                        opts.put("isReserveWorkerReady", val.hasReserveWorker());
-                        opts.put("forceUseReserveWorker", val.isReserveWorkerForced());
-                        if (val.getReserveWorkerClassName() != null) {
-                            opts.put("reserveWorkerClassName", val.getReserveWorkerClassName());
+                        opts.put("isReservedWorkerActive", val.isReservedWorkerActive());
+                        opts.put("isReservedWorkerAvailable", val.isReservedWorkerAvailable());
+                        opts.put("isDetachedWorkerActive", val.isDetachedWorkerActive());
+                        if (val.getReservedWorkerClassName() != null) {
+                            opts.put("reservedWorkerClassName", val.getReservedWorkerClassName());
                         }
                     }
                 }).toMap());
@@ -554,27 +565,20 @@ public class OpflowCommander implements AutoCloseable {
 
     private class RpcInvocationHandler implements InvocationHandler {
         private final Class clazz;
-        private final Object reserveWorker;
-        private final boolean reserveWorkerEnabled;
+        private final Object reservedWorker;
+        private final boolean reservedWorkerEnabled;
         private final Map<String, String> aliasOfMethod = new HashMap<>();
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
         private final OpflowRpcMaster rpcMaster;
         private final OpflowPubsubHandler publisher;
-        
-        private boolean reserveWorkerForced = false;
 
-        public boolean isReserveWorkerForced() {
-            return reserveWorkerForced;
-        }
-        
-        public void setReserveWorkerForced(boolean reserveWorkerForced) {
-            this.reserveWorkerForced = reserveWorkerForced;
-        }
-        
+        private boolean detachedWorkerActive = true;
+        private boolean reservedWorkerActive = true;
+
         public RpcInvocationHandler(OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher, Class clazz, Object reserveWorker, boolean reserveWorkerEnabled) {
             this.clazz = clazz;
-            this.reserveWorker = reserveWorker;
-            this.reserveWorkerEnabled = reserveWorkerEnabled;
+            this.reservedWorker = reserveWorker;
+            this.reservedWorkerEnabled = reserveWorkerEnabled;
             for (Method method : this.clazz.getDeclaredMethods()) {
                 String methodId = OpflowUtil.getMethodSignature(method);
                 OpflowSourceRoutine routine = extractMethodInfo(method);
@@ -596,13 +600,29 @@ public class OpflowCommander implements AutoCloseable {
             this.publisher = publisher;
         }
 
-        public boolean hasReserveWorker() {
-            return this.reserveWorker != null && this.reserveWorkerEnabled;
+        public boolean isDetachedWorkerActive() {
+            return detachedWorkerActive;
         }
 
-        public String getReserveWorkerClassName() {
-            if (this.reserveWorker == null) return null;
-            return this.reserveWorker.getClass().getName();
+        public void setDetachedWorkerActive(boolean detachedWorkerActive) {
+            this.detachedWorkerActive = detachedWorkerActive;
+        }
+        
+        public boolean isReservedWorkerActive() {
+            return reservedWorkerActive;
+        }
+
+        public void setReservedWorkerActive(boolean reservedWorkerActive) {
+            this.reservedWorkerActive = reservedWorkerActive;
+        }
+        
+        public boolean isReservedWorkerAvailable() {
+            return this.reservedWorker != null && this.reservedWorkerEnabled && this.reservedWorkerActive;
+        }
+
+        public String getReservedWorkerClassName() {
+            if (this.reservedWorker == null) return null;
+            return this.reservedWorker.getClass().getName();
         }
         
         public Set<String> getMethodNames() {
@@ -611,7 +631,7 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
-            if (isRestrictorAvailable()) {
+            if (!isRestrictorAvailable()) {
                 return _invoke(proxy, method, args);
             }
             return restrictor.filter(new OpflowRestrictor.Action<Object>() {
@@ -662,11 +682,15 @@ public class OpflowCommander implements AutoCloseable {
             measurer.countRpcInvocation("commander", "master", routineId, "begin");
 
             // rpc switching
-            if (rpcWatcher.isCongested() || reserveWorkerForced) {
-                if (this.hasReserveWorker()) {
+            if (rpcWatcher.isCongested() || !detachedWorkerActive) {
+                if (this.isReservedWorkerAvailable()) {
                     measurer.countRpcInvocation("commander", "direct_worker", routineId, "begin");
-                    return method.invoke(this.reserveWorker, args);
+                    return method.invoke(this.reservedWorker, args);
                 }
+            }
+            
+            if (!detachedWorkerActive) {
+                throw new OpflowWorkerNotFoundException("both reserved worker and detached worker are deactivated");
             }
 
             OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, OpflowUtil.buildMap()
@@ -677,9 +701,9 @@ public class OpflowCommander implements AutoCloseable {
 
             if (rpcResult.isTimeout()) {
                 rpcWatcher.setCongested(true);
-                if (this.hasReserveWorker()) {
+                if (this.isReservedWorkerAvailable()) {
                     measurer.countRpcInvocation("commander", "direct_worker", routineId, "begin");
-                    return method.invoke(this.reserveWorker, args);
+                    return method.invoke(this.reservedWorker, args);
                 }
                 measurer.countRpcInvocation("commander", "remote_worker", routineId, "timeout");
                 throw new OpflowRequestTimeoutException();
