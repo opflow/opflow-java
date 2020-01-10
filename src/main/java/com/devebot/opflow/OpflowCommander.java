@@ -471,7 +471,12 @@ public class OpflowCommander implements AutoCloseable {
                                     int availablePermits = restrictor.getSemaphorePermits();
                                     opt2.put("pauseEnabled", restrictor.isPauseEnabled());
                                     opt2.put("pauseTimeout", restrictor.getPauseTimeout());
-                                    opt2.put("pauseStatus", restrictor.isPaused() ? "on" : "off");
+                                    boolean isPaused = restrictor.isPaused();
+                                    opt2.put("pauseStatus", isPaused ? "on" : "off");
+                                    if (isPaused) {
+                                        opt2.put("pauseElapsed", restrictor.getPauseElapsed());
+                                        opt2.put("pauseDuration", restrictor.getPauseDuration());
+                                    }
                                     opt2.put("semaphoreLimit", restrictor.getSemaphoreLimit());
                                     opt2.put("semaphoreUsedPermits", restrictor.getSemaphoreLimit() - availablePermits);
                                     opt2.put("semaphoreFreePermits", availablePermits);
