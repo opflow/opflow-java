@@ -303,7 +303,7 @@ public class OpflowConfig {
     }
     
     private static final String[] BOOLEAN_FIELDS = new String[] {
-        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled",
+        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled", "strictMode",
         "monitorEnabled", "pauseEnabled", "semaphoreEnabled",
         "responseDurable", "responseExclusive", "responseAutoDelete"
     };

@@ -7,6 +7,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
+import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
 import com.devebot.opflow.supports.OpflowDateTime;
 import io.undertow.server.RoutingHandler;
@@ -47,6 +48,7 @@ public class OpflowCommander implements AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
 
+    private final boolean strictMode;
     private final String commanderId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
@@ -85,6 +87,7 @@ public class OpflowCommander implements AutoCloseable {
             kwargs = configLoader.loadConfiguration();
         }
         kwargs = OpflowUtil.ensureNotNull(kwargs);
+        strictMode = OpflowUtil.getOptionValue(kwargs, "strictMode", Boolean.class, Boolean.FALSE);
         commanderId = OpflowUtil.getOptionField(kwargs, "commanderId", true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", commanderId);
 
@@ -597,10 +600,10 @@ public class OpflowCommander implements AutoCloseable {
         private boolean detachedWorkerActive = true;
         private boolean reservedWorkerActive = true;
 
-        public RpcInvocationHandler(OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher, Class clazz, Object reserveWorker, boolean reserveWorkerEnabled) {
+        public RpcInvocationHandler(OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher, Class clazz, Object reservedWorker, boolean reservedWorkerEnabled) {
             this.clazz = clazz;
-            this.reservedWorker = reserveWorker;
-            this.reservedWorkerEnabled = reserveWorkerEnabled;
+            this.reservedWorker = reservedWorker;
+            this.reservedWorkerEnabled = reservedWorkerEnabled;
             for (Method method : this.clazz.getDeclaredMethods()) {
                 String methodId = OpflowUtil.getMethodSignature(method);
                 OpflowSourceRoutine routine = extractMethodInfo(method);
@@ -620,6 +623,10 @@ public class OpflowCommander implements AutoCloseable {
             }
             this.rpcMaster = rpcMaster;
             this.publisher = publisher;
+        }
+
+        public Set<String> getMethodNames() {
+            return methodIsAsync.keySet();
         }
 
         public boolean isDetachedWorkerActive() {
@@ -647,10 +654,11 @@ public class OpflowCommander implements AutoCloseable {
             return this.reservedWorker.getClass().getName();
         }
         
-        public Set<String> getMethodNames() {
-            return methodIsAsync.keySet();
+        public Integer getReservedWorkerHashCode() {
+            if (this.reservedWorker == null) return null;
+            return this.reservedWorker.hashCode();
         }
-
+        
         @Override
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
             if (!isRestrictorAvailable()) {
@@ -774,7 +782,7 @@ public class OpflowCommander implements AutoCloseable {
 
     private final Map<String, RpcInvocationHandler> handlers = new LinkedHashMap<>();
 
-    private RpcInvocationHandler getInvocationHandler(Class clazz, Object bean) {
+    private <T> RpcInvocationHandler getInvocationHandler(Class<T> clazz, T bean) {
         validateType(clazz);
         String clazzName = clazz.getName();
         if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
@@ -787,6 +795,10 @@ public class OpflowCommander implements AutoCloseable {
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
             handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, publisher, clazz, bean, reserveWorkerEnabled));
+        } else {
+            if (strictMode) {
+                throw new OpflowRpcRegistrationException("Class [" + clazzName + "] has already registered");
+            }
         }
         return handlers.get(clazzName);
     }

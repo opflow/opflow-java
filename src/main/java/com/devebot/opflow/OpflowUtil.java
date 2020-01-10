@@ -313,6 +313,16 @@ public class OpflowUtil {
         return (value == null) ? defval : value;
     }
     
+    public static <T> T getOptionValue(Map<String, Object> options, String fieldName, Class<T> type, T defval) {
+        Object value = null;
+        if (options != null) value = options.get(fieldName);
+        if (value == null) {
+            return defval;
+        } else {
+            return OpflowConverter.convert(value, type);
+        }
+    }
+    
     public static String[] splitByComma(String source) {
         if (source == null) return null;
         String[] arr = source.split(",");
