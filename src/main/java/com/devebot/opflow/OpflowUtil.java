@@ -285,6 +285,29 @@ public class OpflowUtil {
         return getOptionField(headers, "requestId", uuidIfNotFound);
     }
     
+    public static String getRequestTime(Map<String, Object> headers) {
+        return getRequestTime(headers, true);
+    }
+    
+    public static String getRequestTime(Map<String, Object> headers, boolean currentIfNotFound) {
+        Object date = headers.get("requestTime");
+        if (date instanceof String) {
+            return (String) date;
+        }
+        if (date instanceof Date) {
+            String requestTime = toISO8601UTC((Date) date);
+            headers.put("requestTime", requestTime);
+            return requestTime;
+        }
+        if (date == null && !currentIfNotFound) {
+            return null;
+        } else {
+            String requestTime = getCurrentTimeString();
+            headers.put("requestTime", requestTime);
+            return requestTime;
+        }
+    }
+    
     public static String getRoutineId(Map<String, Object> headers) {
         return getRoutineId(headers, true);
     }
@@ -325,17 +348,24 @@ public class OpflowUtil {
         Object value = pointer.get(fieldNames[fieldNames.length - 1]);
         return (value == null) ? defval : value;
     }
-    
+
     public static <T> T getOptionValue(Map<String, Object> options, String fieldName, Class<T> type, T defval) {
+        return getOptionValue(options, fieldName, type, defval, true);
+    }
+
+    public static <T> T getOptionValue(Map<String, Object> options, String fieldName, Class<T> type, T defval, boolean asserted) {
         Object value = null;
         if (options != null) value = options.get(fieldName);
         if (value == null) {
+            if (asserted) {
+                options.put(fieldName, defval);
+            }
             return defval;
         } else {
             return OpflowConverter.convert(value, type);
         }
     }
-    
+
     public static String[] splitByComma(String source) {
         if (source == null) return null;
         String[] arr = source.split(",");

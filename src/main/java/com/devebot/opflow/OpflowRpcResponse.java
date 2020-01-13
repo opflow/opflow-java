@@ -21,16 +21,22 @@ public class OpflowRpcResponse {
     private final String consumerTag;
     private final String replyQueueName;
     private final String requestId;
+    private final String requestTime;
     private final String messageScope;
     private final Boolean progressEnabled;
     
     public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String consumerTag, String replyQueueName) {
+        final Map<String, Object> headers = properties.getHeaders();
+        
         this.channel = channel;
         this.properties = properties;
         this.consumerTag = consumerTag;
-        this.requestId = OpflowUtil.getRequestId(properties.getHeaders(), false);
         
-        logTracer = OpflowLogTracer.ROOT.branch("requestId", this.requestId, new OpflowLogTracer.OmitPingLogs(properties.getHeaders()));
+        this.requestId = OpflowUtil.getRequestId(headers, false);
+        this.requestTime = OpflowUtil.getRequestTime(headers, false);
+        
+        logTracer = OpflowLogTracer.ROOT.branch("requestId", this.requestId, new OpflowLogTracer.OmitPingLogs(headers))
+                .branch("requestTime", requestTime);
         
         if (properties.getReplyTo() != null) {
             this.replyQueueName = properties.getReplyTo();
@@ -38,8 +44,8 @@ public class OpflowRpcResponse {
             this.replyQueueName = replyQueueName;
         }
         
-        this.messageScope = OpflowUtil.getOptionField(properties.getHeaders(), "messageScope", false);
-        this.progressEnabled = (Boolean) OpflowUtil.getOptionField(properties.getHeaders(), "progressEnabled", null);
+        this.messageScope = OpflowUtil.getOptionField(headers, "messageScope", false);
+        this.progressEnabled = (Boolean) OpflowUtil.getOptionField(headers, "progressEnabled", null);
         
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .put("consumerTag", this.consumerTag)
@@ -159,6 +165,9 @@ public class OpflowRpcResponse {
         headers.put("status", status);
         if (this.requestId != null) {
             headers.put("requestId", this.requestId);
+        }
+        if (this.requestTime != null) {
+            headers.put("requestTime", this.requestTime);
         }
         if (this.messageScope != null) {
             headers.put("messageScope", this.messageScope);

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
-    private final OpflowLogTracer logTracer;
+    private final OpflowLogTracer logRequest;
     private final String requestId;
     private final String requestTime;
     private final String routineId;
@@ -30,8 +30,9 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     public OpflowRpcRequest(Map<String, Object> options, final OpflowTimeout.Listener completeListener) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         this.requestId = OpflowUtil.getRequestId(opts);
-        this.requestTime = OpflowUtil.assertTimeString(opts.get("requestTime"));
+        this.requestTime = OpflowUtil.getRequestTime(opts);
         this.routineId = OpflowUtil.getRoutineId(opts);
+
         if (opts.get("timeout") == null) {
             this.timeout = 0;
         } else if (opts.get("timeout") instanceof Long) {
@@ -41,15 +42,19 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         } else {
             this.timeout = 0;
         }
-        logTracer = OpflowLogTracer.ROOT.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
+
+        logRequest = OpflowLogTracer.ROOT.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options))
+                .branch("requestTime", requestTime);
+
         this.completeListener = completeListener;
+
         if (Boolean.TRUE.equals(opts.get("watcherEnabled")) && completeListener != null && this.timeout > 0) {
             timeoutWatcher = new OpflowTimeout.Watcher(requestId, this.timeout, new OpflowTimeout.Listener() {
                 @Override
                 public void handleEvent() {
                     OpflowLogTracer logWatcher = null;
-                    if (logTracer.ready(LOG, "debug")) {
-                        logWatcher = logTracer.copy();
+                    if (logRequest.ready(LOG, "debug")) {
+                        logWatcher = logRequest.copy();
                     }
                     if (logWatcher != null && logWatcher.ready(LOG, "debug")) LOG.debug(logWatcher
                             .text("Request[${requestId}] timeout event has been raised")
@@ -63,6 +68,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
             });
             timeoutWatcher.start();
         }
+
         checkTimestamp();
     }
 
@@ -124,8 +130,8 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         checkTimestamp();
         if(isDone(message)) {
             OpflowLogTracer pushTrail = null;
-            if (logTracer.ready(LOG, "debug")) {
-                pushTrail = logTracer.copy();
+            if (logRequest.ready(LOG, "debug")) {
+                pushTrail = logRequest.copy();
             }
             if (pushTrail != null && pushTrail.ready(LOG, "debug")) LOG.debug(pushTrail
                     .text("Request[${requestId}] has completed/failed message")
@@ -154,7 +160,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     }
     
     public OpflowRpcResult extractResult(final boolean includeProgress) {
-        OpflowLogTracer extractTrail = logTracer;
+        OpflowLogTracer extractTrail = logRequest;
         if (extractTrail != null && extractTrail.ready(LOG, "trace")) LOG.trace(extractTrail
                 .text("Request[${requestId}] - extracting result")
                 .stringify());

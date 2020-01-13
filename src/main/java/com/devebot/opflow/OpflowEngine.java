@@ -414,7 +414,7 @@ public class OpflowEngine implements AutoCloseable {
     
     public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, Map<String, Object> override) {
         propBuilder = (propBuilder == null) ? new AMQP.BasicProperties.Builder() : propBuilder;
-        OpflowLogTracer logProduce = null;
+        OpflowLogTracer logRequest = null;
         
         try {
             String customKey = this.routingKey;
@@ -442,13 +442,17 @@ public class OpflowEngine implements AutoCloseable {
             if (requestId == null) {
                 headers.put("requestId", requestId = OpflowUtil.getLogID());
             }
+            
+            String requestTime = OpflowUtil.getRequestTime(headers);
+            
             propBuilder.headers(headers);
             
             if (logTracer.ready(LOG, "info")) {
-                logProduce = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                logRequest = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers))
+                        .branch("requestTime", requestTime);
             }
             
-            if (logProduce != null && logProduce.ready(LOG, "info")) LOG.info(logProduce
+            if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                     .put("appId", appId)
                     .put("customKey", customKey)
                     .text("Request[${requestId}] - Engine[${engineId}] - produce() is invoked")
@@ -460,14 +464,14 @@ public class OpflowEngine implements AutoCloseable {
             }
             _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), body);
         } catch (IOException exception) {
-            if (logProduce != null && logProduce.ready(LOG, "error")) LOG.error(logProduce
+            if (logRequest != null && logRequest.ready(LOG, "error")) LOG.error(logRequest
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Request[${requestId}] - produce() has failed")
                     .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (logProduce != null && logProduce.ready(LOG, "error")) LOG.error(logProduce
+            if (logRequest != null && logRequest.ready(LOG, "error")) LOG.error(logRequest
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Request[${requestId}] - produce() is timeout")
@@ -580,9 +584,12 @@ public class OpflowEngine implements AutoCloseable {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
-                    final String requestID = OpflowUtil.getRequestId(properties.getHeaders(), false);
+                    final Map<String, Object> headers = properties.getHeaders();
+                    final String requestId = OpflowUtil.getRequestId(headers, false);
+                    final String requestTime = OpflowUtil.getRequestTime(headers, false);
                     
-                    final OpflowLogTracer logRequest = logConsume.branch("requestId", requestID, new OpflowLogTracer.OmitPingLogs(properties.getHeaders()));
+                    final OpflowLogTracer logRequest = logConsume.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers))
+                            .branch("requestTime", requestTime);
                     
                     if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .put("appId", properties.getAppId())

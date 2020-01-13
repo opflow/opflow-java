@@ -188,10 +188,13 @@ public class OpflowRpcMaster implements AutoCloseable {
                 String taskId = properties.getCorrelationId();
                 Map<String, Object> headers = properties.getHeaders();
 
-                String requestId = OpflowUtil.getRequestId(headers, true);
+                String requestId = OpflowUtil.getRequestId(headers);
+                String requestTime = OpflowUtil.getRequestTime(headers);
+                
                 OpflowLogTracer logResult = null;
                 if (logSession.ready(LOG, "info")) {
-                    logResult = logSession.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    logResult = logSession.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers))
+                            .branch("requestTime", requestTime);
                 }
 
                 if (logResult != null && logResult.ready(LOG, "info")) LOG.info(logResult
@@ -301,11 +304,11 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         final String requestId = requestIdVal.toString();
         
-        final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
-        
-        final String requestTime = OpflowUtil.assertTimeString(options.get("requestTime"));
-        options.put("requestTime", requestTime);
-        
+        final String requestTime = OpflowUtil.getRequestTime(options);
+
+        final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options))
+                .branch("requestTime", requestTime);
+
         if (routineId != null) {
             options.put("routineId", routineId);
         }

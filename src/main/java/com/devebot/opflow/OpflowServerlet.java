@@ -358,10 +358,12 @@ public class OpflowServerlet implements AutoCloseable {
                 public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
                     final Map<String, Object> headers = message.getInfo();
                     final String requestId = OpflowUtil.getRequestId(headers);
+                    final String requestTime = OpflowUtil.getRequestTime(headers);
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
-                    if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
+                    final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers))
+                            .branch("requestTime", requestTime);
+                    if (logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .put("routineId", routineId)
                             .put("methodId", methodId)
                             .text("Request[${requestId}] - Receives new method call")
@@ -376,7 +378,7 @@ public class OpflowServerlet implements AutoCloseable {
                         }
                         
                         String json = message.getBodyAsString();
-                        if (listenerTrail.ready(LOG, "trace")) LOG.trace(listenerTrail
+                        if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                 .put("arguments", json)
                                 .text("Request[${requestId}] - Method arguments in json string")
                                 .stringify());
@@ -425,6 +427,7 @@ public class OpflowServerlet implements AutoCloseable {
                                             .put("dispatchQueue", rpcWorker.getDispatchName())
                                             .put("handler", OpflowUtil.buildOrderedMap()
                                                     .put("requestId", requestId)
+                                                    .put("requestTime", requestTime)
                                                     .put("applicationId", response.getApplicationId())
                                                     .put("replyToQueue", response.getReplyQueueName())
                                                     .put("consumerTag", response.getConsumerTag())
@@ -437,13 +440,13 @@ public class OpflowServerlet implements AutoCloseable {
                         }
                         
                         String result = OpflowJsonTool.toString(returnValue);
-                        if (listenerTrail.ready(LOG, "trace")) LOG.trace(listenerTrail
+                        if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                 .put("return", OpflowUtil.truncate(result))
                                 .text("Request[${requestId}] - Return the output of the method")
                                 .stringify());
                         response.emitCompleted(result);
                         
-                        if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
+                        if (logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .text("Request[${requestId}] - Method call has completed")
                             .stringify());
                     } catch (JsonSyntaxException error) {
@@ -501,8 +504,8 @@ public class OpflowServerlet implements AutoCloseable {
                     final String requestId = OpflowUtil.getRequestId(headers);
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
-                    if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
+                    final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    if (logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .put("routineId", routineId)
                             .put("methodId", methodId)
                             .text("Request[${requestId}] - Receives new method call [${routineId}]")
@@ -517,7 +520,7 @@ public class OpflowServerlet implements AutoCloseable {
                         }
                         
                         String json = message.getBodyAsString();
-                        if (listenerTrail.ready(LOG, "trace")) LOG.trace(listenerTrail
+                        if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                 .put("arguments", json)
                                 .text("Request[${requestId}] - Method arguments in json string")
                                 .stringify());
@@ -525,7 +528,7 @@ public class OpflowServerlet implements AutoCloseable {
                         
                         method.invoke(target, args);
                         
-                        if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
+                        if (logRequest.ready(LOG, "info")) LOG.info(logRequest
                                 .text("Request[${requestId}] - Method call has completed")
                                 .stringify());
                     } catch (JsonSyntaxException error) {
