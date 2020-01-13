@@ -356,10 +356,11 @@ public class OpflowServerlet implements AutoCloseable {
             this.rpcListener = new OpflowRpcListener() {
                 @Override
                 public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
-                    final String requestId = OpflowUtil.getRequestId(message.getInfo());
-                    final String routineId = OpflowUtil.getRoutineId(message.getInfo());
+                    final Map<String, Object> headers = message.getInfo();
+                    final String requestId = OpflowUtil.getRequestId(headers);
+                    final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(message.getInfo()));
+                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
                             .put("routineId", routineId)
                             .put("methodId", methodId)
@@ -496,10 +497,11 @@ public class OpflowServerlet implements AutoCloseable {
             this.subListener = new OpflowPubsubListener() {
                 @Override
                 public void processMessage(OpflowMessage message) throws IOException {
-                    final String requestId = OpflowUtil.getRequestId(message.getInfo());
-                    final String routineId = OpflowUtil.getRoutineId(message.getInfo());
+                    final Map<String, Object> headers = message.getInfo();
+                    final String requestId = OpflowUtil.getRequestId(headers);
+                    final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(message.getInfo()));
+                    final OpflowLogTracer listenerTrail = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (listenerTrail.ready(LOG, "info")) LOG.info(listenerTrail
                             .put("routineId", routineId)
                             .put("methodId", methodId)

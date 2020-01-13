@@ -303,6 +303,9 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
         
+        final String requestTime = OpflowUtil.assertTimeString(options.get("requestTime"));
+        options.put("requestTime", requestTime);
+        
         if (routineId != null) {
             options.put("routineId", routineId);
         }
@@ -372,6 +375,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         Map<String, Object> headers = new HashMap<>();
         headers.put("requestId", task.getRequestId());
+        headers.put("requestTime", task.getRequestTime());
         headers.put("routineId", task.getRoutineId());
         
         if (options.containsKey("messageScope")) {

@@ -20,6 +20,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final OpflowLogTracer logTracer;
     private final String requestId;
+    private final String requestTime;
     private final String routineId;
     private final long timeout;
     private final OpflowTimeout.Listener completeListener;
@@ -29,6 +30,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     public OpflowRpcRequest(Map<String, Object> options, final OpflowTimeout.Listener completeListener) {
         Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
         this.requestId = OpflowUtil.getRequestId(opts);
+        this.requestTime = OpflowUtil.assertTimeString(opts.get("requestTime"));
         this.routineId = OpflowUtil.getRoutineId(opts);
         if (opts.get("timeout") == null) {
             this.timeout = 0;
@@ -67,7 +69,11 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     public String getRequestId() {
         return requestId;
     }
-    
+
+    public String getRequestTime() {
+        return requestTime;
+    }
+
     public String getRoutineId() {
         return routineId;
     }

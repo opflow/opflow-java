@@ -94,6 +94,19 @@ public class OpflowUtil {
         return null;
     }
     
+    public static String assertTimeString(Object date) {
+        if (date instanceof String) {
+            return (String) date;
+        }
+        if (date instanceof Date) {
+            return toISO8601UTC((Date) date);
+        }
+        if (date == null) {
+            return getCurrentTimeString();
+        }
+        return date.toString();
+    }
+    
     public static String getCurrentTimeString() {
         return toISO8601UTC(new Date());
     }

@@ -679,15 +679,26 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private Object _invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            // determine the requestId
             final String requestId;
             if (reqExtractor == null) {
                 requestId = OpflowUtil.getLogID();
             } else {
                 requestId = reqExtractor.extractRequestId(args);
             }
+
+            // create the logTracer
             final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
+
+            // determine the requestTime
+            final String requestTime = OpflowUtil.getCurrentTimeString();
+
+            // get the method signature
             String methodId = OpflowUtil.getMethodSignature(method);
+            
+            // convert the method signature to routineId
             String routineId = aliasOfMethod.getOrDefault(methodId, methodId);
+
             Boolean isAsync = methodIsAsync.getOrDefault(methodId, false);
             if (logRequest.ready(LOG, "info")) LOG.info(logRequest
                     .put("methodId", methodId)
@@ -736,6 +747,7 @@ public class OpflowCommander implements AutoCloseable {
 
             OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, OpflowUtil.buildMap()
                     .put("requestId", requestId)
+                    .put("requestTime", requestTime)
                     .put("progressEnabled", false)
                     .toMap());
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
