@@ -37,7 +37,7 @@ public class OpflowCommander implements AutoCloseable {
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
-        "restrictor", "rpcWatcher", "promExporter", "restServer"
+        "reqExtractor", "restrictor", "rpcWatcher", "promExporter", "restServer"
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
@@ -64,6 +64,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcWatcher rpcWatcher;
     private OpflowRestServer restServer;
+    private OpflowReqExtractor reqExtractor;
 
     public OpflowCommander() throws OpflowBootstrapException {
         this(null, null);
@@ -114,6 +115,7 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get("restrictor");
+        Map<String, Object> reqExtractorCfg = (Map<String, Object>)kwargs.get("reqExtractor");
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get("configurer");
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get("rpcMaster");
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get("publisher");
@@ -154,6 +156,10 @@ public class OpflowCommander implements AutoCloseable {
                 restrictor = new OpflowRestrictor(OpflowUtil.buildMap(restrictorCfg)
                         .put("instanceId", commanderId)
                         .toMap());
+            }
+
+            if (OpflowUtil.isComponentEnabled(reqExtractorCfg)) {
+                reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
             }
 
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
@@ -673,7 +679,12 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private Object _invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            final String requestId = OpflowUtil.getLogID();
+            final String requestId;
+            if (reqExtractor == null) {
+                requestId = OpflowUtil.getLogID();
+            } else {
+                requestId = reqExtractor.extractRequestId(args);
+            }
             final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
             String methodId = OpflowUtil.getMethodSignature(method);
             String routineId = aliasOfMethod.getOrDefault(methodId, methodId);

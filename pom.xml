@@ -348,6 +348,47 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>git</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>pl.project13.maven</groupId>
+                        <artifactId>git-commit-id-plugin</artifactId>
+                        <version>4.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>get-the-git-infos</id>
+                                <goals>
+                                    <goal>revision</goal>
+                                </goals>
+                                <phase>initialize</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <dotGitDirectory>${dot.git.directory}</dotGitDirectory>
+                            <prefix>git</prefix>
+                            <verbose>false</verbose>
+                            <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                            <generateGitPropertiesFilename>${project.build.outputDirectory}/META-INF/resources/opflow-git-info.json</generateGitPropertiesFilename>
+                            <includeOnlyProperties>
+                                <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
+                                <includeOnlyProperty>^git.commit.id$</includeOnlyProperty>
+                                <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
+                                <includeOnlyProperty>^git.remote.origin.url$</includeOnlyProperty>
+                                <includeOnlyProperty>^git.tags$</includeOnlyProperty>
+                            </includeOnlyProperties>
+                            <format>json</format>
+                            <gitDescribe>
+                                <skip>false</skip>
+                                <always>false</always>
+                                <dirty>-dirty</dirty>
+                            </gitDescribe>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
     
     <distributionManagement>
