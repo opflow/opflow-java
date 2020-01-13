@@ -173,6 +173,13 @@ public class OpflowConfig {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
                 componentCfg.put("enabled", componentNode.get("enabled"));
+                if ("reqExtractor".equals(componentName)) {
+                    for(String key : new String[] {"getRequestIdClassName", "getRequestIdMethodName"}) {
+                        if (componentNode.containsKey(key)) {
+                            componentCfg.put(key, componentNode.get(key));
+                        }
+                    }
+                }
                 if ("restrictor".equals(componentName)) {
                     componentCfg.put("pauseEnabled", componentNode.get("pauseEnabled"));
                     componentCfg.put("pauseTimeout", componentNode.get("pauseTimeout"));
@@ -303,7 +310,7 @@ public class OpflowConfig {
     }
     
     private static final String[] BOOLEAN_FIELDS = new String[] {
-        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled",
+        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled", "strictMode",
         "monitorEnabled", "pauseEnabled", "semaphoreEnabled",
         "responseDurable", "responseExclusive", "responseAutoDelete"
     };

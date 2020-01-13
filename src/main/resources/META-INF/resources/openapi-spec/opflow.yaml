@@ -110,6 +110,17 @@ paths:
       responses:
         200:
           description: "Ok"
+  /exec/reset-counter:
+    get:
+      tags:
+      - "Operation"
+      summary: "Reset the RPC Invocation Counter"
+      description: "Reset the RPC Invocation Counter"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Ok"
   /exec/reset:
     get:
       tags:
