@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowReqIdentifiableException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -12,23 +13,27 @@ public class OpflowReqExtractor {
 
     private Class getRequestIdClass;
     private Method getRequestIdMethod;
+    private boolean uuidIfNotFound = true;
 
-    public OpflowReqExtractor() {
+    public OpflowReqExtractor() throws OpflowReqIdentifiableException {
         this(null, null);
     }
 
-    public OpflowReqExtractor(String getRequestIdClassName) {
+    public OpflowReqExtractor(String getRequestIdClassName) throws OpflowReqIdentifiableException {
         this(getRequestIdClassName, null);
     }
 
-    public OpflowReqExtractor(String getRequestIdClassName, String getRequestIdMethodName) {
+    public OpflowReqExtractor(String getRequestIdClassName, String getRequestIdMethodName) throws OpflowReqIdentifiableException {
         init(getRequestIdClassName, getRequestIdMethodName);
     }
-    
-    public OpflowReqExtractor(Map<String, Object> kwargs) {
+
+    public OpflowReqExtractor(Map<String, Object> kwargs) throws OpflowReqIdentifiableException {
         if (kwargs == null) {
             init(null, null);
         } else {
+            if (kwargs.get("uuidIfNotFound") instanceof Boolean) {
+                uuidIfNotFound = (Boolean) kwargs.get("uuidIfNotFound");
+            }
             String className = null;
             if (kwargs.get("getRequestIdClassName") instanceof String) {
                 className = (String) kwargs.get("getRequestIdClassName");
@@ -50,7 +55,10 @@ public class OpflowReqExtractor {
                 return invokeGetRequestId(arg);
             }
         }
-        return OpflowUtil.getLogID();
+        if (uuidIfNotFound) {
+            return OpflowUtil.getLogID();
+        }
+        return null;
     }
 
     private String invokeGetRequestId(Object arg) {
@@ -61,7 +69,7 @@ public class OpflowReqExtractor {
         }
     }
 
-    private void init(String getRequestIdClassName, String getRequestIdMethodName) {
+    private void init(String getRequestIdClassName, String getRequestIdMethodName) throws OpflowReqIdentifiableException {
         String className = getRequestIdClassName != null ? getRequestIdClassName : OpflowReqIdentifiable.class.getName();
         String methodName = getRequestIdMethodName != null ? getRequestIdMethodName : "getRequestId";
 
@@ -70,7 +78,12 @@ public class OpflowReqExtractor {
             getRequestIdMethod = getRequestIdClass.getDeclaredMethod(methodName);
         }
         catch (ClassNotFoundException | NoSuchMethodException | SecurityException e) {
-            throw new RuntimeException(e);
+            throw new OpflowReqIdentifiableException(e);
+        }
+
+        Class returnType = getRequestIdMethod.getReturnType();
+        if (!returnType.equals(String.class)) {
+            throw new OpflowReqIdentifiableException("Method [" + methodName + "] return type must be String");
         }
     }
 }
