@@ -9,6 +9,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
 import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.RedirectHandler;
 import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.resource.CachingResourceManager;
@@ -40,7 +41,8 @@ public class OpflowRestServer implements AutoCloseable {
     private final Integer port;
     private final Boolean enabled;
     private Undertow server;
-
+    private GracefulShutdownHandler shutdownHander;
+    
     OpflowRestServer(OpflowInfoCollector _infoCollector,
             OpflowTaskSubmitter _taskSubmitter,
             OpflowRpcChecker _rpcChecker,
@@ -126,10 +128,12 @@ public class OpflowRestServer implements AutoCloseable {
                     .get("/api-ui/", new RedirectHandler("/api-ui/index.html"))
                     .get("/", new RedirectHandler("/api-ui/"))
                     .setFallbackHandler(new PageNotFoundHandler());
-                    
+            
+            shutdownHander = new GracefulShutdownHandler(routes);
+            
             server = Undertow.builder()
                     .addHttpListener(port, host)
-                    .setHandler(routes)
+                    .setHandler(shutdownHander)
                     .build();
             
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -147,6 +151,25 @@ public class OpflowRestServer implements AutoCloseable {
     @Override
     public void close() {
         if (server != null) {
+            if (shutdownHander != null) {
+                shutdownHander.shutdown();
+                try {
+                    if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                            .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() starting")
+                            .stringify());
+                    shutdownHander.awaitShutdown(30000);
+                }
+                catch (InterruptedException ex) {
+                    if (logTracer.ready(LOG, "error")) LOG.error(logTracer
+                            .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() interrupted")
+                            .stringify());
+                }
+                finally {
+                    if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                            .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() finished")
+                            .stringify());
+                }
+            }
             server.stop();
             server = null;
         }
