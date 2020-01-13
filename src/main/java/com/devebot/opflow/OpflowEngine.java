@@ -448,8 +448,8 @@ public class OpflowEngine implements AutoCloseable {
             propBuilder.headers(headers);
             
             if (logTracer.ready(LOG, "info")) {
-                logRequest = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers))
-                        .branch("requestTime", requestTime);
+                logRequest = logTracer.branch("requestTime", requestTime)
+                        .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
             }
             
             if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
@@ -588,8 +588,8 @@ public class OpflowEngine implements AutoCloseable {
                     final String requestId = OpflowUtil.getRequestId(headers, false);
                     final String requestTime = OpflowUtil.getRequestTime(headers, false);
                     
-                    final OpflowLogTracer logRequest = logConsume.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers))
-                            .branch("requestTime", requestTime);
+                    final OpflowLogTracer logRequest = logConsume.branch("requestTime", requestTime)
+                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     
                     if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .put("appId", properties.getAppId())

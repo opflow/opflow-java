@@ -35,8 +35,8 @@ public class OpflowRpcResponse {
         this.requestId = OpflowUtil.getRequestId(headers, false);
         this.requestTime = OpflowUtil.getRequestTime(headers, false);
         
-        logTracer = OpflowLogTracer.ROOT.branch("requestId", this.requestId, new OpflowLogTracer.OmitPingLogs(headers))
-                .branch("requestTime", requestTime);
+        logTracer = OpflowLogTracer.ROOT.branch("requestTime", requestTime)
+                .branch("requestId", this.requestId, new OpflowLogTracer.OmitPingLogs(headers));
         
         if (properties.getReplyTo() != null) {
             this.replyQueueName = properties.getReplyTo();

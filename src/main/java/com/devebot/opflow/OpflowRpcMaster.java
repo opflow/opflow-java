@@ -193,8 +193,8 @@ public class OpflowRpcMaster implements AutoCloseable {
                 
                 OpflowLogTracer logResult = null;
                 if (logSession.ready(LOG, "info")) {
-                    logResult = logSession.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers))
-                            .branch("requestTime", requestTime);
+                    logResult = logSession.branch("requestTime", requestTime)
+                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                 }
 
                 if (logResult != null && logResult.ready(LOG, "info")) LOG.info(logResult
@@ -306,8 +306,8 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         final String requestTime = OpflowUtil.getRequestTime(options);
 
-        final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options))
-                .branch("requestTime", requestTime);
+        final OpflowLogTracer logRequest = logTracer.branch("requestTime", requestTime)
+                .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
 
         if (routineId != null) {
             options.put("routineId", routineId);
