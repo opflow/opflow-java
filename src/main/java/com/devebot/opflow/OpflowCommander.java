@@ -10,6 +10,7 @@ import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
 import com.devebot.opflow.supports.OpflowDateTime;
+import com.devebot.opflow.supports.OpflowSysInfo;
 import io.undertow.server.RoutingHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -569,6 +570,14 @@ public class OpflowCommander implements AutoCloseable {
                         .toMap());
             }
             
+            // git commit information
+            if (label == Scope.FULL) {
+                root.put("source-code-info", OpflowUtil.buildOrderedMap()
+                        .put("master", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
+                        .put("opflow", OpflowSysInfo.getGitInfo())
+                        .toMap());
+            }
+            
             return root.toMap();
         }
         
@@ -684,9 +693,10 @@ public class OpflowCommander implements AutoCloseable {
             if (reqExtractor == null) {
                 requestId = OpflowUtil.getLogID();
             } else {
-                requestId = reqExtractor.extractRequestId(args);
+                String _requestId = reqExtractor.extractRequestId(args);
+                requestId = (_requestId != null) ? _requestId : OpflowUtil.getLogID();
             }
-
+            
             // create the logTracer
             final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
 

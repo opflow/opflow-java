@@ -209,10 +209,8 @@
         <profile>
             <id>bdd</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
                 <property>
-                    <name>env</name>
-                    <value>bdd</value>
+                    <name>!profile.bdd.skip</name>
                 </property>
             </activation>
             <build>
@@ -350,6 +348,11 @@
         </profile>
         <profile>
             <id>git</id>
+            <activation>
+                <property>
+                    <name>!profile.git.skip</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
@@ -369,15 +372,18 @@
                             <dotGitDirectory>${dot.git.directory}</dotGitDirectory>
                             <prefix>git</prefix>
                             <verbose>false</verbose>
+                            <dateFormat>yyyy-MM-dd'T'HH:mm:ss.SSS'Z'</dateFormat>
                             <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                            <generateGitPropertiesFilename>${project.build.outputDirectory}/META-INF/resources/opflow-git-info.json</generateGitPropertiesFilename>
+                            <generateGitPropertiesFilename>${project.build.outputDirectory}/META-INF/scm/com.devebot.opflow/opflow-core/git-info.json</generateGitPropertiesFilename>
                             <includeOnlyProperties>
                                 <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
                                 <includeOnlyProperty>^git.commit.id$</includeOnlyProperty>
                                 <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
-                                <includeOnlyProperty>^git.remote.origin.url$</includeOnlyProperty>
-                                <includeOnlyProperty>^git.tags$</includeOnlyProperty>
                             </includeOnlyProperties>
+                            <excludeProperties>
+                                <excludeProperty>^git.remote.origin.url$</excludeProperty>
+                                <excludeProperty>^git.tags$</excludeProperty>
+                            </excludeProperties>
                             <format>json</format>
                             <gitDescribe>
                                 <skip>false</skip>

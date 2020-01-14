@@ -35,7 +35,13 @@ public class OpflowExecutor {
     
     public int countQueue(final String queueName) {
         try {
-            return declareQueue(queueName, true, false, false).getMessageCount();
+            return engine.acquireChannel(new OpflowEngine.Operator() {
+                @Override
+                public Integer handleEvent(Channel _channel) throws IOException {
+                    AMQP.Queue.DeclareOk ok = _channel.queueDeclarePassive(queueName);
+                    return ok.getMessageCount();
+                }
+            });
         } catch (IOException | TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
