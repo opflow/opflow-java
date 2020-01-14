@@ -56,7 +56,7 @@ public class OpflowReqExtractor {
             }
         }
         if (uuidIfNotFound) {
-            return OpflowUtil.getLogID();
+            return OpflowUUID.getLogID();
         }
         return null;
     }

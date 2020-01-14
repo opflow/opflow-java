@@ -278,7 +278,7 @@ public class OpflowUtil {
     }
     
     public static String getOptionField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
-        Object value = getOptionField(options, fieldName, uuidIfNotFound ? getLogID() : null);
+        Object value = getOptionField(options, fieldName, uuidIfNotFound ? OpflowUUID.getLogID() : null);
         return value != null ? value.toString() : null;
     }
     

@@ -441,7 +441,7 @@ public class OpflowEngine implements AutoCloseable {
             
             String requestId = OpflowUtil.getRequestId(headers, false);
             if (requestId == null) {
-                headers.put("requestId", requestId = OpflowUtil.getLogID());
+                headers.put("requestId", requestId = OpflowUUID.getLogID());
             }
             
             String requestTime = OpflowUtil.getRequestTime(headers);
@@ -955,7 +955,7 @@ public class OpflowEngine implements AutoCloseable {
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
             producingConnection = factory.newConnection();
-            producingConnection.setId(OpflowUtil.getLogID());
+            producingConnection.setId(OpflowUUID.getLogID());
             producingConnection.addShutdownListener(new ShutdownListener() {
                 private final OpflowLogTracer localLog = logTracer.copy();
                 @Override
@@ -1008,7 +1008,7 @@ public class OpflowEngine implements AutoCloseable {
         }
         if (consumingConnection == null || !consumingConnection.isOpen()) {
             consumingConnection = factory.newConnection();
-            consumingConnection.setId(OpflowUtil.getLogID());
+            consumingConnection.setId(OpflowUUID.getLogID());
             consumingConnection.addShutdownListener(new ShutdownListener() {
                 private final OpflowLogTracer localLog = logTracer.copy();
                 @Override

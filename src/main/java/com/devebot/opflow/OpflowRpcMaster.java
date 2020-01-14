@@ -90,7 +90,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         String responseQueueSuffix = null;
         if (responseQueuePattern != null && responseQueuePattern.length() > 0) {
             if (responseQueuePattern.equals("~")) {
-                responseQueueSuffix = OpflowUtil.getUUID();
+                responseQueueSuffix = OpflowUUID.getUUID();
             } else {
                 responseQueueSuffix = responseQueuePattern;
             }
@@ -170,7 +170,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private OpflowEngine.ConsumerInfo callbackConsumer;
 
     private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean forked) {
-        final String _consumerId = OpflowUtil.getLogID();
+        final String _consumerId = OpflowUUID.getLogID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
         if (logSession.ready(LOG, "info")) LOG.info(logSession
                 .put("forked", forked)
@@ -300,7 +300,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         Object requestIdVal = options.get("requestId");
         if (requestIdVal == null) {
-            options.put("requestId", requestIdVal = OpflowUtil.getLogID());
+            options.put("requestId", requestIdVal = OpflowUUID.getLogID());
         }
         final String requestId = requestIdVal.toString();
         
@@ -332,7 +332,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             consumerInfo = callbackConsumer;
         }
         
-        final String taskId = OpflowUtil.getLogID();
+        final String taskId = OpflowUUID.getLogID();
         OpflowRpcRequest task = new OpflowRpcRequest(options, new OpflowTimeout.Listener() {
             private OpflowLogTracer logTask = null;
             

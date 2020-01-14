@@ -143,7 +143,7 @@ public class OpflowServerlet implements AutoCloseable {
         
         try {
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-                String pubsubHandlerId = OpflowUtil.getLogID();
+                String pubsubHandlerId = OpflowUUID.getLogID();
                 configurerCfg.put("pubsubHandlerId", pubsubHandlerId);
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("pubsubHandlerId", pubsubHandlerId)
@@ -158,7 +158,7 @@ public class OpflowServerlet implements AutoCloseable {
             }
 
             if (OpflowUtil.isComponentEnabled(rpcWorkerCfg)) {
-                String rpcWorkerId = OpflowUtil.getLogID();
+                String rpcWorkerId = OpflowUUID.getLogID();
                 rpcWorkerCfg.put("rpcWorkerId", rpcWorkerId);
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("rpcWorkerId", rpcWorkerId)
@@ -173,7 +173,7 @@ public class OpflowServerlet implements AutoCloseable {
             }
 
             if (OpflowUtil.isComponentEnabled(subscriberCfg)) {
-                String pubsubHandlerId = OpflowUtil.getLogID();
+                String pubsubHandlerId = OpflowUUID.getLogID();
                 subscriberCfg.put("pubsubHandlerId", pubsubHandlerId);
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .put("pubsubHandlerId", pubsubHandlerId)
@@ -350,7 +350,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Both of RpcWorker and subscriber must not be null");
             }
             options = OpflowUtil.ensureNotNull(options);
-            final String instanceId = options.getOrDefault("instanceId", OpflowUtil.getLogID()).toString();
+            final String instanceId = options.getOrDefault("instanceId", OpflowUUID.getLogID()).toString();
             this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", instanceId);
             this.rpcWorker = worker;
             this.rpcListener = new OpflowRpcListener() {

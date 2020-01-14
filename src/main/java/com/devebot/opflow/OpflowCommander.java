@@ -290,7 +290,7 @@ public class OpflowCommander implements AutoCloseable {
         @Override
         public Pong send(Ping ping) throws Throwable {
             String body = OpflowJsonTool.toString(new Object[] { ping });
-            String requestId = OpflowUtil.getLogID();
+            String requestId = OpflowUUID.getLogID();
             Date startTime = new Date();
             OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, OpflowUtil.buildMap()
                     .put("requestId", requestId)
@@ -691,10 +691,10 @@ public class OpflowCommander implements AutoCloseable {
             // determine the requestId
             final String requestId;
             if (reqExtractor == null) {
-                requestId = OpflowUtil.getLogID();
+                requestId = OpflowUUID.getLogID();
             } else {
                 String _requestId = reqExtractor.extractRequestId(args);
-                requestId = (_requestId != null) ? _requestId : OpflowUtil.getLogID();
+                requestId = (_requestId != null) ? _requestId : OpflowUUID.getLogID();
             }
             
             // create the logTracer
