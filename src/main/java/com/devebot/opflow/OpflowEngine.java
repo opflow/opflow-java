@@ -26,6 +26,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowKeytool;
 import com.devebot.opflow.supports.OpflowSysInfo;
 
@@ -436,7 +437,7 @@ public class OpflowEngine implements AutoCloseable {
                 propBuilder.replyTo(override.get("replyTo").toString());
             }
             
-            headers.put("publishedTime", OpflowUtil.getCurrentTimeString());
+            headers.put("publishedTime", OpflowDateTime.getCurrentTimeString());
             
             String requestId = OpflowUtil.getRequestId(headers, false);
             if (requestId == null) {

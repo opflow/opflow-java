@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowDateTime;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -97,7 +98,7 @@ public class OpflowTimeout {
             @Override
             public void run() {
                 if (tasks == null || tasks.isEmpty()) return;
-                long current = OpflowUtil.getCurrentTime();
+                long current = OpflowDateTime.getCurrentTime();
                 OpflowLogTracer logTask = logTracer.branch("timestamp", current);
                 if (logTask.ready(LOG, "debug")) LOG.debug(logTask
                         .put("taskListSize", tasks.size())

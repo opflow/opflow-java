@@ -147,9 +147,14 @@ public class OpflowRpcResponse {
     }
 
     private AMQP.BasicProperties.Builder createProperties(AMQP.BasicProperties properties, Map<String, Object> headers) {
+        String expiration = properties.getExpiration();
+        if (expiration == null) {
+            expiration = "1000";
+        }
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()
-            .headers(headers)
-            .correlationId(properties.getCorrelationId());
+                .headers(headers)
+                .expiration(expiration)
+                .correlationId(properties.getCorrelationId());
         if (properties.getAppId() != null) {
             builder.appId(properties.getAppId());
         }

@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.supports.OpflowDateTime;
 import com.rabbitmq.client.ConnectionFactory;
 import java.util.Date;
 import java.util.Map;
@@ -82,7 +83,7 @@ public abstract class OpflowPromMeasurer {
                     .put("rpcInvocationTotal", this.total)
                     .put("rpcOverDirectWorkerTotal", this.direct)
                     .put("rpcOverRemoteWorkerTotal", this.remote)
-                    .put("startTime", OpflowUtil.toISO8601UTC(this.startTime))
+                    .put("startTime", OpflowDateTime.toISO8601UTC(this.startTime))
                     .toMap();
         }
     }

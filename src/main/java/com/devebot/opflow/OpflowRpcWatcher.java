@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowConverter;
+import com.devebot.opflow.supports.OpflowDateTime;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -52,7 +53,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
         public void run() {
             if (active) {
                 count++;
-                long current = OpflowUtil.getCurrentTime();
+                long current = OpflowDateTime.getCurrentTime();
                 OpflowLogTracer logTask = logTracer.branch("timestamp", current);
                 if (logTask.ready(LOG, "debug")) LOG.debug(logTask
                         .put("threadCount", Thread.activeCount())

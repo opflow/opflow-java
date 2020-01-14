@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
+import com.devebot.opflow.supports.OpflowDateTime;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -218,7 +219,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     }
     
     private void checkTimestamp() {
-        timestamp = OpflowUtil.getCurrentTime();
+        timestamp = OpflowDateTime.getCurrentTime();
     }
     
     public static String getStatus(OpflowMessage message) {

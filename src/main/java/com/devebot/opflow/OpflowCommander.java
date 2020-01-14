@@ -312,8 +312,8 @@ public class OpflowCommander implements AutoCloseable {
 
             Pong pong = OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
             pong.getParameters().put("requestId", requestId);
-            pong.getParameters().put("startTime", OpflowUtil.toISO8601UTC(startTime));
-            pong.getParameters().put("endTime", OpflowUtil.toISO8601UTC(endTime));
+            pong.getParameters().put("startTime", OpflowDateTime.toISO8601UTC(startTime));
+            pong.getParameters().put("endTime", OpflowDateTime.toISO8601UTC(endTime));
             pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
             return pong;
         }
@@ -564,8 +564,8 @@ public class OpflowCommander implements AutoCloseable {
                 Date currentTime = new Date();
                 root.put("miscellaneous", OpflowUtil.buildOrderedMap()
                         .put("threadCount", Thread.activeCount())
-                        .put("startTime", OpflowUtil.toISO8601UTC(startTime))
-                        .put("currentTime", OpflowUtil.toISO8601UTC(currentTime))
+                        .put("startTime", OpflowDateTime.toISO8601UTC(startTime))
+                        .put("currentTime", OpflowDateTime.toISO8601UTC(currentTime))
                         .put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime))
                         .toMap());
             }
@@ -701,7 +701,7 @@ public class OpflowCommander implements AutoCloseable {
             final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
 
             // determine the requestTime
-            final String requestTime = OpflowUtil.getCurrentTimeString();
+            final String requestTime = OpflowDateTime.getCurrentTimeString();
 
             // get the method signature
             String methodId = OpflowUtil.getMethodSignature(method);

@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowConverter;
+import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowEnvtool;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -83,25 +84,26 @@ public class OpflowUtil {
         return OpflowJsonTool.extractFieldAsInt(json, fieldName);
     }
     
+    @Deprecated
     public static String toISO8601UTC(Date date) {
-        return DATE_FORMAT.format(date);
+        return OpflowDateTime.toISO8601UTC(date);
     }
     
+    @Deprecated
     public static Date fromISO8601UTC(String dateStr) {
-        try {
-            return DATE_FORMAT.parse(dateStr);
-        } catch (ParseException e) {}
-        return null;
+        return OpflowDateTime.fromISO8601UTC(dateStr);
     }
     
+    @Deprecated
     public static String getCurrentTimeString() {
-        return toISO8601UTC(new Date());
+        return OpflowDateTime.getCurrentTimeString();
     }
     
+    @Deprecated
     public static long getCurrentTime() {
-        return (new Date()).getTime();
+        return OpflowDateTime.getCurrentTime();
     }
-    
+   
     public static String getUUID() {
         return UUID.randomUUID().toString();
     }
@@ -282,14 +284,14 @@ public class OpflowUtil {
             return (String) date;
         }
         if (date instanceof Date) {
-            String requestTime = toISO8601UTC((Date) date);
+            String requestTime = OpflowDateTime.toISO8601UTC((Date) date);
             headers.put("requestTime", requestTime);
             return requestTime;
         }
         if (date == null && !currentIfNotFound) {
             return null;
         } else {
-            String requestTime = getCurrentTimeString();
+            String requestTime = OpflowDateTime.getCurrentTimeString();
             headers.put("requestTime", requestTime);
             return requestTime;
         }
