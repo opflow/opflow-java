@@ -5,24 +5,19 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.regex.Pattern;
-import javax.xml.bind.DatatypeConverter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowDateTime;
-import com.devebot.opflow.supports.OpflowEnvtool;
+import com.devebot.opflow.supports.OpflowEnvTool;
 import java.util.LinkedHashMap;
 
 /**
@@ -30,13 +25,7 @@ import java.util.LinkedHashMap;
  * @author drupalex
  */
 public class OpflowUtil {
-    private static final Logger LOG = LoggerFactory.getLogger(OpflowUtil.class);
-    private static final boolean OPFLOW_BASE64UUID;
-    static {
-        OPFLOW_BASE64UUID = !"false".equals(OpflowUtil.getSystemProperty("OPFLOW_BASE64UUID", null)) &&
-                !"false".equals(OpflowUtil.getEnvironVariable("OPFLOW_BASE64UUID", null));
-    }
-    
+
     @Deprecated
     public static String jsonObjectToString(Object jsonObj) {
         return OpflowJsonTool.toString(jsonObj);
@@ -96,30 +85,20 @@ public class OpflowUtil {
     public static long getCurrentTime() {
         return OpflowDateTime.getCurrentTime();
     }
-   
+
+    @Deprecated
     public static String getUUID() {
-        return UUID.randomUUID().toString();
+        return OpflowUUID.getUUID();
     }
     
+    @Deprecated
     public static String getLogID() {
-        if (!OPFLOW_BASE64UUID) getUUID();
-        return convertUUIDToBase64(UUID.randomUUID());
+        return OpflowUUID.getLogID();
     }
     
+    @Deprecated
     public static String getLogID(String uuid) {
-        if (!OPFLOW_BASE64UUID) return uuid;
-        if (uuid == null) return getLogID();
-        return convertUUIDToBase64(UUID.fromString(uuid));
-    }
-    
-    private static String convertUUIDToBase64(UUID uuid) {
-        // Create byte[] for base64 from uuid
-        byte[] src = ByteBuffer.wrap(new byte[16])
-                .putLong(uuid.getMostSignificantBits())
-                .putLong(uuid.getLeastSignificantBits())
-                .array();
-        // Encode to Base64 and remove trailing ==
-        return DatatypeConverter.printBase64Binary(src).substring(0, 22);
+        return OpflowUUID.getLogID(uuid);
     }
     
     public static byte[] getBytes(String data) {
@@ -349,14 +328,7 @@ public class OpflowUtil {
     }
 
     public static String[] splitByComma(String source) {
-        if (source == null) return null;
-        String[] arr = source.split(",");
-        ArrayList<String> list = new ArrayList<>(arr.length);
-        for(String item: arr) {
-            String str = item.trim();
-            if (str.length() > 0) list.add(str);
-        }
-        return list.toArray(new String[0]);
+        return splitByComma(source, String.class);
     }
     
     public static <T> T[] splitByComma(String source, Class<T> type) {
@@ -379,12 +351,14 @@ public class OpflowUtil {
         return null;
     }
     
+    @Deprecated
     public static String getSystemProperty(String key, String def) {
-        return OpflowEnvtool.instance.getSystemProperty(key, def);
+        return OpflowEnvTool.instance.getSystemProperty(key, def);
     }
     
+    @Deprecated
     public static String getEnvironVariable(String key, String def) {
-        return OpflowEnvtool.instance.getEnvironVariable(key, def);
+        return OpflowEnvTool.instance.getEnvironVariable(key, def);
     }
     
     public static URL getResource(String location) {

@@ -9,13 +9,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowEnvtool {
-    private static final Logger LOG = LoggerFactory.getLogger(OpflowEnvtool.class);
+public class OpflowEnvTool {
+    private static final Logger LOG = LoggerFactory.getLogger(OpflowEnvTool.class);
     
     private final Map<String, String> _properties = new HashMap<>();
     private final Map<String, String> _variables = new HashMap<>();
     
-    public OpflowEnvtool setSystemProperty(String key, String value) {
+    public OpflowEnvTool setSystemProperty(String key, String value) {
         _properties.put(key, value);
         return this;
     }
@@ -31,7 +31,7 @@ public class OpflowEnvtool {
         }
     }
     
-    public OpflowEnvtool setEnvironVariable(String key, String value) {
+    public OpflowEnvTool setEnvironVariable(String key, String value) {
         _variables.put(key, value);
         return this;
     }
@@ -49,11 +49,11 @@ public class OpflowEnvtool {
         }
     }
     
-    public OpflowEnvtool reset() {
+    public OpflowEnvTool reset() {
         _properties.clear();
         _variables.clear();
         return this;
     }
     
-    public static final OpflowEnvtool instance = new OpflowEnvtool();
+    public static final OpflowEnvTool instance = new OpflowEnvTool();
 }

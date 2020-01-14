@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.supports.OpflowEnvTool;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -434,12 +435,12 @@ public class OpflowConfig {
     
     private static URL getConfigurationUrl(String configFile) {
         URL url;
-        String cfgFromSystem = OpflowUtil.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+        String cfgFromSystem = OpflowEnvTool.instance.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
         if (cfgFromSystem == null) {
             cfgFromSystem = configFile;
         }
         if (cfgFromSystem == null) {
-            cfgFromSystem = OpflowUtil.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
+            cfgFromSystem = OpflowEnvTool.instance.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
         }
         if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
                 .put("configFile", cfgFromSystem)
