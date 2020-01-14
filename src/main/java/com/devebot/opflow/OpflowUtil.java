@@ -23,11 +23,7 @@ import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowEnvtool;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.LinkedHashMap;
-import java.util.TimeZone;
 
 /**
  *
@@ -35,11 +31,8 @@ import java.util.TimeZone;
  */
 public class OpflowUtil {
     private static final Logger LOG = LoggerFactory.getLogger(OpflowUtil.class);
-    private static final String ISO8601_TEMPLATE = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    private static final DateFormat DATE_FORMAT = new SimpleDateFormat(ISO8601_TEMPLATE);
     private static final boolean OPFLOW_BASE64UUID;
     static {
-        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
         OPFLOW_BASE64UUID = !"false".equals(OpflowUtil.getSystemProperty("OPFLOW_BASE64UUID", null)) &&
                 !"false".equals(OpflowUtil.getEnvironVariable("OPFLOW_BASE64UUID", null));
     }

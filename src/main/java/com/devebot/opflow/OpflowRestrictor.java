@@ -83,7 +83,7 @@ public class OpflowRestrictor implements AutoCloseable {
         } else if (options.get("pauseTimeout") instanceof Integer) {
             pauseTimeout = (Integer) options.get("pauseTimeout");
         } else {
-            pauseTimeout = 30000;
+            pauseTimeout = 0;
         }
         
         if (options.get("semaphoreLimit") instanceof Integer) {
@@ -169,13 +169,13 @@ public class OpflowRestrictor implements AutoCloseable {
             return action.process();
         }
         Lock rl = pauseLock.readLock();
-        if (pauseTimeout > 0) {
+        if (pauseTimeout >= 0) {
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                     .put("pauseTimeout", pauseTimeout)
                     .text("Restrictor[${restrictorId}].filter() pauseTimeout: ${pauseTimeout} ms")
                     .stringify());
             try {
-                if (rl.tryLock(pauseTimeout, TimeUnit.MILLISECONDS)) {
+                if (rl.tryLock() || (pauseTimeout > 0 && rl.tryLock(pauseTimeout, TimeUnit.MILLISECONDS))) {
                     try {
                         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                                 .text("Restrictor[${restrictorId}].filter() try")
