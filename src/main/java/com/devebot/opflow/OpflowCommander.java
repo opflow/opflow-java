@@ -45,7 +45,7 @@ public class OpflowCommander implements AutoCloseable {
 
     public static enum RestrictionScope { ALL, RPC }
     
-    public final static String PARAM_RESERVE_WORKER_ENABLED = "reserveWorkerEnabled";
+    public final static String PARAM_RESERVED_WORKER_ENABLED = "reservedWorkerEnabled";
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
 
@@ -58,7 +58,7 @@ public class OpflowCommander implements AutoCloseable {
     private RestrictionScope restrictorScope = RestrictionScope.ALL;
     private OpflowRestrictor restrictor;
     
-    private boolean reserveWorkerEnabled;
+    private boolean reservedWorkerEnabled;
     private OpflowPubsubHandler configurer;
     private OpflowRpcMaster rpcMaster;
     private OpflowPubsubHandler publisher;
@@ -109,10 +109,10 @@ public class OpflowCommander implements AutoCloseable {
     }
     
     private void init(Map<String, Object> kwargs) throws OpflowBootstrapException {
-        if (kwargs.get(PARAM_RESERVE_WORKER_ENABLED) != null && kwargs.get(PARAM_RESERVE_WORKER_ENABLED) instanceof Boolean) {
-            reserveWorkerEnabled = (Boolean) kwargs.get(PARAM_RESERVE_WORKER_ENABLED);
+        if (kwargs.get(PARAM_RESERVED_WORKER_ENABLED) != null && kwargs.get(PARAM_RESERVED_WORKER_ENABLED) instanceof Boolean) {
+            reservedWorkerEnabled = (Boolean) kwargs.get(PARAM_RESERVED_WORKER_ENABLED);
         } else {
-            reserveWorkerEnabled = true;
+            reservedWorkerEnabled = true;
         }
 
         Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get("restrictor");
@@ -217,11 +217,11 @@ public class OpflowCommander implements AutoCloseable {
     }
     
     public boolean isReserveWorkerEnabled() {
-        return this.reserveWorkerEnabled;
+        return this.reservedWorkerEnabled;
     }
     
     public void setReserveWorkerEnabled(boolean enabled) {
-        this.reserveWorkerEnabled = enabled;
+        this.reservedWorkerEnabled = enabled;
     }
 
     public RoutingHandler getDefaultHandlers() {
@@ -827,7 +827,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
-            handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, publisher, clazz, bean, reserveWorkerEnabled));
+            handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, publisher, clazz, bean, reservedWorkerEnabled));
         } else {
             if (strictMode) {
                 throw new OpflowRpcRegistrationException("Class [" + clazzName + "] has already registered");
