@@ -48,7 +48,9 @@ public class OpflowUUID {
                 .putLong(uuid.getLeastSignificantBits())
                 .array();
         // Encode to Base64 and remove trailing ==
-        return DatatypeConverter.printBase64Binary(src).substring(0, 22);
+        return DatatypeConverter.printBase64Binary(src)
+                .replace('/', '-')
+                .substring(0, 22);
     }
     
     private static class Generator implements AutoCloseable {
