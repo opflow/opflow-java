@@ -175,41 +175,50 @@ public class OpflowConfig {
                 }
                 componentCfg.put("enabled", componentNode.get("enabled"));
                 if ("reqExtractor".equals(componentName)) {
-                    for(String key : new String[] {"getRequestIdClassName", "getRequestIdMethodName"}) {
-                        if (componentNode.containsKey(key)) {
-                            componentCfg.put(key, componentNode.get(key));
-                        }
-                    }
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "getRequestIdClassName",
+                        "getRequestIdMethodName"
+                    });
                 }
                 if ("restrictor".equals(componentName)) {
-                    componentCfg.put("pauseEnabled", componentNode.get("pauseEnabled"));
-                    componentCfg.put("pauseTimeout", componentNode.get("pauseTimeout"));
-                    componentCfg.put("semaphoreEnabled", componentNode.get("semaphoreEnabled"));
-                    componentCfg.put("semaphoreLimit", componentNode.get("semaphoreLimit"));
-                    componentCfg.put("semaphoreTimeout", componentNode.get("semaphoreTimeout"));
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "pauseEnabled",
+                        "pauseTimeout",
+                        "semaphoreEnabled",
+                        "semaphoreLimit",
+                        "semaphoreTimeout"
+                    });
                 }
                 if ("rpcMaster".equals(componentName)) {
-                    componentCfg.put("expiration", componentNode.get("expiration"));
-                    componentCfg.put("responseName", componentNode.get("responseName"));
-                    componentCfg.put("responseDurable", componentNode.get("responseDurable"));
-                    componentCfg.put("responseExclusive", componentNode.get("responseExclusive"));
-                    componentCfg.put("responseAutoDelete", componentNode.get("responseAutoDelete"));
-                    componentCfg.put("responseQueueSuffix", componentNode.get("responseQueueSuffix"));
-                    componentCfg.put("monitorId", componentNode.get("monitorId"));
-                    componentCfg.put("monitorEnabled", componentNode.get("monitorEnabled"));
-                    componentCfg.put("monitorInterval", componentNode.get("monitorInterval"));
-                    componentCfg.put("monitorTimeout", componentNode.get("monitorTimeout"));
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "expiration",
+                        "responseName",
+                        "responseDurable",
+                        "responseExclusive",
+                        "responseAutoDelete",
+                        "responseQueueSuffix",
+                        "monitorId",
+                        "monitorEnabled",
+                        "monitorInterval",
+                        "monitorTimeout"
+                    });
                 }
                 if ("rpcWatcher".equals(componentName)) {
-                    componentCfg.put("interval", componentNode.get("interval"));
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "interval"
+                    });
                 }
                 if ("promExporter".equals(componentName)) {
-                    componentCfg.put("host", componentNode.get("host"));
-                    componentCfg.put("ports", componentNode.get("ports"));
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "host",
+                        "ports"
+                    });
                 }
                 if ("restServer".equals(componentName)) {
-                    componentCfg.put("host", componentNode.get("host"));
-                    componentCfg.put("ports", componentNode.get("ports"));
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "host",
+                        "ports"
+                    });
                 }
                 transformParameters(componentCfg);
                 params.put(componentName, componentCfg);
@@ -243,16 +252,22 @@ public class OpflowConfig {
                 Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
                 componentCfg.put("enabled", componentNode.get("enabled"));
                 if ("rpcWorker".equals(componentName)) {
-                    componentCfg.put("operatorName", componentNode.get("operatorName"));
-                    componentCfg.put("responseName", componentNode.get("responseName"));
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "operatorName",
+                        "responseName"
+                    });
                 }
                 if ("subscriber".equals(componentName)) {
-                    componentCfg.put("subscriberName", componentNode.get("subscriberName"));
-                    componentCfg.put("recyclebinName", componentNode.get("recyclebinName"));
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "subscriberName",
+                        "recyclebinName"
+                    });
                 }
                 if ("promExporter".equals(componentName)) {
-                    componentCfg.put("host", componentNode.get("host"));
-                    componentCfg.put("ports", componentNode.get("ports"));
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "host",
+                        "ports"
+                    });
                 }
                 transformParameters(componentCfg);
                 params.put(componentName, componentCfg);
