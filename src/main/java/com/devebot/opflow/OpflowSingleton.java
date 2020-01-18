@@ -57,7 +57,7 @@ public class OpflowSingleton {
             synchronized(map) {
                 if (!map.containsKey(uniqCode)) {
                     if (LOG_TRACER.ready(LOG, "debug")) LOG.debug(LOG_TRACER
-                            .tags(clazz.getCanonicalName())
+                            .tags(new String[] { clazz.getCanonicalName(), "OpflowSingleton.assertHandler" })
                             .put("handlerName", clazz.getCanonicalName())
                             .text("A handler[${handlerName}] is created")
                             .stringify());
