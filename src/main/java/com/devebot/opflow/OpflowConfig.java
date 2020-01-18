@@ -60,11 +60,13 @@ public class OpflowConfig {
             extractEngineParameters(params, config, handlerPath);
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
 
-            params.put("responseName", handlerNode.get("responseName"));
-            params.put("responseQueueSuffix", handlerNode.get("responseQueueSuffix"));
-            params.put("responseDurable", handlerNode.get("responseDurable"));
-            params.put("responseExclusive", handlerNode.get("responseExclusive"));
-            params.put("responseAutoDelete", handlerNode.get("responseAutoDelete"));
+            OpflowUtil.copyParameters(params, handlerNode, new String[] {
+                "responseName",
+                "responseQueueSuffix",
+                "responseDurable",
+                "responseExclusive",
+                "responseAutoDelete",
+            });
 
             transformParameters(params);
             return params;
@@ -93,14 +95,15 @@ public class OpflowConfig {
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
             Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {"opflow"});
 
-            if (handlerNode.get("operatorName") != null) {
-                params.put("operatorName", handlerNode.get("operatorName"));
-            } else {
+            OpflowUtil.copyParameters(params, handlerNode, new String[] {
+                "operatorName",
+                "responseName",
+                "prefetch",
+            });
+
+            if (handlerNode.get("operatorName") == null) {
                 params.put("operatorName", opflowNode.get("queueName"));
             }
-
-            params.put("responseName", handlerNode.get("responseName"));
-            params.put("prefetch", handlerNode.get("prefetch"));
 
             transformParameters(params);
             return params;
@@ -129,16 +132,17 @@ public class OpflowConfig {
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
             Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {"opflow"});
 
-            if (handlerNode.get("subscriberName") != null) {
-                params.put("subscriberName", handlerNode.get("subscriberName"));
-            } else {
+            OpflowUtil.copyParameters(params, handlerNode, new String[] {
+                "subscriberName",
+                "recyclebinName",
+                "prefetch",
+                "subscriberLimit",
+                "redeliveredLimit",
+            });
+
+            if (handlerNode.get("subscriberName") == null) {
                 params.put("subscriberName", opflowNode.get("queueName"));
             }
-
-            params.put("recyclebinName", handlerNode.get("recyclebinName"));
-            params.put("prefetch", handlerNode.get("prefetch"));
-            params.put("subscriberLimit", handlerNode.get("subscriberLimit"));
-            params.put("redeliveredLimit", handlerNode.get("redeliveredLimit"));
 
             transformParameters(params);
             return params;
