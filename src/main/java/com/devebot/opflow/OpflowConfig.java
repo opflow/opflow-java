@@ -425,14 +425,28 @@ public class OpflowConfig {
                             .put("extension", ext)
                             .text("load configuration file")
                             .stringify());
-                    if ("yml".equals(ext) || "yaml".equals(ext)) {
-                        Map<String,Object> yamlConfig = (Map<String,Object>)yaml.load(url.openStream());
-                        mergeConfiguration(config, yamlConfig);
-                    } else if ("properties".equals(ext)) {
-                        Properties props = new Properties();
-                        props.load(url.openStream());
-                        mergeConfiguration(config, props);
+                    // load the configuration from YAML/Properties files
+                    switch(ext) {
+                        case "yaml":
+                        case "yml":
+                            Map<String,Object> yamlConfig = (Map<String,Object>)yaml.load(url.openStream());
+                            mergeConfiguration(config, yamlConfig);
+                            break;
+                        case "properties":
+                            Properties props = new Properties();
+                            props.load(url.openStream());
+                            mergeConfiguration(config, props);
+                            break;
                     }
+                    // merge the system properties to the configuration
+                    mergeConfiguration(config, filterProperties(System.getProperties(), new String[] {
+                        "opflow.commander",
+                        "opflow.serverlet",
+                        "opflow.publisher",
+                        "opflow.subscriber",
+                        "opflow.rpcMaster",
+                        "opflow.rpcWorker",
+                    }));
                 } else {
                     configFile = (configFile != null) ? configFile : DEFAULT_CONFIGURATION_FILE;
                     throw new FileNotFoundException("configuration file '" + configFile + "' not found");
@@ -505,6 +519,30 @@ public class OpflowConfig {
             }
         }
         return target;
+    }
+    
+    public static Properties filterProperties(Properties source, String filter) {
+        return filterProperties(source, new String[] { filter });
+    }
+    
+    public static Properties filterProperties(Properties source, String[] filters) {
+        Properties result = new Properties();
+        if (source == null) {
+            return null;
+        }
+        if (filters == null || filters.length == 0) {
+            return new Properties(source);
+        }
+        for(Map.Entry<Object, Object> entry: source.entrySet()) {
+            String key = entry.getKey().toString();
+            for (String filter : filters) {
+                if (key.startsWith(filter)) {
+                    result.put(key, source.get(key));
+                    break;
+                }
+            }
+        }
+        return result;
     }
     
     public static Map<String, Object> mergeConfiguration(Map<String, Object> target, Properties props) {

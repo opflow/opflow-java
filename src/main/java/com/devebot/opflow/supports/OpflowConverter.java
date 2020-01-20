@@ -68,6 +68,22 @@ public final class OpflowConverter {
         return value.toString();
     }
 
+    private static Float stringToFloat(String value) {
+        return Float.valueOf(value);
+    }
+    
+    private static String floatToString(Float value) {
+        return value.toString();
+    }
+    
+    private static Double stringToDouble(String value) {
+        return Double.valueOf(value);
+    }
+    
+    private static String doubleToString(Double value) {
+        return value.toString();
+    }
+    
     private static Boolean stringToBoolean(String value) {
         return Boolean.valueOf(value);
     }
