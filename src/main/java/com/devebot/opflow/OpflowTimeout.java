@@ -86,7 +86,7 @@ public class OpflowTimeout {
         void raiseTimeout();
     }
     
-    public static class Monitor {
+    public static class Monitor implements AutoCloseable {
         private final static Logger LOG = LoggerFactory.getLogger(Monitor.class);
         private final OpflowLogTracer logTracer;
         private long timeout;
@@ -186,9 +186,10 @@ public class OpflowTimeout {
             }
         }
         
-        public void stop() {
+        @Override
+        public void close() {
             if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
-                    .text("Monitor[${monitorId}].stop()")
+                    .text("Monitor[${monitorId}].close()")
                     .stringify());
             timer.cancel();
             timer.purge();

@@ -484,7 +484,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].close() - stop timeoutMonitor")
                 .stringify());
             if (timeoutMonitor != null) {
-                timeoutMonitor.stop();
+                timeoutMonitor.close();
                 timeoutMonitor = null;
             }
             
