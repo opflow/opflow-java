@@ -23,7 +23,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
     private final OpflowRpcChecker rpcChecker;
     private final boolean enabled;
     private final long interval;
-    private final Timer timer = new Timer(true);
+    private final Timer timer = new Timer("Timer-OpflowRpcWatcher", true);
     private final MyTimerTask timerTask;
     
     private boolean congested = false;

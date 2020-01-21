@@ -29,6 +29,7 @@ import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowKeytool;
 import com.devebot.opflow.supports.OpflowSysInfo;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -56,6 +57,7 @@ public class OpflowEngine implements AutoCloseable {
     private Connection consumingConnection;
     private Channel consumingChannel;
     private List<ConsumerInfo> consumerInfos = new LinkedList<>();
+    private ExecutorService threadExecutor;
     
     private String exchangeName;
     private String exchangeType;
@@ -96,7 +98,7 @@ public class OpflowEngine implements AutoCloseable {
                 threadPoolSize = 2;
             }
             
-            ExecutorService threadExecutor = null;
+            threadExecutor = null;
             if (null != threadPoolType) switch (threadPoolType) {
                 case "cached":
                     threadExecutor = Executors.newCachedThreadPool();
@@ -878,6 +880,18 @@ public class OpflowEngine implements AutoCloseable {
      */
     @Override
     public void close() {
+        if (threadExecutor != null) {
+            threadExecutor.shutdown();
+            try {
+                if (!threadExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    threadExecutor.shutdownNow();
+                    threadExecutor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            } catch (InterruptedException ie) {
+                threadExecutor.shutdownNow();
+            }
+            threadExecutor = null;
+        }
         try {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Engine[${engineId}].close() - close producingChannel, producingConnection")
