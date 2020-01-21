@@ -40,6 +40,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final String host;
     private final Integer port;
     private final Boolean enabled;
+    private final long shutdownTimeout = 1000;
     private Undertow server;
     private GracefulShutdownHandler shutdownHander;
     
@@ -157,7 +158,9 @@ public class OpflowRestServer implements AutoCloseable {
                     if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                             .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() starting")
                             .stringify());
-                    shutdownHander.awaitShutdown(30000);
+                    if (!shutdownHander.awaitShutdown(shutdownTimeout)) {
+                        shutdownHander.shutdown();
+                    }
                 }
                 catch (InterruptedException ex) {
                     if (logTracer.ready(LOG, "error")) LOG.error(logTracer

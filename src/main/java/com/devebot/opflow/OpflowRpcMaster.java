@@ -167,7 +167,7 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();
     
-    private OpflowEngine.ConsumerInfo callbackConsumer;
+    private volatile OpflowEngine.ConsumerInfo callbackConsumer;
 
     private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean forked) {
         final String _consumerId = OpflowUUID.getLogID();
@@ -327,7 +327,11 @@ public class OpflowRpcMaster implements AutoCloseable {
             consumerInfo = initCallbackConsumer(true);
         } else {
             if (callbackConsumer == null) {
-                callbackConsumer = initCallbackConsumer(false);
+                synchronized(this) {
+                    if (callbackConsumer == null) {
+                        callbackConsumer = initCallbackConsumer(false);
+                    }
+                }
             }
             consumerInfo = callbackConsumer;
         }

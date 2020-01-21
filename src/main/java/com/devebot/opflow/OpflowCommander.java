@@ -153,13 +153,13 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         try {
-            if (OpflowUtil.isComponentEnabled(restrictorCfg)) {
+            if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
                 restrictor = new OpflowRestrictor(OpflowUtil.buildMap(restrictorCfg)
                         .put("instanceId", commanderId)
                         .toMap());
             }
 
-            if (OpflowUtil.isComponentEnabled(reqExtractorCfg)) {
+            if (reqExtractorCfg == null || OpflowUtil.isComponentEnabled(reqExtractorCfg)) {
                 reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
             }
 
