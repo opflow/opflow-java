@@ -446,7 +446,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                         closeLock.unlock();
                     }
                 }
-            }, (expiration + DELAY_TIMEOUT) * tasks.size());
+            }, (expiration + DELAY_TIMEOUT));
         }
     }
     
