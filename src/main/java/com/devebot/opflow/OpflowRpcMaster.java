@@ -466,6 +466,12 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .stringify());
         try {
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                .text("RpcMaster[${rpcMasterId}].close() - cancelCallbackConsumer")
+                .stringify());
+
+            cancelCallbackConsumer();
+            
+            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - check tasks.isEmpty()? and await...")
                 .stringify());
             
@@ -476,13 +482,9 @@ public class OpflowRpcMaster implements AutoCloseable {
             completeClearTasks();
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - cancelCallbackConsumer")
-                .stringify());
-            cancelCallbackConsumer();
-            
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - stop timeoutMonitor")
                 .stringify());
+
             if (timeoutMonitor != null) {
                 timeoutMonitor.close();
                 timeoutMonitor = null;
