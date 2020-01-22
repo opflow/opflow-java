@@ -318,7 +318,11 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         if (timeoutMonitor == null) {
-            timeoutMonitor = initTimeoutMonitor();
+            synchronized(this) {
+                if (timeoutMonitor == null) {
+                    timeoutMonitor = initTimeoutMonitor();
+                }
+            }
         }
         
         final boolean forked = "forked".equals((String)options.get("mode"));
