@@ -468,7 +468,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - cancelCallbackConsumer")
                 .stringify());
-
+            
             cancelCallbackConsumer();
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
