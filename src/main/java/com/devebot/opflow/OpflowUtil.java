@@ -241,11 +241,11 @@ public class OpflowUtil {
     }
     
     public static String getRequestId(Map<String, Object> headers) {
-        return getRequestId(headers, true);
+        return getStringField(headers, "requestId", true, true);
     }
     
     public static String getRequestId(Map<String, Object> headers, boolean uuidIfNotFound) {
-        return getOptionField(headers, "requestId", uuidIfNotFound);
+        return getStringField(headers, "requestId", uuidIfNotFound, true);
     }
     
     public static String getRequestTime(Map<String, Object> headers) {
@@ -272,11 +272,24 @@ public class OpflowUtil {
     }
     
     public static String getRoutineId(Map<String, Object> headers) {
-        return getRoutineId(headers, true);
+        return getStringField(headers, "routineId", true, true);
     }
     
     public static String getRoutineId(Map<String, Object> headers, boolean uuidIfNotFound) {
-        return getOptionField(headers, "routineId", uuidIfNotFound);
+        return getStringField(headers, "routineId", uuidIfNotFound, true);
+    }
+    
+    public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound, boolean assigned) {
+        if (options == null) return null;
+        Object value = options.get(fieldName);
+        if (value != null) {
+            return value.toString();
+        }
+        value = uuidIfNotFound ? OpflowUUID.getLogID() : null;
+        if (assigned) {
+            options.put(fieldName, value);
+        }
+        return value.toString();
     }
     
     public static String getOptionField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
@@ -316,11 +329,11 @@ public class OpflowUtil {
         return getOptionValue(options, fieldName, type, defval, true);
     }
 
-    public static <T> T getOptionValue(Map<String, Object> options, String fieldName, Class<T> type, T defval, boolean asserted) {
+    public static <T> T getOptionValue(Map<String, Object> options, String fieldName, Class<T> type, T defval, boolean assigned) {
         Object value = null;
         if (options != null) value = options.get(fieldName);
         if (value == null) {
-            if (asserted) {
+            if (assigned) {
                 options.put(fieldName, defval);
             }
             return defval;

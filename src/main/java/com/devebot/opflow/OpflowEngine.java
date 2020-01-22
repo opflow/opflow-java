@@ -441,11 +441,7 @@ public class OpflowEngine implements AutoCloseable {
             
             headers.put("publishedTime", OpflowDateTime.getCurrentTimeString());
             
-            String requestId = OpflowUtil.getRequestId(headers, false);
-            if (requestId == null) {
-                headers.put("requestId", requestId = OpflowUUID.getLogID());
-            }
-            
+            String requestId = OpflowUtil.getRequestId(headers);
             String requestTime = OpflowUtil.getRequestTime(headers);
             
             propBuilder.headers(headers);
