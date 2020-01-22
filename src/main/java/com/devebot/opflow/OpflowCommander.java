@@ -6,6 +6,7 @@ import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
+import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,13 +104,13 @@ public class OpflowCommander implements AutoCloseable {
 
         measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get("promExporter"));
         
-        this.init(kwargs);
-
-        measurer.updateComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.INC);
-
         valveLock = new ReentrantReadWriteLock();
-
-        valveLock.writeLock().lock();
+        
+        lockValve();
+        
+        this.init(kwargs);
+        
+        measurer.updateComponentInstance("commander", commanderId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].new() end!")
@@ -219,6 +221,18 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
     
+    private void lockValve() {
+        if(!valveLock.isWriteLockedByCurrentThread()) {
+            valveLock.writeLock().lock();
+        }
+    }
+    
+    private void unlockValve() {
+        if(valveLock.isWriteLockedByCurrentThread()) {
+            valveLock.writeLock().unlock();
+        }
+    }
+    
     public boolean isRestrictorAvailable() {
         return restrictor != null && restrictorScope == RestrictionScope.ALL;
     }
@@ -254,20 +268,17 @@ public class OpflowCommander implements AutoCloseable {
                 restServer.serve(httpHandlers);
             }
         }
-        if(valveLock.isWriteLockedByCurrentThread()) {
-            valveLock.writeLock().unlock();
-        }
+        unlockValve();
     }
 
     @Override
     public final void close() {
-        if(!valveLock.isWriteLockedByCurrentThread()) {
-            valveLock.writeLock().lock();
-        }
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close()")
                 .stringify());
-
+        
+        lockValve();
+        
         if (restServer != null) restServer.close();
         if (rpcWatcher != null) rpcWatcher.close();
         
@@ -626,11 +637,12 @@ public class OpflowCommander implements AutoCloseable {
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
         private final OpflowRpcMaster rpcMaster;
         private final OpflowPubsubHandler publisher;
+        private final ReadWriteLock valveLock;
 
         private boolean detachedWorkerActive = true;
         private boolean reservedWorkerActive = true;
 
-        public RpcInvocationHandler(OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher, Class clazz, Object reservedWorker, boolean reservedWorkerEnabled) {
+        public RpcInvocationHandler(ReadWriteLock valveLock, OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher, Class clazz, Object reservedWorker, boolean reservedWorkerEnabled) {
             this.clazz = clazz;
             this.reservedWorker = reservedWorker;
             this.reservedWorkerEnabled = reservedWorkerEnabled;
@@ -653,6 +665,7 @@ public class OpflowCommander implements AutoCloseable {
             }
             this.rpcMaster = rpcMaster;
             this.publisher = publisher;
+            this.valveLock = valveLock;
         }
 
         public Set<String> getMethodNames() {
@@ -691,7 +704,7 @@ public class OpflowCommander implements AutoCloseable {
         
         @Override
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
-            Lock rl = valveLock.readLock();
+            Lock rl = this.valveLock.readLock();
             if (rl.tryLock()) {
                 try {
                     if (!isRestrictorAvailable()) {
@@ -708,7 +721,7 @@ public class OpflowCommander implements AutoCloseable {
                     rl.unlock();
                 }
             } else {
-                throw new OpflowRequestFailureException("not ready");
+                throw new OpflowRequestSuspendException("Commander has not already yet");
             }
         }
         
@@ -852,7 +865,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
-            handlers.put(clazzName, new RpcInvocationHandler(rpcMaster, publisher, clazz, bean, reservedWorkerEnabled));
+            handlers.put(clazzName, new RpcInvocationHandler(valveLock, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled));
         } else {
             if (strictMode) {
                 throw new OpflowRpcRegistrationException("Class [" + clazzName + "] has already registered");
