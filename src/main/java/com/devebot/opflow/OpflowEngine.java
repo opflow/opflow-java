@@ -59,6 +59,11 @@ public class OpflowEngine implements AutoCloseable {
     private List<ConsumerInfo> consumerInfos = new LinkedList<>();
     private ExecutorService threadExecutor;
     
+    private final Object producingConnectionLock = new Object();
+    private final Object producingChannelLock = new Object();
+    private final Object consumingConnectionLock = new Object();
+    private final Object consumingChannelLock = new Object();
+    
     private String exchangeName;
     private String exchangeType;
     private Boolean exchangeDurable;
@@ -964,46 +969,54 @@ public class OpflowEngine implements AutoCloseable {
     
     private Connection getProducingConnection() throws IOException, TimeoutException {
         if (producingConnection == null || !producingConnection.isOpen()) {
-            producingConnection = factory.newConnection();
-            producingConnection.setId(OpflowUUID.getLogID());
-            producingConnection.addShutdownListener(new ShutdownListener() {
-                private final OpflowLogTracer localLog = logTracer.copy();
-                @Override
-                public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (localLog.ready(LOG, "info")) LOG.info(localLog
+            synchronized (producingConnectionLock) {
+                if (producingConnection == null || !producingConnection.isOpen()) {
+                    producingConnection = factory.newConnection();
+                    producingConnection.setId(OpflowUUID.getLogID());
+                    producingConnection.addShutdownListener(new ShutdownListener() {
+                        private final OpflowLogTracer localLog = logTracer.copy();
+                        @Override
+                        public void shutdownCompleted(ShutdownSignalException sse) {
+                            if (localLog.ready(LOG, "info")) LOG.info(localLog
+                                    .put("connectionId", getConnectionId(producingConnection))
+                                    .text("Engine[${engineId}] producingConnection[${connectionId}] has been shutdown")
+                                    .stringify());
+                        }
+                    });
+                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                            .tags("sharedProducingConnectionCreated")
                             .put("connectionId", getConnectionId(producingConnection))
-                            .text("Engine[${engineId}] producingConnection[${connectionId}] has been shutdown")
-                            .stringify());
+                            .text("Engine[${engineId}]shared producingConnection[${connectionId}] is created")
+                            .stringify(true));
+                    measurer.updateEngineConnection(factory, "producing", OpflowPromMeasurer.GaugeAction.INC);
                 }
-            });
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .tags("sharedProducingConnectionCreated")
-                    .put("connectionId", getConnectionId(producingConnection))
-                    .text("Engine[${engineId}]shared producingConnection[${connectionId}] is created")
-                    .stringify(true));
-            measurer.updateEngineConnection(factory, "producing", OpflowPromMeasurer.GaugeAction.INC);
+            }
         }
         return producingConnection;
     }
     
     private Channel getProducingChannel() throws IOException, TimeoutException {
         if (producingChannel == null || !producingChannel.isOpen()) {
-            producingChannel = getProducingConnection().createChannel();
-            producingChannel.addShutdownListener(new ShutdownListener() {
-                private final OpflowLogTracer localLog = logTracer.copy();
-                @Override
-                public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (localLog.ready(LOG, "info")) LOG.info(localLog
+            synchronized (producingChannelLock) {
+                if (producingChannel == null || !producingChannel.isOpen()) {
+                    producingChannel = getProducingConnection().createChannel();
+                    producingChannel.addShutdownListener(new ShutdownListener() {
+                        private final OpflowLogTracer localLog = logTracer.copy();
+                        @Override
+                        public void shutdownCompleted(ShutdownSignalException sse) {
+                            if (localLog.ready(LOG, "info")) LOG.info(localLog
+                                    .put("channelNumber", producingChannel.getChannelNumber())
+                                    .text("Engine[${engineId}] producingChannel[${channelNumber}] has been shutdown")
+                                    .stringify());
+                        }
+                    });
+                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                            .tags("sharedProducingChannelCreated")
                             .put("channelNumber", producingChannel.getChannelNumber())
-                            .text("Engine[${engineId}] producingChannel[${channelNumber}] has been shutdown")
+                            .text("Engine[${engineId}] shared producingChannel[${channelNumber}] is created")
                             .stringify());
                 }
-            });
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .tags("sharedProducingChannelCreated")
-                    .put("channelNumber", producingChannel.getChannelNumber())
-                    .text("Engine[${engineId}] shared producingChannel[${channelNumber}] is created")
-                    .stringify());
+            }
         }
         return producingChannel;
     }
@@ -1017,24 +1030,28 @@ public class OpflowEngine implements AutoCloseable {
             return factory.newConnection();
         }
         if (consumingConnection == null || !consumingConnection.isOpen()) {
-            consumingConnection = factory.newConnection();
-            consumingConnection.setId(OpflowUUID.getLogID());
-            consumingConnection.addShutdownListener(new ShutdownListener() {
-                private final OpflowLogTracer localLog = logTracer.copy();
-                @Override
-                public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (localLog.ready(LOG, "info")) LOG.info(localLog
+            synchronized (consumingConnectionLock) {
+                if (consumingConnection == null || !consumingConnection.isOpen()) {
+                    consumingConnection = factory.newConnection();
+                    consumingConnection.setId(OpflowUUID.getLogID());
+                    consumingConnection.addShutdownListener(new ShutdownListener() {
+                        private final OpflowLogTracer localLog = logTracer.copy();
+                        @Override
+                        public void shutdownCompleted(ShutdownSignalException sse) {
+                            if (localLog.ready(LOG, "info")) LOG.info(localLog
+                                    .put("connectionId", getConnectionId(consumingConnection))
+                                    .text("Engine[${engineId}] consumingConnection[${connectionId}] has been shutdown")
+                                    .stringify());
+                        }
+                    });
+                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                            .tags("sharedConsumingConnectionCreated")
                             .put("connectionId", getConnectionId(consumingConnection))
-                            .text("Engine[${engineId}] consumingConnection[${connectionId}] has been shutdown")
-                            .stringify());
+                            .text("Engine[${engineId}] shared consumingConnection[${connectionId}] is created")
+                            .stringify(true));
+                    measurer.updateEngineConnection(factory, "consuming", OpflowPromMeasurer.GaugeAction.INC);
                 }
-            });
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .tags("sharedConsumingConnectionCreated")
-                    .put("connectionId", getConnectionId(consumingConnection))
-                    .text("Engine[${engineId}] shared consumingConnection[${connectionId}] is created")
-                    .stringify(true));
-            measurer.updateEngineConnection(factory, "consuming", OpflowPromMeasurer.GaugeAction.INC);
+            }
         }
         return consumingConnection;
     }
@@ -1051,21 +1068,25 @@ public class OpflowEngine implements AutoCloseable {
             return getConsumingConnection(false).createChannel();
         }
         if (consumingChannel == null || !consumingChannel.isOpen()) {
-            consumingChannel = getConsumingConnection(false).createChannel();
-            consumingChannel.addShutdownListener(new ShutdownListener() {
-                private final OpflowLogTracer localLog = logTracer.copy();
-                @Override
-                public void shutdownCompleted(ShutdownSignalException sse) {
-                    if (localLog.ready(LOG, "info")) LOG.info(localLog
-                            .put("channelNumber", consumingChannel.getChannelNumber())
-                            .text("Engine[${engineId}] consumingChannel[${channelNumber}] has been shutdown")
+            synchronized (consumingChannelLock) {
+                if (consumingChannel == null || !consumingChannel.isOpen()) {
+                    consumingChannel = getConsumingConnection(false).createChannel();
+                    consumingChannel.addShutdownListener(new ShutdownListener() {
+                        private final OpflowLogTracer localLog = logTracer.copy();
+                        @Override
+                        public void shutdownCompleted(ShutdownSignalException sse) {
+                            if (localLog.ready(LOG, "info")) LOG.info(localLog
+                                    .put("channelNumber", consumingChannel.getChannelNumber())
+                                    .text("Engine[${engineId}] consumingChannel[${channelNumber}] has been shutdown")
+                                    .stringify());
+                        }
+                    });
+                    if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                            .tags("sharedConsumingChannelCreated")
+                            .text("Engine[${engineId}] shared consumingChannel is created")
                             .stringify());
                 }
-            });
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .tags("sharedConsumingChannelCreated")
-                    .text("Engine[${engineId}] shared consumingChannel is created")
-                    .stringify());
+            }
         }
         return consumingChannel;
     }
