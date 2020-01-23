@@ -371,7 +371,9 @@ public class OpflowRestrictor implements AutoCloseable {
     }
     
     public void lock() {
-        pauseLock.writeLock().lock();
+        if(!pauseLock.isWriteLockedByCurrentThread()) {
+            pauseLock.writeLock().lock();
+        }
     }
     
     public void unlock() {

@@ -40,7 +40,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final String host;
     private final Integer port;
     private final Boolean enabled;
-    private final long shutdownTimeout = 1000;
+    private final long shutdownTimeout;
     private Undertow server;
     private GracefulShutdownHandler shutdownHander;
     
@@ -59,6 +59,8 @@ public class OpflowRestServer implements AutoCloseable {
             8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
         }), (new Integer[0]).getClass());
         port = OpflowNetTool.detectFreePort(ports);
+        
+        shutdownTimeout = OpflowUtil.getOptionValue(kwargs, "shutdownTimeout", Long.class, 1000l);
         
         logTracer = OpflowLogTracer.ROOT.branch("restServerId", instanceId);
         
@@ -116,30 +118,32 @@ public class OpflowRestServer implements AutoCloseable {
                     .stringify());
             this.close();
         }
-        if (server == null) {
-            RoutingHandler routes = new RoutingHandler();
-            
-            if (extraHandlers != null) {
-                routes.addAll(extraHandlers);
+        synchronized (this) {
+            if (server == null) {
+                RoutingHandler routes = new RoutingHandler();
+
+                if (extraHandlers != null) {
+                    routes.addAll(extraHandlers);
+                }
+
+                routes.addAll(defaultHandlers)
+                        .get("/opflow.yaml", buildResourceHandler("/openapi-spec"))
+                        .get("/api-ui/*", buildResourceHandler("/openapi-ui"))
+                        .get("/api-ui/", new RedirectHandler("/api-ui/index.html"))
+                        .get("/", new RedirectHandler("/api-ui/"))
+                        .setFallbackHandler(new PageNotFoundHandler());
+
+                shutdownHander = new GracefulShutdownHandler(routes);
+
+                server = Undertow.builder()
+                        .addHttpListener(port, host)
+                        .setHandler(shutdownHander)
+                        .build();
+
+                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                        .text("RestServer[${restServerId}].serve() a new HTTP server is created")
+                        .stringify());
             }
-            
-            routes.addAll(defaultHandlers)
-                    .get("/opflow.yaml", buildResourceHandler("/openapi-spec"))
-                    .get("/api-ui/*", buildResourceHandler("/openapi-ui"))
-                    .get("/api-ui/", new RedirectHandler("/api-ui/index.html"))
-                    .get("/", new RedirectHandler("/api-ui/"))
-                    .setFallbackHandler(new PageNotFoundHandler());
-            
-            shutdownHander = new GracefulShutdownHandler(routes);
-            
-            server = Undertow.builder()
-                    .addHttpListener(port, host)
-                    .setHandler(shutdownHander)
-                    .build();
-            
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                    .text("RestServer[${restServerId}].serve() a new HTTP server is created")
-                    .stringify());
         }
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("port", port)
@@ -175,6 +179,7 @@ public class OpflowRestServer implements AutoCloseable {
             }
             server.stop();
             server = null;
+            shutdownHander = null;
         }
     }
     

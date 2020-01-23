@@ -721,7 +721,7 @@ public class OpflowCommander implements AutoCloseable {
                     rl.unlock();
                 }
             } else {
-                throw new OpflowRequestSuspendException("Commander has not already yet");
+                throw new OpflowRequestSuspendException("Commander is not ready yet");
             }
         }
         
