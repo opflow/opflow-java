@@ -167,6 +167,7 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();
     
+    private final Object callbackConsumerLock = new Object();
     private volatile OpflowEngine.ConsumerInfo callbackConsumer;
 
     private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean forked) {
@@ -246,12 +247,15 @@ public class OpflowRpcMaster implements AutoCloseable {
     }
     
     private void cancelCallbackConsumer() {
-        if (callbackConsumer != null) {
-            engine.cancelConsumer(callbackConsumer);
-            callbackConsumer = null;
+        synchronized (callbackConsumerLock) {
+            if (callbackConsumer != null) {
+                engine.cancelConsumer(callbackConsumer);
+                callbackConsumer = null;
+            }
         }
     }
     
+    private final Object timeoutMonitorLock = new Object();
     private OpflowTimeout.Monitor timeoutMonitor = null;
     
     private OpflowTimeout.Monitor initTimeoutMonitor() {
@@ -318,7 +322,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         if (timeoutMonitor == null) {
-            synchronized(this) {
+            synchronized(timeoutMonitorLock) {
                 if (timeoutMonitor == null) {
                     timeoutMonitor = initTimeoutMonitor();
                 }
@@ -331,7 +335,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             consumerInfo = initCallbackConsumer(true);
         } else {
             if (callbackConsumer == null) {
-                synchronized(this) {
+                synchronized(callbackConsumerLock) {
                     if (callbackConsumer == null) {
                         callbackConsumer = initCallbackConsumer(false);
                     }
@@ -489,9 +493,11 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].close() - stop timeoutMonitor")
                 .stringify());
 
-            if (timeoutMonitor != null) {
-                timeoutMonitor.close();
-                timeoutMonitor = null;
+            synchronized (timeoutMonitorLock) {
+                if (timeoutMonitor != null) {
+                    timeoutMonitor.close();
+                    timeoutMonitor = null;
+                }
             }
             
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
