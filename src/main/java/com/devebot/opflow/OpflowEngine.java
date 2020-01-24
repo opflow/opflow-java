@@ -869,7 +869,7 @@ public class OpflowEngine implements AutoCloseable {
     }
     
     public State check() {
-        int conn = producingConnection.isOpen() ? State.CONNECTION_OPENED : State.CONNECTION_CLOSED;
+        int conn = producingConnection != null && producingConnection.isOpen() ? State.CONNECTION_OPENED : State.CONNECTION_CLOSED;
         State state = new State(conn);
         return state;
     }
@@ -893,6 +893,7 @@ public class OpflowEngine implements AutoCloseable {
             }
             threadExecutor = null;
         }
+        
         try {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Engine[${engineId}].close() - close producingChannel, producingConnection")
@@ -904,6 +905,15 @@ public class OpflowEngine implements AutoCloseable {
                         .stringify());
                 producingChannel.close();
             }
+        } catch (IOException | TimeoutException exception) {
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
+                    .text("Engine[${engineId}].close() has failed in closing the producingChannel")
+                    .stringify());
+        } finally {
+            producingChannel = null;
+        }
+        
+        try {
             if (producingConnection != null && producingConnection.isOpen()) {
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .tags("sharedProducingConnectionClosed")
@@ -911,18 +921,26 @@ public class OpflowEngine implements AutoCloseable {
                         .stringify());
                 producingConnection.close();
             }
-            
-            if ("engine".equals(mode)) {
-                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                        .put("mode", mode)
-                        .text("Engine[${engineId}].close() - cancel consumers")
-                        .stringify());
-                for(ConsumerInfo consumerInfo: consumerInfos) {
-                    this.cancelConsumer(consumerInfo);
-                }
-                consumerInfos.clear();
+        } catch (IOException exception) {
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
+                    .text("Engine[${engineId}].close() has failed in closing the producingConnection")
+                    .stringify());
+        } finally {
+            producingConnection = null;
+        }
+        
+        if ("engine".equals(mode)) {
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .put("mode", mode)
+                    .text("Engine[${engineId}].close() - cancel consumers")
+                    .stringify());
+            for(ConsumerInfo consumerInfo: consumerInfos) {
+                this.cancelConsumer(consumerInfo);
             }
-            
+            consumerInfos.clear();
+        }
+
+        try {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Engine[${engineId}].close() - close consumingChannel, consumingConnection")
                 .stringify());
@@ -933,6 +951,15 @@ public class OpflowEngine implements AutoCloseable {
                         .stringify());
                 consumingChannel.close();
             }
+        } catch (IOException | TimeoutException exception) {
+            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
+                    .text("Engine[${engineId}].close() has failed in closing the consumingChannel")
+                    .stringify());
+        } finally {
+            consumingChannel = null;
+        }
+        
+        try {
             if (consumingConnection != null && consumingConnection.isOpen()) {
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .tags("sharedConsumingConnectionClosed")
@@ -940,17 +967,12 @@ public class OpflowEngine implements AutoCloseable {
                         .stringify());
                 consumingConnection.close();
             }
-
         } catch (IOException exception) {
             if (logTracer.ready(LOG, "error")) LOG.error(logTracer
-                    .text("Engine[${engineId}].close() has failed")
+                    .text("Engine[${engineId}].close() has failed in closing the consumingConnection")
                     .stringify());
-            throw new OpflowOperationException(exception);
-        } catch (TimeoutException exception) {
-            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
-                    .text("Engine[${engineId}].close() is timeout")
-                    .stringify());
-            throw new OpflowOperationException(exception);
+        } finally {
+            consumingConnection = null;
         }
     }
     

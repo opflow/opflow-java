@@ -360,8 +360,11 @@ public class OpflowUtil {
     public static String getMessageField(OpflowMessage message, String fieldName) {
         if (message == null || fieldName == null) return null;
         Map<String, Object> info = message.getInfo();
-        if (info != null && info.get(fieldName) != null) {
-            return info.get(fieldName).toString();
+        if (info != null) {
+            Object val = info.get(fieldName);
+            if (val != null) {
+                return val.toString();
+            }
         }
         return null;
     }
