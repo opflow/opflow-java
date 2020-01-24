@@ -20,14 +20,17 @@ public class OpflowRestrictor implements AutoCloseable {
     public interface Action<T> {
         public T process() throws Throwable;
     }
-
+    
     private final long PAUSE_SLEEPING_INTERVAL = 500;
+    private final long PAUSE_TIMEOUT_DEFAULT = 0l;
+    private final int SEMAPHORE_LIMIT_DEFAULT = 1000;
+    private final long SEMAPHORE_TIMEOUT_DEFAULT = 0l;
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictor.class);
-
+    
     private final String instanceId;
     private final OpflowLogTracer logTracer;
     private boolean active;
-
+    
     private final ReentrantReadWriteLock pauseLock;
     private boolean pauseEnabled;
     private long pauseTimeout;
@@ -83,14 +86,14 @@ public class OpflowRestrictor implements AutoCloseable {
         } else if (options.get("pauseTimeout") instanceof Integer) {
             pauseTimeout = (Integer) options.get("pauseTimeout");
         } else {
-            pauseTimeout = 0;
+            pauseTimeout = PAUSE_TIMEOUT_DEFAULT;
         }
         
         if (options.get("semaphoreLimit") instanceof Integer) {
             int _limit = (Integer) options.get("semaphoreLimit");
-            semaphoreLimit = (_limit > 0) ? _limit : 100;
+            semaphoreLimit = (_limit > 0) ? _limit : SEMAPHORE_LIMIT_DEFAULT;
         } else {
-            semaphoreLimit = 100;
+            semaphoreLimit = SEMAPHORE_LIMIT_DEFAULT;
         }
         
         if (options.get("semaphoreEnabled") instanceof Boolean) {
@@ -104,7 +107,7 @@ public class OpflowRestrictor implements AutoCloseable {
         } else if (options.get("semaphoreTimeout") instanceof Integer) {
             semaphoreTimeout = (Integer) options.get("semaphoreTimeout");
         } else {
-            semaphoreTimeout = 0;
+            semaphoreTimeout = SEMAPHORE_TIMEOUT_DEFAULT;
         }
         
         this.semaphore = new Semaphore(this.semaphoreLimit);
