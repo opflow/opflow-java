@@ -33,7 +33,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final OpflowPromMeasurer measurer;
     private final OpflowRestrictor restrictor;
     
-    private final Timer timer = new Timer("Timer-OpflowRpcMaster", true);
+    private final Timer timer = new Timer("Timer-" + OpflowRpcMaster.class.getSimpleName(), true);
     private final ReentrantReadWriteLock taskLock = new ReentrantReadWriteLock();
     private final Lock closeLock = taskLock.writeLock();
     private final Condition closeBarrier = closeLock.newCondition();

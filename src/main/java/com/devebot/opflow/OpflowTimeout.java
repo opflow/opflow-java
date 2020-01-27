@@ -93,7 +93,7 @@ public class OpflowTimeout {
         private final String monitorId;
         private final Map<String, ? extends Timeoutable> tasks;
         private final int interval;
-        private final Timer timer = new Timer("Timer-OpflowTimeout$Monitor", true);
+        private final Timer timer = new Timer("Timer-" + extractClassName(), true);
         private final TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
@@ -193,6 +193,10 @@ public class OpflowTimeout {
                     .stringify());
             timer.cancel();
             timer.purge();
+        }
+        
+        private static String extractClassName() {
+            return Monitor.class.getName().replace(Monitor.class.getPackageName(), "");
         }
     }
     
