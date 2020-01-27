@@ -81,7 +81,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
     
     public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker, Map<String, Object> kwargs) {
         if (kwargs == null) {
-            instanceId = OpflowUUID.getLogID();
+            instanceId = OpflowUUID.getBase64ID();
             enabled = true;
             interval = RPC_DETECTION_INTERVAL;
         } else {

@@ -159,7 +159,7 @@ public class OpflowTimeout {
             this.tasks = tasks;
             this.interval = interval;
             this.timeout = timeout;
-            this.monitorId = (monitorId != null) ? monitorId : OpflowUUID.getLogID();
+            this.monitorId = (monitorId != null) ? monitorId : OpflowUUID.getBase64ID();
             logTracer = OpflowLogTracer.ROOT.branch("monitorId", this.monitorId);
             if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                     .put("interval", this.interval)

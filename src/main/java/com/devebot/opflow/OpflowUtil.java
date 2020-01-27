@@ -93,12 +93,12 @@ public class OpflowUtil {
     
     @Deprecated
     public static String getLogID() {
-        return OpflowUUID.getLogID();
+        return OpflowUUID.getBase64ID();
     }
     
     @Deprecated
     public static String getLogID(String uuid) {
-        return OpflowUUID.getLogID(uuid);
+        return OpflowUUID.getBase64ID(uuid);
     }
     
     public static byte[] getBytes(String data) {
@@ -285,7 +285,7 @@ public class OpflowUtil {
         if (value != null) {
             return value.toString();
         }
-        value = uuidIfNotFound ? OpflowUUID.getLogID() : null;
+        value = uuidIfNotFound ? OpflowUUID.getBase64ID() : null;
         if (assigned) {
             options.put(fieldName, value);
         }
@@ -293,7 +293,7 @@ public class OpflowUtil {
     }
     
     public static String getOptionField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
-        Object value = getOptionField(options, fieldName, uuidIfNotFound ? OpflowUUID.getLogID() : null);
+        Object value = getOptionField(options, fieldName, uuidIfNotFound ? OpflowUUID.getBase64ID() : null);
         return value != null ? value.toString() : null;
     }
     

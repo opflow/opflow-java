@@ -115,7 +115,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     };
     
     public OpflowEngine.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
-        final String _consumerId = OpflowUUID.getLogID();
+        final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logProcess = logTracer.branch("consumerId", _consumerId);
         if (logProcess.ready(LOG, "info")) LOG.info(logProcess
                 .text("Consumer[${consumerId}] - RpcWorker[${rpcWorkerId}].process() is invoked")

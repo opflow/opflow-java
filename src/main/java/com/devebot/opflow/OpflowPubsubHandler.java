@@ -136,7 +136,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         Object requestId = options.get("requestId");
         if (requestId == null) {
-            options.put("requestId", requestId = OpflowUUID.getLogID());
+            options.put("requestId", requestId = OpflowUUID.getBase64ID());
         }
         
         OpflowLogTracer logPublish = null;
@@ -165,7 +165,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     }
     
     public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener newListener) {
-        final String _consumerId = OpflowUUID.getLogID();
+        final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logSubscribe = logTracer.branch("consumerId", _consumerId);
         if (logSubscribe.ready(LOG, "info")) LOG.info(logSubscribe
                 .text("Consumer[${consumerId}] - PubsubHandler[${pubsubHandlerId}].subscribe() is invoked")

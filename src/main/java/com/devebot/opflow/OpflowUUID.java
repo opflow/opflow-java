@@ -15,29 +15,29 @@ import javax.xml.bind.DatatypeConverter;
 public class OpflowUUID {
     private static final boolean OPFLOW_PREGEN_UUID = true;
     private static final boolean OPFLOW_BASE64UUID;
-    private static final Generator generator;
+    private static final Generator UUID_GENERATOR;
     
     static {
         OPFLOW_BASE64UUID = !"false".equals(OpflowEnvTool.instance.getSystemProperty("OPFLOW_BASE64UUID", null)) &&
                 !"false".equals(OpflowEnvTool.instance.getEnvironVariable("OPFLOW_BASE64UUID", null));
-        generator = new Generator();
+        UUID_GENERATOR = new Generator();
     }
     
     public static String getUUID() {
         return UUID.randomUUID().toString();
     }
     
-    public static String getLogID() {
+    public static String getBase64ID() {
         if (!OPFLOW_PREGEN_UUID) {
             if (!OPFLOW_BASE64UUID) getUUID();
             return convertUUIDToBase64(UUID.randomUUID());
         }
-        return generator.pick();
+        return UUID_GENERATOR.pick();
     }
     
-    public static String getLogID(String uuid) {
+    public static String getBase64ID(String uuid) {
         if (!OPFLOW_BASE64UUID) return uuid;
-        if (uuid == null) return getLogID();
+        if (uuid == null) return getBase64ID();
         return convertUUIDToBase64(UUID.fromString(uuid));
     }
     

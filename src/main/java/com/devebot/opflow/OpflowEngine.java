@@ -1004,7 +1004,7 @@ public class OpflowEngine implements AutoCloseable {
             synchronized (producingConnectionLock) {
                 if (producingConnection == null || !producingConnection.isOpen()) {
                     producingConnection = factory.newConnection();
-                    producingConnection.setId(OpflowUUID.getLogID());
+                    producingConnection.setId(OpflowUUID.getBase64ID());
                     producingConnection.addShutdownListener(new ShutdownListener() {
                         private final OpflowLogTracer localLog = logTracer.copy();
                         @Override
@@ -1065,7 +1065,7 @@ public class OpflowEngine implements AutoCloseable {
             synchronized (consumingConnectionLock) {
                 if (consumingConnection == null || !consumingConnection.isOpen()) {
                     consumingConnection = factory.newConnection();
-                    consumingConnection.setId(OpflowUUID.getLogID());
+                    consumingConnection.setId(OpflowUUID.getBase64ID());
                     consumingConnection.addShutdownListener(new ShutdownListener() {
                         private final OpflowLogTracer localLog = logTracer.copy();
                         @Override

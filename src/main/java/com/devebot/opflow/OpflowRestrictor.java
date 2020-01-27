@@ -288,7 +288,7 @@ public class OpflowRestrictor implements AutoCloseable {
 
         PauseThread(OpflowLogTracer logTracer, ReentrantReadWriteLock rwlock) {
             this.rwlock = rwlock;
-            this.instanceId = OpflowUUID.getLogID();
+            this.instanceId = OpflowUUID.getBase64ID();
             this.tracer = logTracer.copy();
             if (tracer.ready(LOG, "trace")) LOG.trace(tracer
                     .text("PauseThread[${restrictorId}] constructed")

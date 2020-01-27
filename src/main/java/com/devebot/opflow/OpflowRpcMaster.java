@@ -171,7 +171,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private volatile OpflowEngine.ConsumerInfo callbackConsumer;
 
     private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean forked) {
-        final String _consumerId = OpflowUUID.getLogID();
+        final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
         if (logSession.ready(LOG, "info")) LOG.info(logSession
                 .put("forked", forked)
@@ -304,7 +304,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         Object requestIdVal = options.get("requestId");
         if (requestIdVal == null) {
-            options.put("requestId", requestIdVal = OpflowUUID.getLogID());
+            options.put("requestId", requestIdVal = OpflowUUID.getBase64ID());
         }
         final String requestId = requestIdVal.toString();
         
@@ -344,7 +344,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             consumerInfo = callbackConsumer;
         }
         
-        final String taskId = OpflowUUID.getLogID();
+        final String taskId = OpflowUUID.getBase64ID();
         OpflowRpcRequest task = new OpflowRpcRequest(options, new OpflowTimeout.Listener() {
             private OpflowLogTracer logTask = null;
             
