@@ -99,7 +99,7 @@ public class OpflowRestrictor implements AutoCloseable {
         if (options.get("semaphoreEnabled") instanceof Boolean) {
             semaphoreEnabled = (Boolean) options.get("semaphoreEnabled");
         } else {
-            semaphoreEnabled = true;
+            semaphoreEnabled = false;
         }
         
         if (options.get("semaphoreTimeout") instanceof Long ) {
@@ -171,6 +171,9 @@ public class OpflowRestrictor implements AutoCloseable {
         if (!isActive()) {
             return action.process();
         }
+        if (!pauseEnabled) {
+            return _filter(action);
+        }
         Lock rl = pauseLock.readLock();
         if (pauseTimeout >= 0) {
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
@@ -220,34 +223,33 @@ public class OpflowRestrictor implements AutoCloseable {
     }
     
     private <T> T _filter(Action<T> action) throws Throwable {
-        if (semaphoreEnabled) {
-            try {
-                if (semaphoreTimeout > 0) {
-                    if (semaphore.tryAcquire(semaphoreTimeout, TimeUnit.MILLISECONDS)) {
-                        try {
-                            return action.process();
-                        }
-                        finally {
-                            semaphore.release();
-                        }
-                    } else {
-                        throw new OpflowRequestWaitingException("There are no permits available");
-                    }
-                } else {
-                    semaphore.acquire();
+        if (!semaphoreEnabled) {
+            return action.process();
+        }
+        try {
+            if (semaphoreTimeout > 0) {
+                if (semaphore.tryAcquire(semaphoreTimeout, TimeUnit.MILLISECONDS)) {
                     try {
                         return action.process();
                     }
                     finally {
                         semaphore.release();
                     }
+                } else {
+                    throw new OpflowRequestWaitingException("There are no permits available");
+                }
+            } else {
+                semaphore.acquire();
+                try {
+                    return action.process();
+                }
+                finally {
+                    semaphore.release();
                 }
             }
-            catch (InterruptedException exception) {
-                throw new OpflowRequestWaitingException("semaphore.acquire() is interrupted", exception);
-            }
-        } else { 
-            return action.process();
+        }
+        catch (InterruptedException exception) {
+            throw new OpflowRequestWaitingException("semaphore.acquire() is interrupted", exception);
         }
     }
     
