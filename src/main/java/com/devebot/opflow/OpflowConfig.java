@@ -412,7 +412,6 @@ public class OpflowConfig {
     
     public static Map<String, Object> loadConfiguration(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
         try {
-            Yaml yaml = new Yaml();
             if (config == null) {
                 config = new HashMap<>();
             }
@@ -429,14 +428,16 @@ public class OpflowConfig {
                     switch(ext) {
                         case "yaml":
                         case "yml":
+                            Yaml yaml = new Yaml();
                             Map<String,Object> yamlConfig = (Map<String,Object>)yaml.load(url.openStream());
                             mergeConfiguration(config, yamlConfig);
                             break;
                         case "properties":
-                            Properties props = new Properties();
-                            props.load(url.openStream());
-                            mergeConfiguration(config, props);
+                            Properties propConfig = new Properties();
+                            propConfig.load(url.openStream());
+                            mergeConfiguration(config, propConfig);
                             break;
+
                     }
                     // merge the system properties to the configuration
                     mergeConfiguration(config, filterProperties(System.getProperties(), new String[] {

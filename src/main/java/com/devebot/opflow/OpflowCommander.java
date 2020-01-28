@@ -237,11 +237,11 @@ public class OpflowCommander implements AutoCloseable {
         return restrictor != null && restrictorScope == RestrictionScope.ALL;
     }
     
-    public boolean isReserveWorkerEnabled() {
+    public boolean isReservedWorkerEnabled() {
         return this.reservedWorkerEnabled;
     }
     
-    public void setReserveWorkerEnabled(boolean enabled) {
+    public void setReservedWorkerEnabled(boolean enabled) {
         this.reservedWorkerEnabled = enabled;
     }
 
@@ -282,10 +282,10 @@ public class OpflowCommander implements AutoCloseable {
         if (restServer != null) restServer.close();
         if (rpcWatcher != null) rpcWatcher.close();
         
-        if (isRestrictorAvailable()) {
-            restrictor.lock();
-        }
         try {
+            if (isRestrictorAvailable()) {
+                restrictor.lock();
+            }
             if (publisher != null) publisher.close();
             if (rpcMaster != null) rpcMaster.close();
             if (configurer != null) configurer.close();
