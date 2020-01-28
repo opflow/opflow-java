@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public class OpflowPubsubHandler implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
-    private final String pubsubHandlerId;
+    private final String instanceId;
     private final OpflowLogTracer logTracer;
     
     private final ReentrantReadWriteLock pushLock = new ReentrantReadWriteLock();
@@ -39,8 +39,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        pubsubHandlerId = OpflowUtil.getOptionField(params, "pubsubHandlerId", true);
-        logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", pubsubHandlerId);
+        instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
+        logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", instanceId);
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new()")
@@ -48,7 +48,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put("engineId", pubsubHandlerId);
+        brokerParams.put("instanceId", instanceId);
         brokerParams.put("mode", "pubsub");
         brokerParams.put("exchangeType", "direct");
         
