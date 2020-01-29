@@ -31,7 +31,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private final String subscriberName;
     private final String recyclebinName;
     private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<>();
-    private int prefetch = 0;
+    private int prefetchCount = 0;
     private int subscriberLimit = 0;
     private int redeliveredLimit = 0;
     private OpflowPubsubListener listener;
@@ -70,9 +70,9 @@ public class OpflowPubsubHandler implements AutoCloseable {
             executor.assertQueue(recyclebinName);
         }
         
-        if (params.get("prefetch") instanceof Integer) {
-            prefetch = (Integer) params.get("prefetch");
-            if (prefetch < 0) prefetch = 0;
+        if (params.get("prefetchCount") instanceof Integer) {
+            prefetchCount = (Integer) params.get("prefetchCount");
+            if (prefetchCount < 0) prefetchCount = 0;
         }
         
         if (params.get("subscriberLimit") instanceof Integer) {
@@ -88,7 +88,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("subscriberName", subscriberName)
                 .put("recyclebinName", recyclebinName)
-                .put("prefetch", prefetch)
+                .put("prefetchCount", prefetchCount)
                 .put("subscriberLimit", subscriberLimit)
                 .put("redeliveredLimit", redeliveredLimit)
                 .tags("PubsubHandler.new() parameters")
@@ -246,7 +246,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 opts.put("consumerId", _consumerId);
                 opts.put("autoAck", Boolean.TRUE);
                 opts.put("queueName", subscriberName);
-                if (prefetch > 0) opts.put("prefetch", prefetch);
+                if (prefetchCount > 0) opts.put("prefetchCount", prefetchCount);
                 if (subscriberLimit > 0) opts.put("consumerLimit", subscriberLimit);
             }
         }).toMap());

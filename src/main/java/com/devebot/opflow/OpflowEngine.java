@@ -26,7 +26,6 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
-import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowKeytool;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import java.util.concurrent.TimeUnit;
@@ -444,8 +443,6 @@ public class OpflowEngine implements AutoCloseable {
                 propBuilder.replyTo(override.get("replyTo").toString());
             }
             
-            headers.put("publishedTime", OpflowDateTime.getCurrentTimeString());
-            
             String requestId = OpflowUtil.getRequestId(headers);
             String requestTime = OpflowUtil.getRequestTime(headers);
             
@@ -498,12 +495,12 @@ public class OpflowEngine implements AutoCloseable {
             final Channel _channel = getConsumingChannel(_forceNewConnection, _forceNewChannel);
             final Connection _connection = _channel.getConnection();
             
-            Integer _prefetch = null;
-            if (opts.get("prefetch") instanceof Integer) {
-                _prefetch = (Integer) opts.get("prefetch");
+            Integer _prefetchCount = null;
+            if (opts.get("prefetchCount") instanceof Integer) {
+                _prefetchCount = (Integer) opts.get("prefetchCount");
             }
-            if (_prefetch != null && _prefetch > 0) {
-                _channel.basicQos(_prefetch);
+            if (_prefetchCount != null && _prefetchCount > 0) {
+                _channel.basicQos(_prefetchCount);
             }
             
             final String _queueName;

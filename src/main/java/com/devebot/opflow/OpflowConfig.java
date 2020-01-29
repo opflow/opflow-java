@@ -66,6 +66,7 @@ public class OpflowConfig {
                 "responseDurable",
                 "responseExclusive",
                 "responseAutoDelete",
+                "prefetchCount",
             });
 
             transformParameters(params);
@@ -98,7 +99,7 @@ public class OpflowConfig {
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
                 "operatorName",
                 "responseName",
-                "prefetch",
+                "prefetchCount",
             });
 
             if (handlerNode.get("operatorName") == null) {
@@ -135,7 +136,7 @@ public class OpflowConfig {
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
                 "subscriberName",
                 "recyclebinName",
-                "prefetch",
+                "prefetchCount",
                 "subscriberLimit",
                 "redeliveredLimit",
             });
@@ -197,10 +198,11 @@ public class OpflowConfig {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "expiration",
                         "responseName",
+                        "responseQueueSuffix",
                         "responseDurable",
                         "responseExclusive",
                         "responseAutoDelete",
-                        "responseQueueSuffix",
+                        "prefetchCount",
                         "monitorId",
                         "monitorEnabled",
                         "monitorInterval",
@@ -343,7 +345,7 @@ public class OpflowConfig {
     
     private static final String[] INTEGER_FIELDS = new String[] {
         "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", "semaphoreLimit",
-        "prefetch", "subscriberLimit", "redeliveredLimit", "monitorInterval", "threadPoolSize"
+        "prefetchCount", "subscriberLimit", "redeliveredLimit", "monitorInterval", "threadPoolSize"
     };
     
     private static final String[] INTEGER_ARRAY_FIELDS = new String[] { "ports" };

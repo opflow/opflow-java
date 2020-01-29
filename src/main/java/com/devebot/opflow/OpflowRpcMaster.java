@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 public class OpflowRpcMaster implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
     
-    private final long DELAY_TIMEOUT = 1000;
-    private final int PREFETCH_NUM = 1;
-    private final int CONSUMER_MAX = 1;
+    private final static long DELAY_TIMEOUT = 1000;
+    private final static int PREFETCH_NUM = 1;
+    private final static int CONSUMER_MAX = 1;
     
     private final String instanceId;
     private final OpflowLogTracer logTracer;
@@ -47,6 +47,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final Boolean responseDurable;
     private final Boolean responseExclusive;
     private final Boolean responseAutoDelete;
+    private final Integer prefetchCount;
     
     private final boolean monitorEnabled;
     private final String monitorId;
@@ -121,6 +122,12 @@ public class OpflowRpcMaster implements AutoCloseable {
             responseAutoDelete = responseQueueSuffix != null ? true : null;
         }
         
+        if (params.get("prefetchCount") != null && params.get("prefetchCount") instanceof Integer) {
+            prefetchCount = (Integer) params.get("prefetchCount");
+        } else {
+            prefetchCount = PREFETCH_NUM;
+        }
+        
         if (responseName != null) {
             executor.assertQueue(responseName, responseDurable, responseExclusive, responseAutoDelete);
         }
@@ -150,6 +157,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .put("responseDurable", responseDurable)
                 .put("responseExclusive", responseExclusive)
                 .put("responseAutoDelete", responseAutoDelete)
+                .put("prefetchCount", prefetchCount)
                 .put("monitorId", monitorId)
                 .put("monitorEnabled", monitorEnabled)
                 .put("monitorInterval", monitorInterval)
@@ -241,7 +249,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     opts.put("forceNewChannel", Boolean.FALSE);
                 }
                 opts.put("binding", Boolean.FALSE);
-                opts.put("prefetch", PREFETCH_NUM);
+                opts.put("prefetchCount", prefetchCount);
             }
         }).toMap());
     }
@@ -397,8 +405,12 @@ public class OpflowRpcMaster implements AutoCloseable {
             headers.put("messageScope", options.get("messageScope"));
         }
         
-        if (options.get("progressEnabled") instanceof Boolean) {
-            headers.put("progressEnabled", options.get("progressEnabled"));
+        if (prefetchCount > 1) {
+            headers.put("progressEnabled", Boolean.FALSE);
+        } else {
+            if (options.get("progressEnabled") instanceof Boolean) {
+                headers.put("progressEnabled", options.get("progressEnabled"));
+            }
         }
         
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()
