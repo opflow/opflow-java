@@ -5,6 +5,7 @@ import com.devebot.opflow.exception.OpflowOperationException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -19,15 +20,30 @@ public class OpflowExecutor {
     }
     
     public void assertQueue(final String queueName) throws OpflowBootstrapException {
-        assertQueue(queueName, null, null, null);
+        assertQueue(queueName, null, null, null, null);
     }
     
-    public void assertQueue(final String queueName, Boolean durable, Boolean exclusive, Boolean autoDelete) throws OpflowBootstrapException {
+    public void assertQueue(
+            final String queueName,
+            Boolean durable,
+            Boolean exclusive,
+            Boolean autoDelete
+    ) throws OpflowBootstrapException {
+        assertQueue(queueName, durable, exclusive, autoDelete, null);
+    }
+    
+    public void assertQueue(
+            final String queueName,
+            Boolean durable,
+            Boolean exclusive,
+            Boolean autoDelete,
+            Map<String, Object> options
+    ) throws OpflowBootstrapException {
         try {
             if (durable == null) durable = true;
             if (exclusive == null) exclusive = false;
             if (autoDelete == null) autoDelete = false;
-            declareQueue(queueName, durable, exclusive, autoDelete);
+            declareQueue(queueName, durable, exclusive, autoDelete, options);
         } catch (IOException | TimeoutException ioe) {
             throw new OpflowBootstrapException(ioe);
         }
@@ -56,13 +72,19 @@ public class OpflowExecutor {
             durable = (durable == null) ? true : durable;
             exclusive = (exclusive == null) ? false : exclusive;
             autoDelete = (autoDelete == null) ? false : autoDelete;
-            return declareQueue(queueName, durable, exclusive, autoDelete);
+            return declareQueue(queueName, durable, exclusive, autoDelete, null);
         } catch (IOException | TimeoutException exception) {
             throw new OpflowOperationException(exception);
         }
     }
     
-    private AMQP.Queue.DeclareOk declareQueue(final String queueName, final boolean durable, final boolean exclusive, final boolean autoDelete) throws IOException, TimeoutException {
+    private AMQP.Queue.DeclareOk declareQueue(
+            final String queueName,
+            final boolean durable,
+            final boolean exclusive,
+            final boolean autoDelete,
+            final Map<String, Object> options
+    ) throws IOException, TimeoutException {
         if (queueName == null) return null;
         try {
             return engine.acquireChannel(new OpflowEngine.Operator() {
@@ -75,7 +97,7 @@ public class OpflowExecutor {
             return engine.acquireChannel(new OpflowEngine.Operator() {
                 @Override
                 public AMQP.Queue.DeclareOk handleEvent(Channel _channel) throws IOException {
-                    return _channel.queueDeclare(queueName, durable, exclusive, autoDelete, null);
+                    return _channel.queueDeclare(queueName, durable, exclusive, autoDelete, options);
                 }
             });
         }
