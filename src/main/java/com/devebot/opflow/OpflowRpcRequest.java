@@ -33,16 +33,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         this.requestId = OpflowUtil.getRequestId(opts);
         this.requestTime = OpflowUtil.getRequestTime(opts);
         this.routineId = OpflowUtil.getRoutineId(opts);
-
-        if (opts.get("timeout") == null) {
-            this.timeout = 0;
-        } else if (opts.get("timeout") instanceof Long) {
-            this.timeout = (Long)opts.get("timeout");
-        } else if (opts.get("timeout") instanceof Integer) {
-            this.timeout = ((Integer)opts.get("timeout")).longValue();
-        } else {
-            this.timeout = 0;
-        }
+        this.timeout = getRequestTimeout(opts);
 
         logRequest = OpflowLogTracer.ROOT.branch("requestTime", requestTime)
                 .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
@@ -220,6 +211,19 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     
     private void checkTimestamp() {
         timestamp = (new Date()).getTime();
+    }
+    
+    private long getRequestTimeout(Map<String, Object> opts) {
+        final Object opts_timeout = opts.get("timeout");
+        if (opts_timeout == null) {
+            return 0;
+        } else if (opts_timeout instanceof Long) {
+            return (Long)opts_timeout;
+        } else if (opts_timeout instanceof Integer) {
+            return ((Integer)opts_timeout).longValue();
+        } else {
+            return 0;
+        }
     }
     
     public static String getStatus(OpflowMessage message) {

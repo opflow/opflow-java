@@ -310,12 +310,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private OpflowRpcRequest _request_safe(final String routineId, byte[] body, Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
         
-        Object requestIdVal = options.get("requestId");
-        if (requestIdVal == null) {
-            options.put("requestId", requestIdVal = OpflowUUID.getBase64ID());
-        }
-        final String requestId = requestIdVal.toString();
-        
+        final String requestId = OpflowUtil.getRequestId(options);
         final String requestTime = OpflowUtil.getRequestTime(options);
 
         final OpflowLogTracer logRequest = logTracer.branch("requestTime", requestTime)
