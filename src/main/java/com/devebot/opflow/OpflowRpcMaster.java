@@ -283,6 +283,10 @@ public class OpflowRpcMaster implements AutoCloseable {
         return request(routineId, OpflowUtil.getBytes(body), null, options);
     }
     
+    public OpflowRpcRequest request(String routineId, String body, final OpflowRpcParameter params) {
+        return request(routineId, OpflowUtil.getBytes(body), params, null);
+    }
+    
     public OpflowRpcRequest request(String routineId, byte[] body) {
         return request(routineId, body, null, null);
     }

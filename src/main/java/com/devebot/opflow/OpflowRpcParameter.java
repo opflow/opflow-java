@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Customizer;
+import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowEnvTool;
 import java.util.Map;
 
@@ -15,15 +16,20 @@ public class OpflowRpcParameter implements Customizer {
         IS_PING_LOGGING_OMITTED = !"false".equals(OpflowEnvTool.instance.getSystemProperty("OPFLOW_OMIT_PING_LOGS", null));
     }
     
-    private String routineId;
-    private Long requestTTL;
     private final String requestId;
     private final String requestTime;
-    private final String messageScope;
-    private final Boolean callbackTransient;
-    private final Boolean progressEnabled;
-    private final Boolean watcherEnabled;
+    private Long requestTTL = null;
+    private String routineId = null;
+    private String messageScope = null;
+    private Boolean callbackTransient = false;
+    private Boolean progressEnabled = null;
+    private Boolean watcherEnabled = false;
 
+    public OpflowRpcParameter() {
+        this.requestId = OpflowUUID.getBase64ID();
+        this.requestTime = OpflowDateTime.getCurrentTimeString();
+    }
+    
     public OpflowRpcParameter(Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
 
@@ -33,47 +39,33 @@ public class OpflowRpcParameter implements Customizer {
         
         if (options.get("timeout") instanceof Long) {
             this.requestTTL = (Long) options.get("timeout");
-        } else {
-            this.requestTTL = null;
         }
         
         if (options.get("messageScope") instanceof String) {
             this.messageScope = (String) options.get("messageScope");
-        } else {
-            this.messageScope = null;
         }
         
         this.callbackTransient = "forked".equals((String)options.get("mode"));
         
         if (options.get("progressEnabled") instanceof Boolean) {
             this.progressEnabled = (Boolean) options.get("progressEnabled");
-        } else {
-            this.progressEnabled = null;
         }
         
         this.watcherEnabled = Boolean.TRUE.equals(options.get("watcherEnabled"));
     }
     
-    public OpflowRpcParameter(String requestId, String requestTime, Long requestTTL,
-            String messageScope,
-            Boolean callbackTransient,
-            Boolean progressEnabled
-    ) {
+    public OpflowRpcParameter(String requestId, String requestTime) {
         this.requestId = requestId;
         this.requestTime = requestTime;
-        this.requestTTL = requestTTL;
-        this.messageScope = messageScope;
-        this.callbackTransient = callbackTransient;
-        this.progressEnabled = progressEnabled;
-        this.watcherEnabled = false;
     }
 
     public String getRoutineId() {
         return routineId;
     }
 
-    public void setRoutineId(String routineId) {
+    public OpflowRpcParameter setRoutineId(String routineId) {
         this.routineId = routineId;
+        return this;
     }
     
     public String getRequestId() {
@@ -88,24 +80,45 @@ public class OpflowRpcParameter implements Customizer {
         return requestTTL;
     }
 
-    public void setRequestTTL(Long requestTTL) {
+    public OpflowRpcParameter setRequestTTL(Long requestTTL) {
         this.requestTTL = requestTTL;
+        return this;
     }
     
     public String getMessageScope() {
         return messageScope;
     }
     
+    public OpflowRpcParameter setMessageScope(String messageScope) {
+        this.messageScope = messageScope;
+        return this;
+    }
+    
     public Boolean getCallbackTransient() {
         return callbackTransient;
+    }
+
+    public OpflowRpcParameter setCallbackTransient(Boolean callbackTransient) {
+        this.callbackTransient = callbackTransient;
+        return this;
     }
 
     public Boolean getProgressEnabled() {
         return progressEnabled;
     }
 
+    public OpflowRpcParameter setProgressEnabled(Boolean progressEnabled) {
+        this.progressEnabled = progressEnabled;
+        return this;
+    }
+
     public Boolean getWatcherEnabled() {
         return watcherEnabled;
+    }
+    
+    public OpflowRpcParameter setWatcherEnabled(Boolean watcherEnabled) {
+        this.watcherEnabled = watcherEnabled;
+        return this;
     }
     
     @Override

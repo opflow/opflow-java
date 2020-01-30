@@ -318,17 +318,15 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Pong send(Ping ping) throws Throwable {
+            Date startTime = new Date();
             String body = OpflowJsonTool.toString(new Object[] { ping });
             String requestId = OpflowUUID.getBase64ID();
-            Date startTime = new Date();
-            OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, OpflowUtil.buildMap()
-                    .put("requestId", requestId)
-                    .put("messageScope", "internal")
-                    .put("progressEnabled", false)
-                    .toMap());
-            Date endTime = new Date();
-
+            String requestTime = OpflowDateTime.toISO8601UTC(startTime);
+            OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, (new OpflowRpcParameter(requestId, requestTime))
+                    .setProgressEnabled(false)
+                    .setMessageScope("internal"));
             OpflowRpcResult rpcResult = rpcRequest.extractResult(false);
+            Date endTime = new Date();
 
             if (rpcResult.isTimeout()) {
                 throw new OpflowRequestTimeoutException("OpflowRpcChecker.send() call is timeout");
@@ -796,11 +794,8 @@ public class OpflowCommander implements AutoCloseable {
                 throw new OpflowWorkerNotFoundException("both reserved worker and detached worker are deactivated");
             }
 
-            OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, OpflowUtil.buildMap()
-                    .put("requestId", requestId)
-                    .put("requestTime", requestTime)
-                    .put("progressEnabled", false)
-                    .toMap());
+            OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, (new OpflowRpcParameter(requestId, requestTime))
+                    .setProgressEnabled(false));
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
 
             if (rpcResult.isTimeout()) {
