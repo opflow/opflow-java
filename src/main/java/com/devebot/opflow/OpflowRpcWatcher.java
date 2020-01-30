@@ -60,7 +60,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
                         .text("Detector[${rpcWatcherId}].run(), threads: ${threadCount}")
                         .stringify());
                 try {
-                    OpflowRpcChecker.Pong result = rpcChecker.send(new OpflowRpcChecker.Ping());
+                    OpflowRpcChecker.Pong result = rpcChecker.send(null);
                     congested = false;
                     if (logTask.ready(LOG, "debug")) LOG.debug(logTask
                             .text("Detector[${rpcWatcherId}].run(), the queue is drained")

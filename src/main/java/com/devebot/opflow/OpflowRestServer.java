@@ -81,7 +81,7 @@ public class OpflowRestServer implements AutoCloseable {
     public OpflowRpcChecker.Info ping() {
         Map<String, Object> me = infoCollector.collect(OpflowInfoCollector.Scope.BASIC);
         try {
-            return new OpflowRpcChecker.Info(me, this.rpcChecker.send(new OpflowRpcChecker.Ping()));
+            return new OpflowRpcChecker.Info(me, this.rpcChecker.send(null));
         } catch (Throwable exception) {
             return new OpflowRpcChecker.Info(me, exception);
         }

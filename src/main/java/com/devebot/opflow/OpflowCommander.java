@@ -310,6 +310,8 @@ public class OpflowCommander implements AutoCloseable {
 
     private static class OpflowRpcCheckerMaster extends OpflowRpcChecker {
 
+        private final static String DEFAULT_BALL_JSON = OpflowJsonTool.toString(new Object[] { new Ping() });
+
         private final OpflowRpcMaster rpcMaster;
 
         OpflowRpcCheckerMaster(OpflowRpcMaster rpcMaster) throws OpflowBootstrapException {
@@ -319,7 +321,7 @@ public class OpflowCommander implements AutoCloseable {
         @Override
         public Pong send(Ping ping) throws Throwable {
             Date startTime = new Date();
-            String body = OpflowJsonTool.toString(new Object[] { ping });
+            String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
             String requestId = OpflowUUID.getBase64ID();
             String requestTime = OpflowDateTime.toISO8601UTC(startTime);
             OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, (new OpflowRpcParameter(requestId, requestTime))
