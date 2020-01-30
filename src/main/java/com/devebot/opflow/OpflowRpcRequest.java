@@ -27,21 +27,20 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final OpflowTimeout.Listener completeListener;
     private OpflowTimeout.Watcher timeoutWatcher;
     private long timestamp;
-    
-    public OpflowRpcRequest(Map<String, Object> options, final OpflowTimeout.Listener completeListener) {
-        Map<String, Object> opts = OpflowUtil.ensureNotNull(options);
-        this.requestId = OpflowUtil.getRequestId(opts);
-        this.requestTime = OpflowUtil.getRequestTime(opts);
-        this.routineId = OpflowUtil.getRoutineId(opts);
-        this.timeout = getRequestTimeout(opts);
+
+    public OpflowRpcRequest(final OpflowRpcParameter params, final Long timeout, final OpflowTimeout.Listener completeListener) {
+        this.requestId = params.getRequestId();
+        this.requestTime = params.getRequestTime();
+        this.routineId = params.getRoutineId();
+        this.timeout = (timeout == null) ? 0l : timeout;
 
         logRequest = OpflowLogTracer.ROOT.branch("requestTime", requestTime)
-                .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
+                .branch("requestId", requestId, params);
 
         this.completeListener = completeListener;
 
-        if (Boolean.TRUE.equals(opts.get("watcherEnabled")) && completeListener != null && this.timeout > 0) {
-            timeoutWatcher = new OpflowTimeout.Watcher(requestId, this.timeout, new OpflowTimeout.Listener() {
+        if (params.getWatcherEnabled() && completeListener != null && this.timeout > 0) {
+            timeoutWatcher = new OpflowTimeout.Watcher(this.requestId, this.timeout, new OpflowTimeout.Listener() {
                 @Override
                 public void handleEvent() {
                     OpflowLogTracer logWatcher = null;
@@ -63,7 +62,11 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
 
         checkTimestamp();
     }
-
+    
+    public OpflowRpcRequest(final Map<String, Object> options, final OpflowTimeout.Listener completeListener) {
+        this(new OpflowRpcParameter(options), getRequestTimeout(options), completeListener);
+    }
+    
     public String getRequestId() {
         return requestId;
     }
@@ -213,7 +216,10 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         timestamp = (new Date()).getTime();
     }
     
-    private long getRequestTimeout(Map<String, Object> opts) {
+    private static long getRequestTimeout(Map<String, Object> opts) {
+        if (opts == null) {
+            return 0;
+        }
         final Object opts_timeout = opts.get("timeout");
         if (opts_timeout == null) {
             return 0;
