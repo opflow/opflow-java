@@ -791,7 +791,7 @@ public class OpflowCommander implements AutoCloseable {
                     return method.invoke(this.reservedWorker, args);
                 }
             }
-            
+
             if (!detachedWorkerActive) {
                 throw new OpflowWorkerNotFoundException("both reserved worker and detached worker are deactivated");
             }

@@ -4,6 +4,8 @@ import com.devebot.opflow.supports.OpflowEnvTool;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.xml.bind.DatatypeConverter;
@@ -54,16 +56,33 @@ public class OpflowUUID {
     }
     
     private static class Generator implements AutoCloseable {
-
+        private final Timer timer = new Timer("Timer-" + extractClassName(), true);
+        private final TimerTask timerTask;
         private final ConcurrentLinkedQueue<String> store = new ConcurrentLinkedQueue<>();
-        
-        public String pick() {
+        private final long interval;
+
+        public Generator() {
+            this.interval = 1000l;
+            this.timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    prepare();
+                }
+            };
+            this.timer.scheduleAtFixedRate(this.timerTask, 0, this.interval);
+        }
+
+        public void prepare() {
             if (store.size() < 10) {
                 store.addAll(generate(100));
             }
+        }
+
+        public String pick() {
+            prepare();
             return store.poll();
         }
-        
+
         private List<String> generate(int number) {
             List<String> buff = new ArrayList<>(number);
             for (int i=0; i<number; i++) {
@@ -75,9 +94,15 @@ public class OpflowUUID {
             }
             return buff;
         }
-        
+
         @Override
         public void close() throws Exception {
+            timer.cancel();
+            timer.purge();
+        }
+
+        private static String extractClassName() {
+            return Generator.class.getName().replace(Generator.class.getPackageName(), "");
         }
     }
 }

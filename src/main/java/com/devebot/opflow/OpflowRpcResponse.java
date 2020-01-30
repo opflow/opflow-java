@@ -35,7 +35,7 @@ public class OpflowRpcResponse {
         this.requestId = OpflowUtil.getRequestId(headers, false);
         this.requestTime = OpflowUtil.getRequestTime(headers, false);
         
-        logTracer = OpflowLogTracer.ROOT.branch("requestTime", requestTime)
+        logTracer = OpflowLogTracer.ROOT.branch("requestTime", this.requestTime)
                 .branch("requestId", this.requestId, new OpflowLogTracer.OmitPingLogs(headers));
         
         if (properties.getReplyTo() != null) {

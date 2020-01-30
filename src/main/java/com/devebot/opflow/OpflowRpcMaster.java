@@ -320,12 +320,6 @@ public class OpflowRpcMaster implements AutoCloseable {
     }
     
     private OpflowRpcRequest _request_safe(final String routineId, byte[] body, OpflowRpcParameter parameter, Map<String, Object> options) {
-        options = OpflowUtil.ensureNotNull(options);
-        
-        if (routineId != null) {
-            options.put("routineId", routineId);
-        }
-        
         final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter(options);
         
         if (routineId != null) {
