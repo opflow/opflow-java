@@ -318,12 +318,6 @@ public class OpflowRpcMaster implements AutoCloseable {
     private OpflowRpcRequest _request_safe(final String routineId, byte[] body, OpflowRpcParameter parameter, Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
         
-        Long timeout = null;
-        
-        if (options.get("timeout") instanceof Long) {
-            timeout = (Long) options.get("timeout");
-        }
-        
         if (routineId != null) {
             options.put("routineId", routineId);
         }
@@ -335,7 +329,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         if (expiration > 0) {
-            timeout = expiration + DELAY_TIMEOUT;
+            params.setRequestTTL(expiration + DELAY_TIMEOUT);
         }
         
         final OpflowLogTracer logRequest = logTracer.branch("requestTime", params.getRequestTime())
@@ -364,7 +358,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         final String taskId = OpflowUUID.getBase64ID();
-        OpflowRpcRequest task = new OpflowRpcRequest(params, timeout, new OpflowTimeout.Listener() {
+        OpflowRpcRequest task = new OpflowRpcRequest(params, new OpflowTimeout.Listener() {
             private OpflowLogTracer logTask = null;
             
             {

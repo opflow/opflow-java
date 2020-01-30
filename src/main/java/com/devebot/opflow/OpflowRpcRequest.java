@@ -28,12 +28,17 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private OpflowTimeout.Watcher timeoutWatcher;
     private long timestamp;
 
-    public OpflowRpcRequest(final OpflowRpcParameter params, final Long timeout, final OpflowTimeout.Listener completeListener) {
+    public OpflowRpcRequest(final OpflowRpcParameter params, final OpflowTimeout.Listener completeListener) {
         this.routineId = params.getRoutineId();
         this.requestId = params.getRequestId();
         this.requestTime = params.getRequestTime();
-        this.timeout = (timeout == null) ? 0l : timeout;
-
+        
+        if (params.getRequestTTL() == null) {
+            this.timeout = 0l;
+        } else {
+            this.timeout = params.getRequestTTL();
+        }
+        
         logRequest = OpflowLogTracer.ROOT.branch("requestTime", this.requestTime)
                 .branch("requestId", this.requestId, params);
 
@@ -64,7 +69,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     }
     
     public OpflowRpcRequest(final Map<String, Object> options, final OpflowTimeout.Listener completeListener) {
-        this(new OpflowRpcParameter(options), getRequestTimeout(options), completeListener);
+        this(new OpflowRpcParameter(options), completeListener);
     }
     
     public String getRequestId() {

@@ -16,6 +16,7 @@ public class OpflowRpcParameter implements Customizer {
     }
     
     private String routineId;
+    private Long requestTTL;
     private final String requestId;
     private final String requestTime;
     private final String messageScope;
@@ -29,6 +30,12 @@ public class OpflowRpcParameter implements Customizer {
         this.routineId = OpflowUtil.getRoutineId(options, false);
         this.requestId = OpflowUtil.getRequestId(options);
         this.requestTime = OpflowUtil.getRequestTime(options);
+        
+        if (options.get("timeout") instanceof Long) {
+            this.requestTTL = (Long) options.get("timeout");
+        } else {
+            this.requestTTL = null;
+        }
         
         if (options.get("messageScope") instanceof String) {
             this.messageScope = (String) options.get("messageScope");
@@ -47,9 +54,14 @@ public class OpflowRpcParameter implements Customizer {
         this.watcherEnabled = Boolean.TRUE.equals(options.get("watcherEnabled"));
     }
     
-    public OpflowRpcParameter(String requestId, String requestTime, String messageScope, Boolean callbackTransient, Boolean progressEnabled) {
+    public OpflowRpcParameter(String requestId, String requestTime, Long requestTTL,
+            String messageScope,
+            Boolean callbackTransient,
+            Boolean progressEnabled
+    ) {
         this.requestId = requestId;
         this.requestTime = requestTime;
+        this.requestTTL = requestTTL;
         this.messageScope = messageScope;
         this.callbackTransient = callbackTransient;
         this.progressEnabled = progressEnabled;
@@ -72,6 +84,14 @@ public class OpflowRpcParameter implements Customizer {
         return requestTime;
     }
 
+    public Long getRequestTTL() {
+        return requestTTL;
+    }
+
+    public void setRequestTTL(Long requestTTL) {
+        this.requestTTL = requestTTL;
+    }
+    
     public String getMessageScope() {
         return messageScope;
     }
