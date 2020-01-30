@@ -315,26 +315,31 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
     }
     
-    private OpflowRpcRequest _request_safe(final String routineId, byte[] body, OpflowRpcParameter params, Map<String, Object> options) {
+    private OpflowRpcRequest _request_safe(final String routineId, byte[] body, OpflowRpcParameter parameter, Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
         
-        if (params == null) {
-            params = new OpflowRpcParameter(options);
+        Long timeout = null;
+        
+        if (options.get("timeout") instanceof Long) {
+            timeout = (Long) options.get("timeout");
         }
         
-        final String requestId = OpflowUtil.getRequestId(options);
-        final String requestTime = OpflowUtil.getRequestTime(options);
-
-        final OpflowLogTracer logRequest = logTracer.branch("requestTime", requestTime)
-                .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(options));
-
         if (routineId != null) {
             options.put("routineId", routineId);
         }
         
-        if (expiration > 0) {
-            options.put("timeout", expiration + DELAY_TIMEOUT);
+        final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter(options);
+        
+        if (routineId != null) {
+            params.setRoutineId(routineId);
         }
+        
+        if (expiration > 0) {
+            timeout = expiration + DELAY_TIMEOUT;
+        }
+        
+        final OpflowLogTracer logRequest = logTracer.branch("requestTime", params.getRequestTime())
+                .branch("requestId", params.getRequestId(), params);
         
         if (timeoutMonitor == null) {
             synchronized(timeoutMonitorLock) {
@@ -344,9 +349,8 @@ public class OpflowRpcMaster implements AutoCloseable {
             }
         }
         
-        final boolean forked = "forked".equals((String)options.get("mode"));
         final OpflowEngine.ConsumerInfo consumerInfo;
-        if (forked) {
+        if (params.getCallbackTransient()) {
             consumerInfo = initCallbackConsumer(true);
         } else {
             if (callbackConsumer == null) {
@@ -360,7 +364,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         final String taskId = OpflowUUID.getBase64ID();
-        OpflowRpcRequest task = new OpflowRpcRequest(options, new OpflowTimeout.Listener() {
+        OpflowRpcRequest task = new OpflowRpcRequest(params, timeout, new OpflowTimeout.Listener() {
             private OpflowLogTracer logTask = null;
             
             {
@@ -373,7 +377,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 eventLock.lock();
                 try {
                     tasks.remove(taskId);
-                    if (forked) {
+                    if (params.getCallbackTransient()) {
                         engine.cancelConsumer(consumerInfo);
                     }
                     if (tasks.isEmpty()) {
@@ -408,15 +412,15 @@ public class OpflowRpcMaster implements AutoCloseable {
         headers.put("requestTime", task.getRequestTime());
         headers.put("routineId", task.getRoutineId());
         
-        if (options.containsKey("messageScope")) {
-            headers.put("messageScope", options.get("messageScope"));
+        if (params.getMessageScope() != null) {
+            headers.put("messageScope", params.getMessageScope());
         }
         
         if (prefetchCount > 1) {
             headers.put("progressEnabled", Boolean.FALSE);
         } else {
-            if (options.get("progressEnabled") instanceof Boolean) {
-                headers.put("progressEnabled", options.get("progressEnabled"));
+            if (params.getProgressEnabled() != null) {
+                headers.put("progressEnabled", params.getProgressEnabled());
             }
         }
         

@@ -29,13 +29,13 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private long timestamp;
 
     public OpflowRpcRequest(final OpflowRpcParameter params, final Long timeout, final OpflowTimeout.Listener completeListener) {
+        this.routineId = params.getRoutineId();
         this.requestId = params.getRequestId();
         this.requestTime = params.getRequestTime();
-        this.routineId = params.getRoutineId();
         this.timeout = (timeout == null) ? 0l : timeout;
 
-        logRequest = OpflowLogTracer.ROOT.branch("requestTime", requestTime)
-                .branch("requestId", requestId, params);
+        logRequest = OpflowLogTracer.ROOT.branch("requestTime", this.requestTime)
+                .branch("requestId", this.requestId, params);
 
         this.completeListener = completeListener;
 

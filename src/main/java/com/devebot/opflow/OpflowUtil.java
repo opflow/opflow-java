@@ -285,11 +285,11 @@ public class OpflowUtil {
         if (value != null) {
             return value.toString();
         }
-        value = uuidIfNotFound ? OpflowUUID.getBase64ID() : null;
+        String valueStr = uuidIfNotFound ? OpflowUUID.getBase64ID() : null;
         if (assigned) {
-            options.put(fieldName, value);
+            options.put(fieldName, valueStr);
         }
-        return value.toString();
+        return valueStr;
     }
     
     public static String getOptionField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
