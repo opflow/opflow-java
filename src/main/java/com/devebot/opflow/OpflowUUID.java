@@ -15,13 +15,15 @@ import javax.xml.bind.DatatypeConverter;
  * @author pnhung177
  */
 public class OpflowUUID {
-    private static final boolean OPFLOW_PREGEN_UUID = true;
-    private static final boolean OPFLOW_BASE64UUID;
+    private static final boolean UUID_PRE_GENERATED;
+    private static final boolean UUID_FORMAT_BASE64;
+    private static final boolean UUID_AUTOSTART_GENERATOR;
     private static final Generator UUID_GENERATOR;
     
     static {
-        OPFLOW_BASE64UUID = !"false".equals(OpflowEnvTool.instance.getSystemProperty("OPFLOW_BASE64UUID", null)) &&
-                !"false".equals(OpflowEnvTool.instance.getEnvironVariable("OPFLOW_BASE64UUID", null));
+        UUID_PRE_GENERATED = !"false".equals(getEnvProperty("OPFLOW_UUID_PRE_GENERATED", null));;
+        UUID_FORMAT_BASE64 = !"false".equals(getEnvProperty("OPFLOW_UUID_FORMAT_BASE64", null));
+        UUID_AUTOSTART_GENERATOR = !"false".equals(getEnvProperty("OPFLOW_UUID_GENERATOR_AUTORUN", null));
         UUID_GENERATOR = new Generator();
     }
     
@@ -30,15 +32,17 @@ public class OpflowUUID {
     }
     
     public static String getBase64ID() {
-        if (!OPFLOW_PREGEN_UUID) {
-            if (!OPFLOW_BASE64UUID) getUUID();
+        if (!UUID_PRE_GENERATED) {
+            if (!UUID_FORMAT_BASE64) {
+                return getUUID();
+            }
             return convertUUIDToBase64(UUID.randomUUID());
         }
         return UUID_GENERATOR.pick();
     }
     
     public static String getBase64ID(String uuid) {
-        if (!OPFLOW_BASE64UUID) return uuid;
+        if (!UUID_FORMAT_BASE64) return uuid;
         if (uuid == null) return getBase64ID();
         return convertUUIDToBase64(UUID.fromString(uuid));
     }
@@ -60,33 +64,36 @@ public class OpflowUUID {
         private final TimerTask timerTask;
         private final ConcurrentLinkedQueue<String> store = new ConcurrentLinkedQueue<>();
         private final long interval;
-
+        private volatile boolean running = false;
+        
         public Generator() {
-            this.interval = 1000l;
+            this.interval = 2000l;
             this.timerTask = new TimerTask() {
                 @Override
                 public void run() {
-                    prepare();
+                    prepare(50, 500);
                 }
             };
-            this.timer.scheduleAtFixedRate(this.timerTask, 0, this.interval);
+            if (UUID_AUTOSTART_GENERATOR) {
+                this.start();
+            }
         }
 
-        public void prepare() {
-            if (store.size() < 10) {
-                store.addAll(generate(100));
+        public void prepare(int bound, int total) {
+            if (store.size() < bound) {
+                store.addAll(generate(total));
             }
         }
 
         public String pick() {
-            prepare();
+            prepare(10, 20);
             return store.poll();
         }
 
         private List<String> generate(int number) {
             List<String> buff = new ArrayList<>(number);
             for (int i=0; i<number; i++) {
-                if (!OPFLOW_BASE64UUID) {
+                if (!UUID_FORMAT_BASE64) {
                     buff.add(UUID.randomUUID().toString());
                     continue;
                 }
@@ -95,14 +102,32 @@ public class OpflowUUID {
             return buff;
         }
 
+        public synchronized void start() {
+            if (!running) {
+                this.timer.scheduleAtFixedRate(this.timerTask, 0, this.interval);
+                running = true;
+            }
+        }
+        
         @Override
-        public void close() throws Exception {
-            timer.cancel();
-            timer.purge();
+        public synchronized void close() throws Exception {
+            if (running) {
+                timer.cancel();
+                timer.purge();
+                running = false;
+            }
         }
 
         private static String extractClassName() {
             return Generator.class.getName().replace(Generator.class.getPackageName(), "");
         }
+    }
+    
+    private static String getEnvProperty(String name, String defval) {
+        String val = OpflowEnvTool.instance.getSystemProperty(name, null);
+        if (val != null) return val;
+        val = OpflowEnvTool.instance.getEnvironVariable(name, null);
+        if (val != null) return val;
+        return defval;
     }
 }
