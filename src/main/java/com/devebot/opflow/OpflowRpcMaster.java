@@ -178,12 +178,12 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final Object callbackConsumerLock = new Object();
     private volatile OpflowEngine.ConsumerInfo callbackConsumer;
 
-    private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean forked) {
+    private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean isTransient) {
         final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
         if (logSession.ready(LOG, "info")) LOG.info(logSession
-                .put("forked", forked)
-                .text("initCallbackConsumer() is invoked with [forked]: ${forked}")
+                .put("isTransient", isTransient)
+                .text("initCallbackConsumer() is invoked (isTransient: ${isTransient})")
                 .stringify());
         return engine.consume(new OpflowListener() {
             @Override
@@ -240,7 +240,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("consumerId", _consumerId);
-                if (!forked) {
+                if (!isTransient) {
                     opts.put("queueName", responseName);
                     if (responseDurable != null) opts.put("durable", responseDurable);
                     if (responseExclusive != null) opts.put("exclusive", responseExclusive);
@@ -400,9 +400,13 @@ public class OpflowRpcMaster implements AutoCloseable {
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<>();
+        headers.put("routineId", task.getRoutineId());
         headers.put("requestId", task.getRequestId());
         headers.put("requestTime", task.getRequestTime());
-        headers.put("routineId", task.getRoutineId());
+        
+        if (params.getRequestTags() != null) {
+            headers.put("requestTags", params.getRequestTags());
+        }
         
         if (params.getMessageScope() != null) {
             headers.put("messageScope", params.getMessageScope());

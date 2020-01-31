@@ -138,8 +138,9 @@ public class OpflowRpcWorker implements AutoCloseable {
                 OpflowMessage request = new OpflowMessage(body, headers);
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, consumerTag, queueName);
                 String routineId = OpflowUtil.getRoutineId(headers, false);
-                String requestTime = OpflowUtil.getRequestTime(headers, false);
                 String requestId = OpflowUtil.getRequestId(headers, false);
+                String requestTime = OpflowUtil.getRequestTime(headers, false);
+                String[] requestTags = OpflowUtil.getRequestTags(headers);
 
                 OpflowLogTracer logRequest = null;
                 if (logProcess.ready(LOG, "info")) {

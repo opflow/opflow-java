@@ -350,7 +350,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Both of RpcWorker and subscriber must not be null");
             }
             options = OpflowUtil.ensureNotNull(options);
-            final String instanceId = options.getOrDefault("instanceId", OpflowUUID.getBase64ID()).toString();
+            final String instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
             this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", instanceId);
             this.rpcWorker = worker;
             this.rpcListener = new OpflowRpcListener() {

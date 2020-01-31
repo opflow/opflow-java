@@ -271,6 +271,23 @@ public class OpflowUtil {
         }
     }
     
+    public static String[] getRequestTags(Map<String, Object> headers) {
+        Object tags = headers.get("requestTags");
+        if (tags == null) {
+            return null;
+        }
+        if (tags instanceof ArrayList) {
+            ArrayList tagList = (ArrayList) tags;
+            String[] tagArray = new String[tagList.size()];
+            for (int i=0; i<tagArray.length; i++) {
+                // com.rabbitmq.client.impl.LongStringHelper$ByteArrayLongString
+                tagArray[i] = tagList.get(i).toString();
+            }
+            return tagArray;
+        }
+        return splitByComma(tags.toString());
+    }
+    
     public static String getRoutineId(Map<String, Object> headers) {
         return getStringField(headers, "routineId", true, true);
     }

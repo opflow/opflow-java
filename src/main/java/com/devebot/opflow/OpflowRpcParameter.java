@@ -18,6 +18,7 @@ public class OpflowRpcParameter implements Customizer {
     
     private final String requestId;
     private final String requestTime;
+    private String[] requestTags = null;
     private Long requestTTL = null;
     private String routineId = null;
     private String messageScope = null;
@@ -74,6 +75,15 @@ public class OpflowRpcParameter implements Customizer {
 
     public String getRequestTime() {
         return requestTime;
+    }
+
+    public String[] getRequestTags() {
+        return requestTags;
+    }
+
+    public OpflowRpcParameter setRequestTags(String[] requestTags) {
+        this.requestTags = requestTags;
+        return this;
     }
 
     public Long getRequestTTL() {
