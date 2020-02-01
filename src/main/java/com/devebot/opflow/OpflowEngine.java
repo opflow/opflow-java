@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -53,15 +54,19 @@ public class OpflowEngine implements AutoCloseable {
     private ConnectionFactory factory;
     private Connection producingConnection;
     private Channel producingChannel;
+    private BlockedListener producingBlockedListener;
     private Connection consumingConnection;
     private Channel consumingChannel;
+    private BlockedListener consumingBlockedListener;
     private List<ConsumerInfo> consumerInfos = new LinkedList<>();
     private ExecutorService threadExecutor;
     
     private final Object producingConnectionLock = new Object();
     private final Object producingChannelLock = new Object();
+    private final Object producingBlockedListenerLock = new Object();
     private final Object consumingConnectionLock = new Object();
     private final Object consumingChannelLock = new Object();
+    private final Object consumingBlockedListenerLock = new Object();
     
     private String exchangeName;
     private String exchangeType;
@@ -1002,6 +1007,35 @@ public class OpflowEngine implements AutoCloseable {
                 if (producingConnection == null || !producingConnection.isOpen()) {
                     producingConnection = factory.newConnection();
                     producingConnection.setId(OpflowUUID.getBase64ID());
+                    producingConnection.addBlockedListener(new BlockedListener() {
+                        private final OpflowLogTracer localLog = logTracer.copy();
+                        
+                        @Override
+                        public void handleBlocked(String reason) throws IOException {
+                            if (localLog.ready(LOG, "info")) LOG.info(localLog
+                                    .put("connectionId", getConnectionId(producingConnection))
+                                    .text("Engine[${engineId}] producingConnection[${connectionId}] has been blocked")
+                                    .stringify());
+                            synchronized (producingBlockedListenerLock) {
+                                if (producingBlockedListener != null) {
+                                    producingBlockedListener.handleBlocked(reason);
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void handleUnblocked() throws IOException {
+                            if (localLog.ready(LOG, "info")) LOG.info(localLog
+                                    .put("connectionId", getConnectionId(producingConnection))
+                                    .text("Engine[${engineId}] producingConnection[${connectionId}] has been unblocked")
+                                    .stringify());
+                            synchronized (producingBlockedListenerLock) {
+                                if (producingBlockedListener != null) {
+                                    producingBlockedListener.handleUnblocked();
+                                }
+                            }
+                        }
+                    });
                     producingConnection.addShutdownListener(new ShutdownListener() {
                         private final OpflowLogTracer localLog = logTracer.copy();
                         @Override
@@ -1050,6 +1084,10 @@ public class OpflowEngine implements AutoCloseable {
         return producingChannel;
     }
     
+    public void setProducingBlockedListener(BlockedListener producingBlockedListener) {
+        this.producingBlockedListener = producingBlockedListener;
+    }
+    
     private Connection getConsumingConnection(boolean forceNewConnection) throws IOException, TimeoutException {
         if (forceNewConnection) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -1063,6 +1101,35 @@ public class OpflowEngine implements AutoCloseable {
                 if (consumingConnection == null || !consumingConnection.isOpen()) {
                     consumingConnection = factory.newConnection();
                     consumingConnection.setId(OpflowUUID.getBase64ID());
+                    consumingConnection.addBlockedListener(new BlockedListener() {
+                        private final OpflowLogTracer localLog = logTracer.copy();
+                        
+                        @Override
+                        public void handleBlocked(String reason) throws IOException {
+                            if (localLog.ready(LOG, "info")) LOG.info(localLog
+                                    .put("connectionId", getConnectionId(consumingConnection))
+                                    .text("Engine[${engineId}] consumingConnection[${connectionId}] has been blocked")
+                                    .stringify());
+                            synchronized (consumingBlockedListenerLock) {
+                                if (consumingBlockedListener != null) {
+                                    consumingBlockedListener.handleBlocked(reason);
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void handleUnblocked() throws IOException {
+                            if (localLog.ready(LOG, "info")) LOG.info(localLog
+                                    .put("connectionId", getConnectionId(consumingConnection))
+                                    .text("Engine[${engineId}] consumingConnection[${connectionId}] has been unblocked")
+                                    .stringify());
+                            synchronized (consumingBlockedListenerLock) {
+                                if (consumingBlockedListener != null) {
+                                    consumingBlockedListener.handleUnblocked();
+                                }
+                            }
+                        }
+                    });
                     consumingConnection.addShutdownListener(new ShutdownListener() {
                         private final OpflowLogTracer localLog = logTracer.copy();
                         @Override
@@ -1118,6 +1185,10 @@ public class OpflowEngine implements AutoCloseable {
             }
         }
         return consumingChannel;
+    }
+    
+    public void setConsumingBlockedListener(BlockedListener consumingBlockedListener) {
+        this.consumingBlockedListener = consumingBlockedListener;
     }
     
     private void bindExchange(Channel _channel, String _exchangeName, String _queueName, String _routingKey) throws IOException {
