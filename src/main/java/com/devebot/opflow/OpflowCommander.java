@@ -640,12 +640,15 @@ public class OpflowCommander implements AutoCloseable {
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
         private final OpflowRpcMaster rpcMaster;
         private final OpflowPubsubHandler publisher;
+        private final OpflowRestrictor restrictor;
         private final ReadWriteLock valveLock;
 
         private boolean detachedWorkerActive = true;
         private boolean reservedWorkerActive = true;
 
-        public RpcInvocationHandler(ReadWriteLock valveLock, OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher, Class clazz, Object reservedWorker, boolean reservedWorkerEnabled) {
+        public RpcInvocationHandler(ReadWriteLock valveLock, OpflowRestrictor restrictor, OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher,
+                Class clazz, Object reservedWorker, boolean reservedWorkerEnabled
+        ) {
             this.clazz = clazz;
             this.reservedWorker = reservedWorker;
             this.reservedWorkerEnabled = reservedWorkerEnabled;
@@ -668,6 +671,7 @@ public class OpflowCommander implements AutoCloseable {
             }
             this.rpcMaster = rpcMaster;
             this.publisher = publisher;
+            this.restrictor = restrictor;
             this.valveLock = valveLock;
         }
 
@@ -710,10 +714,10 @@ public class OpflowCommander implements AutoCloseable {
             Lock rl = this.valveLock.readLock();
             if (rl.tryLock()) {
                 try {
-                    if (!isRestrictorAvailable()) {
+                    if (this.restrictor == null) {
                         return _invoke(proxy, method, args);
                     }
-                    return restrictor.filter(new OpflowRestrictor.Action<Object>() {
+                    return this.restrictor.filter(new OpflowRestrictor.Action<Object>() {
                         @Override
                         public Object process() throws Throwable {
                             return _invoke(proxy, method, args);
@@ -865,7 +869,13 @@ public class OpflowCommander implements AutoCloseable {
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
-            handlers.put(clazzName, new RpcInvocationHandler(valveLock, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled));
+            RpcInvocationHandler handler;
+            if (isRestrictorAvailable()) {
+                handler = new RpcInvocationHandler(valveLock, restrictor, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
+            } else {
+                handler = new RpcInvocationHandler(valveLock, null, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
+            }
+            handlers.put(clazzName, handler);
         } else {
             if (strictMode) {
                 throw new OpflowRpcRegistrationException("Class [" + clazzName + "] has already registered");
