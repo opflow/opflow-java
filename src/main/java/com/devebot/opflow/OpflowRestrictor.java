@@ -29,7 +29,9 @@ public class OpflowRestrictor implements AutoCloseable {
     
     private final String instanceId;
     private final OpflowLogTracer logTracer;
+    
     private boolean active;
+    private final ReentrantReadWriteLock valveLock;
     
     private final ReentrantReadWriteLock pauseLock;
     private boolean pauseEnabled;
@@ -60,6 +62,8 @@ public class OpflowRestrictor implements AutoCloseable {
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Restrictor[${restrictorId}].new()")
                 .stringify());
+        
+        valveLock = new ReentrantReadWriteLock();
         
         if (sharedLock != null) {
             pauseLock = sharedLock;
@@ -171,6 +175,27 @@ public class OpflowRestrictor implements AutoCloseable {
         if (!isActive()) {
             return action.process();
         }
+        return _filter_valve(action);
+    }
+    
+    public <T> T _filter_valve(Action<T> action) throws Throwable {
+        Lock rl = this.valveLock.readLock();
+        if (rl.tryLock()) {
+            try {
+                return _filter_pause(action);
+            }
+            finally {
+                rl.unlock();
+            }
+        } else {
+            if (logTracer.ready(LOG, "warn")) LOG.warn(logTracer
+                    .text("Restrictor[${restrictorId}].filter() is not ready yet")
+                    .stringify());
+            throw new OpflowRequestSuspendException("The valve restrictor is not ready yet");
+        }
+    }
+    
+    public <T> T _filter_pause(Action<T> action) throws Throwable {
         if (!pauseEnabled) {
             return _filter(action);
         }
@@ -375,15 +400,19 @@ public class OpflowRestrictor implements AutoCloseable {
         return result;
     }
     
+    public boolean isLocked() {
+        return valveLock.isWriteLocked();
+    }
+    
     public void lock() {
-        if(!pauseLock.isWriteLockedByCurrentThread()) {
-            pauseLock.writeLock().lock();
+        if(!valveLock.isWriteLockedByCurrentThread()) {
+            valveLock.writeLock().lock();
         }
     }
     
     public void unlock() {
-        if(pauseLock.isWriteLockedByCurrentThread()) {
-            pauseLock.writeLock().unlock();
+        if(valveLock.isWriteLockedByCurrentThread()) {
+            valveLock.writeLock().unlock();
         }
     }
     

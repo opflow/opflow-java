@@ -6,7 +6,6 @@ import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
-import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
@@ -26,9 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +66,6 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRpcWatcher rpcWatcher;
     private OpflowRestServer restServer;
     private OpflowReqExtractor reqExtractor;
-    private final ReentrantReadWriteLock valveLock;
 
     public OpflowCommander() throws OpflowBootstrapException {
         this(null, null);
@@ -104,9 +99,15 @@ public class OpflowCommander implements AutoCloseable {
 
         measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get("promExporter"));
         
-        valveLock = new ReentrantReadWriteLock();
+        Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get("restrictor");
         
-        lockValve();
+        if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
+            restrictor = new OpflowRestrictor(OpflowUtil.buildMap(restrictorCfg)
+                    .put("instanceId", instanceId)
+                    .toMap());
+        }
+        
+        restrictor.lock();
         
         this.init(kwargs);
         
@@ -124,7 +125,6 @@ public class OpflowCommander implements AutoCloseable {
             reservedWorkerEnabled = true;
         }
 
-        Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get("restrictor");
         Map<String, Object> reqExtractorCfg = (Map<String, Object>)kwargs.get("reqExtractor");
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get("configurer");
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get("rpcMaster");
@@ -162,12 +162,6 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         try {
-            if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
-                restrictor = new OpflowRestrictor(OpflowUtil.buildMap(restrictorCfg)
-                        .put("instanceId", instanceId)
-                        .toMap());
-            }
-
             if (reqExtractorCfg == null || OpflowUtil.isComponentEnabled(reqExtractorCfg)) {
                 reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
             }
@@ -224,18 +218,6 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
     
-    private void lockValve() {
-        if(!valveLock.isWriteLockedByCurrentThread()) {
-            valveLock.writeLock().lock();
-        }
-    }
-    
-    private void unlockValve() {
-        if(valveLock.isWriteLockedByCurrentThread()) {
-            valveLock.writeLock().unlock();
-        }
-    }
-    
     public boolean isRestrictorAvailable() {
         return restrictor != null && restrictorScope == RestrictionScope.ALL;
     }
@@ -271,7 +253,9 @@ public class OpflowCommander implements AutoCloseable {
                 restServer.serve(httpHandlers);
             }
         }
-        unlockValve();
+        if (isRestrictorAvailable()) {
+            restrictor.unlock();
+        }
     }
 
     @Override
@@ -280,34 +264,29 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].close()")
                 .stringify());
         
-        lockValve();
+        if (isRestrictorAvailable()) {
+            restrictor.lock();
+        };
         
         if (restServer != null) restServer.close();
         if (rpcWatcher != null) rpcWatcher.close();
         
         try {
-            if (isRestrictorAvailable()) {
-                restrictor.lock();
-            }
             if (publisher != null) publisher.close();
             if (rpcMaster != null) rpcMaster.close();
             if (configurer != null) configurer.close();
         }
         finally {
             if (isRestrictorAvailable()) {
-                restrictor.unlock();
+                restrictor.close();
             }
         }
         
-        if (isRestrictorAvailable()) {
-            restrictor.close();
-        }
-
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close() has done!")
                 .stringify());
     }
-
+    
     private static class OpflowRpcCheckerMaster extends OpflowRpcChecker {
 
         private final static String DEFAULT_BALL_JSON = OpflowJsonTool.toString(new Object[] { new Ping() });
@@ -641,12 +620,11 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRpcMaster rpcMaster;
         private final OpflowPubsubHandler publisher;
         private final OpflowRestrictor restrictor;
-        private final ReadWriteLock valveLock;
 
         private boolean detachedWorkerActive = true;
         private boolean reservedWorkerActive = true;
 
-        public RpcInvocationHandler(ReadWriteLock valveLock, OpflowRestrictor restrictor, OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher,
+        public RpcInvocationHandler(OpflowRestrictor restrictor, OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher,
                 Class clazz, Object reservedWorker, boolean reservedWorkerEnabled
         ) {
             this.clazz = clazz;
@@ -672,7 +650,6 @@ public class OpflowCommander implements AutoCloseable {
             this.rpcMaster = rpcMaster;
             this.publisher = publisher;
             this.restrictor = restrictor;
-            this.valveLock = valveLock;
         }
 
         public Set<String> getMethodNames() {
@@ -711,25 +688,15 @@ public class OpflowCommander implements AutoCloseable {
         
         @Override
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable {
-            Lock rl = this.valveLock.readLock();
-            if (rl.tryLock()) {
-                try {
-                    if (this.restrictor == null) {
-                        return _invoke(proxy, method, args);
-                    }
-                    return this.restrictor.filter(new OpflowRestrictor.Action<Object>() {
-                        @Override
-                        public Object process() throws Throwable {
-                            return _invoke(proxy, method, args);
-                        }
-                    });
-                }
-                finally {
-                    rl.unlock();
-                }
-            } else {
-                throw new OpflowRequestSuspendException("Commander is not ready yet");
+            if (this.restrictor == null) {
+                return _invoke(proxy, method, args);
             }
+            return this.restrictor.filter(new OpflowRestrictor.Action<Object>() {
+                @Override
+                public Object process() throws Throwable {
+                    return _invoke(proxy, method, args);
+                }
+            });
         }
         
         private Object _invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -871,9 +838,9 @@ public class OpflowCommander implements AutoCloseable {
                     .stringify());
             RpcInvocationHandler handler;
             if (isRestrictorAvailable()) {
-                handler = new RpcInvocationHandler(valveLock, restrictor, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
+                handler = new RpcInvocationHandler(restrictor, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
             } else {
-                handler = new RpcInvocationHandler(valveLock, null, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
+                handler = new RpcInvocationHandler(null, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
             }
             handlers.put(clazzName, handler);
         } else {
