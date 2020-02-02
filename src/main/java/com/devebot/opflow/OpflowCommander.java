@@ -611,22 +611,39 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
 
-    private class RpcInvocationHandler implements InvocationHandler {
+    private static class RpcInvocationHandler implements InvocationHandler {
+        private final OpflowLogTracer logTracer;
+        private final OpflowPromMeasurer measurer;
+        private final OpflowRestrictor restrictor;
+        private final OpflowReqExtractor reqExtractor;
+        private final OpflowRpcWatcher rpcWatcher;
+        
+        private final OpflowRpcMaster rpcMaster;
+        private final OpflowPubsubHandler publisher;
+        
         private final Class clazz;
         private final Object reservedWorker;
         private final boolean reservedWorkerEnabled;
         private final Map<String, String> aliasOfMethod = new HashMap<>();
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
-        private final OpflowRpcMaster rpcMaster;
-        private final OpflowPubsubHandler publisher;
-        private final OpflowRestrictor restrictor;
-
+        
         private boolean detachedWorkerActive = true;
         private boolean reservedWorkerActive = true;
-
-        public RpcInvocationHandler(OpflowRestrictor restrictor, OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher,
+        
+        public RpcInvocationHandler(OpflowLogTracer logTracer, OpflowPromMeasurer measurer,
+                OpflowRestrictor restrictor, OpflowReqExtractor reqExtractor, OpflowRpcWatcher rpcWatcher,
+                OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher,
                 Class clazz, Object reservedWorker, boolean reservedWorkerEnabled
         ) {
+            this.logTracer = logTracer;
+            this.measurer = measurer;
+            this.restrictor = restrictor;
+            this.reqExtractor = reqExtractor;
+            this.rpcWatcher = rpcWatcher;
+            
+            this.rpcMaster = rpcMaster;
+            this.publisher = publisher;
+            
             this.clazz = clazz;
             this.reservedWorker = reservedWorker;
             this.reservedWorkerEnabled = reservedWorkerEnabled;
@@ -647,9 +664,6 @@ public class OpflowCommander implements AutoCloseable {
                 }
                 methodIsAsync.put(methodId, (routine != null) && routine.isAsync());
             }
-            this.rpcMaster = rpcMaster;
-            this.publisher = publisher;
-            this.restrictor = restrictor;
         }
 
         public Set<String> getMethodNames() {
@@ -663,7 +677,7 @@ public class OpflowCommander implements AutoCloseable {
         public void setDetachedWorkerActive(boolean detachedWorkerActive) {
             this.detachedWorkerActive = detachedWorkerActive;
         }
-        
+
         public boolean isReservedWorkerActive() {
             return reservedWorkerActive;
         }
@@ -671,7 +685,7 @@ public class OpflowCommander implements AutoCloseable {
         public void setReservedWorkerActive(boolean reservedWorkerActive) {
             this.reservedWorkerActive = reservedWorkerActive;
         }
-        
+
         public boolean isReservedWorkerAvailable() {
             return this.reservedWorker != null && this.reservedWorkerEnabled && this.reservedWorkerActive;
         }
@@ -799,6 +813,13 @@ public class OpflowCommander implements AutoCloseable {
 
             return OpflowJsonTool.toObject(rpcResult.getValueAsString(), method.getReturnType());
         }
+        
+        private static OpflowSourceRoutine extractMethodInfo(Method method) {
+            if (!method.isAnnotationPresent(OpflowSourceRoutine.class)) return null;
+            Annotation annotation = method.getAnnotation(OpflowSourceRoutine.class);
+            OpflowSourceRoutine routine = (OpflowSourceRoutine) annotation;
+            return routine;
+        }
     }
 
     private static Throwable rebuildInvokerException(Map<String, Object> errorMap) {
@@ -838,9 +859,9 @@ public class OpflowCommander implements AutoCloseable {
                     .stringify());
             RpcInvocationHandler handler;
             if (isRestrictorAvailable()) {
-                handler = new RpcInvocationHandler(restrictor, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
+                handler = new RpcInvocationHandler(logTracer, measurer, restrictor, reqExtractor, rpcWatcher, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
             } else {
-                handler = new RpcInvocationHandler(null, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
+                handler = new RpcInvocationHandler(logTracer, measurer, null, reqExtractor, rpcWatcher, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
             }
             handlers.put(clazzName, handler);
         } else {
@@ -917,13 +938,6 @@ public class OpflowCommander implements AutoCloseable {
 
     public <T> void unregisterType(Class<T> type) {
         removeInvocationHandler(type);
-    }
-
-    private OpflowSourceRoutine extractMethodInfo(Method method) {
-        if (!method.isAnnotationPresent(OpflowSourceRoutine.class)) return null;
-        Annotation annotation = method.getAnnotation(OpflowSourceRoutine.class);
-        OpflowSourceRoutine routine = (OpflowSourceRoutine) annotation;
-        return routine;
     }
 
     @Override
