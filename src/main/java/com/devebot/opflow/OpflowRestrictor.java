@@ -178,7 +178,7 @@ public class OpflowRestrictor implements AutoCloseable {
         return _filter_valve(action);
     }
     
-    public <T> T _filter_valve(Action<T> action) throws Throwable {
+    private <T> T _filter_valve(Action<T> action) throws Throwable {
         Lock rl = this.valveLock.readLock();
         if (rl.tryLock()) {
             try {
@@ -195,9 +195,9 @@ public class OpflowRestrictor implements AutoCloseable {
         }
     }
     
-    public <T> T _filter_pause(Action<T> action) throws Throwable {
+    private <T> T _filter_pause(Action<T> action) throws Throwable {
         if (!pauseEnabled) {
-            return _filter(action);
+            return _filter_limit(action);
         }
         Lock rl = pauseLock.readLock();
         if (pauseTimeout >= 0) {
@@ -211,7 +211,7 @@ public class OpflowRestrictor implements AutoCloseable {
                         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                                 .text("Restrictor[${restrictorId}].filter() try")
                                 .stringify());
-                        return _filter(action);
+                        return _filter_limit(action);
                     }
                     finally {
                         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
@@ -239,7 +239,7 @@ public class OpflowRestrictor implements AutoCloseable {
                     .stringify());
             rl.lock();
             try {
-                return _filter(action);
+                return _filter_limit(action);
             }
             finally {
                 rl.unlock();
@@ -247,7 +247,7 @@ public class OpflowRestrictor implements AutoCloseable {
         }
     }
     
-    private <T> T _filter(Action<T> action) throws Throwable {
+    private <T> T _filter_limit(Action<T> action) throws Throwable {
         if (!semaphoreEnabled) {
             return action.process();
         }
@@ -418,35 +418,38 @@ public class OpflowRestrictor implements AutoCloseable {
     
     @Override
     public synchronized void close() {
-        if (threadExecutor == null) return;
-        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                .text("Restrictor[${restrictorId}].close() disable new tasks from being submitted")
-                .stringify());
-        threadExecutor.shutdown();
-        try {
+        if (threadExecutor != null) {
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                    .text("Restrictor[${restrictorId}].close() wait a while for existing tasks to terminate")
+                    .text("Restrictor[${restrictorId}].close() disable new tasks from being submitted")
                     .stringify());
-            if (!threadExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+            threadExecutor.shutdown();
+            try {
                 if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                        .text("Restrictor[${restrictorId}].close() cancel currently executing tasks")
-                        .stringify());
-                threadExecutor.shutdownNow();
-                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                        .text("Restrictor[${restrictorId}].close() wait a while for tasks to respond to being cancelled")
+                        .text("Restrictor[${restrictorId}].close() wait a while for existing tasks to terminate")
                         .stringify());
                 if (!threadExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
                     if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                            .text("Restrictor[${restrictorId}].close() threadExecutor did not terminate")
+                            .text("Restrictor[${restrictorId}].close() cancel currently executing tasks")
                             .stringify());
+                    threadExecutor.shutdownNow();
+                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                            .text("Restrictor[${restrictorId}].close() wait a while for tasks to respond to being cancelled")
+                            .stringify());
+                    if (!threadExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                                .text("Restrictor[${restrictorId}].close() threadExecutor did not terminate")
+                                .stringify());
+                    }
                 }
+            } catch (InterruptedException ie) {
+                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                        .text("Restrictor[${restrictorId}].close() (re-)cancel if current thread also interrupted")
+                        .stringify());
+                threadExecutor.shutdownNow();
             }
-        } catch (InterruptedException ie) {
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                    .text("Restrictor[${restrictorId}].close() (re-)cancel if current thread also interrupted")
-                    .stringify());
-            threadExecutor.shutdownNow();
+            finally {
+                threadExecutor = null;
+            }
         }
-        threadExecutor = null;
     }
 }
