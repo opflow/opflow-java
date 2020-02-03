@@ -43,8 +43,6 @@ public class OpflowCommander implements AutoCloseable {
 
     public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
 
-    public static enum RestrictionScope { ALL, RPC }
-    
     public final static String PARAM_RESERVED_WORKER_ENABLED = "reservedWorkerEnabled";
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
@@ -55,7 +53,6 @@ public class OpflowCommander implements AutoCloseable {
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
 
-    private RestrictionScope restrictorScope = RestrictionScope.ALL;
     private OpflowRestrictor restrictor;
     
     private boolean reservedWorkerEnabled;
@@ -181,9 +178,6 @@ public class OpflowCommander implements AutoCloseable {
                     public void transform(Map<String, Object> opts) {
                         opts.put("instanceId", instanceId);
                         opts.put("measurer", measurer);
-                        if (restrictorScope == RestrictionScope.RPC) {
-                            opts.put("restrictor", restrictor);
-                        }
                     }
                 }, rpcMasterCfg).toMap());
             }
@@ -218,10 +212,6 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
     
-    public boolean isRestrictorAvailable() {
-        return restrictor != null && restrictorScope == RestrictionScope.ALL;
-    }
-    
     public boolean isReservedWorkerEnabled() {
         return this.reservedWorkerEnabled;
     }
@@ -253,7 +243,7 @@ public class OpflowCommander implements AutoCloseable {
                 restServer.serve(httpHandlers);
             }
         }
-        if (isRestrictorAvailable()) {
+        if (restrictor != null) {
             restrictor.unlock();
         }
     }
@@ -264,7 +254,7 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].close()")
                 .stringify());
         
-        if (isRestrictorAvailable()) {
+        if (restrictor != null) {
             restrictor.lock();
         };
         
@@ -277,7 +267,7 @@ public class OpflowCommander implements AutoCloseable {
             if (configurer != null) configurer.close();
         }
         finally {
-            if (isRestrictorAvailable()) {
+            if (restrictor != null) {
                 restrictor.close();
             }
         }
@@ -858,7 +848,7 @@ public class OpflowCommander implements AutoCloseable {
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
             RpcInvocationHandler handler;
-            if (isRestrictorAvailable()) {
+            if (restrictor != null) {
                 handler = new RpcInvocationHandler(logTracer, measurer, restrictor, reqExtractor, rpcWatcher, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
             } else {
                 handler = new RpcInvocationHandler(logTracer, measurer, null, reqExtractor, rpcWatcher, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);

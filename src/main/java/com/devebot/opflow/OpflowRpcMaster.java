@@ -4,6 +4,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRestrictionException;
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
@@ -59,7 +60,11 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
-        restrictor = (OpflowRestrictor) OpflowUtil.getOptionField(params, "restrictor", null);
+        
+        restrictor = new OpflowRestrictor(OpflowUtil.buildMap()
+                .put("pauseEnabled", Boolean.FALSE)
+                .put("semaphoreEnabled", Boolean.FALSE)
+                .toMap());
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", instanceId);
         
@@ -76,6 +81,22 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
+        
+        engine.setProducingBlockedListener(new BlockedListener() {
+            @Override
+            public void handleBlocked(String reason) throws IOException {
+                if (restrictor != null) {
+                    restrictor.lock();
+                }
+            }
+
+            @Override
+            public void handleUnblocked() throws IOException {
+                if (restrictor != null) {
+                    restrictor.unlock();
+                }
+            }
+        });
         
         if (params.get("expiration") != null && params.get("expiration") instanceof Long) {
             expiration = (Long) params.get("expiration");
@@ -484,10 +505,10 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     @Override
     public void close() {
-        closeLock.lock();
         if (restrictor != null) {
             restrictor.lock();
         }
+        closeLock.lock();
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - obtain the lock")
                 .stringify());
@@ -528,10 +549,10 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].close() - an interruption has been raised")
                 .stringify());
         } finally {
+            closeLock.unlock();
             if (restrictor != null) {
                 restrictor.unlock();
             }
-            closeLock.unlock();
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - lock has been released")
                 .stringify());

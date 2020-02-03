@@ -93,13 +93,6 @@ public class OpflowRestrictor implements AutoCloseable {
             pauseTimeout = PAUSE_TIMEOUT_DEFAULT;
         }
         
-        if (options.get("semaphoreLimit") instanceof Integer) {
-            int _limit = (Integer) options.get("semaphoreLimit");
-            semaphoreLimit = (_limit > 0) ? _limit : SEMAPHORE_LIMIT_DEFAULT;
-        } else {
-            semaphoreLimit = SEMAPHORE_LIMIT_DEFAULT;
-        }
-        
         if (options.get("semaphoreEnabled") instanceof Boolean) {
             semaphoreEnabled = (Boolean) options.get("semaphoreEnabled");
         } else {
@@ -112,6 +105,13 @@ public class OpflowRestrictor implements AutoCloseable {
             semaphoreTimeout = (Integer) options.get("semaphoreTimeout");
         } else {
             semaphoreTimeout = SEMAPHORE_TIMEOUT_DEFAULT;
+        }
+        
+        if (options.get("semaphoreLimit") instanceof Integer) {
+            int _limit = (Integer) options.get("semaphoreLimit");
+            semaphoreLimit = (_limit > 0) ? _limit : SEMAPHORE_LIMIT_DEFAULT;
+        } else {
+            semaphoreLimit = SEMAPHORE_LIMIT_DEFAULT;
         }
         
         this.semaphore = new Semaphore(this.semaphoreLimit);
