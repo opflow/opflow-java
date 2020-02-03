@@ -119,7 +119,7 @@ public class OpflowUUID {
         }
 
         private static String extractClassName() {
-            return Generator.class.getName().replace(Generator.class.getPackageName(), "");
+            return Generator.class.getName().replace(Generator.class.getPackage().getName(), "");
         }
     }
     

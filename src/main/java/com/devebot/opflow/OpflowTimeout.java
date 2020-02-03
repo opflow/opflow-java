@@ -196,7 +196,7 @@ public class OpflowTimeout {
         }
         
         private static String extractClassName() {
-            return Monitor.class.getName().replace(Monitor.class.getPackageName(), "");
+            return Monitor.class.getName().replace(Monitor.class.getPackage().getName(), "");
         }
     }
     
