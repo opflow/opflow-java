@@ -32,7 +32,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final String instanceId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
-    private final OpflowRestrictor restrictor;
+    private final OpflowRestrictor<OpflowRpcRequest> restrictor;
     
     private final Timer timer = new Timer("Timer-" + OpflowRpcMaster.class.getSimpleName(), true);
     private final ReentrantReadWriteLock taskLock = new ReentrantReadWriteLock();
@@ -61,7 +61,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
-        restrictor = new OpflowRestrictor(OpflowUtil.buildMap()
+        restrictor = new OpflowRestrictor<>(OpflowUtil.buildMap()
                 .put("pauseEnabled", Boolean.FALSE)
                 .put("semaphoreEnabled", Boolean.FALSE)
                 .toMap());
