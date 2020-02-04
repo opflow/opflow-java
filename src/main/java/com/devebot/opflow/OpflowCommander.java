@@ -104,7 +104,9 @@ public class OpflowCommander implements AutoCloseable {
                     .toMap());
         }
         
-        restrictor.lock();
+        if (restrictor != null) {
+            restrictor.lock();
+        };
         
         this.init(kwargs);
         

@@ -88,6 +88,8 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
         private ExecutorService threadExecutor;
 
         public Pause(OpflowLogTracer logTracer, Map<String, Object> options) {
+            options = OpflowUtil.ensureNotNull(options);
+            
             this.logTracer = logTracer;
 
             pauseLock = new ReentrantReadWriteLock();
@@ -354,6 +356,8 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
         private final Semaphore semaphore;
         
         public Limit(OpflowLogTracer logTracer, Map<String, Object> options) {
+            options = OpflowUtil.ensureNotNull(options);
+            
             this.logTracer = logTracer;
 
             if (options.get("semaphoreEnabled") instanceof Boolean) {
@@ -538,6 +542,14 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
 
     @Override
     public void close() {
-        
+        for (OpflowRestrictable.Filter<T> filter : this.chain) {
+            if (filter instanceof AutoCloseable) {
+                try {
+                    AutoCloseable closer = (AutoCloseable) filter;
+                    closer.close();
+                }
+                catch (Exception e) {}
+            }
+        }
     }
 }
