@@ -18,25 +18,63 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements AutoCloseable {
 
-    public interface Action<T> extends OpflowRestrictable.Action<T> {}
-    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictor.class);
-    
+
     private final String instanceId;
     private final OpflowLogTracer logTracer;
-    
-    private boolean active;
-    
+
+    private final OnOff<T> onoffRestrictor;
     private final Valve<T> valveRestrictor;
     private final Pause<T> pauseRestrictor;
     private final Limit<T> limitRestrictor;
 
-    public static class Valve<T> extends OpflowRestrictable.Filter<T> {
-        private final OpflowLogTracer logTracer;
+    public interface Action<T> extends OpflowRestrictable.Action<T> {}
+
+    private static abstract class Filter<T> extends OpflowRestrictable.Filter<T> {
+        protected OpflowLogTracer logTracer;
+
+        public Filter<T> setLogTracer(OpflowLogTracer logTracer) {
+            this.logTracer = logTracer;
+            return this;
+        }
+    }
+
+    public static class OnOff<T> extends Filter<T> {
+        private boolean active;
+        
+        public OnOff(Map<String, Object> options) {
+            options = OpflowUtil.ensureNotNull(options);
+
+            if (options.get("active") instanceof Boolean) {
+                active = (Boolean) options.get("active");
+            } if (options.get("enabled") instanceof Boolean) {
+                active = (Boolean) options.get("enabled");
+            } else {
+                active = true;
+            }
+        }
+        
+        public boolean isActive() {
+            return active;
+        }
+
+        public void setActive(boolean enabled) {
+            this.active = enabled;
+        }
+        
+        @Override
+        public T filter(OpflowRestrictable.Action<T> action) throws Throwable {
+            if (!isActive()) {
+                return action.process();
+            }
+            return this.execute(action);
+        }
+    }
+
+    public static class Valve<T> extends Filter<T> {
         private final ReentrantReadWriteLock valveLock;
 
-        public Valve(OpflowLogTracer logTracer) {
-            this.logTracer = logTracer;
+        public Valve(Map<String, Object> options) {
             this.valveLock = new ReentrantReadWriteLock();
         }
 
@@ -75,22 +113,19 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
         }
     }
 
-    public static class Pause<T> extends OpflowRestrictable.Filter<T> implements AutoCloseable {
+    public static class Pause<T> extends Filter<T> implements AutoCloseable {
 
         private final long PAUSE_SLEEPING_INTERVAL = 500;
         private final long PAUSE_TIMEOUT_DEFAULT = 0l;
 
-        private final OpflowLogTracer logTracer;
         private final ReentrantReadWriteLock pauseLock;
         private boolean pauseEnabled;
         private long pauseTimeout;
         private PauseThread pauseThread;
         private ExecutorService threadExecutor;
 
-        public Pause(OpflowLogTracer logTracer, Map<String, Object> options) {
+        public Pause(Map<String, Object> options) {
             options = OpflowUtil.ensureNotNull(options);
-            
-            this.logTracer = logTracer;
 
             pauseLock = new ReentrantReadWriteLock();
 
@@ -344,22 +379,19 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
         }
     }
 
-    public static class Limit<T> extends OpflowRestrictable.Filter<T> {
+    public static class Limit<T> extends Filter<T> {
 
         private final int SEMAPHORE_LIMIT_DEFAULT = 1000;
         private final long SEMAPHORE_TIMEOUT_DEFAULT = 0l;
 
-        private final OpflowLogTracer logTracer;
         private boolean semaphoreEnabled;
         private long semaphoreTimeout;
         private final int semaphoreLimit;
         private final Semaphore semaphore;
         
-        public Limit(OpflowLogTracer logTracer, Map<String, Object> options) {
+        public Limit(Map<String, Object> options) {
             options = OpflowUtil.ensureNotNull(options);
             
-            this.logTracer = logTracer;
-
             if (options.get("semaphoreEnabled") instanceof Boolean) {
                 semaphoreEnabled = (Boolean) options.get("semaphoreEnabled");
             } else {
@@ -432,7 +464,7 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
             }
         }
     }
-    
+
     public OpflowRestrictor() {
         this(null, null);
     }
@@ -451,37 +483,31 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
                 .text("Restrictor[${restrictorId}].new()")
                 .stringify());
         
-        valveRestrictor = new Valve<>(logTracer);
-        pauseRestrictor = new Pause<>(logTracer, options);
-        limitRestrictor = new Limit<>(logTracer, options);
+        onoffRestrictor = new OnOff<>(options);
+        valveRestrictor = new Valve<>(options);
+        pauseRestrictor = new Pause<>(options);
+        limitRestrictor = new Limit<>(options);
         
-        this.append(valveRestrictor);
-        this.append(pauseRestrictor);
-        this.append(limitRestrictor);
-        
-        if (options.get("active") instanceof Boolean) {
-            active = (Boolean) options.get("active");
-        } if (options.get("enabled") instanceof Boolean) {
-            active = (Boolean) options.get("enabled");
-        } else {
-            active = true;
-        }
+        this.append(onoffRestrictor.setLogTracer(logTracer));
+        this.append(valveRestrictor.setLogTracer(logTracer));
+        this.append(pauseRestrictor.setLogTracer(logTracer));
+        this.append(limitRestrictor.setLogTracer(logTracer));
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Restrictor[${restrictorId}].new() end!")
                 .stringify());
     }
     
+    public String getInstanceId() {
+        return instanceId;
+    }
+    
     public boolean isActive() {
-        return active;
+        return onoffRestrictor.isActive();
     }
 
     public void setActive(boolean enabled) {
-        this.active = enabled;
-    }
-
-    public String getInstanceId() {
-        return instanceId;
+        onoffRestrictor.setActive(enabled);
     }
 
     public boolean isPauseEnabled() {
