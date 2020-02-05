@@ -279,20 +279,66 @@ public class OpflowCommander implements AutoCloseable {
                 .stringify());
     }
     
-    private static class OpflowRestrictorMaster extends OpflowRestrictor<Object> {
-        private final OpflowRestrictor.Pause<Object> pauseRestrictor;
-        private final OpflowRestrictor.Limit<Object> limitRestrictor;
+    private static class OpflowRestrictorMaster<T> extends OpflowRestrictable.Runner<T> implements AutoCloseable {
+        private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictorMaster.class);
+
+        protected final String instanceId;
+        protected final OpflowLogTracer logTracer;
+
+        private final OpflowRestrictor.OnOff<T> onoffRestrictor;
+        private final OpflowRestrictor.Valve<T> valveRestrictor;
+        private final OpflowRestrictor.Pause<T> pauseRestrictor;
+        private final OpflowRestrictor.Limit<T> limitRestrictor;
 
         public OpflowRestrictorMaster(Map<String, Object> options) {
-            super(options);
-            
+            options = OpflowUtil.ensureNotNull(options);
+
+            instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
+            logTracer = OpflowLogTracer.ROOT.branch("restrictorId", instanceId);
+
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("Restrictor[${restrictorId}].new()")
+                    .stringify());
+
+            onoffRestrictor = new OpflowRestrictor.OnOff<>(options);
+            valveRestrictor = new OpflowRestrictor.Valve<>(options);
             pauseRestrictor = new OpflowRestrictor.Pause<>(options);
             limitRestrictor = new OpflowRestrictor.Limit<>(options);
 
+            super.append(onoffRestrictor.setLogTracer(logTracer));
+            super.append(valveRestrictor.setLogTracer(logTracer));
             super.append(pauseRestrictor.setLogTracer(logTracer));
             super.append(limitRestrictor.setLogTracer(logTracer));
+            
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                    .text("Restrictor[${restrictorId}].new() end!")
+                    .stringify());
         }
-        
+
+        public String getInstanceId() {
+            return instanceId;
+        }
+
+        public boolean isActive() {
+            return onoffRestrictor.isActive();
+        }
+
+        public void setActive(boolean enabled) {
+            onoffRestrictor.setActive(enabled);
+        }
+
+        public boolean isLocked() {
+            return valveRestrictor.isLocked();
+        }
+
+        public void lock() {
+            valveRestrictor.lock();
+        }
+
+        public void unlock() {
+            valveRestrictor.unlock();
+        }
+
         public boolean isPauseEnabled() {
             return pauseRestrictor.isPauseEnabled();
         }
@@ -335,6 +381,11 @@ public class OpflowCommander implements AutoCloseable {
 
         public long getSemaphoreTimeout() {
             return limitRestrictor.getSemaphoreTimeout();
+        }
+
+        @Override
+        public void close() {
+            pauseRestrictor.close();
         }
     }
     
@@ -665,7 +716,7 @@ public class OpflowCommander implements AutoCloseable {
     private static class RpcInvocationHandler implements InvocationHandler {
         private final OpflowLogTracer logTracer;
         private final OpflowPromMeasurer measurer;
-        private final OpflowRestrictor restrictor;
+        private final OpflowRestrictorMaster restrictor;
         private final OpflowReqExtractor reqExtractor;
         private final OpflowRpcWatcher rpcWatcher;
         
@@ -682,7 +733,7 @@ public class OpflowCommander implements AutoCloseable {
         private boolean reservedWorkerActive = true;
         
         public RpcInvocationHandler(OpflowLogTracer logTracer, OpflowPromMeasurer measurer,
-                OpflowRestrictor restrictor, OpflowReqExtractor reqExtractor, OpflowRpcWatcher rpcWatcher,
+                OpflowRestrictorMaster restrictor, OpflowReqExtractor reqExtractor, OpflowRpcWatcher rpcWatcher,
                 OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher,
                 Class clazz, Object reservedWorker, boolean reservedWorkerEnabled
         ) {

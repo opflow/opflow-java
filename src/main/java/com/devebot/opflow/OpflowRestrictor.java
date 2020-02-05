@@ -2,7 +2,6 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestWaitingException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,15 +16,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author pnhung177
  */
-public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements AutoCloseable {
+public class OpflowRestrictor {
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictor.class);
-
-    protected final String instanceId;
-    protected final OpflowLogTracer logTracer;
-
-    private final OnOff<T> onoffRestrictor;
-    private final Valve<T> valveRestrictor;
 
     public interface Action<T> extends OpflowRestrictable.Action<T> {}
 
@@ -73,6 +66,10 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
     public static class Valve<T> extends Filter<T> {
         private final ReentrantReadWriteLock valveLock;
 
+        public Valve() {
+            this(null);
+        }
+        
         public Valve(Map<String, Object> options) {
             this.valveLock = new ReentrantReadWriteLock();
         }
@@ -464,80 +461,6 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
             }
             catch (InterruptedException exception) {
                 throw new OpflowRequestWaitingException("semaphore.acquire() is interrupted", exception);
-            }
-        }
-    }
-
-    public OpflowRestrictor() {
-        this(null, null);
-    }
-    
-    public OpflowRestrictor(Map<String, Object> options) {
-        this(options, null);
-    }
-    
-    public OpflowRestrictor(Map<String, Object> options, List<Filter<T>> filters) {
-        options = OpflowUtil.ensureNotNull(options);
-        
-        instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
-        logTracer = OpflowLogTracer.ROOT.branch("restrictorId", instanceId);
-        
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                .text("Restrictor[${restrictorId}].new()")
-                .stringify());
-        
-        onoffRestrictor = new OnOff<>(options);
-        valveRestrictor = new Valve<>(options);
-        
-        this.append(onoffRestrictor.setLogTracer(logTracer));
-        this.append(valveRestrictor.setLogTracer(logTracer));
-        
-        if (filters != null) {
-            for (Filter<T> filter: filters) {
-                if (filter != null) {
-                    this.append(filter.setLogTracer(logTracer));
-                }
-            }
-        }
-        
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
-                .text("Restrictor[${restrictorId}].new() end!")
-                .stringify());
-    }
-    
-    public String getInstanceId() {
-        return instanceId;
-    }
-    
-    public boolean isActive() {
-        return onoffRestrictor.isActive();
-    }
-
-    public void setActive(boolean enabled) {
-        onoffRestrictor.setActive(enabled);
-    }
-
-    public boolean isLocked() {
-        return valveRestrictor.isLocked();
-    }
-    
-    public void lock() {
-        valveRestrictor.lock();
-    }
-    
-    public void unlock() {
-        valveRestrictor.unlock();
-    }
-
-    @Override
-    public void close() {
-        for (OpflowRestrictable.Filter<T> filter : this.chain) {
-            if (filter instanceof AutoCloseable) {
-                try {
-                    AutoCloseable closer = (AutoCloseable) filter;
-                    closer.close();
-                }
-                catch (Exception e) {}
             }
         }
     }
