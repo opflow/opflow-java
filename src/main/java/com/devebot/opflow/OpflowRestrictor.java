@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestWaitingException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,18 +21,16 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictor.class);
 
-    private final String instanceId;
-    private final OpflowLogTracer logTracer;
+    protected final String instanceId;
+    protected final OpflowLogTracer logTracer;
 
     private final OnOff<T> onoffRestrictor;
     private final Valve<T> valveRestrictor;
-    private final Pause<T> pauseRestrictor;
-    private final Limit<T> limitRestrictor;
 
     public interface Action<T> extends OpflowRestrictable.Action<T> {}
 
-    private static abstract class Filter<T> extends OpflowRestrictable.Filter<T> {
-        protected OpflowLogTracer logTracer;
+    public static abstract class Filter<T> extends OpflowRestrictable.Filter<T> {
+        protected OpflowLogTracer logTracer = OpflowLogTracer.ROOT.copy();
 
         public Filter<T> setLogTracer(OpflowLogTracer logTracer) {
             this.logTracer = logTracer;
@@ -123,6 +122,10 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
         private long pauseTimeout;
         private PauseThread pauseThread;
         private ExecutorService threadExecutor;
+
+        public Pause() {
+            this(null);
+        }
 
         public Pause(Map<String, Object> options) {
             options = OpflowUtil.ensureNotNull(options);
@@ -470,10 +473,10 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
     }
     
     public OpflowRestrictor(Map<String, Object> options) {
-        this(null, options);
+        this(options, null);
     }
     
-    public OpflowRestrictor(ReentrantReadWriteLock sharedLock, Map<String, Object> options) {
+    public OpflowRestrictor(Map<String, Object> options, List<Filter<T>> filters) {
         options = OpflowUtil.ensureNotNull(options);
         
         instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
@@ -485,13 +488,17 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
         
         onoffRestrictor = new OnOff<>(options);
         valveRestrictor = new Valve<>(options);
-        pauseRestrictor = new Pause<>(options);
-        limitRestrictor = new Limit<>(options);
         
         this.append(onoffRestrictor.setLogTracer(logTracer));
         this.append(valveRestrictor.setLogTracer(logTracer));
-        this.append(pauseRestrictor.setLogTracer(logTracer));
-        this.append(limitRestrictor.setLogTracer(logTracer));
+        
+        if (filters != null) {
+            for (Filter<T> filter: filters) {
+                if (filter != null) {
+                    this.append(filter.setLogTracer(logTracer));
+                }
+            }
+        }
         
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Restrictor[${restrictorId}].new() end!")
@@ -510,50 +517,6 @@ public class OpflowRestrictor<T> extends OpflowRestrictable.Runner<T> implements
         onoffRestrictor.setActive(enabled);
     }
 
-    public boolean isPauseEnabled() {
-        return pauseRestrictor.isPauseEnabled();
-    }
-
-    public long getPauseTimeout() {
-        return pauseRestrictor.getPauseTimeout();
-    }
-    
-    public long getPauseDuration() {
-        return pauseRestrictor.getPauseDuration();
-    }
-    
-    public long getPauseElapsed() {
-        return pauseRestrictor.getPauseElapsed();
-    }
-    
-    public boolean isPaused() {
-        return pauseRestrictor.isPaused();
-    }
-    
-    public Map<String, Object> pause(long duration) {
-        return pauseRestrictor.pause(duration);
-    }
-    
-    public Map<String, Object> unpause() {
-        return pauseRestrictor.unpause();
-    }
-    
-    public int getSemaphoreLimit() {
-        return limitRestrictor.getSemaphoreLimit();
-    }
-    
-    public int getSemaphorePermits() {
-        return limitRestrictor.getSemaphorePermits();
-    }
-    
-    public boolean isSemaphoreEnabled() {
-        return limitRestrictor.isSemaphoreEnabled();
-    }
-    
-    public long getSemaphoreTimeout() {
-        return limitRestrictor.getSemaphoreTimeout();
-    }
-    
     public boolean isLocked() {
         return valveRestrictor.isLocked();
     }

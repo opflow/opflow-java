@@ -53,7 +53,7 @@ public class OpflowCommander implements AutoCloseable {
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
 
-    private OpflowRestrictor restrictor;
+    private OpflowRestrictorMaster restrictor;
     
     private boolean reservedWorkerEnabled;
     private OpflowPubsubHandler configurer;
@@ -99,7 +99,7 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get("restrictor");
         
         if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
-            restrictor = new OpflowRestrictor(OpflowUtil.buildMap(restrictorCfg)
+            restrictor = new OpflowRestrictorMaster(OpflowUtil.buildMap(restrictorCfg)
                     .put("instanceId", instanceId)
                     .toMap());
         }
@@ -279,6 +279,65 @@ public class OpflowCommander implements AutoCloseable {
                 .stringify());
     }
     
+    private static class OpflowRestrictorMaster extends OpflowRestrictor<Object> {
+        private final OpflowRestrictor.Pause<Object> pauseRestrictor;
+        private final OpflowRestrictor.Limit<Object> limitRestrictor;
+
+        public OpflowRestrictorMaster(Map<String, Object> options) {
+            super(options);
+            
+            pauseRestrictor = new OpflowRestrictor.Pause<>(options);
+            limitRestrictor = new OpflowRestrictor.Limit<>(options);
+
+            super.append(pauseRestrictor.setLogTracer(logTracer));
+            super.append(limitRestrictor.setLogTracer(logTracer));
+        }
+        
+        public boolean isPauseEnabled() {
+            return pauseRestrictor.isPauseEnabled();
+        }
+
+        public long getPauseTimeout() {
+            return pauseRestrictor.getPauseTimeout();
+        }
+
+        public long getPauseDuration() {
+            return pauseRestrictor.getPauseDuration();
+        }
+
+        public long getPauseElapsed() {
+            return pauseRestrictor.getPauseElapsed();
+        }
+
+        public boolean isPaused() {
+            return pauseRestrictor.isPaused();
+        }
+
+        public Map<String, Object> pause(long duration) {
+            return pauseRestrictor.pause(duration);
+        }
+
+        public Map<String, Object> unpause() {
+            return pauseRestrictor.unpause();
+        }
+
+        public int getSemaphoreLimit() {
+            return limitRestrictor.getSemaphoreLimit();
+        }
+
+        public int getSemaphorePermits() {
+            return limitRestrictor.getSemaphorePermits();
+        }
+
+        public boolean isSemaphoreEnabled() {
+            return limitRestrictor.isSemaphoreEnabled();
+        }
+
+        public long getSemaphoreTimeout() {
+            return limitRestrictor.getSemaphoreTimeout();
+        }
+    }
+    
     private static class OpflowRpcCheckerMaster extends OpflowRpcChecker {
 
         private final static String DEFAULT_BALL_JSON = OpflowJsonTool.toString(new Object[] { new Ping() });
@@ -324,13 +383,13 @@ public class OpflowCommander implements AutoCloseable {
         private final String instanceId;
         private final OpflowPromMeasurer measurer;
         private final OpflowLogTracer logTracer;
-        private final OpflowRestrictor restrictor;
+        private final OpflowRestrictorMaster restrictor;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
 
         public OpflowTaskSubmitterMaster(String instanceId,
                 OpflowPromMeasurer measurer,
-                OpflowRestrictor restrictor,
+                OpflowRestrictorMaster restrictor,
                 OpflowRpcMaster rpcMaster,
                 Map<String, RpcInvocationHandler> mappings) {
             this.instanceId = instanceId;
@@ -430,7 +489,7 @@ public class OpflowCommander implements AutoCloseable {
 
         private final String instanceId;
         private final OpflowPromMeasurer measurer;
-        private final OpflowRestrictor restrictor;
+        private final OpflowRestrictorMaster restrictor;
         private final OpflowRpcWatcher rpcWatcher;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
@@ -438,7 +497,7 @@ public class OpflowCommander implements AutoCloseable {
 
         public OpflowInfoCollectorMaster(String instanceId,
                 OpflowPromMeasurer measurer,
-                OpflowRestrictor restrictor,
+                OpflowRestrictorMaster restrictor,
                 OpflowRpcWatcher rpcWatcher,
                 OpflowRpcMaster rpcMaster,
                 Map<String, RpcInvocationHandler> mappings) {

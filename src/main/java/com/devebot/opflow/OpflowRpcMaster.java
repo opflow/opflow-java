@@ -61,10 +61,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
-        restrictor = new OpflowRestrictor<>(OpflowUtil.buildMap()
-                .put("pauseEnabled", Boolean.FALSE)
-                .put("semaphoreEnabled", Boolean.FALSE)
-                .toMap());
+        restrictor = new OpflowRestrictor<>(OpflowUtil.buildMap().toMap());
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", instanceId);
         
