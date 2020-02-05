@@ -273,7 +273,9 @@ public class OpflowCommander implements AutoCloseable {
                 restrictor.close();
             }
         }
-        
+
+        OpflowUUID.release();
+
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close() has done!")
                 .stringify());

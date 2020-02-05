@@ -270,7 +270,9 @@ public class OpflowServerlet implements AutoCloseable {
         if (configurer != null) configurer.close();
         if (rpcWorker != null) rpcWorker.close();
         if (subscriber != null) subscriber.close();
-        
+
+        OpflowUUID.release();
+
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].close() has completed!")
                 .stringify());

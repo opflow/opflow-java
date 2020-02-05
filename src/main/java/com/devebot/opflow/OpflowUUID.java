@@ -47,6 +47,13 @@ public class OpflowUUID {
         return convertUUIDToBase64(UUID.fromString(uuid));
     }
     
+    public static void release() {
+        try {
+            UUID_GENERATOR.close();
+        }
+        catch (Exception e) {}
+    }
+    
     private static String convertUUIDToBase64(UUID uuid) {
         // Create byte[] for base64 from uuid
         byte[] src = ByteBuffer.wrap(new byte[16])
