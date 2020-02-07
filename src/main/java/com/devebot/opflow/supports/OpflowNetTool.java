@@ -9,17 +9,32 @@ import java.net.ServerSocket;
  */
 public class OpflowNetTool {
     public static Integer detectFreePort(Integer[] ports) {
-        Integer freePort = null;
         for (Integer port : ports) {
-            try {
-                ServerSocket serverSocket = new ServerSocket(port);
-                serverSocket.close();
+            if (isFreePort(port)) {
+                return port;
+            }
+        }
+        return null;
+    }
+    
+    public static Integer detectFreePort(int min, int max) {
+        Integer freePort = null;
+        for (int port=min; port<max; port++) {
+            if (isFreePort(port)) {
                 freePort = port;
                 break;
-            } catch (IOException ex) {
-                continue; // try next port
             }
         }
         return freePort;
+    }
+    
+    public static boolean isFreePort(int port) {
+        try {
+            ServerSocket serverSocket = new ServerSocket(port);
+            serverSocket.close();
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
     }
 }

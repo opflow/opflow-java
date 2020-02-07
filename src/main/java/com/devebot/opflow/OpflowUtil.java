@@ -18,6 +18,7 @@ import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowEnvTool;
+import com.devebot.opflow.supports.OpflowNetTool;
 import java.util.LinkedHashMap;
 
 /**
@@ -364,14 +365,66 @@ public class OpflowUtil {
     }
     
     public static <T> T[] splitByComma(String source, Class<T> type) {
+        return splitByComma(source, type, ",");
+    }
+    
+    public static <T> T[] splitByComma(String source, Class<T> type, String delimiter) {
         if (source == null) return null;
-        String[] arr = source.split(",");
+        String[] arr = source.split(delimiter);
         ArrayList<T> list = new ArrayList<>(arr.length);
         for(String item: arr) {
             String str = item.trim();
             if (str.length() > 0) list.add(OpflowConverter.convert(str, type));
         }
         return list.toArray((T[]) Array.newInstance(type, 0));
+    }
+    
+    public static Integer[] getIntegerRange(String range) {
+        try {
+            Integer[] minmax = splitByComma(range, Integer.class, "-");
+            if (minmax == null) {
+                return null;
+            }
+            if (minmax.length != 2) {
+                return new Integer[0];
+            }
+            if (minmax[0] > minmax[1]) {
+                int min = minmax[1];
+                minmax[1] = minmax[0];
+                minmax[0] = min;
+            }
+            return minmax;
+        }
+        catch (Exception e) {
+            return null;
+        }
+    }
+    
+    public static Integer detectFreePort(Map<String, Object> kwargs, String fieldName, Integer[] defaultPorts) {
+        Integer[] ports;
+        Object portsObj = OpflowUtil.getOptionField(kwargs, fieldName, null);
+        if (portsObj instanceof Integer[]) {
+            ports = (Integer[]) portsObj;
+            if (ports.length > 0) {
+                // ports range from 8989 to 9000: [-1, 8989, 9000]
+                if (ports[0] == -1 && ports.length == 3) {
+                    return OpflowNetTool.detectFreePort(ports[1], ports[2]);
+                }
+                return OpflowNetTool.detectFreePort(ports);
+            }
+        }
+        if (portsObj instanceof String) {
+            String portsCfg = (String) portsObj;
+            ports = OpflowUtil.getIntegerRange(portsCfg);
+            if (ports != null && ports.length == 2) {
+                return OpflowNetTool.detectFreePort(ports[0], ports[1]);
+            }
+            ports = OpflowUtil.splitByComma(portsCfg, Integer.class);
+            if (ports != null && ports.length > 0) {
+                return OpflowNetTool.detectFreePort(ports);
+            }
+        }
+        return OpflowNetTool.detectFreePort(defaultPorts);
     }
     
     public static String getMessageField(OpflowMessage message, String fieldName) {
