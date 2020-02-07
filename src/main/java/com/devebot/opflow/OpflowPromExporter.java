@@ -1,8 +1,6 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
-import com.devebot.opflow.supports.OpflowConverter;
-import com.devebot.opflow.supports.OpflowNetTool;
 import com.rabbitmq.client.ConnectionFactory;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
@@ -36,10 +34,9 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
         host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();
         
         // detect the avaiable port
-        Integer[] ports = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "ports", new Integer[] {
-            9450, 9451, 9452, 9453, 9454, 9455, 9456, 9457, 9458, 9459
-        }), (new Integer[0]).getClass());
-        port = OpflowNetTool.detectFreePort(ports);
+        port = OpflowUtil.detectFreePort(kwargs, "ports", new Integer[] {
+                9450, 9451, 9452, 9453, 9454, 9455, 9456, 9457, 9458, 9459
+        });
         
         if (port != null) {
             try {
