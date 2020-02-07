@@ -106,7 +106,7 @@ public class OpflowCommander implements AutoCloseable {
         
         if (restrictor != null) {
             restrictor.lock();
-        };
+        }
         
         this.init(kwargs);
         
@@ -199,8 +199,6 @@ public class OpflowCommander implements AutoCloseable {
                     .put("instanceId", instanceId)
                     .toMap());
 
-            rpcWatcher.start();
-
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcWatcher, rpcMaster, handlers);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(instanceId, measurer, restrictor, rpcMaster, handlers);
@@ -238,6 +236,9 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     public final void serve(RoutingHandler httpHandlers) {
+        if (rpcWatcher != null) {
+            rpcWatcher.start();
+        }
         if (restServer != null) {
             if (httpHandlers == null) {
                 restServer.serve();
@@ -255,23 +256,20 @@ public class OpflowCommander implements AutoCloseable {
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close()")
                 .stringify());
-        
+
         if (restrictor != null) {
             restrictor.lock();
-        };
-        
+        }
+
         if (restServer != null) restServer.close();
         if (rpcWatcher != null) rpcWatcher.close();
-        
-        try {
-            if (publisher != null) publisher.close();
-            if (rpcMaster != null) rpcMaster.close();
-            if (configurer != null) configurer.close();
-        }
-        finally {
-            if (restrictor != null) {
-                restrictor.close();
-            }
+
+        if (publisher != null) publisher.close();
+        if (rpcMaster != null) rpcMaster.close();
+        if (configurer != null) configurer.close();
+
+        if (restrictor != null) {
+            restrictor.close();
         }
 
         OpflowUUID.release();
