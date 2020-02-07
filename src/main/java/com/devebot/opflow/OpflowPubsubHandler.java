@@ -2,14 +2,15 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.exception.OpflowRestrictionException;
 import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private final String instanceId;
     private final OpflowLogTracer logTracer;
     
-    private final ReentrantReadWriteLock pushLock = new ReentrantReadWriteLock();
+    private final OpflowRestrictor.Valve<Object> restrictor;
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
@@ -41,7 +42,9 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", instanceId);
-        
+
+        restrictor = new OpflowRestrictor.Valve<>();
+
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new()")
                 .stringify());
@@ -61,7 +64,23 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
-        
+
+        engine.setProducingBlockedListener(new BlockedListener() {
+            @Override
+            public void handleBlocked(String reason) throws IOException {
+                if (restrictor != null) {
+                    restrictor.lock();
+                }
+            }
+
+            @Override
+            public void handleUnblocked() throws IOException {
+                if (restrictor != null) {
+                    restrictor.unlock();
+                }
+            }
+        });
+
         if (subscriberName != null) {
             executor.assertQueue(subscriberName);
         }
@@ -120,14 +139,25 @@ public class OpflowPubsubHandler implements AutoCloseable {
         publish(body, options, null);
     }
     
-    public void publish(byte[] body, Map<String, Object> options, String routingKey) {
-        ReentrantReadWriteLock.ReadLock rl = pushLock.readLock();
-        try {
-            rl.lock();
+    public void publish(final byte[] body, final Map<String, Object> options, final String routingKey) {
+        if (restrictor == null) {
             _publish(body, options, routingKey);
+            return;
         }
-        finally {
-            rl.unlock();
+        try {
+            restrictor.filter(new OpflowRestrictor.Action<Object>() {
+                @Override
+                public Object process() throws Throwable {
+                    _publish(body, options, routingKey);
+                    return null;
+                }
+            });
+        }
+        catch (OpflowOperationException opflowException) {
+            throw opflowException;
+        }
+        catch (Throwable e) {
+            throw new OpflowRestrictionException(e);
         }
     }
     
@@ -259,7 +289,9 @@ public class OpflowPubsubHandler implements AutoCloseable {
     
     @Override
     public void close() {
-        pushLock.writeLock().lock();
+        if (restrictor != null) {
+            restrictor.lock();
+        }
         try {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("PubsubHandler[${pubsubHandlerId}].close()")
@@ -278,8 +310,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     .stringify());
         }
         finally {
-            if(pushLock.isWriteLockedByCurrentThread()) {
-                pushLock.writeLock().unlock();
+            if (restrictor != null) {
+                restrictor.unlock();
             }
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].close() - lock has been released")
