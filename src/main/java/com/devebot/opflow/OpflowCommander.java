@@ -876,7 +876,7 @@ public class OpflowCommander implements AutoCloseable {
             // rpc switching
             if (rpcWatcher.isCongested() || !detachedWorkerActive) {
                 if (this.isReservedWorkerAvailable()) {
-                    measurer.countRpcInvocation("commander", "reserved_worker", routineId, "begin");
+                    measurer.countRpcInvocation("commander", "reserved_worker", routineId, "retain");
                     return method.invoke(this.reservedWorker, args);
                 }
             }
@@ -892,7 +892,7 @@ public class OpflowCommander implements AutoCloseable {
             if (rpcResult.isTimeout()) {
                 rpcWatcher.setCongested(true);
                 if (this.isReservedWorkerAvailable()) {
-                    measurer.countRpcInvocation("commander", "reserved_worker", routineId, "begin");
+                    measurer.countRpcInvocation("commander", "reserved_worker", routineId, "rescue");
                     return method.invoke(this.reservedWorker, args);
                 }
                 measurer.countRpcInvocation("commander", "detached_worker", routineId, "timeout");

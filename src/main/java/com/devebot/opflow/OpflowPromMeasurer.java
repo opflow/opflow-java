@@ -47,43 +47,88 @@ public abstract class OpflowPromMeasurer {
         private Date startTime = new Date();
         private long total = 0;
         private long direct = 0;
+        private long directRetain = 0;
+        private long directRescue = 0;
         private long remote = 0;
+        private long remoteSuccess = 0;
+        private long remoteFailure = 0;
+        private long remoteTimeout = 0;
 
         public RpcInvocationCounter() {
         }
-        
-        public synchronized void incDirect() {
+
+        public synchronized void incDirectRescue() {
             this.total++;
             this.direct++;
+            this.directRescue++;
         }
         
-        public synchronized void incRemote() {
+        public synchronized void incDirectRetain() {
+            this.total++;
+            this.direct++;
+            this.directRetain++;
+        }
+
+        public synchronized void incRemoteSuccess() {
             this.total++;
             this.remote++;
+            this.remoteSuccess++;
         }
-        
+
+        public synchronized void incRemoteFailure() {
+            this.total++;
+            this.remote++;
+            this.remoteFailure++;
+        }
+
+        public synchronized void incRemoteTimeout() {
+            this.total++;
+            this.remote++;
+            this.remoteTimeout++;
+        }
+
         public synchronized RpcInvocationCounter copy() {
             RpcInvocationCounter that = new RpcInvocationCounter();
             that.startTime = this.startTime;
             that.total = this.total;
             that.direct = this.direct;
+            that.directRescue = this.directRescue;
+            that.directRetain = this.directRetain;
             that.remote = this.remote;
+            that.remoteSuccess = this.remoteSuccess;
+            that.remoteFailure = this.remoteFailure;
+            that.remoteTimeout = this.remoteTimeout;
             return that;
         }
-        
+
         public synchronized void reset() {
             this.startTime = new Date();
             this.total = 0;
             this.direct = 0;
+            this.directRescue = 0;
+            this.directRetain = 0;
             this.remote = 0;
+            this.remoteSuccess = 0;
+            this.remoteFailure = 0;
+            this.remoteTimeout = 0;
         }
-        
-        public synchronized Map<String, Object> toMap() {
+
+        public Map<String, Object> toMap() {
+            RpcInvocationCounter that = this.copy();
             return OpflowUtil.buildOrderedMap()
-                    .put("rpcInvocationTotal", this.total)
-                    .put("rpcOverDirectWorkerTotal", this.direct)
-                    .put("rpcOverRemoteWorkerTotal", this.remote)
-                    .put("startTime", OpflowDateTime.toISO8601UTC(this.startTime))
+                    .put("rpcInvocationTotal", that.total)
+                    .put("rpcOverDirectWorker", OpflowUtil.buildOrderedMap()
+                            .put("total", that.direct)
+                            .put("rescue", that.directRescue)
+                            .put("retain", that.directRetain)
+                            .toMap())
+                    .put("rpcOverRemoteWorker", OpflowUtil.buildOrderedMap()
+                            .put("total", that.remote)
+                            .put("ok", that.remoteSuccess)
+                            .put("failed", that.remoteFailure)
+                            .put("timeout", that.remoteTimeout)
+                            .toMap())
+                    .put("startTime", OpflowDateTime.toISO8601UTC(that.startTime))
                     .toMap();
         }
     }
@@ -145,10 +190,27 @@ public abstract class OpflowPromMeasurer {
                 case "commander": {
                     switch (eventName) {
                         case "reserved_worker":
-                            counter.incDirect();
+                            switch (status) {
+                                case "rescue":
+                                    counter.incDirectRescue();
+                                    break;
+                                case "retain":
+                                    counter.incDirectRetain();
+                                    break;
+                            }
                             break;
                         case "detached_worker":
-                            counter.incRemote();
+                            switch (status) {
+                                case "ok":
+                                    counter.incRemoteSuccess();
+                                    break;
+                                case "failed":
+                                    counter.incRemoteFailure();
+                                    break;
+                                case "timeout":
+                                    counter.incRemoteTimeout();
+                                    break;
+                            }
                             break;
                         default:
                             break;
