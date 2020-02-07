@@ -26,7 +26,12 @@ import java.util.LinkedHashMap;
  * @author drupalex
  */
 public class OpflowUtil {
-
+    private static final String INT_RANGE_DELIMITER = "-";
+    private static final String INT_RANGE_PATTERN_STRING = "[\\d]{1,}\\s*\\-\\s*[\\d]{1,}";
+    
+    private static final String INT_ARRAY_DELIMITER = ",";
+    private static final String INT_ARRAY_PATTERN_STRING = "[\\d]{1,}\\s*(\\s*,\\s*[\\d]{1,}){0,}";
+    
     @Deprecated
     public static String jsonObjectToString(Object jsonObj) {
         return OpflowJsonTool.toString(jsonObj);
@@ -379,9 +384,17 @@ public class OpflowUtil {
         return list.toArray((T[]) Array.newInstance(type, 0));
     }
     
+    public static boolean isIntegerArray(String intArray) {
+        return intArray != null && intArray.matches(INT_ARRAY_PATTERN_STRING);
+    }
+    
+    public static boolean isIntegerRange(String intRange) {
+        return intRange != null && intRange.matches(INT_RANGE_PATTERN_STRING);
+    }
+    
     public static Integer[] getIntegerRange(String range) {
         try {
-            Integer[] minmax = splitByComma(range, Integer.class, "-");
+            Integer[] minmax = splitByComma(range, Integer.class, INT_RANGE_DELIMITER);
             if (minmax == null) {
                 return null;
             }
@@ -419,7 +432,7 @@ public class OpflowUtil {
             if (ports != null && ports.length == 2) {
                 return OpflowNetTool.detectFreePort(ports[0], ports[1]);
             }
-            ports = OpflowUtil.splitByComma(portsCfg, Integer.class);
+            ports = OpflowUtil.splitByComma(portsCfg, Integer.class, INT_ARRAY_DELIMITER);
             if (ports != null && ports.length > 0) {
                 return OpflowNetTool.detectFreePort(ports);
             }
