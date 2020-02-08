@@ -1,5 +1,6 @@
 package com.devebot.opflow.supports;
 
+import com.devebot.opflow.OpflowUtil;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -10,11 +11,11 @@ import java.util.Map;
  */
 public class OpflowObjectTree {
 
-    public interface MapListener {
+    public interface MapListener extends OpflowUtil.MapListener {
         public void transform(Map<String, Object> opts);
     }
     
-    public static class MapBuilder {
+    public static class MapBuilder extends OpflowUtil.MapBuilder {
         private final Map<String, Object> fields;
 
         public MapBuilder() {
