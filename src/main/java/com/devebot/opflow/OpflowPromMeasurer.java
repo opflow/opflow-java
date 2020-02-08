@@ -116,14 +116,14 @@ public abstract class OpflowPromMeasurer {
 
         public Map<String, Object> toMap() {
             RpcInvocationCounter that = this.copy();
-            return OpflowObjectTree.buildOrderedMap()
+            return OpflowObjectTree.buildMap()
                     .put("rpcInvocationTotal", that.total)
-                    .put("rpcOverDirectWorker", OpflowObjectTree.buildOrderedMap()
+                    .put("rpcOverDirectWorker", OpflowObjectTree.buildMap()
                             .put("total", that.direct)
                             .put("rescue", that.directRescue)
                             .put("retain", that.directRetain)
                             .toMap())
-                    .put("rpcOverRemoteWorker", OpflowObjectTree.buildOrderedMap()
+                    .put("rpcOverRemoteWorker", OpflowObjectTree.buildMap()
                             .put("total", that.remote)
                             .put("ok", that.remoteSuccess)
                             .put("failed", that.remoteFailure)

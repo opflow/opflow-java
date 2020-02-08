@@ -53,19 +53,19 @@ public class OpflowObjectTree {
     }
     
     public static Builder buildMap() {
-        return buildMap(null, null, false);
+        return buildMap(null, null, true);
     }
     
     public static Builder buildMap(Listener listener) {
-        return buildMap(listener, null, false);
+        return buildMap(listener, null, true);
     }
     
     public static Builder buildMap(Map<String, Object> defaultOpts) {
-        return buildMap(null, defaultOpts, false);
+        return buildMap(null, defaultOpts, true);
     }
     
     public static Builder buildMap(Listener listener, Map<String, Object> defaultOpts) {
-        return buildMap(listener, defaultOpts, false);
+        return buildMap(listener, defaultOpts, true);
     }
     
     public static Builder buildMap(Listener listener, Map<String, Object> defaultOpts, boolean orderReserved) {
@@ -79,19 +79,15 @@ public class OpflowObjectTree {
         return new Builder(source);
     }
     
-    public static Builder buildOrderedMap() {
-        return buildMap(null, null, true);
+    public static Builder buildMap(boolean orderReserved) {
+        return buildMap(null, null, orderReserved);
     }
     
-    public static Builder buildOrderedMap(Listener listener) {
-        return buildMap(listener, null, true);
+    public static Builder buildMap(Listener listener, boolean orderReserved) {
+        return buildMap(listener, null, orderReserved);
     }
     
-    public static Builder buildOrderedMap(Map<String, Object> defaultOpts) {
-        return buildMap(null, defaultOpts, true);
-    }
-    
-    public static Builder buildOrderedMap(Listener listener, Map<String, Object> defaultOpts) {
-        return buildMap(listener, defaultOpts, true);
+    public static Builder buildMap(Map<String, Object> defaultOpts, boolean orderReserved) {
+        return buildMap(null, defaultOpts, orderReserved);
     }
 }

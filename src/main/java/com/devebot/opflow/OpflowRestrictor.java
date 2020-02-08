@@ -260,7 +260,7 @@ public class OpflowRestrictor {
             if (pauseThread == null) {
                 pauseThread = new PauseThread(logTracer, pauseLock);
             }
-            Map<String, Object> result = OpflowObjectTree.buildOrderedMap()
+            Map<String, Object> result = OpflowObjectTree.buildMap()
                     .put("threadId", pauseThread.getInstanceId())
                     .put("status", "skipped")
                     .toMap();
@@ -277,7 +277,7 @@ public class OpflowRestrictor {
         }
 
         public synchronized Map<String, Object> unpause() {
-            Map<String, Object> result = OpflowObjectTree.buildOrderedMap()
+            Map<String, Object> result = OpflowObjectTree.buildMap()
                     .put("threadId", pauseThread.getInstanceId())
                     .toMap();
             if (pauseThread == null) {

@@ -459,7 +459,7 @@ public class OpflowCommander implements AutoCloseable {
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].pause(true) is invoked")
                     .stringify());
             if (restrictor == null) {
-                return OpflowObjectTree.buildOrderedMap()
+                return OpflowObjectTree.buildMap()
                         .toMap();
             }
             return restrictor.pause(duration);
@@ -471,7 +471,7 @@ public class OpflowCommander implements AutoCloseable {
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].unpause() is invoked")
                     .stringify());
             if (restrictor == null) {
-                return OpflowObjectTree.buildOrderedMap()
+                return OpflowObjectTree.buildMap()
                         .toMap();
             }
             return restrictor.unpause();
@@ -480,20 +480,20 @@ public class OpflowCommander implements AutoCloseable {
         @Override
         public Map<String, Object> reset() {
             if (rpcMaster == null) {
-                return OpflowObjectTree.buildOrderedMap()
+                return OpflowObjectTree.buildMap()
                         .toMap();
             }
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].reset() is invoked")
                     .stringify());
             rpcMaster.close();
-            return OpflowObjectTree.buildOrderedMap()
+            return OpflowObjectTree.buildMap()
                     .toMap();
         }
         
         @Override
         public Map<String, Object> resetRpcInvocationCounter() {
-            return OpflowObjectTree.buildOrderedMap()
+            return OpflowObjectTree.buildMap()
                     .put("measurement", measurer.resetRpcInvocationCounter())
                     .toMap();
         }
@@ -521,7 +521,7 @@ public class OpflowCommander implements AutoCloseable {
                     activateWorkerForRpcInvocation(val, type, state);
                 }
             }
-            return OpflowObjectTree.buildOrderedMap()
+            return OpflowObjectTree.buildMap()
                     .put("mappings", OpflowInfoCollectorMaster.renderRpcInvocationHandlers(handlers))
                     .toMap();
         }
@@ -572,9 +572,9 @@ public class OpflowCommander implements AutoCloseable {
         public Map<String, Object> collect(Scope scope) {
             final Scope label = (scope == null) ? Scope.BASIC : scope;
             
-            OpflowObjectTree.Builder root = OpflowObjectTree.buildOrderedMap();
+            OpflowObjectTree.Builder root = OpflowObjectTree.buildMap();
             
-            root.put("commander", OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.Listener() {
+            root.put("commander", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     opts.put("instanceId", instanceId);
@@ -592,7 +592,7 @@ public class OpflowCommander implements AutoCloseable {
                     // restrictor information
                     if (label == Scope.FULL) {
                         if (restrictor != null) {
-                            opts.put("restrictor", OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.Listener() {
+                            opts.put("restrictor", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                                 @Override
                                 public void transform(Map<String, Object> opt2) {
                                     int availablePermits = restrictor.getSemaphorePermits();
@@ -612,7 +612,7 @@ public class OpflowCommander implements AutoCloseable {
                                 }
                             }).toMap());
                         } else {
-                            opts.put("restrictor", OpflowObjectTree.buildOrderedMap()
+                            opts.put("restrictor", OpflowObjectTree.buildMap()
                                     .put("enabled", false)
                                     .toMap());
                         }
@@ -620,7 +620,7 @@ public class OpflowCommander implements AutoCloseable {
                     
                     // rpcMaster information
                     if (rpcMaster != null) {
-                        opts.put("rpcMaster", OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.Listener() {
+                        opts.put("rpcMaster", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                             @Override
                             public void transform(Map<String, Object> opt2) {
                                 OpflowEngine engine = rpcMaster.getEngine();
@@ -647,7 +647,7 @@ public class OpflowCommander implements AutoCloseable {
                                     opt2.put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete());
                                 }
 
-                                opt2.put("request", OpflowObjectTree.buildOrderedMap()
+                                opt2.put("request", OpflowObjectTree.buildMap()
                                         .put("expiration", rpcMaster.getExpiration())
                                         .toMap());
                             }
@@ -661,7 +661,7 @@ public class OpflowCommander implements AutoCloseable {
                     
                     // RpcWatcher information
                     if (label == Scope.FULL) {
-                        opts.put("rpcWatcher", OpflowObjectTree.buildOrderedMap()
+                        opts.put("rpcWatcher", OpflowObjectTree.buildMap()
                                 .put("enabled", rpcWatcher.isEnabled())
                                 .put("interval", rpcWatcher.getInterval())
                                 .put("count", rpcWatcher.getCount())
@@ -674,7 +674,7 @@ public class OpflowCommander implements AutoCloseable {
             // start-time & uptime
             if (label == Scope.FULL) {
                 Date currentTime = new Date();
-                root.put("miscellaneous", OpflowObjectTree.buildOrderedMap()
+                root.put("miscellaneous", OpflowObjectTree.buildMap()
                         .put("threadCount", Thread.activeCount())
                         .put("startTime", OpflowDateTime.toISO8601UTC(startTime))
                         .put("currentTime", OpflowDateTime.toISO8601UTC(currentTime))
@@ -684,7 +684,7 @@ public class OpflowCommander implements AutoCloseable {
             
             // git commit information
             if (label == Scope.FULL) {
-                root.put("source-code-info", OpflowObjectTree.buildOrderedMap()
+                root.put("source-code-info", OpflowObjectTree.buildMap()
                         .put("master", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
                         .put("opflow", OpflowSysInfo.getGitInfo())
                         .toMap());
@@ -697,7 +697,7 @@ public class OpflowCommander implements AutoCloseable {
             List<Map<String, Object>> mappingInfos = new ArrayList<>();
             for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
                 final RpcInvocationHandler val = entry.getValue();
-                mappingInfos.add(OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.Listener() {
+                mappingInfos.add(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("class", entry.getKey());
@@ -860,7 +860,7 @@ public class OpflowCommander implements AutoCloseable {
                 if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                         .text("Request[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
-                this.publisher.publish(body, OpflowObjectTree.buildMap()
+                this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put("requestId", requestId)
                         .put("routineId", routineId)
                         .toMap());
