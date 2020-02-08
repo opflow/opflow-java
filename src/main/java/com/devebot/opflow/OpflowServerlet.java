@@ -4,6 +4,7 @@ import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.annotation.OpflowTargetRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -149,7 +150,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new configurer[${pubsubHandlerId}]")
                         .stringify());
-                configurer = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("measurer", measurer);
@@ -164,7 +165,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("rpcWorkerId", rpcWorkerId)
                         .text("Serverlet[${serverletId}] creates a new rpcWorker[${rpcWorkerId}]")
                         .stringify());
-                rpcWorker = new OpflowRpcWorker(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                rpcWorker = new OpflowRpcWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("measurer", measurer);
@@ -179,7 +180,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("instanceId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new subscriber[${pubsubHandlerId}]")
                         .stringify());
-                subscriber = new OpflowPubsubHandler(OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+                subscriber = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("measurer", measurer);
@@ -188,7 +189,7 @@ public class OpflowServerlet implements AutoCloseable {
             }
             
             if (rpcWorker != null || subscriber != null) {
-                instantiator = new Instantiator(rpcWorker, subscriber, OpflowUtil.buildMap()
+                instantiator = new Instantiator(rpcWorker, subscriber, OpflowObjectTree.buildMap()
                         .put("instanceId", instanceId)
                         .toMap());
             }
@@ -415,19 +416,19 @@ public class OpflowServerlet implements AutoCloseable {
                                     }
                                 }
                             }
-                            returnValue = new OpflowRpcChecker.Pong(OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+                            returnValue = new OpflowRpcChecker.Pong(OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.MapListener() {
                                 @Override
                                 public void transform(Map<String, Object> opts) {
                                     OpflowEngine engine = rpcWorker.getEngine();
                                     opts.put("instanceId", instanceId);
-                                    opts.put("rpcWorker", OpflowUtil.buildOrderedMap()
+                                    opts.put("rpcWorker", OpflowObjectTree.buildOrderedMap()
                                             .put("instanceId", rpcWorker.getIntanceId())
                                             .put("applicationId", engine.getApplicationId())
                                             .put("exchangeName", engine.getExchangeName())
                                             .put("routingKey", engine.getRoutingKey())
                                             .put("otherKeys", engine.getOtherKeys())
                                             .put("dispatchQueue", rpcWorker.getDispatchName())
-                                            .put("handler", OpflowUtil.buildOrderedMap()
+                                            .put("handler", OpflowObjectTree.buildOrderedMap()
                                                     .put("requestId", requestId)
                                                     .put("requestTime", requestTime)
                                                     .put("applicationId", response.getApplicationId())
@@ -453,7 +454,7 @@ public class OpflowServerlet implements AutoCloseable {
                             .stringify());
                     } catch (JsonSyntaxException error) {
                         error.getStackTrace();
-                        response.emitFailed(OpflowUtil.buildMap()
+                        response.emitFailed(OpflowObjectTree.buildMap()
                                 .put("exceptionClass", error.getClass().getName())
                                 .put("exceptionPayload", OpflowJsonTool.toString(error))
                                 .put("type", error.getClass().getName())
@@ -463,7 +464,7 @@ public class OpflowServerlet implements AutoCloseable {
                     } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException ex) {
                         LOG.error(null, ex); // not expected to happen
                         ex.getStackTrace();
-                        response.emitFailed(OpflowUtil.buildMap()
+                        response.emitFailed(OpflowObjectTree.buildMap()
                                 .put("exceptionClass", ex.getClass().getName())
                                 .put("exceptionPayload", OpflowJsonTool.toString(ex))
                                 .put("type", ex.getClass().getName())
@@ -475,7 +476,7 @@ public class OpflowServerlet implements AutoCloseable {
                             cause = ex;
                         }
                         cause.getStackTrace();
-                        response.emitFailed(OpflowUtil.buildMap()
+                        response.emitFailed(OpflowObjectTree.buildMap()
                                 .put("exceptionClass", cause.getClass().getName())
                                 .put("exceptionPayload", OpflowJsonTool.toString(cause))
                                 .put("type", cause.getClass().getName())
@@ -483,14 +484,14 @@ public class OpflowServerlet implements AutoCloseable {
                                 .toString());
                     } catch (UnsupportedOperationException ex) {
                         ex.getStackTrace();
-                        response.emitFailed(OpflowUtil.buildMap()
+                        response.emitFailed(OpflowObjectTree.buildMap()
                                 .put("exceptionClass", ex.getClass().getName())
                                 .put("exceptionPayload", OpflowJsonTool.toString(ex))
                                 .put("type", ex.getClass().getName())
                                 .put("message", ex.getMessage())
                                 .toString());
                     } catch (Exception ex) {
-                        response.emitFailed(OpflowUtil.buildMap()
+                        response.emitFailed(OpflowObjectTree.buildMap()
                                 .put("type", ex.getClass().getName())
                                 .put("message", ex.getMessage())
                                 .toString());

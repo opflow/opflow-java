@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Map;
 
 /**
@@ -12,7 +13,7 @@ public class OpflowMessage {
     private final Map<String, Object> info;
     
     public final static OpflowMessage EMPTY = new OpflowMessage();
-    public final static OpflowMessage ERROR = new OpflowMessage(null, OpflowUtil.buildMap().put("status", "failed").toMap());
+    public final static OpflowMessage ERROR = new OpflowMessage(null, OpflowObjectTree.buildMap().put("status", "failed").toMap());
     
     private OpflowMessage() {
         body = null;

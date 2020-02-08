@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowDateTime;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.ConnectionFactory;
 import java.util.Date;
 import java.util.Map;
@@ -115,14 +116,14 @@ public abstract class OpflowPromMeasurer {
 
         public Map<String, Object> toMap() {
             RpcInvocationCounter that = this.copy();
-            return OpflowUtil.buildOrderedMap()
+            return OpflowObjectTree.buildOrderedMap()
                     .put("rpcInvocationTotal", that.total)
-                    .put("rpcOverDirectWorker", OpflowUtil.buildOrderedMap()
+                    .put("rpcOverDirectWorker", OpflowObjectTree.buildOrderedMap()
                             .put("total", that.direct)
                             .put("rescue", that.directRescue)
                             .put("retain", that.directRetain)
                             .toMap())
-                    .put("rpcOverRemoteWorker", OpflowUtil.buildOrderedMap()
+                    .put("rpcOverRemoteWorker", OpflowObjectTree.buildOrderedMap()
                             .put("total", that.remote)
                             .put("ok", that.remoteSuccess)
                             .put("failed", that.remoteFailure)

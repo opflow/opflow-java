@@ -4,6 +4,7 @@ import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowNetTool;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -217,7 +218,7 @@ public class OpflowRestServer implements AutoCloseable {
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
                 PathTemplateMatch pathMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
-                Map<String, Object> result = OpflowUtil.buildOrderedMap().toMap();
+                Map<String, Object> result = OpflowObjectTree.buildOrderedMap().toMap();
                 String action = pathMatch.getParameters().get("action");
                 if (action != null && action.length() > 0) {
                     switch(action) {
@@ -241,7 +242,7 @@ public class OpflowRestServer implements AutoCloseable {
                         case "activate-remote-worker":
                         case "activate-detached-worker":
                             boolean state1 = getQueryParam(exchange, "state", Boolean.class, true);
-                            result = taskSubmitter.activateDetachedWorker(state1, OpflowUtil.buildMap()
+                            result = taskSubmitter.activateDetachedWorker(state1, OpflowObjectTree.buildMap()
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
@@ -251,7 +252,7 @@ public class OpflowRestServer implements AutoCloseable {
                         case "activate-embedded-worker":
                         case "activate-reserved-worker":
                             boolean state2 = getQueryParam(exchange, "state", Boolean.class, true);
-                            result = taskSubmitter.activateReservedWorker(state2, OpflowUtil.buildMap()
+                            result = taskSubmitter.activateReservedWorker(state2, OpflowObjectTree.buildMap()
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;

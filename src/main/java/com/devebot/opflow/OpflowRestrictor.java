@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestWaitingException;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -259,7 +260,7 @@ public class OpflowRestrictor {
             if (pauseThread == null) {
                 pauseThread = new PauseThread(logTracer, pauseLock);
             }
-            Map<String, Object> result = OpflowUtil.buildOrderedMap()
+            Map<String, Object> result = OpflowObjectTree.buildOrderedMap()
                     .put("threadId", pauseThread.getInstanceId())
                     .put("status", "skipped")
                     .toMap();
@@ -276,7 +277,7 @@ public class OpflowRestrictor {
         }
 
         public synchronized Map<String, Object> unpause() {
-            Map<String, Object> result = OpflowUtil.buildOrderedMap()
+            Map<String, Object> result = OpflowObjectTree.buildOrderedMap()
                     .put("threadId", pauseThread.getInstanceId())
                     .toMap();
             if (pauseThread == null) {

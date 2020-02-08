@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import java.io.IOException;
@@ -166,7 +167,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                         .stringify());
                 return count > 0;
             }
-        }, OpflowUtil.buildMap(new OpflowUtil.MapListener() {
+        }, OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("consumerId", _consumerId);
