@@ -279,16 +279,16 @@ public class OpflowCommander implements AutoCloseable {
                 .stringify());
     }
     
-    private static class OpflowRestrictorMaster<T> extends OpflowRestrictable.Runner<T> implements AutoCloseable {
+    private static class OpflowRestrictorMaster extends OpflowRestrictable.Runner implements AutoCloseable {
         private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictorMaster.class);
 
         protected final String instanceId;
         protected final OpflowLogTracer logTracer;
 
-        private final OpflowRestrictor.OnOff<T> onoffRestrictor;
-        private final OpflowRestrictor.Valve<T> valveRestrictor;
-        private final OpflowRestrictor.Pause<T> pauseRestrictor;
-        private final OpflowRestrictor.Limit<T> limitRestrictor;
+        private final OpflowRestrictor.OnOff onoffRestrictor;
+        private final OpflowRestrictor.Valve valveRestrictor;
+        private final OpflowRestrictor.Pause pauseRestrictor;
+        private final OpflowRestrictor.Limit limitRestrictor;
 
         public OpflowRestrictorMaster(Map<String, Object> options) {
             options = OpflowUtil.ensureNotNull(options);
@@ -300,16 +300,16 @@ public class OpflowCommander implements AutoCloseable {
                     .text("Restrictor[${restrictorId}].new()")
                     .stringify());
 
-            onoffRestrictor = new OpflowRestrictor.OnOff<>(options);
-            valveRestrictor = new OpflowRestrictor.Valve<>(options);
-            pauseRestrictor = new OpflowRestrictor.Pause<>(options);
-            limitRestrictor = new OpflowRestrictor.Limit<>(options);
+            onoffRestrictor = new OpflowRestrictor.OnOff(options);
+            valveRestrictor = new OpflowRestrictor.Valve(options);
+            pauseRestrictor = new OpflowRestrictor.Pause(options);
+            limitRestrictor = new OpflowRestrictor.Limit(options);
 
             super.append(onoffRestrictor.setLogTracer(logTracer));
             super.append(valveRestrictor.setLogTracer(logTracer));
             super.append(pauseRestrictor.setLogTracer(logTracer));
             super.append(limitRestrictor.setLogTracer(logTracer));
-            
+
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("Restrictor[${restrictorId}].new() end!")
                     .stringify());
