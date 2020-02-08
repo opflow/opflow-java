@@ -116,8 +116,8 @@ public class OpflowRestrictor {
         private final long PAUSE_TIMEOUT_DEFAULT = 0l;
 
         private final ReentrantReadWriteLock pauseLock;
-        private boolean pauseEnabled;
-        private long pauseTimeout;
+        private boolean pauseEnabled = true;
+        private long pauseTimeout = PAUSE_TIMEOUT_DEFAULT;
         private PauseThread pauseThread;
         private ExecutorService threadExecutor;
 
@@ -132,16 +132,12 @@ public class OpflowRestrictor {
 
             if (options.get("pauseEnabled") instanceof Boolean) {
                 pauseEnabled = (Boolean) options.get("pauseEnabled");
-            } else {
-                pauseEnabled = true;
             }
 
             if (options.get("pauseTimeout") instanceof Long) {
                 pauseTimeout = (Long) options.get("pauseTimeout");
             } else if (options.get("pauseTimeout") instanceof Integer) {
                 pauseTimeout = (Integer) options.get("pauseTimeout");
-            } else {
-                pauseTimeout = PAUSE_TIMEOUT_DEFAULT;
             }
         }
         

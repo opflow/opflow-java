@@ -199,7 +199,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("instanceId", instanceId)
                     .toMap());
 
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcWatcher, rpcMaster, handlers);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcMaster, handlers, rpcWatcher);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(instanceId, measurer, restrictor, rpcMaster, handlers);
             
@@ -392,7 +392,7 @@ public class OpflowCommander implements AutoCloseable {
             pauseRestrictor.close();
         }
     }
-    
+
     private static class OpflowRpcCheckerMaster extends OpflowRpcChecker {
 
         private final static String DEFAULT_BALL_JSON = OpflowJsonTool.toString(new Object[] { new Ping() });
@@ -467,7 +467,7 @@ public class OpflowCommander implements AutoCloseable {
             this.handlers = mappings;
             this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", instanceId);
         }
-        
+
         @Override
         public Map<String, Object> pause(long duration) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -566,9 +566,10 @@ public class OpflowCommander implements AutoCloseable {
         public OpflowInfoCollectorMaster(String instanceId,
                 OpflowPromMeasurer measurer,
                 OpflowRestrictorMaster restrictor,
-                OpflowRpcWatcher rpcWatcher,
                 OpflowRpcMaster rpcMaster,
-                Map<String, RpcInvocationHandler> mappings) {
+                Map<String, RpcInvocationHandler> mappings,
+                OpflowRpcWatcher rpcWatcher
+        ) {
             this.instanceId = instanceId;
             this.measurer = measurer;
             this.restrictor = restrictor;
@@ -976,13 +977,8 @@ public class OpflowCommander implements AutoCloseable {
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
-            RpcInvocationHandler handler;
-            if (restrictor != null) {
-                handler = new RpcInvocationHandler(logTracer, measurer, restrictor, reqExtractor, rpcWatcher, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
-            } else {
-                handler = new RpcInvocationHandler(logTracer, measurer, null, reqExtractor, rpcWatcher, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
-            }
-            handlers.put(clazzName, handler);
+            handlers.put(clazzName, new RpcInvocationHandler(logTracer, measurer, restrictor, reqExtractor, rpcWatcher, 
+                    rpcMaster, publisher, clazz, bean, reservedWorkerEnabled));
         } else {
             if (strictMode) {
                 throw new OpflowRpcRegistrationException("Class [" + clazzName + "] has already registered");

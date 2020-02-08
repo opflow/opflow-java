@@ -52,9 +52,11 @@ public class OpflowEngine implements AutoCloseable {
     
     private String mode;
     private ConnectionFactory factory;
+    private String producingConnectionId;
     private Connection producingConnection;
     private Channel producingChannel;
     private BlockedListener producingBlockedListener;
+    private String consumingConnectionId;
     private Connection consumingConnection;
     private Channel consumingChannel;
     private BlockedListener consumingBlockedListener;
@@ -1005,15 +1007,16 @@ public class OpflowEngine implements AutoCloseable {
         if (producingConnection == null || !producingConnection.isOpen()) {
             synchronized (producingConnectionLock) {
                 if (producingConnection == null || !producingConnection.isOpen()) {
+                    producingConnectionId = OpflowUUID.getBase64ID();
                     producingConnection = factory.newConnection();
-                    producingConnection.setId(OpflowUUID.getBase64ID());
+                    producingConnection.setId(producingConnectionId);
                     producingConnection.addBlockedListener(new BlockedListener() {
                         private final OpflowLogTracer localLog = logTracer.copy();
-                        
+
                         @Override
                         public void handleBlocked(String reason) throws IOException {
                             if (localLog.ready(LOG, "info")) LOG.info(localLog
-                                    .put("connectionId", getConnectionId(producingConnection))
+                                    .put("connectionId", producingConnectionId)
                                     .text("Engine[${engineId}] producingConnection[${connectionId}] has been blocked")
                                     .stringify());
                             synchronized (producingBlockedListenerLock) {
@@ -1026,7 +1029,7 @@ public class OpflowEngine implements AutoCloseable {
                         @Override
                         public void handleUnblocked() throws IOException {
                             if (localLog.ready(LOG, "info")) LOG.info(localLog
-                                    .put("connectionId", getConnectionId(producingConnection))
+                                    .put("connectionId", producingConnectionId)
                                     .text("Engine[${engineId}] producingConnection[${connectionId}] has been unblocked")
                                     .stringify());
                             synchronized (producingBlockedListenerLock) {
@@ -1041,14 +1044,14 @@ public class OpflowEngine implements AutoCloseable {
                         @Override
                         public void shutdownCompleted(ShutdownSignalException sse) {
                             if (localLog.ready(LOG, "info")) LOG.info(localLog
-                                    .put("connectionId", getConnectionId(producingConnection))
+                                    .put("connectionId", producingConnectionId)
                                     .text("Engine[${engineId}] producingConnection[${connectionId}] has been shutdown")
                                     .stringify());
                         }
                     });
                     if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                             .tags("sharedProducingConnectionCreated")
-                            .put("connectionId", getConnectionId(producingConnection))
+                            .put("connectionId", producingConnectionId)
                             .text("Engine[${engineId}]shared producingConnection[${connectionId}] is created")
                             .stringify(true));
                     measurer.updateEngineConnection(factory, "producing", OpflowPromMeasurer.GaugeAction.INC);
@@ -1099,15 +1102,16 @@ public class OpflowEngine implements AutoCloseable {
         if (consumingConnection == null || !consumingConnection.isOpen()) {
             synchronized (consumingConnectionLock) {
                 if (consumingConnection == null || !consumingConnection.isOpen()) {
+                    consumingConnectionId = OpflowUUID.getBase64ID();
                     consumingConnection = factory.newConnection();
-                    consumingConnection.setId(OpflowUUID.getBase64ID());
+                    consumingConnection.setId(consumingConnectionId);
                     consumingConnection.addBlockedListener(new BlockedListener() {
                         private final OpflowLogTracer localLog = logTracer.copy();
                         
                         @Override
                         public void handleBlocked(String reason) throws IOException {
                             if (localLog.ready(LOG, "info")) LOG.info(localLog
-                                    .put("connectionId", getConnectionId(consumingConnection))
+                                    .put("connectionId", consumingConnectionId)
                                     .text("Engine[${engineId}] consumingConnection[${connectionId}] has been blocked")
                                     .stringify());
                             synchronized (consumingBlockedListenerLock) {
@@ -1120,7 +1124,7 @@ public class OpflowEngine implements AutoCloseable {
                         @Override
                         public void handleUnblocked() throws IOException {
                             if (localLog.ready(LOG, "info")) LOG.info(localLog
-                                    .put("connectionId", getConnectionId(consumingConnection))
+                                    .put("connectionId", consumingConnectionId)
                                     .text("Engine[${engineId}] consumingConnection[${connectionId}] has been unblocked")
                                     .stringify());
                             synchronized (consumingBlockedListenerLock) {
@@ -1135,14 +1139,14 @@ public class OpflowEngine implements AutoCloseable {
                         @Override
                         public void shutdownCompleted(ShutdownSignalException sse) {
                             if (localLog.ready(LOG, "info")) LOG.info(localLog
-                                    .put("connectionId", getConnectionId(consumingConnection))
+                                    .put("connectionId", consumingConnectionId)
                                     .text("Engine[${engineId}] consumingConnection[${connectionId}] has been shutdown")
                                     .stringify());
                         }
                     });
                     if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                             .tags("sharedConsumingConnectionCreated")
-                            .put("connectionId", getConnectionId(consumingConnection))
+                            .put("connectionId", consumingConnectionId)
                             .text("Engine[${engineId}] shared consumingConnection[${connectionId}] is created")
                             .stringify(true));
                     measurer.updateEngineConnection(factory, "consuming", OpflowPromMeasurer.GaugeAction.INC);
