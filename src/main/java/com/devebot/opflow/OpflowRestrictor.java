@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowRequestPausingException;
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestWaitingException;
 import java.util.Map;
@@ -317,14 +318,14 @@ public class OpflowRestrictor {
                         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                                 .text("Restrictor[${restrictorId}].filter() tryLock() is timeout")
                                 .stringify());
-                        throw new OpflowRequestSuspendException("tryLock() return false - the lock is not available");
+                        throw new OpflowRequestPausingException("tryLock() return false - the lock is not available");
                     }
                 }
                 catch (InterruptedException exception) {
                     if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                             .text("Restrictor[${restrictorId}].filter() tryLock() is interrupted")
                             .stringify());
-                    throw new OpflowRequestSuspendException("tryLock() is interrupted", exception);
+                    throw new OpflowRequestPausingException("tryLock() is interrupted", exception);
                 }
             } else {
                 if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer

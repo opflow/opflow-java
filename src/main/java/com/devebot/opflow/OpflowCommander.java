@@ -193,7 +193,7 @@ public class OpflowCommander implements AutoCloseable {
                 }, publisherCfg).toMap());
             }
 
-            rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
+            rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcMaster);
 
             rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowUtil.buildMap(rpcWatcherCfg)
                     .put("instanceId", instanceId)
@@ -319,6 +319,10 @@ public class OpflowCommander implements AutoCloseable {
             return instanceId;
         }
 
+        public OpflowRestrictor.Valve getValveRestrictor() {
+            return valveRestrictor;
+        }
+
         public boolean isActive() {
             return onoffRestrictor.isActive();
         }
@@ -393,14 +397,27 @@ public class OpflowCommander implements AutoCloseable {
 
         private final static String DEFAULT_BALL_JSON = OpflowJsonTool.toString(new Object[] { new Ping() });
 
+        private final OpflowRestrictor.Valve restrictor;
         private final OpflowRpcMaster rpcMaster;
 
-        OpflowRpcCheckerMaster(OpflowRpcMaster rpcMaster) throws OpflowBootstrapException {
+        OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcMaster rpcMaster) throws OpflowBootstrapException {
+            this.restrictor = restrictor;
             this.rpcMaster = rpcMaster;
         }
 
         @Override
-        public Pong send(Ping ping) throws Throwable {
+        public Pong send(final Ping ping) throws Throwable {
+            if (this.restrictor == null) {
+                return _send_safe(ping);
+            }
+            return this.restrictor.filter(new OpflowRestrictor.Action<Pong>() {
+                @Override
+                public Pong process() throws Throwable {
+                    return _send_safe(ping);
+                }
+            });
+        }
+        private Pong _send_safe(final Ping ping) throws Throwable {
             Date startTime = new Date();
             String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
             String requestId = OpflowUUID.getBase64ID();
