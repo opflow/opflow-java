@@ -150,7 +150,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new configurer[${pubsubHandlerId}]")
                         .stringify());
-                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
+                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("measurer", measurer);
@@ -165,7 +165,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("rpcWorkerId", rpcWorkerId)
                         .text("Serverlet[${serverletId}] creates a new rpcWorker[${rpcWorkerId}]")
                         .stringify());
-                rpcWorker = new OpflowRpcWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
+                rpcWorker = new OpflowRpcWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("measurer", measurer);
@@ -180,7 +180,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("instanceId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new subscriber[${pubsubHandlerId}]")
                         .stringify());
-                subscriber = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
+                subscriber = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("measurer", measurer);
@@ -416,7 +416,7 @@ public class OpflowServerlet implements AutoCloseable {
                                     }
                                 }
                             }
-                            returnValue = new OpflowRpcChecker.Pong(OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.MapListener() {
+                            returnValue = new OpflowRpcChecker.Pong(OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.Listener() {
                                 @Override
                                 public void transform(Map<String, Object> opts) {
                                     OpflowEngine engine = rpcWorker.getEngine();

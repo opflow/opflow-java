@@ -164,10 +164,12 @@ public class OpflowUtil {
     public static class MapBuilder {
         private final Map<String, Object> fields;
 
+        @Deprecated
         public MapBuilder() {
             this(null);
         }
         
+        @Deprecated
         public MapBuilder(Map<String, Object> source) {
             fields = ensureNotNull(source);
         }
@@ -177,19 +179,23 @@ public class OpflowUtil {
             return this;
         }
 
+        @Deprecated
         public Object get(String key) {
             return fields.get(key);
         }
 
+        @Deprecated
         public Map<String, Object> toMap() {
             return fields;
         }
         
+        @Deprecated
         @Override
         public String toString() {
             return toString(false);
         }
         
+        @Deprecated
         public String toString(boolean pretty) {
             return OpflowJsonTool.toString(fields, pretty);
         }

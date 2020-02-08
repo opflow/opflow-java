@@ -255,7 +255,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 }
                 return true;
             }
-        }, OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
+        }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("consumerId", _consumerId);

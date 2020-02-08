@@ -1,6 +1,5 @@
 package com.devebot.opflow.supports;
 
-import com.devebot.opflow.OpflowUtil;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,22 +10,22 @@ import java.util.Map;
  */
 public class OpflowObjectTree {
 
-    public interface MapListener extends OpflowUtil.MapListener {
+    public interface Listener {
         public void transform(Map<String, Object> opts);
     }
     
-    public static class MapBuilder extends OpflowUtil.MapBuilder {
+    public static class Builder {
         private final Map<String, Object> fields;
 
-        public MapBuilder() {
+        public Builder() {
             this(null);
         }
         
-        public MapBuilder(Map<String, Object> source) {
+        public Builder(Map<String, Object> source) {
             fields = ensureNotNull(source);
         }
         
-        public MapBuilder put(String key, Object value) {
+        public Builder put(String key, Object value) {
             fields.put(key, value);
             return this;
         }
@@ -53,46 +52,46 @@ public class OpflowObjectTree {
         return (opts == null) ? new HashMap<String, Object>() : opts;
     }
     
-    public static MapBuilder buildMap() {
+    public static Builder buildMap() {
         return buildMap(null, null, false);
     }
     
-    public static MapBuilder buildMap(MapListener listener) {
+    public static Builder buildMap(Listener listener) {
         return buildMap(listener, null, false);
     }
     
-    public static MapBuilder buildMap(Map<String, Object> defaultOpts) {
+    public static Builder buildMap(Map<String, Object> defaultOpts) {
         return buildMap(null, defaultOpts, false);
     }
     
-    public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts) {
+    public static Builder buildMap(Listener listener, Map<String, Object> defaultOpts) {
         return buildMap(listener, defaultOpts, false);
     }
     
-    public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts, boolean orderKeep) {
-        Map<String, Object> source = orderKeep ? new LinkedHashMap<String, Object>() : new HashMap<String, Object>();
+    public static Builder buildMap(Listener listener, Map<String, Object> defaultOpts, boolean orderReserved) {
+        Map<String, Object> source = orderReserved ? new LinkedHashMap<String, Object>() : new HashMap<String, Object>();
         if (defaultOpts != null) {
             source.putAll(defaultOpts);
         }
         if (listener != null) {
             listener.transform(source);
         }
-        return new MapBuilder(source);
+        return new Builder(source);
     }
     
-    public static MapBuilder buildOrderedMap() {
+    public static Builder buildOrderedMap() {
         return buildMap(null, null, true);
     }
     
-    public static MapBuilder buildOrderedMap(MapListener listener) {
+    public static Builder buildOrderedMap(Listener listener) {
         return buildMap(listener, null, true);
     }
     
-    public static MapBuilder buildOrderedMap(Map<String, Object> defaultOpts) {
+    public static Builder buildOrderedMap(Map<String, Object> defaultOpts) {
         return buildMap(null, defaultOpts, true);
     }
     
-    public static MapBuilder buildOrderedMap(MapListener listener, Map<String, Object> defaultOpts) {
+    public static Builder buildOrderedMap(Listener listener, Map<String, Object> defaultOpts) {
         return buildMap(listener, defaultOpts, true);
     }
 }

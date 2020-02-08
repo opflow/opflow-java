@@ -166,7 +166,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
+                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("instanceId", instanceId);
@@ -175,7 +175,7 @@ public class OpflowCommander implements AutoCloseable {
                 }, configurerCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
-                rpcMaster = new OpflowRpcMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
+                rpcMaster = new OpflowRpcMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("instanceId", instanceId);
@@ -184,7 +184,7 @@ public class OpflowCommander implements AutoCloseable {
                 }, rpcMasterCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(publisherCfg)) {
-                publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.MapListener() {
+                publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("instanceId", instanceId);
@@ -572,9 +572,9 @@ public class OpflowCommander implements AutoCloseable {
         public Map<String, Object> collect(Scope scope) {
             final Scope label = (scope == null) ? Scope.BASIC : scope;
             
-            OpflowObjectTree.MapBuilder root = OpflowObjectTree.buildOrderedMap();
+            OpflowObjectTree.Builder root = OpflowObjectTree.buildOrderedMap();
             
-            root.put("commander", OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.MapListener() {
+            root.put("commander", OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.Listener() {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     opts.put("instanceId", instanceId);
@@ -592,7 +592,7 @@ public class OpflowCommander implements AutoCloseable {
                     // restrictor information
                     if (label == Scope.FULL) {
                         if (restrictor != null) {
-                            opts.put("restrictor", OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.MapListener() {
+                            opts.put("restrictor", OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.Listener() {
                                 @Override
                                 public void transform(Map<String, Object> opt2) {
                                     int availablePermits = restrictor.getSemaphorePermits();
@@ -620,7 +620,7 @@ public class OpflowCommander implements AutoCloseable {
                     
                     // rpcMaster information
                     if (rpcMaster != null) {
-                        opts.put("rpcMaster", OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.MapListener() {
+                        opts.put("rpcMaster", OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.Listener() {
                             @Override
                             public void transform(Map<String, Object> opt2) {
                                 OpflowEngine engine = rpcMaster.getEngine();
@@ -697,7 +697,7 @@ public class OpflowCommander implements AutoCloseable {
             List<Map<String, Object>> mappingInfos = new ArrayList<>();
             for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
                 final RpcInvocationHandler val = entry.getValue();
-                mappingInfos.add(OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.MapListener() {
+                mappingInfos.add(OpflowObjectTree.buildOrderedMap(new OpflowObjectTree.Listener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("class", entry.getKey());
