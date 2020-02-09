@@ -41,7 +41,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final Boolean enabled;
     private final long shutdownTimeout;
     private Undertow server;
-    private GracefulShutdownHandler shutdownHander;
+    private GracefulShutdownHandler shutdownHandler;
     
     OpflowRestServer(OpflowInfoCollector _infoCollector,
             OpflowTaskSubmitter _taskSubmitter,
@@ -129,54 +129,60 @@ public class OpflowRestServer implements AutoCloseable {
                         .get("/", new RedirectHandler("/api-ui/"))
                         .setFallbackHandler(new PageNotFoundHandler());
 
-                shutdownHander = new GracefulShutdownHandler(routes);
+                shutdownHandler = new GracefulShutdownHandler(routes);
 
                 server = Undertow.builder()
                         .addHttpListener(port, host)
-                        .setHandler(shutdownHander)
+                        .setHandler(shutdownHandler)
                         .build();
 
                 if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                         .text("RestServer[${restServerId}].serve() a new HTTP server is created")
                         .stringify());
             }
-        }
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("port", port)
                 .put("host", host)
                 .text("RestServer[${restServerId}].serve() Server listening on (http://${host}:${port})")
                 .stringify());
-        server.start();
+            server.start();
+        }
     }
     
     @Override
-    public void close() {
+    public synchronized void close() {
         if (server != null) {
-            if (shutdownHander != null) {
-                shutdownHander.shutdown();
+            if (shutdownHandler != null) {
+                shutdownHandler.shutdown();
                 try {
                     if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                             .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() starting")
                             .stringify());
-                    if (!shutdownHander.awaitShutdown(shutdownTimeout)) {
-                        shutdownHander.shutdown();
+                    if (shutdownHandler.awaitShutdown(shutdownTimeout)) {
+                        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                                .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() has done")
+                                .stringify());
+                    } else {
+                        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                                .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() is timeout")
+                                .stringify());
                     }
                 }
                 catch (InterruptedException ex) {
                     if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                             .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() interrupted")
                             .stringify());
-                    shutdownHander.shutdown();
+                    shutdownHandler.shutdown();
                 }
                 finally {
                     if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
                             .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() finished")
                             .stringify());
                 }
+                shutdownHandler = null;
             }
             server.stop();
             server = null;
-            shutdownHander = null;
         }
     }
     
