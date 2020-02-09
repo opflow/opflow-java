@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -98,11 +99,11 @@ public abstract class OpflowRpcChecker {
         }
         
         public String toString(boolean pretty) {
-            OpflowUtil.MapBuilder builder = OpflowUtil.buildOrderedMap().put("status", status);
+            OpflowObjectTree.Builder builder = OpflowObjectTree.buildMap().put("status", status);
             
             Map<String, Object> commanderInfo = (Map<String, Object>)commanderMap.get("commander");
             if (commanderInfo != null && processorObj != null) {
-                builder.put("commander", OpflowUtil.buildOrderedMap(new OpflowUtil.MapListener() {
+                builder.put("commander", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         // asserts the rpcMaster Map
@@ -133,7 +134,7 @@ public abstract class OpflowRpcChecker {
                     break;
                 case "failed":
                     builder
-                            .put("exception", OpflowUtil.buildOrderedMap()
+                            .put("exception", OpflowObjectTree.buildMap()
                                     .put("name", exception.getClass().getName())
                                     .put("message", exception.getMessage())
                                     .toMap())

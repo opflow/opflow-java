@@ -161,17 +161,21 @@ public class OpflowUtil {
 	return list;
     }
     
+    @Deprecated
     public interface MapListener {
         public void transform(Map<String, Object> opts);
     }
     
+    @Deprecated
     public static class MapBuilder {
         private final Map<String, Object> fields;
 
+        @Deprecated
         public MapBuilder() {
             this(null);
         }
         
+        @Deprecated
         public MapBuilder(Map<String, Object> source) {
             fields = ensureNotNull(source);
         }
@@ -181,40 +185,49 @@ public class OpflowUtil {
             return this;
         }
 
+        @Deprecated
         public Object get(String key) {
             return fields.get(key);
         }
 
+        @Deprecated
         public Map<String, Object> toMap() {
             return fields;
         }
         
+        @Deprecated
         @Override
         public String toString() {
             return toString(false);
         }
         
+        @Deprecated
         public String toString(boolean pretty) {
             return OpflowJsonTool.toString(fields, pretty);
         }
     }
     
+    @Deprecated
     public static MapBuilder buildMap() {
         return buildMap(null, null, false);
     }
     
+    @Deprecated
     public static MapBuilder buildMap(MapListener listener) {
         return buildMap(listener, null, false);
     }
     
+    @Deprecated
     public static MapBuilder buildMap(Map<String, Object> defaultOpts) {
         return buildMap(null, defaultOpts, false);
     }
     
+    @Deprecated
     public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts) {
         return buildMap(listener, defaultOpts, false);
     }
     
+    @Deprecated
     public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts, boolean orderKeep) {
         Map<String, Object> source = orderKeep ? new LinkedHashMap<String, Object>() : new HashMap<String, Object>();
         if (defaultOpts != null) {
@@ -226,18 +239,22 @@ public class OpflowUtil {
         return new MapBuilder(source);
     }
     
+    @Deprecated
     public static MapBuilder buildOrderedMap() {
         return buildMap(null, null, true);
     }
     
+    @Deprecated
     public static MapBuilder buildOrderedMap(MapListener listener) {
         return buildMap(listener, null, true);
     }
     
+    @Deprecated
     public static MapBuilder buildOrderedMap(Map<String, Object> defaultOpts) {
         return buildMap(null, defaultOpts, true);
     }
     
+    @Deprecated
     public static MapBuilder buildOrderedMap(MapListener listener, Map<String, Object> defaultOpts) {
         return buildMap(listener, defaultOpts, true);
     }
