@@ -40,6 +40,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final Integer port;
     private final Boolean enabled;
     private final long shutdownTimeout;
+    private final Thread shutdownHook;
     private Undertow server;
     private GracefulShutdownHandler shutdownHandler;
     
@@ -57,6 +58,13 @@ public class OpflowRestServer implements AutoCloseable {
         });
         
         shutdownTimeout = OpflowUtil.getOptionValue(kwargs, "shutdownTimeout", Long.class, 1000l);
+        
+        shutdownHook = new Thread() {
+            @Override
+            public void run() {
+                close();
+            }
+        };
         
         logTracer = OpflowLogTracer.ROOT.branch("restServerId", instanceId);
         
@@ -114,6 +122,9 @@ public class OpflowRestServer implements AutoCloseable {
                     .stringify());
             this.close();
         }
+
+        assertSystemShutdownHook();
+
         synchronized (this) {
             if (server == null) {
                 RoutingHandler routes = new RoutingHandler();
@@ -184,6 +195,11 @@ public class OpflowRestServer implements AutoCloseable {
             server.stop();
             server = null;
         }
+    }
+    
+    protected void assertSystemShutdownHook() {
+        Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
     
     public HttpHandler buildResourceHandler(String prefix) {
