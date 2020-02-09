@@ -3,7 +3,6 @@ package com.devebot.opflow;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
-import com.devebot.opflow.supports.OpflowNetTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -50,16 +49,13 @@ public class OpflowRestServer implements AutoCloseable {
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs) throws OpflowBootstrapException {
         kwargs = OpflowUtil.ensureNotNull(kwargs);
-
+        
         instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
         enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", null), Boolean.class);
         host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();
-        
-        // detect the avaiable port
-        Integer[] ports = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "ports", new Integer[] {
-            8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
-        }), (new Integer[0]).getClass());
-        port = OpflowNetTool.detectFreePort(ports);
+        port = OpflowUtil.detectFreePort(kwargs, "ports", new Integer[] {
+                8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
+        });
         
         shutdownTimeout = OpflowUtil.getOptionValue(kwargs, "shutdownTimeout", Long.class, 1000l);
         
@@ -171,6 +167,7 @@ public class OpflowRestServer implements AutoCloseable {
                     if (logTracer.ready(LOG, "error")) LOG.error(logTracer
                             .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() interrupted")
                             .stringify());
+                    shutdownHander.shutdown();
                 }
                 finally {
                     if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
@@ -305,7 +302,7 @@ public class OpflowRestServer implements AutoCloseable {
             }
         }
     }
-    
+
     private boolean getPrettyParam(HttpServerExchange exchange) {
         return getQueryParam(exchange, "pretty", Boolean.class, Boolean.FALSE);
     }

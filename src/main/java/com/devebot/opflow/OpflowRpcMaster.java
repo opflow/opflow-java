@@ -33,7 +33,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final String instanceId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
-    private final OpflowRestrictor.Valve<OpflowRpcRequest> restrictor;
+    private final OpflowRestrictor.Valve restrictor;
     
     private final Timer timer = new Timer("Timer-" + OpflowRpcMaster.class.getSimpleName(), true);
     private final ReentrantReadWriteLock taskLock = new ReentrantReadWriteLock();
@@ -62,7 +62,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
-        restrictor = new OpflowRestrictor.Valve<>();
+        restrictor = new OpflowRestrictor.Valve();
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", instanceId);
         

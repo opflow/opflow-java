@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowDateTime;
 import java.util.Map;
@@ -65,7 +66,13 @@ public class OpflowRpcWatcher implements AutoCloseable {
                     if (logTask.ready(LOG, "debug")) LOG.debug(logTask
                             .text("Detector[${rpcWatcherId}].run(), the queue is drained")
                             .stringify());
-                } catch (Throwable exception) {
+                }
+                catch (OpflowRequestSuspendException e) {
+                    if (logTask.ready(LOG, "debug")) LOG.debug(logTask
+                            .text("Detector[${rpcWatcherId}].run(), the valve is suspended")
+                            .stringify());
+                }
+                catch (Throwable exception) {
                     congested = true;
                     if (logTask.ready(LOG, "debug")) LOG.debug(logTask
                             .text("Detector[${rpcWatcherId}].run(), the queue is congested")

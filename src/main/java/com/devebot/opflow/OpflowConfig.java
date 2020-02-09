@@ -350,6 +350,8 @@ public class OpflowConfig {
     
     private static final String[] INTEGER_ARRAY_FIELDS = new String[] { "ports" };
     
+    private static final String[] INTEGER_RANGE_FIELDS = new String[] { "ports" };
+    
     private static final String[] LONGINT_FIELDS = new String[] {
         "expiration", "interval", "monitorTimeout", "pauseTimeout", "semaphoreTimeout"
     };
@@ -381,7 +383,21 @@ public class OpflowConfig {
             }
             if (OpflowUtil.arrayContains(INTEGER_ARRAY_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
-                    params.put(key, OpflowUtil.splitByComma((String)params.get(key), Integer.class));
+                    String intArrayStr = (String) params.get(key);
+                    if (OpflowUtil.isIntegerArray(intArrayStr)) {
+                        params.put(key, OpflowUtil.splitByComma(intArrayStr, Integer.class));
+                    }
+                }
+            }
+            if (OpflowUtil.arrayContains(INTEGER_RANGE_FIELDS, key)) {
+                if (params.get(key) instanceof String) {
+                    String intRangeStr = (String) params.get(key);
+                    if (OpflowUtil.isIntegerRange(intRangeStr)) {
+                        Integer[] range = OpflowUtil.getIntegerRange(intRangeStr);
+                        if (range != null) {
+                            params.put(key, new Integer[] { -1, range[0], range[1] });
+                        }
+                    }
                 }
             }
             if (OpflowUtil.arrayContains(LONGINT_FIELDS, key)) {

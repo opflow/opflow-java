@@ -106,7 +106,7 @@ public class OpflowCommander implements AutoCloseable {
         
         if (restrictor != null) {
             restrictor.lock();
-        };
+        }
         
         this.init(kwargs);
         
@@ -193,15 +193,13 @@ public class OpflowCommander implements AutoCloseable {
                 }, publisherCfg).toMap());
             }
 
-            rpcChecker = new OpflowRpcCheckerMaster(rpcMaster);
+            rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcMaster);
 
             rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowObjectTree.buildMap(rpcWatcherCfg)
                     .put("instanceId", instanceId)
                     .toMap());
 
-            rpcWatcher.start();
-
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcWatcher, rpcMaster, handlers);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcMaster, handlers, rpcWatcher);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(instanceId, measurer, restrictor, rpcMaster, handlers);
             
@@ -238,6 +236,9 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     public final void serve(RoutingHandler httpHandlers) {
+        if (rpcWatcher != null) {
+            rpcWatcher.start();
+        }
         if (restServer != null) {
             if (httpHandlers == null) {
                 restServer.serve();
@@ -255,23 +256,20 @@ public class OpflowCommander implements AutoCloseable {
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("Commander[${commanderId}].close()")
                 .stringify());
-        
+
         if (restrictor != null) {
             restrictor.lock();
-        };
-        
+        }
+
         if (restServer != null) restServer.close();
         if (rpcWatcher != null) rpcWatcher.close();
-        
-        try {
-            if (publisher != null) publisher.close();
-            if (rpcMaster != null) rpcMaster.close();
-            if (configurer != null) configurer.close();
-        }
-        finally {
-            if (restrictor != null) {
-                restrictor.close();
-            }
+
+        if (publisher != null) publisher.close();
+        if (rpcMaster != null) rpcMaster.close();
+        if (configurer != null) configurer.close();
+
+        if (restrictor != null) {
+            restrictor.close();
         }
 
         OpflowUUID.release();
@@ -281,16 +279,16 @@ public class OpflowCommander implements AutoCloseable {
                 .stringify());
     }
     
-    private static class OpflowRestrictorMaster<T> extends OpflowRestrictable.Runner<T> implements AutoCloseable {
+    private static class OpflowRestrictorMaster extends OpflowRestrictable.Runner implements AutoCloseable {
         private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictorMaster.class);
 
         protected final String instanceId;
         protected final OpflowLogTracer logTracer;
 
-        private final OpflowRestrictor.OnOff<T> onoffRestrictor;
-        private final OpflowRestrictor.Valve<T> valveRestrictor;
-        private final OpflowRestrictor.Pause<T> pauseRestrictor;
-        private final OpflowRestrictor.Limit<T> limitRestrictor;
+        private final OpflowRestrictor.OnOff onoffRestrictor;
+        private final OpflowRestrictor.Valve valveRestrictor;
+        private final OpflowRestrictor.Pause pauseRestrictor;
+        private final OpflowRestrictor.Limit limitRestrictor;
 
         public OpflowRestrictorMaster(Map<String, Object> options) {
             options = OpflowUtil.ensureNotNull(options);
@@ -302,16 +300,16 @@ public class OpflowCommander implements AutoCloseable {
                     .text("Restrictor[${restrictorId}].new()")
                     .stringify());
 
-            onoffRestrictor = new OpflowRestrictor.OnOff<>(options);
-            valveRestrictor = new OpflowRestrictor.Valve<>(options);
-            pauseRestrictor = new OpflowRestrictor.Pause<>(options);
-            limitRestrictor = new OpflowRestrictor.Limit<>(options);
+            onoffRestrictor = new OpflowRestrictor.OnOff(options);
+            valveRestrictor = new OpflowRestrictor.Valve(options);
+            pauseRestrictor = new OpflowRestrictor.Pause(options);
+            limitRestrictor = new OpflowRestrictor.Limit(options);
 
             super.append(onoffRestrictor.setLogTracer(logTracer));
             super.append(valveRestrictor.setLogTracer(logTracer));
             super.append(pauseRestrictor.setLogTracer(logTracer));
             super.append(limitRestrictor.setLogTracer(logTracer));
-            
+
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                     .text("Restrictor[${restrictorId}].new() end!")
                     .stringify());
@@ -319,6 +317,10 @@ public class OpflowCommander implements AutoCloseable {
 
         public String getInstanceId() {
             return instanceId;
+        }
+
+        public OpflowRestrictor.Valve getValveRestrictor() {
+            return valveRestrictor;
         }
 
         public boolean isActive() {
@@ -390,19 +392,32 @@ public class OpflowCommander implements AutoCloseable {
             pauseRestrictor.close();
         }
     }
-    
+
     private static class OpflowRpcCheckerMaster extends OpflowRpcChecker {
 
         private final static String DEFAULT_BALL_JSON = OpflowJsonTool.toString(new Object[] { new Ping() });
 
+        private final OpflowRestrictor.Valve restrictor;
         private final OpflowRpcMaster rpcMaster;
 
-        OpflowRpcCheckerMaster(OpflowRpcMaster rpcMaster) throws OpflowBootstrapException {
+        OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcMaster rpcMaster) throws OpflowBootstrapException {
+            this.restrictor = restrictor;
             this.rpcMaster = rpcMaster;
         }
 
         @Override
-        public Pong send(Ping ping) throws Throwable {
+        public Pong send(final Ping ping) throws Throwable {
+            if (this.restrictor == null) {
+                return _send_safe(ping);
+            }
+            return this.restrictor.filter(new OpflowRestrictor.Action<Pong>() {
+                @Override
+                public Pong process() throws Throwable {
+                    return _send_safe(ping);
+                }
+            });
+        }
+        private Pong _send_safe(final Ping ping) throws Throwable {
             Date startTime = new Date();
             String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
             String requestId = OpflowUUID.getBase64ID();
@@ -452,7 +467,7 @@ public class OpflowCommander implements AutoCloseable {
             this.handlers = mappings;
             this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", instanceId);
         }
-        
+
         @Override
         public Map<String, Object> pause(long duration) {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -551,9 +566,10 @@ public class OpflowCommander implements AutoCloseable {
         public OpflowInfoCollectorMaster(String instanceId,
                 OpflowPromMeasurer measurer,
                 OpflowRestrictorMaster restrictor,
-                OpflowRpcWatcher rpcWatcher,
                 OpflowRpcMaster rpcMaster,
-                Map<String, RpcInvocationHandler> mappings) {
+                Map<String, RpcInvocationHandler> mappings,
+                OpflowRpcWatcher rpcWatcher
+        ) {
             this.instanceId = instanceId;
             this.measurer = measurer;
             this.restrictor = restrictor;
@@ -961,13 +977,8 @@ public class OpflowCommander implements AutoCloseable {
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
-            RpcInvocationHandler handler;
-            if (restrictor != null) {
-                handler = new RpcInvocationHandler(logTracer, measurer, restrictor, reqExtractor, rpcWatcher, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
-            } else {
-                handler = new RpcInvocationHandler(logTracer, measurer, null, reqExtractor, rpcWatcher, rpcMaster, publisher, clazz, bean, reservedWorkerEnabled);
-            }
-            handlers.put(clazzName, handler);
+            handlers.put(clazzName, new RpcInvocationHandler(logTracer, measurer, restrictor, reqExtractor, rpcWatcher, 
+                    rpcMaster, publisher, clazz, bean, reservedWorkerEnabled));
         } else {
             if (strictMode) {
                 throw new OpflowRpcRegistrationException("Class [" + clazzName + "] has already registered");

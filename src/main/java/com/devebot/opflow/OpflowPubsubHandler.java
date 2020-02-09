@@ -25,7 +25,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private final String instanceId;
     private final OpflowLogTracer logTracer;
     
-    private final OpflowRestrictor.Valve<Object> restrictor;
+    private final OpflowRestrictor.Valve restrictor;
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
@@ -44,7 +44,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", instanceId);
 
-        restrictor = new OpflowRestrictor.Valve<>();
+        restrictor = new OpflowRestrictor.Valve();
 
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new()")

@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowRequestPausingException;
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestWaitingException;
 import com.devebot.opflow.supports.OpflowObjectTree;
@@ -23,16 +24,16 @@ public class OpflowRestrictor {
 
     public interface Action<T> extends OpflowRestrictable.Action<T> {}
 
-    public static abstract class Filter<T> extends OpflowRestrictable.Filter<T> {
+    public static abstract class Filter extends OpflowRestrictable.Filter {
         protected OpflowLogTracer logTracer = OpflowLogTracer.ROOT.copy();
 
-        public Filter<T> setLogTracer(OpflowLogTracer logTracer) {
+        public Filter setLogTracer(OpflowLogTracer logTracer) {
             this.logTracer = logTracer;
             return this;
         }
     }
 
-    public static class OnOff<T> extends Filter<T> {
+    public static class OnOff extends Filter {
         private boolean active;
         
         public OnOff(Map<String, Object> options) {
@@ -56,7 +57,7 @@ public class OpflowRestrictor {
         }
         
         @Override
-        public T filter(OpflowRestrictable.Action<T> action) throws Throwable {
+        public <T> T filter(OpflowRestrictable.Action<T> action) throws Throwable {
             if (!isActive()) {
                 return action.process();
             }
@@ -64,7 +65,7 @@ public class OpflowRestrictor {
         }
     }
 
-    public static class Valve<T> extends Filter<T> {
+    public static class Valve extends Filter {
         private final ReentrantReadWriteLock valveLock;
 
         public Valve() {
@@ -92,7 +93,7 @@ public class OpflowRestrictor {
         }
 
         @Override
-        public T filter(OpflowRestrictable.Action<T> action) throws Throwable {
+        public <T> T filter(OpflowRestrictable.Action<T> action) throws Throwable {
             Lock rl = this.valveLock.readLock();
             if (rl.tryLock()) {
                 try {
@@ -110,14 +111,14 @@ public class OpflowRestrictor {
         }
     }
 
-    public static class Pause<T> extends Filter<T> implements AutoCloseable {
+    public static class Pause extends Filter implements AutoCloseable {
 
         private final long PAUSE_SLEEPING_INTERVAL = 500;
         private final long PAUSE_TIMEOUT_DEFAULT = 0l;
 
         private final ReentrantReadWriteLock pauseLock;
-        private boolean pauseEnabled;
-        private long pauseTimeout;
+        private boolean pauseEnabled = true;
+        private long pauseTimeout = PAUSE_TIMEOUT_DEFAULT;
         private PauseThread pauseThread;
         private ExecutorService threadExecutor;
 
@@ -132,16 +133,12 @@ public class OpflowRestrictor {
 
             if (options.get("pauseEnabled") instanceof Boolean) {
                 pauseEnabled = (Boolean) options.get("pauseEnabled");
-            } else {
-                pauseEnabled = true;
             }
 
             if (options.get("pauseTimeout") instanceof Long) {
                 pauseTimeout = (Long) options.get("pauseTimeout");
             } else if (options.get("pauseTimeout") instanceof Integer) {
                 pauseTimeout = (Integer) options.get("pauseTimeout");
-            } else {
-                pauseTimeout = PAUSE_TIMEOUT_DEFAULT;
             }
         }
         
@@ -290,7 +287,7 @@ public class OpflowRestrictor {
         }
 
         @Override
-        public T filter(OpflowRestrictable.Action<T> action) throws Throwable {
+        public <T> T filter(OpflowRestrictable.Action<T> action) throws Throwable {
             if (!pauseEnabled) {
                 return this.execute(action);
             }
@@ -318,14 +315,14 @@ public class OpflowRestrictor {
                         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                                 .text("Restrictor[${restrictorId}].filter() tryLock() is timeout")
                                 .stringify());
-                        throw new OpflowRequestSuspendException("tryLock() return false - the lock is not available");
+                        throw new OpflowRequestPausingException("tryLock() return false - the lock is not available");
                     }
                 }
                 catch (InterruptedException exception) {
                     if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                             .text("Restrictor[${restrictorId}].filter() tryLock() is interrupted")
                             .stringify());
-                    throw new OpflowRequestSuspendException("tryLock() is interrupted", exception);
+                    throw new OpflowRequestPausingException("tryLock() is interrupted", exception);
                 }
             } else {
                 if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
@@ -380,13 +377,13 @@ public class OpflowRestrictor {
         }
     }
 
-    public static class Limit<T> extends Filter<T> {
+    public static class Limit extends Filter {
 
         private final int SEMAPHORE_LIMIT_DEFAULT = 1000;
         private final long SEMAPHORE_TIMEOUT_DEFAULT = 0l;
 
-        private boolean semaphoreEnabled;
-        private long semaphoreTimeout;
+        private boolean semaphoreEnabled = false;
+        private long semaphoreTimeout = SEMAPHORE_TIMEOUT_DEFAULT;
         private final int semaphoreLimit;
         private final Semaphore semaphore;
         
@@ -395,16 +392,12 @@ public class OpflowRestrictor {
             
             if (options.get("semaphoreEnabled") instanceof Boolean) {
                 semaphoreEnabled = (Boolean) options.get("semaphoreEnabled");
-            } else {
-                semaphoreEnabled = false;
             }
 
             if (options.get("semaphoreTimeout") instanceof Long ) {
                 semaphoreTimeout = (Long) options.get("semaphoreTimeout");
             } else if (options.get("semaphoreTimeout") instanceof Integer) {
                 semaphoreTimeout = (Integer) options.get("semaphoreTimeout");
-            } else {
-                semaphoreTimeout = SEMAPHORE_TIMEOUT_DEFAULT;
             }
 
             if (options.get("semaphoreLimit") instanceof Integer) {
@@ -434,7 +427,7 @@ public class OpflowRestrictor {
         }
 
         @Override
-        public T filter(OpflowRestrictable.Action<T> action) throws Throwable {
+        public <T> T filter(OpflowRestrictable.Action<T> action) throws Throwable {
             if (!semaphoreEnabled) {
                 return action.process();
             }
