@@ -1059,7 +1059,11 @@ public class OpflowCommander implements AutoCloseable {
     public Map<String, Object> getRpcInvocationCounter() {
         return measurer.getRpcInvocationCounter("commander").toMap(false);
     }
-    
+
+    public void resetRpcInvocationCounter() {
+        measurer.resetRpcInvocationCounter();
+    }
+
     @Override
     protected void finalize() throws Throwable {
         measurer.updateComponentInstance("commander", instanceId, OpflowPromMeasurer.GaugeAction.DEC);
