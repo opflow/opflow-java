@@ -873,9 +873,10 @@ public class OpflowCommander implements AutoCloseable {
                     .stringify());
 
             if (this.publisher != null && isAsync && void.class.equals(method.getReturnType())) {
-                if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+                if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
                         .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
+                measurer.countRpcInvocation("commander", "publisher", routineId, "begin");
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put("requestId", requestId)
                         .put("requestTime", requestTime)
@@ -883,16 +884,18 @@ public class OpflowCommander implements AutoCloseable {
                         .toMap());
                 return null;
             } else {
-                if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+                if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
                         .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
                         .stringify());
+                measurer.countRpcInvocation("commander", "master", routineId, "begin");
             }
             
-            measurer.countRpcInvocation("commander", "master", routineId, "begin");
-
             // rpc switching
             if (rpcWatcher.isCongested() || !detachedWorkerActive) {
                 if (this.isReservedWorkerAvailable()) {
+                    if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                            .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() retains the reservedWorker")
+                            .stringify());
                     measurer.countRpcInvocation("commander", "reserved_worker", routineId, "retain");
                     return method.invoke(this.reservedWorker, args);
                 }
@@ -909,20 +912,29 @@ public class OpflowCommander implements AutoCloseable {
             if (rpcResult.isTimeout()) {
                 rpcWatcher.setCongested(true);
                 if (this.isReservedWorkerAvailable()) {
+                    if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                            .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() rescues by the reservedWorker")
+                            .stringify());
                     measurer.countRpcInvocation("commander", "reserved_worker", routineId, "rescue");
                     return method.invoke(this.reservedWorker, args);
                 }
+                if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                        .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() is timeout")
+                        .stringify());
                 measurer.countRpcInvocation("commander", "detached_worker", routineId, "timeout");
                 throw new OpflowRequestTimeoutException();
             }
 
             if (rpcResult.isFailed()) {
                 measurer.countRpcInvocation("commander", "detached_worker", routineId, "failed");
+                if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                        .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() has failed")
+                        .stringify());
                 Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcResult.getErrorAsString());
                 throw rebuildInvokerException(errorMap);
             }
 
-            if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+            if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
                     .put("returnType", method.getReturnType().getName())
                     .put("returnValue", rpcResult.getValueAsString())
                     .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() return the output")
