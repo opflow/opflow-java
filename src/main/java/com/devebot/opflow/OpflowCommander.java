@@ -860,7 +860,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("methodId", methodId)
                     .put("routineId", routineId)
                     .put("isAsync", isAsync)
-                    .text("Request[${requestId}] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
+                    .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
                     .stringify());
 
             if (args == null) args = new Object[0];
@@ -869,12 +869,12 @@ public class OpflowCommander implements AutoCloseable {
             if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("args", args)
                     .put("body", body)
-                    .text("Request[${requestId}] - RpcInvocationHandler.invoke() details")
+                    .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() details")
                     .stringify());
 
             if (this.publisher != null && isAsync && void.class.equals(method.getReturnType())) {
                 if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                        .text("Request[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
+                        .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put("requestId", requestId)
@@ -884,7 +884,7 @@ public class OpflowCommander implements AutoCloseable {
                 return null;
             } else {
                 if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                        .text("Request[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
+                        .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
                         .stringify());
             }
             
@@ -925,7 +925,7 @@ public class OpflowCommander implements AutoCloseable {
             if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("returnType", method.getReturnType().getName())
                     .put("returnValue", rpcResult.getValueAsString())
-                    .text("Request[${requestId}] - RpcInvocationHandler.invoke() return the output")
+                    .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() return the output")
                     .stringify());
 
             measurer.countRpcInvocation("commander", "detached_worker", routineId, "ok");

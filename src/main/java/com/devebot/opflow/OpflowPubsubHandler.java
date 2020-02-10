@@ -178,18 +178,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
             override.put("routingKey", routingKey);
             if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
                     .put("routingKey", routingKey)
-                    .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() with overridden routingKey: ${routingKey}")
+                    .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish() with overridden routingKey: ${routingKey}")
                     .stringify());
         } else {
             if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
-                    .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish()")
+                    .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish()")
                     .stringify());
         }
         
         engine.produce(body, options, override);
         
         if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
-                .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() request has enqueued")
+                .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish() request has enqueued")
                 .stringify());
     }
     
@@ -225,12 +225,12 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     logRequest = logSubscribe.branch("requestTime", requestTime).branch("requestId", requestId);
                 }
                 if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                        .text("Request[${requestId}] - Consumer[${consumerId}].subscribe() receives a new request")
+                        .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}].subscribe() receives a new request")
                         .stringify());
                 try {
                     listener.processMessage(new OpflowMessage(content, headers));
                     if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                            .text("Request[${requestId}] - subscribe() request processing has completed")
+                            .text("Request[${requestId}][${requestTime}] - subscribe() request processing has completed")
                             .stringify());
                 } catch (Exception exception) {
                     int redeliveredCount = 0;
@@ -246,12 +246,12 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .put("redeliveredCount", redeliveredCount)
                             .put("redeliveredLimit", redeliveredLimit)
-                            .text("Request[${requestId}] - subscribe() recycling failed request")
+                            .text("Request[${requestId}][${requestTime}] - subscribe() recycling failed request")
                             .stringify());
                     
                     if (redeliveredCount <= redeliveredLimit) {
                         if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                                .text("Request[${requestId}] - subscribe() requeue failed request")
+                                .text("Request[${requestId}][${requestTime}] - subscribe() requeue failed request")
                                 .stringify());
                         sendToQueue(content, props, subscriberName, channel);
                     } else {
@@ -259,11 +259,11 @@ public class OpflowPubsubHandler implements AutoCloseable {
                             sendToQueue(content, props, recyclebinName, channel);
                             if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                                     .put("recyclebinName", recyclebinName)
-                                    .text("Request[${requestId}] - subscribe() enqueue failed request to recyclebin")
+                                    .text("Request[${requestId}][${requestTime}] - subscribe() enqueue failed request to recyclebin")
                                     .stringify());
                         } else {
                             if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                                    .text("Request[${requestId}] - subscribe() discard failed request (recyclebin not found)")
+                                    .text("Request[${requestId}][${requestTime}] - subscribe() discard failed request (recyclebin not found)")
                                     .stringify());
                         }
                     }

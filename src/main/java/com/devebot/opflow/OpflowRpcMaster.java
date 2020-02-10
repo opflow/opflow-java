@@ -408,7 +408,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     }
                     if (logTask != null && logTask.ready(LOG, "debug")) LOG.debug(logTask
                             .put("taskListSize", tasks.size())
-                            .text("Request[${requestId}] - RpcMaster[${rpcMasterId}]"
+                            .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}]"
                                     + "- tasksize after removing task[${taskId}]: ${taskListSize}")
                             .stringify());
                 } finally {
@@ -445,12 +445,12 @@ public class OpflowRpcMaster implements AutoCloseable {
         if (!consumerInfo.isFixedQueue()) {
             if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("replyTo", consumerInfo.getQueueName())
-                    .text("Request[${requestId}] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
+                    .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
                     .stringify());
         } else {
             if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("replyTo", consumerInfo.getQueueName())
-                    .text("Request[${requestId}] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
+                    .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
                     .stringify());
         }
         builder.replyTo(consumerInfo.getQueueName());
