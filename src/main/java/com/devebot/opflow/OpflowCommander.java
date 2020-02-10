@@ -842,12 +842,12 @@ public class OpflowCommander implements AutoCloseable {
                 String _requestId = reqExtractor.extractRequestId(args);
                 requestId = (_requestId != null) ? _requestId : OpflowUUID.getBase64ID();
             }
-            
-            // create the logTracer
-            final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
 
             // determine the requestTime
             final String requestTime = OpflowDateTime.getCurrentTimeString();
+
+            // create the logTracer
+            final OpflowLogTracer logRequest = logTracer.branch("requestTime", requestTime).branch("requestId", requestId);
 
             // get the method signature
             String methodId = OpflowUtil.getMethodSignature(method);
@@ -878,6 +878,7 @@ public class OpflowCommander implements AutoCloseable {
                         .stringify());
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put("requestId", requestId)
+                        .put("requestTime", requestTime)
                         .put("routineId", routineId)
                         .toMap());
                 return null;
