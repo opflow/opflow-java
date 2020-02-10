@@ -88,7 +88,7 @@ public abstract class OpflowPromMeasurer {
             this.remoteTimeout++;
         }
 
-        public synchronized RpcInvocationCounter copy() {
+        private synchronized RpcInvocationCounter copy() {
             RpcInvocationCounter that = new RpcInvocationCounter();
             that.startTime = this.startTime;
             that.total = this.total;
@@ -115,7 +115,11 @@ public abstract class OpflowPromMeasurer {
         }
 
         public Map<String, Object> toMap() {
-            RpcInvocationCounter that = this.copy();
+            return toMap(true);
+        }
+
+        public Map<String, Object> toMap(boolean cloned) {
+            RpcInvocationCounter that = cloned ? this.copy() : this;
             return OpflowObjectTree.buildMap()
                     .put("rpcInvocationTotal", that.total)
                     .put("rpcOverDirectWorker", OpflowObjectTree.buildMap()

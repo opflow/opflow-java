@@ -121,7 +121,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     }
 
     public void publish(String body) {
-        publish(body, null);
+        publish(body, null, null);
     }
     
     public void publish(String body, Map<String, Object> opts) {
@@ -133,7 +133,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     }
     
     public void publish(byte[] body) {
-        publish(body, null);
+        publish(body, null, null);
     }
     
     public void publish(byte[] body, Map<String, Object> options) {
@@ -165,14 +165,12 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private void _publish(byte[] body, Map<String, Object> options, String routingKey) {
         options = OpflowUtil.ensureNotNull(options);
         
-        Object requestId = options.get("requestId");
-        if (requestId == null) {
-            options.put("requestId", requestId = OpflowUUID.getBase64ID());
-        }
+        String requestId = OpflowUtil.getRequestId(options);
+        String requestTime = OpflowUtil.getRequestTime(options);
         
         OpflowLogTracer logPublish = null;
         if (logTracer.ready(LOG, "info")) {
-            logPublish = logTracer.branch("requestId", requestId);
+            logPublish = logTracer.branch("requestTime", requestTime).branch("requestId", requestId);
         }
         
         Map<String, Object> override = new HashMap<>();
@@ -180,18 +178,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
             override.put("routingKey", routingKey);
             if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
                     .put("routingKey", routingKey)
-                    .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() with overridden routingKey: ${routingKey}")
+                    .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish() with overridden routingKey: ${routingKey}")
                     .stringify());
         } else {
             if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
-                    .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish()")
+                    .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish()")
                     .stringify());
         }
         
         engine.produce(body, options, override);
         
         if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
-                .text("Request[${requestId}] - PubsubHandler[${pubsubHandlerId}].publish() request has enqueued")
+                .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish() request has enqueued")
                 .stringify());
     }
     
@@ -220,18 +218,19 @@ public class OpflowPubsubHandler implements AutoCloseable {
             public boolean processMessage(byte[] content, AMQP.BasicProperties properties, 
                     String queueName, Channel channel, String consumerTag) throws IOException {
                 Map<String, Object> headers = properties.getHeaders();
-                String requestId = OpflowUtil.getRequestId(headers);
+                String requestId = OpflowUtil.getRequestId(headers, false);
+                String requestTime = OpflowUtil.getRequestTime(headers, false);
                 OpflowLogTracer logRequest = null;
                 if (logSubscribe.ready(LOG, "info")) {
-                    logRequest = logSubscribe.branch("requestId", requestId);
+                    logRequest = logSubscribe.branch("requestTime", requestTime).branch("requestId", requestId);
                 }
                 if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                        .text("Request[${requestId}] - Consumer[${consumerId}].subscribe() receives a new request")
+                        .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}].subscribe() receives a new request")
                         .stringify());
                 try {
                     listener.processMessage(new OpflowMessage(content, headers));
                     if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                            .text("Request[${requestId}] - subscribe() request processing has completed")
+                            .text("Request[${requestId}][${requestTime}] - subscribe() request processing has completed")
                             .stringify());
                 } catch (Exception exception) {
                     int redeliveredCount = 0;
@@ -247,12 +246,12 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                             .put("redeliveredCount", redeliveredCount)
                             .put("redeliveredLimit", redeliveredLimit)
-                            .text("Request[${requestId}] - subscribe() recycling failed request")
+                            .text("Request[${requestId}][${requestTime}] - subscribe() recycling failed request")
                             .stringify());
                     
                     if (redeliveredCount <= redeliveredLimit) {
                         if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                                .text("Request[${requestId}] - subscribe() requeue failed request")
+                                .text("Request[${requestId}][${requestTime}] - subscribe() requeue failed request")
                                 .stringify());
                         sendToQueue(content, props, subscriberName, channel);
                     } else {
@@ -260,11 +259,11 @@ public class OpflowPubsubHandler implements AutoCloseable {
                             sendToQueue(content, props, recyclebinName, channel);
                             if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                                     .put("recyclebinName", recyclebinName)
-                                    .text("Request[${requestId}] - subscribe() enqueue failed request to recyclebin")
+                                    .text("Request[${requestId}][${requestTime}] - subscribe() enqueue failed request to recyclebin")
                                     .stringify());
                         } else {
                             if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                                    .text("Request[${requestId}] - subscribe() discard failed request (recyclebin not found)")
+                                    .text("Request[${requestId}][${requestTime}] - subscribe() discard failed request (recyclebin not found)")
                                     .stringify());
                         }
                     }

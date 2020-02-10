@@ -842,12 +842,12 @@ public class OpflowCommander implements AutoCloseable {
                 String _requestId = reqExtractor.extractRequestId(args);
                 requestId = (_requestId != null) ? _requestId : OpflowUUID.getBase64ID();
             }
-            
-            // create the logTracer
-            final OpflowLogTracer logRequest = logTracer.branch("requestId", requestId);
 
             // determine the requestTime
             final String requestTime = OpflowDateTime.getCurrentTimeString();
+
+            // create the logTracer
+            final OpflowLogTracer logRequest = logTracer.branch("requestTime", requestTime).branch("requestId", requestId);
 
             // get the method signature
             String methodId = OpflowUtil.getMethodSignature(method);
@@ -860,7 +860,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("methodId", methodId)
                     .put("routineId", routineId)
                     .put("isAsync", isAsync)
-                    .text("Request[${requestId}] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
+                    .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
                     .stringify());
 
             if (args == null) args = new Object[0];
@@ -869,21 +869,22 @@ public class OpflowCommander implements AutoCloseable {
             if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("args", args)
                     .put("body", body)
-                    .text("Request[${requestId}] - RpcInvocationHandler.invoke() details")
+                    .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() details")
                     .stringify());
 
             if (this.publisher != null && isAsync && void.class.equals(method.getReturnType())) {
                 if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                        .text("Request[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
+                        .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put("requestId", requestId)
+                        .put("requestTime", requestTime)
                         .put("routineId", routineId)
                         .toMap());
                 return null;
             } else {
                 if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                        .text("Request[${requestId}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
+                        .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
                         .stringify());
             }
             
@@ -924,7 +925,7 @@ public class OpflowCommander implements AutoCloseable {
             if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                     .put("returnType", method.getReturnType().getName())
                     .put("returnValue", rpcResult.getValueAsString())
-                    .text("Request[${requestId}] - RpcInvocationHandler.invoke() return the output")
+                    .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() return the output")
                     .stringify());
 
             measurer.countRpcInvocation("commander", "detached_worker", routineId, "ok");
@@ -1053,6 +1054,14 @@ public class OpflowCommander implements AutoCloseable {
 
     public <T> void unregisterType(Class<T> type) {
         removeInvocationHandler(type);
+    }
+
+    public Map<String, Object> getRpcInvocationCounter() {
+        return measurer.getRpcInvocationCounter("commander").toMap(false);
+    }
+
+    public void resetRpcInvocationCounter() {
+        measurer.resetRpcInvocationCounter();
     }
 
     @Override
