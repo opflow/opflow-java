@@ -127,7 +127,7 @@ public class OpflowRpcResponse {
     public void emitFailed(byte[] error) {
         if (error == null) error = new byte[0];
         basicPublish(error, createProperties(properties, createHeaders("failed", true)).build());
-        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, "debug")) LOG.trace(logTracer
                 .put("bodyLength", error.length)
                 .text("Request[${requestId}][${requestTime}] - emitFailed()")
                 .stringify());
@@ -140,7 +140,7 @@ public class OpflowRpcResponse {
     public void emitCompleted(byte[] result) {
         if (result == null) result = new byte[0];
         basicPublish(result, createProperties(properties, createHeaders("completed", true)).build());
-        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, "debug")) LOG.trace(logTracer
                 .put("bodyLength", result.length)
                 .text("Request[${requestId}][${requestTime}] - emitCompleted()")
                 .stringify());
