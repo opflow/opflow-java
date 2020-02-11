@@ -47,6 +47,10 @@ public class OpflowUUID {
         return convertUUIDToBase64(UUID.fromString(uuid));
     }
     
+    public static void start() {
+        UUID_GENERATOR.start();
+    }
+    
     public static void release() {
         try {
             UUID_GENERATOR.close();
@@ -67,20 +71,15 @@ public class OpflowUUID {
     }
     
     private static class Generator implements AutoCloseable {
-        private final Timer timer = new Timer("Timer-" + extractClassName(), true);
-        private final TimerTask timerTask;
-        private final ConcurrentLinkedQueue<String> store = new ConcurrentLinkedQueue<>();
+        private Timer timer;
+        private TimerTask timerTask;
+        private final ConcurrentLinkedQueue<String> store;
         private final long interval;
         private volatile boolean running = false;
         
         public Generator() {
             this.interval = 2000l;
-            this.timerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    prepare(50, 500);
-                }
-            };
+            this.store = new ConcurrentLinkedQueue<>();
             if (UUID_AUTOSTART_GENERATOR) {
                 this.start();
             }
@@ -111,6 +110,17 @@ public class OpflowUUID {
 
         public synchronized void start() {
             if (!running) {
+                if (this.timer == null) {
+                     this.timer = new Timer("Timer-" + extractClassName(), true);
+                }
+                if (this.timerTask == null) {
+                    this.timerTask = new TimerTask() {
+                        @Override
+                        public void run() {
+                            prepare(50, 500);
+                        }
+                    };
+                }
                 this.timer.scheduleAtFixedRate(this.timerTask, 0, this.interval);
                 running = true;
             }
@@ -119,8 +129,11 @@ public class OpflowUUID {
         @Override
         public synchronized void close() throws Exception {
             if (running) {
+                timerTask.cancel();
+                timerTask = null;
                 timer.cancel();
                 timer.purge();
+                timer = null;
                 running = false;
             }
         }

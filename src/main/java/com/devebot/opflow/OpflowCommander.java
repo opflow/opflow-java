@@ -236,6 +236,12 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     public final void serve(RoutingHandler httpHandlers) {
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                .text("Commander[${commanderId}].serve() begin")
+                .stringify());
+        
+        OpflowUUID.start();
+        
         if (rpcWatcher != null) {
             rpcWatcher.start();
         }
@@ -249,6 +255,10 @@ public class OpflowCommander implements AutoCloseable {
         if (restrictor != null) {
             restrictor.unblock();
         }
+        
+        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                .text("Commander[${commanderId}].serve() end")
+                .stringify());
     }
 
     @Override
