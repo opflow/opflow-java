@@ -38,14 +38,20 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private int redeliveredLimit = 0;
     private OpflowPubsubListener listener;
 
+    private final boolean autostart;
+
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
         instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", instanceId);
-
+        
         restrictor = new OpflowRestrictor.Valve();
-
+        
+        if (restrictor != null) {
+            restrictor.lock();
+        }
+        
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new()")
                 .stringify());
@@ -105,6 +111,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
         
+        if (params.get("autostart") instanceof Boolean) {
+            autostart = (Boolean) params.get("autostart");
+        } else if (params.get("autorun") instanceof Boolean) {
+            autostart = (Boolean) params.get("autorun");
+        } else {
+            autostart = true;
+        }
+        
+        if (autostart) {
+            this.serve();
+        }
+
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
                 .put("subscriberName", subscriberName)
                 .put("recyclebinName", recyclebinName)
@@ -287,6 +305,12 @@ public class OpflowPubsubHandler implements AutoCloseable {
         return consumer;
     }
     
+    public final void serve() {
+        if (restrictor != null) {
+            restrictor.unlock();
+        }
+    }
+    
     @Override
     public void close() {
         if (restrictor != null) {
@@ -310,12 +334,14 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     .stringify());
         }
         finally {
-            if (restrictor != null) {
-                restrictor.unlock();
+            if (autostart) {
+                if (restrictor != null) {
+                    restrictor.unlock();
+                }
+                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                        .text("PubsubHandler[${pubsubHandlerId}].close() - lock is released")
+                        .stringify());
             }
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
-                .text("PubsubHandler[${pubsubHandlerId}].close() - lock has been released")
-                .stringify());
         }
     }
     
