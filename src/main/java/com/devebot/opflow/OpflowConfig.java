@@ -61,6 +61,7 @@ public class OpflowConfig {
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
+                "autorun",
                 "responseName",
                 "responseQueueSuffix",
                 "responseDurable",
@@ -134,6 +135,7 @@ public class OpflowConfig {
             Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {"opflow"});
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
+                "autorun",
                 "subscriberName",
                 "recyclebinName",
                 "prefetchCount",
@@ -192,6 +194,11 @@ public class OpflowConfig {
                         "semaphoreEnabled",
                         "semaphoreLimit",
                         "semaphoreTimeout"
+                    });
+                }
+                if ("publisher".equals(componentName)) {
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "subscriberName",
                     });
                 }
                 if ("rpcMaster".equals(componentName)) {
@@ -332,7 +339,8 @@ public class OpflowConfig {
     }
     
     private static final String[] BOOLEAN_FIELDS = new String[] {
-        "enabled", "verbose", "automaticRecoveryEnabled", "topologyRecoveryEnabled", "strictMode",
+        "autorun", "enabled", "verbose", "strictMode",
+        "automaticRecoveryEnabled", "topologyRecoveryEnabled",
         "monitorEnabled", "pauseEnabled", "semaphoreEnabled",
         "responseDurable", "responseExclusive", "responseAutoDelete"
     };

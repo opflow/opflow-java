@@ -38,7 +38,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private int redeliveredLimit = 0;
     private OpflowPubsubListener listener;
 
-    private final boolean autostart;
+    private final boolean autorun;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
@@ -111,19 +111,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
         
-        if (params.get("autostart") instanceof Boolean) {
-            autostart = (Boolean) params.get("autostart");
-        } else if (params.get("autorun") instanceof Boolean) {
-            autostart = (Boolean) params.get("autorun");
+        if (params.get("autorun") instanceof Boolean) {
+            autorun = (Boolean) params.get("autorun");
         } else {
-            autostart = true;
+            autorun = true;
         }
         
-        if (autostart) {
+        if (autorun) {
             this.serve();
         }
 
         if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                .put("autorun", autorun)
                 .put("subscriberName", subscriberName)
                 .put("recyclebinName", recyclebinName)
                 .put("prefetchCount", prefetchCount)
@@ -334,7 +333,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     .stringify());
         }
         finally {
-            if (autostart) {
+            if (autorun) {
                 if (restrictor != null) {
                     restrictor.unlock();
                 }
