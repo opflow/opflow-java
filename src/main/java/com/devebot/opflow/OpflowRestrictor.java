@@ -76,17 +76,17 @@ public class OpflowRestrictor {
             this.valveLock = new ReentrantReadWriteLock();
         }
 
-        public boolean isLocked() {
+        public boolean isBlocked() {
             return valveLock.isWriteLocked();
         }
 
-        public void lock() {
+        public void block() {
             if(!valveLock.isWriteLockedByCurrentThread()) {
                 valveLock.writeLock().lock();
             }
         }
 
-        public void unlock() {
+        public void unblock() {
             if(valveLock.isWriteLockedByCurrentThread()) {
                 valveLock.writeLock().unlock();
             }

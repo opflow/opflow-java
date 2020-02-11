@@ -70,14 +70,14 @@ public class OpflowPubsubHandler implements AutoCloseable {
             @Override
             public void handleBlocked(String reason) throws IOException {
                 if (restrictor != null) {
-                    restrictor.lock();
+                    restrictor.block();
                 }
             }
 
             @Override
             public void handleUnblocked() throws IOException {
                 if (restrictor != null) {
-                    restrictor.unlock();
+                    restrictor.unblock();
                 }
             }
         });
@@ -291,7 +291,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     @Override
     public void close() {
         if (restrictor != null) {
-            restrictor.lock();
+            restrictor.block();
         }
         try {
             if (logTracer.ready(LOG, "info")) LOG.info(logTracer
@@ -312,7 +312,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         }
         finally {
             if (restrictor != null) {
-                restrictor.unlock();
+                restrictor.unblock();
             }
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].close() - lock has been released")

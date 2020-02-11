@@ -105,7 +105,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         if (restrictor != null) {
-            restrictor.lock();
+            restrictor.block();
         }
         
         this.init(kwargs);
@@ -247,7 +247,7 @@ public class OpflowCommander implements AutoCloseable {
             }
         }
         if (restrictor != null) {
-            restrictor.unlock();
+            restrictor.unblock();
         }
     }
 
@@ -258,7 +258,7 @@ public class OpflowCommander implements AutoCloseable {
                 .stringify());
 
         if (restrictor != null) {
-            restrictor.lock();
+            restrictor.block();
         }
 
         if (restServer != null) restServer.close();
@@ -331,16 +331,16 @@ public class OpflowCommander implements AutoCloseable {
             onoffRestrictor.setActive(enabled);
         }
 
-        public boolean isLocked() {
-            return valveRestrictor.isLocked();
+        public boolean isBlocked() {
+            return valveRestrictor.isBlocked();
         }
 
-        public void lock() {
-            valveRestrictor.lock();
+        public void block() {
+            valveRestrictor.block();
         }
 
-        public void unlock() {
-            valveRestrictor.unlock();
+        public void unblock() {
+            valveRestrictor.unblock();
         }
 
         public boolean isPauseEnabled() {

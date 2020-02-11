@@ -84,14 +84,14 @@ public class OpflowRpcMaster implements AutoCloseable {
             @Override
             public void handleBlocked(String reason) throws IOException {
                 if (restrictor != null) {
-                    restrictor.lock();
+                    restrictor.block();
                 }
             }
 
             @Override
             public void handleUnblocked() throws IOException {
                 if (restrictor != null) {
-                    restrictor.unlock();
+                    restrictor.unblock();
                 }
             }
         });
@@ -525,7 +525,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     @Override
     public void close() {
         if (restrictor != null) {
-            restrictor.lock();
+            restrictor.block();
         }
         closeLock.lock();
         if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
@@ -570,7 +570,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         } finally {
             closeLock.unlock();
             if (restrictor != null) {
-                restrictor.unlock();
+                restrictor.unblock();
             }
             if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - lock has been released")
