@@ -463,7 +463,7 @@ public class OpflowEngine implements AutoCloseable {
             if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                     .put("appId", appId)
                     .put("customKey", customKey)
-                    .text("Request[${requestId}] - Engine[${engineId}] - produce() is invoked")
+                    .text("Request[${requestId}][${requestTime}] - Engine[${engineId}] - produce() is invoked")
                     .stringify());
             
             Channel _channel = getProducingChannel();
@@ -475,14 +475,14 @@ public class OpflowEngine implements AutoCloseable {
             if (logRequest != null && logRequest.ready(LOG, "error")) LOG.error(logRequest
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .text("Request[${requestId}] - produce() has failed")
+                    .text("Request[${requestId}][${requestTime}] - produce() has failed")
                     .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
             if (logRequest != null && logRequest.ready(LOG, "error")) LOG.error(logRequest
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .text("Request[${requestId}] - produce() is timeout")
+                    .text("Request[${requestId}][${requestTime}] - produce() is timeout")
                     .stringify());
             throw new OpflowOperationException(exception);
         }
@@ -603,51 +603,51 @@ public class OpflowEngine implements AutoCloseable {
                             .put("appId", properties.getAppId())
                             .put("deliveryTag", envelope.getDeliveryTag())
                             .put("consumerTag", consumerTag)
-                            .text("Request[${requestId}] - Consumer[${consumerId}] receives a message")
+                            .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}] receives a message")
                             .stringify());
                     
                     if (body.length <= 4096) {
                         if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                 .put("bodyHead", new String(body, "UTF-8"))
                                 .put("bodyLength", body.length)
-                                .text("Request[${requestId}] body head (4096 bytes)")
+                                .text("Request[${requestId}][${requestTime}] body head (4096 bytes)")
                                 .stringify());
                     } else {
                         if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                 .put("bodyLength", body.length)
-                                .text("Request[${requestId}] body size too large (>4KB)")
+                                .text("Request[${requestId}][${requestTime}] body size too large (>4KB)")
                                 .stringify());
                     }
                     
                     try {
                         if (applicationId == null || applicationId.equals(properties.getAppId())) {
                             if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
-                                    .text("Request[${requestId}] invoke listener.processMessage()")
+                                    .text("Request[${requestId}][${requestTime}] invoke listener.processMessage()")
                                     .stringify());
                             
                             boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
                             
                             if (captured) {
                                 if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                                        .text("Request[${requestId}] has finished successfully")
+                                        .text("Request[${requestId}][${requestTime}] has finished successfully")
                                         .stringify());
                             } else {
                                 if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                                        .text("Request[${requestId}] has not matched the criteria, skipped")
+                                        .text("Request[${requestId}][${requestTime}] has not matched the criteria, skipped")
                                         .stringify());
                             }
                             
                             if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
                                     .put("deliveryTag", envelope.getDeliveryTag())
                                     .put("consumerTag", consumerTag)
-                                    .text("Request[${requestId}] invoke ACK")
+                                    .text("Request[${requestId}][${requestTime}] invoke ACK")
                                     .stringify());
                             
                             invokeAck(envelope, true);
                         } else {
                             if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                                     .put("applicationId", applicationId)
-                                    .text("Request[${requestId}] has been rejected, mismatched applicationId")
+                                    .text("Request[${requestId}][${requestTime}] has been rejected, mismatched applicationId")
                                     .stringify());
                             invokeAck(envelope, false);
                         }
@@ -660,7 +660,7 @@ public class OpflowEngine implements AutoCloseable {
                                 .put("exceptionMessage", ex.getMessage())
                                 .put("autoAck", _autoAck)
                                 .put("requeueFailure", _requeueFailure)
-                                .text("Request[${requestId}] has been failed. Service still alive")
+                                .text("Request[${requestId}][${requestTime}] has been failed. Service still alive")
                                 .stringify());
                         invokeAck(envelope, false);
                     }

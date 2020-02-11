@@ -151,7 +151,7 @@ public class OpflowRpcWorker implements AutoCloseable {
 
                 if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
                         .put("routineId", routineId)
-                        .text("Request[${requestId}] - Consumer[${consumerId}] receives a new RPC request")
+                        .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}] receives a new RPC request")
                         .stringify());
                 int count = 0;
                 for(Middleware middleware : middlewares) {
@@ -163,7 +163,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                     }
                 }
                 if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
-                        .text("Request[${requestId}] - RPC request processing has completed")
+                        .text("Request[${requestId}][${requestTime}] - RPC request processing has completed")
                         .stringify());
                 return count > 0;
             }

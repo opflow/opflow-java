@@ -53,11 +53,11 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                         logWatcher = logRequest.copy();
                     }
                     if (logWatcher != null && logWatcher.ready(LOG, "debug")) LOG.debug(logWatcher
-                            .text("Request[${requestId}] timeout event has been raised")
+                            .text("Request[${requestId}][${requestTime}] timeout event has been raised")
                             .stringify());
                     list.add(OpflowMessage.ERROR);
                     if (logWatcher != null && logWatcher.ready(LOG, "debug")) LOG.debug(logWatcher
-                            .text("Request[${requestId}] raise completeListener (timeout)")
+                            .text("Request[${requestId}][${requestTime}] raise completeListener (timeout)")
                             .stringify());
                     completeListener.handleEvent();
                 }
@@ -134,12 +134,12 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                 pushTrail = logRequest.copy();
             }
             if (pushTrail != null && pushTrail.ready(LOG, "debug")) LOG.debug(pushTrail
-                    .text("Request[${requestId}] has completed/failed message")
+                    .text("Request[${requestId}][${requestTime}] has completed/failed message")
                     .stringify());
             list.add(OpflowMessage.EMPTY);
             if (completeListener != null) {
                 if (pushTrail != null && pushTrail.ready(LOG, "debug")) LOG.debug(pushTrail
-                        .text("Request[${requestId}] raises completeListener (completed)")
+                        .text("Request[${requestId}][${requestTime}] raises completeListener (completed)")
                         .stringify());
                 completeListener.handleEvent();
             }
@@ -162,7 +162,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     public OpflowRpcResult extractResult(final boolean includeProgress) {
         OpflowLogTracer extractTrail = logRequest;
         if (extractTrail != null && extractTrail.ready(LOG, "trace")) LOG.trace(extractTrail
-                .text("Request[${requestId}] - extracting result")
+                .text("Request[${requestId}][${requestTime}] - extracting result")
                 .stringify());
         String consumerTag = null;
         boolean failed = false;
@@ -175,7 +175,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
             String status = getStatus(msg);
             if (extractTrail != null && extractTrail.ready(LOG, "trace")) LOG.trace(extractTrail
                     .put("status", status)
-                    .text("Request[${requestId}] - examine message, status: ${status}")
+                    .text("Request[${requestId}][${requestTime}] - examine message, status: ${status}")
                     .stringify());
             if (status == null) continue;
             switch (status) {
@@ -203,7 +203,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
             }
         }
         if (extractTrail != null && extractTrail.ready(LOG, "trace")) LOG.trace(extractTrail
-                .text("Request[${requestId}] - extracting result has completed")
+                .text("Request[${requestId}][${requestTime}] - extracting result has completed")
                 .stringify());
         if (!includeProgress) steps = null;
         return new OpflowRpcResult(routineId, requestId, consumerTag, steps, failed, error, completed, value);
