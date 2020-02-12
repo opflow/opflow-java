@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRestrictionException;
@@ -66,7 +67,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", instanceId);
         
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new()")
                 .stringify());
         
@@ -171,7 +172,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             monitorTimeout = 0;
         }
         
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("responseName", responseName)
                 .put("responseDurable", responseDurable)
                 .put("responseExclusive", responseExclusive)
@@ -187,7 +188,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         measurer.updateComponentInstance("rpc_master", instanceId, OpflowPromMeasurer.GaugeAction.INC);
         
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
                 .stringify());
     }
@@ -200,7 +201,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean isTransient) {
         final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
-        if (logSession.ready(LOG, "info")) LOG.info(logSession
+        if (logSession.ready(LOG, Level.INFO)) LOG.info(logSession
                 .put("isTransient", isTransient)
                 .text("initCallbackConsumer() is invoked (isTransient: ${isTransient})")
                 .stringify());
@@ -220,35 +221,35 @@ public class OpflowRpcMaster implements AutoCloseable {
                 String requestTime = OpflowUtil.getRequestTime(headers);
                 
                 OpflowLogTracer logResult = null;
-                if (logSession.ready(LOG, "info")) {
+                if (logSession.ready(LOG, Level.INFO)) {
                     logResult = logSession.branch("requestTime", requestTime)
                             .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                 }
 
-                if (logResult != null && logResult.ready(LOG, "info")) LOG.info(logResult
+                if (logResult != null && logResult.ready(LOG, Level.INFO)) LOG.info(logResult
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - task[${correlationId}] receives a result")
                         .stringify());
 
-                if (logResult != null && logResult.ready(LOG, "debug")) LOG.debug(logResult
+                if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
                         .put("bodyLength", (content != null ? content.length : -1))
                         .text("initCallbackConsumer() - result body length")
                         .stringify());
 
                 OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
-                    if (logResult != null && logResult.ready(LOG, "debug")) LOG.debug(logResult
+                    if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - task[${correlationId}] not found, skipped")
                         .stringify());
                 } else {
-                    if (logResult != null && logResult.ready(LOG, "debug")) LOG.debug(logResult
+                    if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - push Message object to task[${correlationId}]")
                         .stringify());
                     OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
                     task.push(message);
-                    if (logResult != null && logResult.ready(LOG, "debug")) LOG.debug(logResult
+                    if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - returned value of task[${correlationId}]")
                         .stringify());
@@ -379,7 +380,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             private OpflowLogTracer logTask = null;
             
             {
-                if (logRequest != null && logRequest.ready(LOG, "debug")) logTask = logRequest.branch("taskId", taskId);
+                if (logRequest != null && logRequest.ready(LOG, Level.DEBUG)) logTask = logRequest.branch("taskId", taskId);
             }
             
             @Override
@@ -406,7 +407,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                             }
                         }
                     }
-                    if (logTask != null && logTask.ready(LOG, "debug")) LOG.debug(logTask
+                    if (logTask != null && logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                             .put("taskListSize", tasks.size())
                             .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}]"
                                     + "- tasksize after removing task[${taskId}]: ${taskListSize}")
@@ -443,12 +444,12 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .correlationId(taskId);
         
         if (!consumerInfo.isFixedQueue()) {
-            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+            if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
                     .put("replyTo", consumerInfo.getQueueName())
                     .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
                     .stringify());
         } else {
-            if (logRequest != null && logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+            if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
                     .put("replyTo", consumerInfo.getQueueName())
                     .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
                     .stringify());
@@ -480,14 +481,14 @@ public class OpflowRpcMaster implements AutoCloseable {
     private void scheduleClearTasks() {
         final OpflowLogTracer localLog = logTracer.copy();
         if (!tasks.isEmpty()) {
-            if (localLog.ready(LOG, "trace")) LOG.trace(localLog
+            if (localLog.ready(LOG, Level.TRACE)) LOG.trace(localLog
                     .text("RpcMaster[${rpcMasterId}].close() - schedule the clean jobs")
                     .stringify());
             // prevent from receiving the callback RPC messages
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    if (localLog.ready(LOG, "trace")) LOG.trace(localLog
+                    if (localLog.ready(LOG, Level.TRACE)) LOG.trace(localLog
                             .text("RpcMaster[${rpcMasterId}].close() - force cancelCallbackConsumer")
                             .stringify());
                     cancelCallbackConsumer();
@@ -497,7 +498,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    if (localLog.ready(LOG, "trace")) LOG.trace(localLog
+                    if (localLog.ready(LOG, Level.TRACE)) LOG.trace(localLog
                             .text("RpcMaster[${rpcMasterId}].close() - force clear callback list")
                             .stringify());
                     closeLock.lock();
@@ -511,7 +512,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 }
             }, (DELAY_TIMEOUT + DELAY_TIMEOUT));
         } else {
-            if (localLog.ready(LOG, "trace")) LOG.trace(localLog
+            if (localLog.ready(LOG, Level.TRACE)) LOG.trace(localLog
                     .text("RpcMaster[${rpcMasterId}].close() - request callback list is empty")
                     .stringify());
         }
@@ -528,11 +529,11 @@ public class OpflowRpcMaster implements AutoCloseable {
             restrictor.block();
         }
         closeLock.lock();
-        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - obtain the lock")
                 .stringify());
         try {
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - check tasks.isEmpty()? and await...")
                 .stringify());
             
@@ -542,13 +543,13 @@ public class OpflowRpcMaster implements AutoCloseable {
             
             completeClearTasks();
             
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - cancelCallbackConsumer (for sure)")
                 .stringify());
             
             cancelCallbackConsumer();
             
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - stop timeoutMonitor")
                 .stringify());
 
@@ -559,12 +560,12 @@ public class OpflowRpcMaster implements AutoCloseable {
                 }
             }
             
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - close broker/engine")
                 .stringify());
             if (engine != null) engine.close();
         } catch(InterruptedException ex) {
-            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, Level.ERROR)) LOG.error(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - an interruption has been raised")
                 .stringify());
         } finally {
@@ -572,7 +573,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             if (restrictor != null) {
                 restrictor.unblock();
             }
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - lock has been released")
                 .stringify());
         }

@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,7 +22,7 @@ public class OpflowSingleton {
     private static final Map<String, OpflowRpcWorker> RPC_WORKERS;
 
     static {
-        if (LOG_TRACER.ready(LOG, "debug")) LOG.debug(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, Level.DEBUG)) LOG.debug(LOG_TRACER
                             .text("Create the lookup tables for Opflow Handlers")
                             .stringify());
         COMMANDERS = new ConcurrentHashMap<>();
@@ -56,7 +57,7 @@ public class OpflowSingleton {
         if (!map.containsKey(uniqCode)) {
             synchronized(map) {
                 if (!map.containsKey(uniqCode)) {
-                    if (LOG_TRACER.ready(LOG, "debug")) LOG.debug(LOG_TRACER
+                    if (LOG_TRACER.ready(LOG, Level.DEBUG)) LOG.debug(LOG_TRACER
                             .tags(new String[] { clazz.getCanonicalName(), "OpflowSingleton.assertHandler" })
                             .put("handlerName", clazz.getCanonicalName())
                             .text("A handler[${handlerName}] is created")

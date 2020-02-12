@@ -140,6 +140,13 @@ public class OpflowLogTracer {
         return new OpflowLogTracer(this, key, value, customizer);
     }
     
+    public boolean ready(Logger logger, int level) {
+        if (customizer != null && customizer.isMute()) {
+            return false;
+        }
+        return has(logger, level);
+    }
+    
     public boolean ready(Logger logger, String level) {
         if (customizer != null && customizer.isMute()) {
             return false;
@@ -333,6 +340,27 @@ public class OpflowLogTracer {
         return OPFLOW_VERSION;
     }
     
+    public static class Level {
+        public final static int OFF = Integer.MAX_VALUE;
+        public final static int FATAL = 50000;
+        public final static int ERROR = 40000;
+        public final static int WARN  = 30000;
+        public final static int INFO  = 20000;
+        public final static int DEBUG = 10000;
+        public final static int TRACE = 5000; 
+        public final static int ALL = Integer.MIN_VALUE; 
+    }
+    
+    public static boolean has(Logger logger, int level) {
+        if (logger == null) return false;
+        if (level == Level.DEBUG) return logger.isDebugEnabled();
+        if (level == Level.TRACE) return logger.isTraceEnabled();
+        if (level == Level.INFO) return logger.isInfoEnabled();
+        if (level == Level.WARN) return logger.isWarnEnabled();
+        if (level == Level.ERROR) return logger.isErrorEnabled();
+        return false;
+    }
+    
     public static boolean has(Logger logger, String level) {
         if (logger == null) return false;
         if (ALWAYS_ENABLED.contains("all")) return true;
@@ -346,6 +374,6 @@ public class OpflowLogTracer {
     }
     
     static {
-        if (has(LOG, "info")) LOG.info(getLibraryInfo());
+        if (has(LOG, Level.INFO)) LOG.info(getLibraryInfo());
     }
 }
