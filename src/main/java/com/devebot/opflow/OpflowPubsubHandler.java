@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRestrictionException;
@@ -49,10 +50,10 @@ public class OpflowPubsubHandler implements AutoCloseable {
         restrictor = new OpflowRestrictor.Valve();
         
         if (restrictor != null) {
-            restrictor.lock();
+            restrictor.block();
         }
         
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new()")
                 .stringify());
         
@@ -76,14 +77,14 @@ public class OpflowPubsubHandler implements AutoCloseable {
             @Override
             public void handleBlocked(String reason) throws IOException {
                 if (restrictor != null) {
-                    restrictor.lock();
+                    restrictor.block();
                 }
             }
 
             @Override
             public void handleUnblocked() throws IOException {
                 if (restrictor != null) {
-                    restrictor.unlock();
+                    restrictor.unblock();
                 }
             }
         });
@@ -121,7 +122,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
             this.serve();
         }
 
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("autorun", autorun)
                 .put("subscriberName", subscriberName)
                 .put("recyclebinName", recyclebinName)
@@ -132,7 +133,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 .text("PubsubHandler[${pubsubHandlerId}].new() parameters")
                 .stringify());
         
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new() end!")
                 .stringify());
     }
@@ -186,26 +187,26 @@ public class OpflowPubsubHandler implements AutoCloseable {
         String requestTime = OpflowUtil.getRequestTime(options);
         
         OpflowLogTracer logPublish = null;
-        if (logTracer.ready(LOG, "info")) {
+        if (logTracer.ready(LOG, Level.INFO)) {
             logPublish = logTracer.branch("requestTime", requestTime).branch("requestId", requestId);
         }
         
         Map<String, Object> override = new HashMap<>();
         if (routingKey != null) {
             override.put("routingKey", routingKey);
-            if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
+            if (logPublish != null && logPublish.ready(LOG, Level.INFO)) LOG.info(logPublish
                     .put("routingKey", routingKey)
                     .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish() with overridden routingKey: ${routingKey}")
                     .stringify());
         } else {
-            if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
+            if (logPublish != null && logPublish.ready(LOG, Level.INFO)) LOG.info(logPublish
                     .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish()")
                     .stringify());
         }
         
         engine.produce(body, options, override);
         
-        if (logPublish != null && logPublish.ready(LOG, "info")) LOG.info(logPublish
+        if (logPublish != null && logPublish.ready(LOG, Level.INFO)) LOG.info(logPublish
                 .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish() request has enqueued")
                 .stringify());
     }
@@ -213,18 +214,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
     public OpflowEngine.ConsumerInfo subscribe(final OpflowPubsubListener newListener) {
         final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logSubscribe = logTracer.branch("consumerId", _consumerId);
-        if (logSubscribe.ready(LOG, "info")) LOG.info(logSubscribe
+        if (logSubscribe.ready(LOG, Level.INFO)) LOG.info(logSubscribe
                 .text("Consumer[${consumerId}] - PubsubHandler[${pubsubHandlerId}].subscribe() is invoked")
                 .stringify());
         
         listener = (listener != null) ? listener : newListener;
         if (listener == null) {
-            if (logSubscribe.ready(LOG, "info")) LOG.info(logSubscribe
+            if (logSubscribe.ready(LOG, Level.INFO)) LOG.info(logSubscribe
                     .text("Consumer[${consumerId}] - subscribe() failed: PubsubListener should not be null")
                     .stringify());
             throw new IllegalArgumentException("PubsubListener should not be null");
         } else if (listener != newListener) {
-            if (logSubscribe.ready(LOG, "info")) LOG.info(logSubscribe
+            if (logSubscribe.ready(LOG, Level.INFO)) LOG.info(logSubscribe
                     .text("Consumer[${consumerId}] - subscribe() failed: supports only single PubsubListener")
                     .stringify());
             throw new OpflowOperationException("PubsubHandler supports only single PubsubListener");
@@ -238,15 +239,15 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 String requestId = OpflowUtil.getRequestId(headers, false);
                 String requestTime = OpflowUtil.getRequestTime(headers, false);
                 OpflowLogTracer logRequest = null;
-                if (logSubscribe.ready(LOG, "info")) {
+                if (logSubscribe.ready(LOG, Level.INFO)) {
                     logRequest = logSubscribe.branch("requestTime", requestTime).branch("requestId", requestId);
                 }
-                if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
+                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}].subscribe() receives a new request")
                         .stringify());
                 try {
                     listener.processMessage(new OpflowMessage(content, headers));
-                    if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
+                    if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                             .text("Request[${requestId}][${requestTime}] - subscribe() request processing has completed")
                             .stringify());
                 } catch (Exception exception) {
@@ -260,26 +261,26 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     AMQP.BasicProperties.Builder propBuilder = copyBasicProperties(properties);
                     AMQP.BasicProperties props = propBuilder.headers(headers).build();
                     
-                    if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
+                    if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                             .put("redeliveredCount", redeliveredCount)
                             .put("redeliveredLimit", redeliveredLimit)
                             .text("Request[${requestId}][${requestTime}] - subscribe() recycling failed request")
                             .stringify());
                     
                     if (redeliveredCount <= redeliveredLimit) {
-                        if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
+                        if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                                 .text("Request[${requestId}][${requestTime}] - subscribe() requeue failed request")
                                 .stringify());
                         sendToQueue(content, props, subscriberName, channel);
                     } else {
                         if (recyclebinName != null) {
                             sendToQueue(content, props, recyclebinName, channel);
-                            if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
+                            if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                                     .put("recyclebinName", recyclebinName)
                                     .text("Request[${requestId}][${requestTime}] - subscribe() enqueue failed request to recyclebin")
                                     .stringify());
                         } else {
-                            if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
+                            if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                                     .text("Request[${requestId}][${requestTime}] - subscribe() discard failed request (recyclebin not found)")
                                     .stringify());
                         }
@@ -298,7 +299,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
             }
         }).toMap());
         consumerInfos.add(consumer);
-        if (logSubscribe.ready(LOG, "info")) LOG.info(logSubscribe
+        if (logSubscribe.ready(LOG, Level.INFO)) LOG.info(logSubscribe
                 .text("Consumer[${consumerId}] - subscribe() has completed")
                 .stringify());
         return consumer;
@@ -306,17 +307,17 @@ public class OpflowPubsubHandler implements AutoCloseable {
     
     public final void serve() {
         if (restrictor != null) {
-            restrictor.unlock();
+            restrictor.unblock();
         }
     }
     
     @Override
     public void close() {
         if (restrictor != null) {
-            restrictor.lock();
+            restrictor.block();
         }
         try {
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("PubsubHandler[${pubsubHandlerId}].close()")
                     .stringify());
             if (engine != null) {
@@ -328,16 +329,16 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 consumerInfos.clear();
                 engine.close();
             }
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("PubsubHandler[${pubsubHandlerId}].close() has completed")
                     .stringify());
         }
         finally {
             if (autorun) {
                 if (restrictor != null) {
-                    restrictor.unlock();
+                    restrictor.unblock();
                 }
-                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                         .text("PubsubHandler[${pubsubHandlerId}].close() - lock is released")
                         .stringify());
             }

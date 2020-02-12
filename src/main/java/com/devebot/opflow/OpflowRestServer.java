@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
@@ -106,19 +107,19 @@ public class OpflowRestServer implements AutoCloseable {
     
     public void serve(RoutingHandler extraHandlers, Map<String, Object> kwargs) {
         if (enabled != null && Boolean.FALSE.equals(enabled)) {
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("RestServer[${restServerId}].serve() is disable")
                     .stringify());
             return;
         }
         if (port == null) {
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("RestServer[${restServerId}].serve() all of the ports are busy")
                     .stringify());
             return;
         }
         if (extraHandlers != null || kwargs != null) {
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("RestServer[${restServerId}].serve() stop the current service")
                     .stringify());
             this.close();
@@ -148,11 +149,11 @@ public class OpflowRestServer implements AutoCloseable {
                         .setHandler(shutdownHandler)
                         .build();
 
-                if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+                if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .text("RestServer[${restServerId}].serve() a new HTTP server is created")
                         .stringify());
             }
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("port", port)
                 .put("host", host)
                 .text("RestServer[${restServerId}].serve() Server listening on (http://${host}:${port})")
@@ -167,27 +168,27 @@ public class OpflowRestServer implements AutoCloseable {
             if (shutdownHandler != null) {
                 shutdownHandler.shutdown();
                 try {
-                    if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                    if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                             .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() starting")
                             .stringify());
                     if (shutdownHandler.awaitShutdown(shutdownTimeout)) {
-                        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                        if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                                 .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() has done")
                                 .stringify());
                     } else {
-                        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                        if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                                 .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() is timeout")
                                 .stringify());
                     }
                 }
                 catch (InterruptedException ex) {
-                    if (logTracer.ready(LOG, "error")) LOG.error(logTracer
+                    if (logTracer.ready(LOG, Level.ERROR)) LOG.error(logTracer
                             .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() interrupted")
                             .stringify());
                     shutdownHandler.shutdown();
                 }
                 finally {
-                    if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                    if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                             .text("RestServer[${restServerId}].close() shutdownHandler.awaitShutdown() finished")
                             .stringify());
                 }
@@ -208,7 +209,7 @@ public class OpflowRestServer implements AutoCloseable {
     }
     
     public HttpHandler buildResourceHandler(String prefix, int cacheTime) {
-        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+        if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                 .put("prefix", prefix)
                 .text("Using ClasspathPathResourceManager with prefix: ${prefix}")
                 .stringify());

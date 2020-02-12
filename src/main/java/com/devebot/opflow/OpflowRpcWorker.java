@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.AMQP;
@@ -38,7 +39,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", instanceId);
         
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].new()")
                 .stringify());
         
@@ -67,14 +68,14 @@ public class OpflowRpcWorker implements AutoCloseable {
             executor.assertQueue(responseName);
         }
         
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("operatorName", operatorName)
                 .put("responseName", responseName)
                 .tags("RpcWorker.new() parameters")
                 .text("RpcWorker[${rpcWorkerId}].new() operatorName: '${operatorName}', responseName: '${responseName}'")
                 .stringify());
         
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].new() end!")
                 .stringify());
     
@@ -118,7 +119,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     public OpflowEngine.ConsumerInfo process(Checker checker, final OpflowRpcListener listener) {
         final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logProcess = logTracer.branch("consumerId", _consumerId);
-        if (logProcess.ready(LOG, "info")) LOG.info(logProcess
+        if (logProcess.ready(LOG, Level.INFO)) LOG.info(logProcess
                 .text("Consumer[${consumerId}] - RpcWorker[${rpcWorkerId}].process() is invoked")
                 .stringify());
         
@@ -144,12 +145,12 @@ public class OpflowRpcWorker implements AutoCloseable {
                 String[] requestTags = OpflowUtil.getRequestTags(headers);
 
                 OpflowLogTracer logRequest = null;
-                if (logProcess.ready(LOG, "info")) {
+                if (logProcess.ready(LOG, Level.INFO)) {
                     logRequest = logProcess.branch("requestTime", requestTime)
                             .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                 }
 
-                if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
+                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                         .put("routineId", routineId)
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}] receives a new RPC request")
                         .stringify());
@@ -162,7 +163,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
-                if (logRequest != null && logRequest.ready(LOG, "info")) LOG.info(logRequest
+                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                         .text("Request[${requestId}][${requestTime}] - RPC request processing has completed")
                         .stringify());
                 return count > 0;
@@ -176,7 +177,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 opts.put("binding", Boolean.TRUE);
             }
         }).toMap());
-        if (logProcess.ready(LOG, "info")) LOG.info(logProcess
+        if (logProcess.ready(LOG, Level.INFO)) LOG.info(logProcess
                 .text("Consumer[${consumerId}] - process() has completed")
                 .stringify());
         return consumerInfo;
@@ -195,14 +196,14 @@ public class OpflowRpcWorker implements AutoCloseable {
     
     @Override
     public void close() {
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].close()")
                 .stringify());
         if (engine != null) {
             engine.cancelConsumer(consumerInfo);
             engine.close();
         }
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].close() has completed")
                 .stringify());
     }

@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
@@ -90,7 +91,7 @@ public class OpflowCommander implements AutoCloseable {
         instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", instanceId);
 
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}].new()")
                 .stringify());
 
@@ -105,14 +106,14 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         if (restrictor != null) {
-            restrictor.lock();
+            restrictor.block();
         }
         
         this.init(kwargs);
         
         measurer.updateComponentInstance("commander", instanceId, OpflowPromMeasurer.GaugeAction.INC);
         
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}].new() end!")
                 .stringify());
     }
@@ -236,6 +237,12 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     public final void serve(RoutingHandler httpHandlers) {
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .text("Commander[${commanderId}].serve() begin")
+                .stringify());
+        
+        OpflowUUID.start();
+        
         if (rpcWatcher != null) {
             rpcWatcher.start();
         }
@@ -247,18 +254,22 @@ public class OpflowCommander implements AutoCloseable {
             }
         }
         if (restrictor != null) {
-            restrictor.unlock();
+            restrictor.unblock();
         }
+        
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .text("Commander[${commanderId}].serve() end")
+                .stringify());
     }
 
     @Override
     public final void close() {
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}].close()")
                 .stringify());
 
         if (restrictor != null) {
-            restrictor.lock();
+            restrictor.block();
         }
 
         if (restServer != null) restServer.close();
@@ -274,7 +285,7 @@ public class OpflowCommander implements AutoCloseable {
 
         OpflowUUID.release();
 
-        if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}].close() has done!")
                 .stringify());
     }
@@ -296,7 +307,7 @@ public class OpflowCommander implements AutoCloseable {
             instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
             logTracer = OpflowLogTracer.ROOT.branch("restrictorId", instanceId);
 
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("Restrictor[${restrictorId}].new()")
                     .stringify());
 
@@ -310,7 +321,7 @@ public class OpflowCommander implements AutoCloseable {
             super.append(pauseRestrictor.setLogTracer(logTracer));
             super.append(limitRestrictor.setLogTracer(logTracer));
 
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("Restrictor[${restrictorId}].new() end!")
                     .stringify());
         }
@@ -331,16 +342,16 @@ public class OpflowCommander implements AutoCloseable {
             onoffRestrictor.setActive(enabled);
         }
 
-        public boolean isLocked() {
-            return valveRestrictor.isLocked();
+        public boolean isBlocked() {
+            return valveRestrictor.isBlocked();
         }
 
-        public void lock() {
-            valveRestrictor.lock();
+        public void block() {
+            valveRestrictor.block();
         }
 
-        public void unlock() {
-            valveRestrictor.unlock();
+        public void unblock() {
+            valveRestrictor.unblock();
         }
 
         public boolean isPauseEnabled() {
@@ -470,7 +481,7 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Map<String, Object> pause(long duration) {
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].pause(true) is invoked")
                     .stringify());
             if (restrictor == null) {
@@ -482,7 +493,7 @@ public class OpflowCommander implements AutoCloseable {
         
         @Override
         public Map<String, Object> unpause() {
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].unpause() is invoked")
                     .stringify());
             if (restrictor == null) {
@@ -498,7 +509,7 @@ public class OpflowCommander implements AutoCloseable {
                 return OpflowObjectTree.buildMap()
                         .toMap();
             }
-            if (logTracer.ready(LOG, "info")) LOG.info(logTracer
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].reset() is invoked")
                     .stringify());
             rpcMaster.close();
@@ -776,7 +787,7 @@ public class OpflowCommander implements AutoCloseable {
                         throw new OpflowInterceptionException("Alias[" + alias + "]/routineId[" + methodId + "] is duplicated");
                     }
                     aliasOfMethod.put(methodId, alias);
-                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                    if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                             .put("alias", alias)
                             .put("routineId", methodId)
                             .text("link alias to routineId")
@@ -856,7 +867,7 @@ public class OpflowCommander implements AutoCloseable {
             String routineId = aliasOfMethod.getOrDefault(methodId, methodId);
 
             Boolean isAsync = methodIsAsync.getOrDefault(methodId, false);
-            if (logRequest.ready(LOG, "info")) LOG.info(logRequest
+            if (logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                     .put("methodId", methodId)
                     .put("routineId", routineId)
                     .put("isAsync", isAsync)
@@ -866,14 +877,14 @@ public class OpflowCommander implements AutoCloseable {
             if (args == null) args = new Object[0];
             String body = OpflowJsonTool.toString(args);
 
-            if (logRequest.ready(LOG, "trace")) LOG.trace(logRequest
+            if (logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
                     .put("args", args)
                     .put("body", body)
                     .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() details")
                     .stringify());
 
             if (this.publisher != null && isAsync && void.class.equals(method.getReturnType())) {
-                if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                if (logRequest.ready(LOG, Level.DEBUG)) LOG.trace(logRequest
                         .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
                 measurer.countRpcInvocation("commander", "publisher", routineId, "begin");
@@ -884,7 +895,7 @@ public class OpflowCommander implements AutoCloseable {
                         .toMap());
                 return null;
             } else {
-                if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                if (logRequest.ready(LOG, Level.DEBUG)) LOG.trace(logRequest
                         .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
                         .stringify());
                 measurer.countRpcInvocation("commander", "master", routineId, "begin");
@@ -893,7 +904,7 @@ public class OpflowCommander implements AutoCloseable {
             // rpc switching
             if (rpcWatcher.isCongested() || !detachedWorkerActive) {
                 if (this.isReservedWorkerAvailable()) {
-                    if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                    if (logRequest.ready(LOG, Level.DEBUG)) LOG.trace(logRequest
                             .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() retains the reservedWorker")
                             .stringify());
                     measurer.countRpcInvocation("commander", "reserved_worker", routineId, "retain");
@@ -912,13 +923,13 @@ public class OpflowCommander implements AutoCloseable {
             if (rpcResult.isTimeout()) {
                 rpcWatcher.setCongested(true);
                 if (this.isReservedWorkerAvailable()) {
-                    if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                    if (logRequest.ready(LOG, Level.DEBUG)) LOG.trace(logRequest
                             .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() rescues by the reservedWorker")
                             .stringify());
                     measurer.countRpcInvocation("commander", "reserved_worker", routineId, "rescue");
                     return method.invoke(this.reservedWorker, args);
                 }
-                if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                if (logRequest.ready(LOG, Level.DEBUG)) LOG.trace(logRequest
                         .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() is timeout")
                         .stringify());
                 measurer.countRpcInvocation("commander", "detached_worker", routineId, "timeout");
@@ -927,14 +938,14 @@ public class OpflowCommander implements AutoCloseable {
 
             if (rpcResult.isFailed()) {
                 measurer.countRpcInvocation("commander", "detached_worker", routineId, "failed");
-                if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+                if (logRequest.ready(LOG, Level.DEBUG)) LOG.trace(logRequest
                         .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() has failed")
                         .stringify());
                 Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcResult.getErrorAsString());
                 throw rebuildInvokerException(errorMap);
             }
 
-            if (logRequest.ready(LOG, "debug")) LOG.trace(logRequest
+            if (logRequest.ready(LOG, Level.DEBUG)) LOG.trace(logRequest
                     .put("returnType", method.getReturnType().getName())
                     .put("returnValue", rpcResult.getValueAsString())
                     .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() return the output")
@@ -981,12 +992,12 @@ public class OpflowCommander implements AutoCloseable {
     private <T> RpcInvocationHandler getInvocationHandler(Class<T> clazz, T bean) {
         validateType(clazz);
         String clazzName = clazz.getName();
-        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+        if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                 .put("className", clazzName)
                 .text("getInvocationHandler() get InvocationHandler by type")
                 .stringify());
         if (!handlers.containsKey(clazzName)) {
-            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
@@ -1010,7 +1021,7 @@ public class OpflowCommander implements AutoCloseable {
         boolean ok = true;
         if (OpflowUtil.isGenericDeclaration(type.toGenericString())) {
             ok = false;
-            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                     .put("typeString", type.toGenericString())
                     .text("generic types are unsupported")
                     .stringify());
@@ -1019,7 +1030,7 @@ public class OpflowCommander implements AutoCloseable {
         for(Method method:methods) {
             if (OpflowUtil.isGenericDeclaration(method.toGenericString())) {
                 ok = false;
-                if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                         .put("methodString", method.toGenericString())
                         .text("generic methods are unsupported")
                         .stringify());
@@ -1043,19 +1054,19 @@ public class OpflowCommander implements AutoCloseable {
             throw new OpflowInterceptionException("Can not register the OpflowRpcChecker type");
         }
         try {
-            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                     .put("className", type.getName())
                     .put("classLoaderName", type.getClassLoader().getClass().getName())
                     .text("registerType() calls newProxyInstance()")
                     .stringify());
             T t = (T) Proxy.newProxyInstance(type.getClassLoader(), new Class[] {type}, getInvocationHandler(type, bean));
-            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                     .put("className", type.getName())
                     .text("newProxyInstance() has completed")
                     .stringify());
             return t;
         } catch (IllegalArgumentException exception) {
-            if (logTracer.ready(LOG, "error")) LOG.error(logTracer
+            if (logTracer.ready(LOG, Level.ERROR)) LOG.error(logTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("newProxyInstance() has failed")
