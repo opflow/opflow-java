@@ -1,5 +1,12 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
+import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowConnectionException;
+import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
+import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.supports.OpflowKeytool;
+import com.devebot.opflow.supports.OpflowSysInfo;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BlockedListener;
 import com.rabbitmq.client.Channel;
@@ -19,18 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.devebot.opflow.OpflowLogTracer.Level;
-import com.devebot.opflow.exception.OpflowBootstrapException;
-import com.devebot.opflow.exception.OpflowConnectionException;
-import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
-import com.devebot.opflow.exception.OpflowOperationException;
-import com.devebot.opflow.supports.OpflowKeytool;
-import com.devebot.opflow.supports.OpflowSysInfo;
-import java.util.concurrent.TimeUnit;
 
 /**
  *

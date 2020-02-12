@@ -144,9 +144,10 @@ public class OpflowLogTracer {
         if (customizer != null && customizer.isMute()) {
             return false;
         }
-        return has(logger, level);
+        return HAS(logger, level);
     }
     
+    @Deprecated
     public boolean ready(Logger logger, String level) {
         if (customizer != null && customizer.isMute()) {
             return false;
@@ -351,7 +352,7 @@ public class OpflowLogTracer {
         public final static int ALL = Integer.MIN_VALUE; 
     }
     
-    public static boolean has(Logger logger, int level) {
+    public static boolean HAS(Logger logger, int level) {
         if (logger == null) return false;
         if (level == Level.DEBUG) return logger.isDebugEnabled();
         if (level == Level.TRACE) return logger.isTraceEnabled();
@@ -361,6 +362,7 @@ public class OpflowLogTracer {
         return false;
     }
     
+    @Deprecated
     public static boolean has(Logger logger, String level) {
         if (logger == null) return false;
         if (ALWAYS_ENABLED.contains("all")) return true;
@@ -374,6 +376,6 @@ public class OpflowLogTracer {
     }
     
     static {
-        if (has(LOG, Level.INFO)) LOG.info(getLibraryInfo());
+        if (HAS(LOG, Level.INFO)) LOG.info(getLibraryInfo());
     }
 }

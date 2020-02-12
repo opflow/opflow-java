@@ -1,6 +1,7 @@
 package com.devebot.opflow.supports;
 
 import com.devebot.opflow.OpflowLogTracer;
+import com.devebot.opflow.OpflowLogTracer.Level;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -83,7 +84,7 @@ public class OpflowKeytool {
     }
     
     private static void logException(Exception e) {
-        if (OpflowLogTracer.has(LOG, "error")) LOG.error(TRACER
+        if (TRACER.ready(LOG, Level.ERROR)) LOG.error(TRACER
                 .put("exceptionClass", e.getClass().getName())
                 .put("exceptionMessage", e.getMessage())
                 .text("Instance[${instanceId}] buildSSLContext() exception[${exceptionClass}]: ${exceptionMessage}")
