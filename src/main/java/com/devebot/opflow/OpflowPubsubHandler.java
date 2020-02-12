@@ -49,10 +49,6 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         restrictor = new OpflowRestrictor.Valve();
 
-        if (restrictor != null) {
-            restrictor.block();
-        }
-
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new()")
                 .stringify());
@@ -115,13 +111,13 @@ public class OpflowPubsubHandler implements AutoCloseable {
         if (params.get("autorun") instanceof Boolean) {
             autorun = (Boolean) params.get("autorun");
         } else {
-            autorun = true;
+            autorun = false;
         }
         
         if (autorun) {
             this.serve();
         }
-        
+
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("autorun", autorun)
                 .put("subscriberName", subscriberName)
