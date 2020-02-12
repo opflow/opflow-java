@@ -118,22 +118,43 @@ public abstract class OpflowPromMeasurer {
             return toMap(true);
         }
 
+        private double calcMessageRate(long count, long ms) {
+            if (ms == 0) {
+                return -1.0;
+            }
+            double rate = (1000.0 * count) / ms;
+            return Math.round(rate * 100D) / 100D;
+        }
+        
+        private String formatMessageRate(double rate) {
+            return String.format("%.2f req/s", rate);
+        }
+        
         public Map<String, Object> toMap(boolean cloned) {
             RpcInvocationCounter that = cloned ? this.copy() : this;
+            Date currentTime = new Date();
+            long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
+            double directRate = calcMessageRate(that.direct, elapsedTime);
+            double remoteRate = calcMessageRate(that.remote, elapsedTime);
             return OpflowObjectTree.buildMap()
                     .put("rpcInvocationTotal", that.total)
                     .put("rpcOverDirectWorker", OpflowObjectTree.buildMap()
+                            .put("rate", formatMessageRate(directRate))
+                            .put("rateNumber", directRate)
                             .put("total", that.direct)
                             .put("rescue", that.directRescue)
                             .put("retain", that.directRetain)
                             .toMap())
                     .put("rpcOverRemoteWorker", OpflowObjectTree.buildMap()
+                            .put("rate", formatMessageRate(remoteRate))
+                            .put("rateNumber", remoteRate)
                             .put("total", that.remote)
                             .put("ok", that.remoteSuccess)
                             .put("failed", that.remoteFailure)
                             .put("timeout", that.remoteTimeout)
                             .toMap())
                     .put("startTime", OpflowDateTime.toISO8601UTC(that.startTime))
+                    .put("elapsedTime", OpflowDateTime.printElapsedTime(that.startTime, currentTime))
                     .toMap();
         }
     }
