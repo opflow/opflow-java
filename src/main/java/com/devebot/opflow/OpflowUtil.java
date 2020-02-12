@@ -562,6 +562,10 @@ public class OpflowUtil {
         return clazz.getSimpleName();
     }
     
+    public static String extractClassName(Class clazz) {
+        return clazz.getName().replace(clazz.getPackage().getName(), "");
+    }
+    
     public static void sleep(long duration) {
         try {
             Thread.sleep(duration);

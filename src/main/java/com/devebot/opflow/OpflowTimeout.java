@@ -94,7 +94,7 @@ public class OpflowTimeout {
         private final String monitorId;
         private final Map<String, ? extends Timeoutable> tasks;
         private final int interval;
-        private final Timer timer = new Timer("Timer-" + extractClassName(), true);
+        private final Timer timer = new Timer("Timer-" + OpflowUtil.extractClassName(Monitor.class), true);
         private final TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
@@ -195,10 +195,6 @@ public class OpflowTimeout {
             timer.cancel();
             timer.purge();
         }
-        
-        private static String extractClassName() {
-            return Monitor.class.getName().replace(Monitor.class.getPackage().getName(), "");
-        }
     }
     
     public static class Watcher extends Thread {
@@ -247,7 +243,7 @@ public class OpflowTimeout {
                             listener.handleEvent();
                         }
                         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
-                                .text("Watcher.listener is requested")
+                                .text("Watcher.listener is interrupted")
                                 .stringify());
                         this.interrupt();
                     }
