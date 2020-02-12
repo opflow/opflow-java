@@ -503,8 +503,10 @@ public class OpflowUtil {
         return GENERIC_PATTERN.matcher(signature).find();
     }
     
+    private final static String OBJECT_CLASS_NAME = Object.class.getCanonicalName();
+    
     public static List<Class<?>> getAllAncestorTypes(Class<?> clazz) {
-        List<Class<?>> bag = new ArrayList<Class<?>>();
+        List<Class<?>> bag = new ArrayList<>();
         if (clazz == null) return bag;
         do {
             bag.add(clazz);
@@ -523,8 +525,8 @@ public class OpflowUtil {
             if (superClass == null) break;
             // Now inspect the superclass recursively
             clazz = superClass;
-        } while (!"java.lang.Object".equals(clazz.getCanonicalName()));
-        bag = new ArrayList<Class<?>>(new HashSet<Class<?>>(bag));
+        } while (!OBJECT_CLASS_NAME.equals(clazz.getCanonicalName()));
+        bag = new ArrayList<>(new HashSet<>(bag));
         Collections.reverse(bag);
         return bag;
     }

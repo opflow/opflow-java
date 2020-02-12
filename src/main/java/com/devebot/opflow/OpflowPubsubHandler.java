@@ -39,13 +39,19 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private int redeliveredLimit = 0;
     private OpflowPubsubListener listener;
 
+    private final boolean autorun;
+
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
         instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", instanceId);
-
+        
         restrictor = new OpflowRestrictor.Valve();
+
+        if (restrictor != null) {
+            restrictor.block();
+        }
 
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new()")
@@ -106,7 +112,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
         
+        if (params.get("autorun") instanceof Boolean) {
+            autorun = (Boolean) params.get("autorun");
+        } else {
+            autorun = true;
+        }
+        
+        if (autorun) {
+            this.serve();
+        }
+        
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .put("autorun", autorun)
                 .put("subscriberName", subscriberName)
                 .put("recyclebinName", recyclebinName)
                 .put("prefetchCount", prefetchCount)
@@ -288,6 +305,12 @@ public class OpflowPubsubHandler implements AutoCloseable {
         return consumer;
     }
     
+    public final void serve() {
+        if (restrictor != null) {
+            restrictor.unblock();
+        }
+    }
+    
     @Override
     public void close() {
         if (restrictor != null) {
@@ -311,12 +334,14 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     .stringify());
         }
         finally {
-            if (restrictor != null) {
-                restrictor.unblock();
+            if (autorun) {
+                if (restrictor != null) {
+                    restrictor.unblock();
+                }
+                if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
+                        .text("PubsubHandler[${pubsubHandlerId}].close() - lock is released")
+                        .stringify());
             }
-            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
-                .text("PubsubHandler[${pubsubHandlerId}].close() - lock has been released")
-                .stringify());
         }
     }
     
