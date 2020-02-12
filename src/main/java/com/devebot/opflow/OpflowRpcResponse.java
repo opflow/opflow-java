@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowOperationException;
 
 /**
@@ -47,7 +48,7 @@ public class OpflowRpcResponse {
         this.messageScope = OpflowUtil.getOptionField(headers, "messageScope", false);
         this.progressEnabled = (Boolean) OpflowUtil.getOptionField(headers, "progressEnabled", null);
         
-        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .put("consumerTag", this.consumerTag)
                 .put("replyTo", this.replyQueueName)
                 .put("progressEnabled", this.progressEnabled)
@@ -76,7 +77,7 @@ public class OpflowRpcResponse {
     }
     
     public void emitStarted(String content) {
-        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .put("body", content)
                 .text("Request[${requestId}][${requestTime}] - emitStarted()")
                 .stringify());
@@ -86,7 +87,7 @@ public class OpflowRpcResponse {
     public void emitStarted(byte[] info) {
         if (info == null) info = new byte[0];
         basicPublish(info, createProperties(properties, createHeaders("started")).build());
-        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .put("bodyLength", info.length)
                 .text("Request[${requestId}][${requestTime}] - emitStarted()")
                 .stringify());
@@ -105,14 +106,14 @@ public class OpflowRpcResponse {
         String result;
         if (jsonData == null) {
             result = "{ \"percent\": " + percent + " }";
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                     .put("body", result)
                     .put("bodyLength", result.length())
                     .text("Request[${requestId}][${requestTime}] - emitProgress()")
                     .stringify());
         } else {
             result = "{ \"percent\": " + percent + ", \"data\": " + jsonData + "}";
-            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                     .put("bodyLength", result.length())
                     .text("Request[${requestId}][${requestTime}] - emitProgress()")
                     .stringify());
@@ -127,7 +128,7 @@ public class OpflowRpcResponse {
     public void emitFailed(byte[] error) {
         if (error == null) error = new byte[0];
         basicPublish(error, createProperties(properties, createHeaders("failed", true)).build());
-        if (logTracer.ready(LOG, "debug")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, Level.DEBUG)) LOG.trace(logTracer
                 .put("bodyLength", error.length)
                 .text("Request[${requestId}][${requestTime}] - emitFailed()")
                 .stringify());
@@ -140,7 +141,7 @@ public class OpflowRpcResponse {
     public void emitCompleted(byte[] result) {
         if (result == null) result = new byte[0];
         basicPublish(result, createProperties(properties, createHeaders("completed", true)).build());
-        if (logTracer.ready(LOG, "debug")) LOG.trace(logTracer
+        if (logTracer.ready(LOG, Level.DEBUG)) LOG.trace(logTracer
                 .put("bodyLength", result.length)
                 .text("Request[${requestId}][${requestTime}] - emitCompleted()")
                 .stringify());

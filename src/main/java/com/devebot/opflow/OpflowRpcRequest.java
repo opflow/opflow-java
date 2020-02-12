@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import java.util.Arrays;
@@ -49,14 +50,14 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                 @Override
                 public void handleEvent() {
                     OpflowLogTracer logWatcher = null;
-                    if (logRequest.ready(LOG, "debug")) {
+                    if (logRequest.ready(LOG, Level.DEBUG)) {
                         logWatcher = logRequest.copy();
                     }
-                    if (logWatcher != null && logWatcher.ready(LOG, "debug")) LOG.debug(logWatcher
+                    if (logWatcher != null && logWatcher.ready(LOG, Level.DEBUG)) LOG.debug(logWatcher
                             .text("Request[${requestId}][${requestTime}] timeout event has been raised")
                             .stringify());
                     list.add(OpflowMessage.ERROR);
-                    if (logWatcher != null && logWatcher.ready(LOG, "debug")) LOG.debug(logWatcher
+                    if (logWatcher != null && logWatcher.ready(LOG, Level.DEBUG)) LOG.debug(logWatcher
                             .text("Request[${requestId}][${requestTime}] raise completeListener (timeout)")
                             .stringify());
                     completeListener.handleEvent();
@@ -130,15 +131,15 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         checkTimestamp();
         if(isDone(message)) {
             OpflowLogTracer pushTrail = null;
-            if (logRequest.ready(LOG, "debug")) {
+            if (logRequest.ready(LOG, Level.DEBUG)) {
                 pushTrail = logRequest.copy();
             }
-            if (pushTrail != null && pushTrail.ready(LOG, "debug")) LOG.debug(pushTrail
+            if (pushTrail != null && pushTrail.ready(LOG, Level.DEBUG)) LOG.debug(pushTrail
                     .text("Request[${requestId}][${requestTime}] has completed/failed message")
                     .stringify());
             list.add(OpflowMessage.EMPTY);
             if (completeListener != null) {
-                if (pushTrail != null && pushTrail.ready(LOG, "debug")) LOG.debug(pushTrail
+                if (pushTrail != null && pushTrail.ready(LOG, Level.DEBUG)) LOG.debug(pushTrail
                         .text("Request[${requestId}][${requestTime}] raises completeListener (completed)")
                         .stringify());
                 completeListener.handleEvent();
@@ -161,7 +162,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     
     public OpflowRpcResult extractResult(final boolean includeProgress) {
         OpflowLogTracer extractTrail = logRequest;
-        if (extractTrail != null && extractTrail.ready(LOG, "trace")) LOG.trace(extractTrail
+        if (extractTrail != null && extractTrail.ready(LOG, Level.TRACE)) LOG.trace(extractTrail
                 .text("Request[${requestId}][${requestTime}] - extracting result")
                 .stringify());
         String consumerTag = null;
@@ -173,7 +174,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         while(this.hasNext()) {
             OpflowMessage msg = this.next();
             String status = getStatus(msg);
-            if (extractTrail != null && extractTrail.ready(LOG, "trace")) LOG.trace(extractTrail
+            if (extractTrail != null && extractTrail.ready(LOG, Level.TRACE)) LOG.trace(extractTrail
                     .put("status", status)
                     .text("Request[${requestId}][${requestTime}] - examine message, status: ${status}")
                     .stringify());
@@ -202,7 +203,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                     break;
             }
         }
-        if (extractTrail != null && extractTrail.ready(LOG, "trace")) LOG.trace(extractTrail
+        if (extractTrail != null && extractTrail.ready(LOG, Level.TRACE)) LOG.trace(extractTrail
                 .text("Request[${requestId}][${requestTime}] - extracting result has completed")
                 .stringify());
         if (!includeProgress) steps = null;

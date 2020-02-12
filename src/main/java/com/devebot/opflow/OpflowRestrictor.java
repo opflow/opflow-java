@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowRequestPausingException;
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestWaitingException;
@@ -76,17 +77,17 @@ public class OpflowRestrictor {
             this.valveLock = new ReentrantReadWriteLock();
         }
 
-        public boolean isLocked() {
+        public boolean isBlocked() {
             return valveLock.isWriteLocked();
         }
 
-        public void lock() {
+        public void block() {
             if(!valveLock.isWriteLockedByCurrentThread()) {
                 valveLock.writeLock().lock();
             }
         }
 
-        public void unlock() {
+        public void unblock() {
             if(valveLock.isWriteLockedByCurrentThread()) {
                 valveLock.writeLock().unlock();
             }
@@ -103,7 +104,7 @@ public class OpflowRestrictor {
                     rl.unlock();
                 }
             } else {
-                if (logTracer.ready(LOG, "warn")) LOG.warn(logTracer
+                if (logTracer.ready(LOG, Level.WARN)) LOG.warn(logTracer
                         .text("Restrictor[${restrictorId}].filter() is not ready yet")
                         .stringify());
                 throw new OpflowRequestSuspendException("The valve restrictor is not ready yet");
@@ -181,7 +182,7 @@ public class OpflowRestrictor {
                 this.rwlock = rwlock;
                 this.instanceId = OpflowUUID.getBase64ID();
                 this.tracer = logTracer.copy();
-                if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                if (tracer.ready(LOG, Level.TRACE)) LOG.trace(tracer
                         .text("PauseThread[${restrictorId}] constructed")
                         .stringify());
             }
@@ -193,7 +194,7 @@ public class OpflowRestrictor {
                 rwlock.writeLock().lock();
                 try {
                     if(rwlock.isWriteLockedByCurrentThread()) {
-                        if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                        if (tracer.ready(LOG, Level.TRACE)) LOG.trace(tracer
                                 .put("duration", duration)
                                 .text("PauseThread[${restrictorId}].run() sleeping in ${duration} ms")
                                 .stringify());
@@ -206,16 +207,16 @@ public class OpflowRestrictor {
                     }
                 }
                 catch (InterruptedException e) {
-                    if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                    if (tracer.ready(LOG, Level.TRACE)) LOG.trace(tracer
                             .text("PauseThread[${restrictorId}].run() is interrupted")
                             .stringify());
                 }
                 finally {
-                    if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                    if (tracer.ready(LOG, Level.TRACE)) LOG.trace(tracer
                             .text("PauseThread[${restrictorId}].run() wake-up")
                             .stringify());
                     if(rwlock.isWriteLockedByCurrentThread()) {
-                        if (tracer.ready(LOG, "trace")) LOG.trace(tracer
+                        if (tracer.ready(LOG, Level.TRACE)) LOG.trace(tracer
                                 .text("PauseThread[${restrictorId}].run() done!")
                                 .stringify());
                         rwlock.writeLock().unlock();
@@ -293,39 +294,39 @@ public class OpflowRestrictor {
             }
             Lock rl = pauseLock.readLock();
             if (pauseTimeout >= 0) {
-                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                         .put("pauseTimeout", pauseTimeout)
                         .text("Restrictor[${restrictorId}].filter() pauseTimeout: ${pauseTimeout} ms")
                         .stringify());
                 try {
                     if (rl.tryLock() || (pauseTimeout > 0 && rl.tryLock(pauseTimeout, TimeUnit.MILLISECONDS))) {
                         try {
-                            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                     .text("Restrictor[${restrictorId}].filter() try")
                                     .stringify());
                             return this.execute(action);
                         }
                         finally {
-                            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                     .text("Restrictor[${restrictorId}].filter() finally")
                                     .stringify());
                             rl.unlock();
                         }
                     } else {
-                        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                        if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                 .text("Restrictor[${restrictorId}].filter() tryLock() is timeout")
                                 .stringify());
                         throw new OpflowRequestPausingException("tryLock() return false - the lock is not available");
                     }
                 }
                 catch (InterruptedException exception) {
-                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                    if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                             .text("Restrictor[${restrictorId}].filter() tryLock() is interrupted")
                             .stringify());
                     throw new OpflowRequestPausingException("tryLock() is interrupted", exception);
                 }
             } else {
-                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                         .put("pauseTimeout", pauseTimeout)
                         .text("Restrictor[${restrictorId}].filter() without pauseTimeout")
                         .stringify());
@@ -342,30 +343,30 @@ public class OpflowRestrictor {
         @Override
         public synchronized void close() {
             if (threadExecutor != null) {
-                if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                         .text("Restrictor[${restrictorId}].close() disable new tasks from being submitted")
                         .stringify());
                 threadExecutor.shutdown();
                 try {
-                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                    if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                             .text("Restrictor[${restrictorId}].close() wait a while for existing tasks to terminate")
                             .stringify());
                     if (!threadExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
-                        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                        if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                 .text("Restrictor[${restrictorId}].close() cancel currently executing tasks")
                                 .stringify());
                         threadExecutor.shutdownNow();
-                        if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                        if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                 .text("Restrictor[${restrictorId}].close() wait a while for tasks to respond to being cancelled")
                                 .stringify());
                         if (!threadExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
-                            if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                     .text("Restrictor[${restrictorId}].close() threadExecutor did not terminate")
                                     .stringify());
                         }
                     }
                 } catch (InterruptedException ie) {
-                    if (logTracer.ready(LOG, "trace")) LOG.trace(logTracer
+                    if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                             .text("Restrictor[${restrictorId}].close() (re-)cancel if current thread also interrupted")
                             .stringify());
                     threadExecutor.shutdownNow();

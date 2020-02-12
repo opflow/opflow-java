@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowEnvTool;
@@ -381,7 +382,7 @@ public class OpflowConfig {
                     try {
                         params.put(key, Integer.parseInt(params.get(key).toString()));
                     } catch (NumberFormatException nfe) {
-                        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
+                        if (LOG_TRACER.ready(LOG, Level.TRACE)) LOG.trace(LOG_TRACER
                                 .put("fieldName", key)
                                 .text("transformParameters() - field is not an integer")
                                 .stringify());
@@ -413,7 +414,7 @@ public class OpflowConfig {
                     try {
                         params.put(key, Long.parseLong(params.get(key).toString()));
                     } catch (NumberFormatException nfe) {
-                        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
+                        if (LOG_TRACER.ready(LOG, Level.TRACE)) LOG.trace(LOG_TRACER
                                 .put("fieldName", key)
                                 .text("transformParameters() - field is not a longint")
                                 .stringify());
@@ -445,7 +446,7 @@ public class OpflowConfig {
                 URL url = getConfigurationUrl(configFile);
                 if (url != null) {
                     String ext = getConfigurationExtension(url);
-                    if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
+                    if (LOG_TRACER.ready(LOG, Level.TRACE)) LOG.trace(LOG_TRACER
                             .put("configFile", url.getFile())
                             .put("extension", ext)
                             .text("load configuration file")
@@ -479,7 +480,7 @@ public class OpflowConfig {
                     throw new FileNotFoundException("configuration file '" + configFile + "' not found");
                 }
             }
-            if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
+            if (LOG_TRACER.ready(LOG, Level.TRACE)) LOG.trace(LOG_TRACER
                     .put("YAML", OpflowJsonTool.toString(config))
                     .text("loaded properties content")
                     .stringify());
@@ -502,13 +503,13 @@ public class OpflowConfig {
         if (cfgFromSystem == null) {
             cfgFromSystem = OpflowEnvTool.instance.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
         }
-        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, Level.TRACE)) LOG.trace(LOG_TRACER
                 .put("configFile", cfgFromSystem)
                 .text("detected configuration file")
                 .stringify());
         if (cfgFromSystem == null) {
             url = OpflowUtil.getResource(DEFAULT_CONFIGURATION_FILE);
-            if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
+            if (LOG_TRACER.ready(LOG, Level.TRACE)) LOG.trace(LOG_TRACER
                 .put("configFile", url)
                 .text("default configuration url")
                 .stringify());
@@ -521,7 +522,7 @@ public class OpflowConfig {
                 url = OpflowUtil.getResource(cfgFromSystem);
             }
         }
-        if (LOG_TRACER.ready(LOG, "trace")) LOG.trace(LOG_TRACER
+        if (LOG_TRACER.ready(LOG, Level.TRACE)) LOG.trace(LOG_TRACER
                 .put("configFile", url)
                 .text("final configuration url")
                 .stringify());

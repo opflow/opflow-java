@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowDateTime;
@@ -56,25 +57,25 @@ public class OpflowRpcWatcher implements AutoCloseable {
                 count++;
                 long current = OpflowDateTime.getCurrentTime();
                 OpflowLogTracer logTask = logTracer.branch("timestamp", current);
-                if (logTask.ready(LOG, "debug")) LOG.debug(logTask
+                if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                         .put("threadCount", Thread.activeCount())
                         .text("Detector[${rpcWatcherId}].run(), threads: ${threadCount}")
                         .stringify());
                 try {
                     OpflowRpcChecker.Pong result = rpcChecker.send(null);
                     congested = false;
-                    if (logTask.ready(LOG, "debug")) LOG.debug(logTask
+                    if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                             .text("Detector[${rpcWatcherId}].run(), the queue is drained")
                             .stringify());
                 }
                 catch (OpflowRequestSuspendException e) {
-                    if (logTask.ready(LOG, "debug")) LOG.debug(logTask
+                    if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                             .text("Detector[${rpcWatcherId}].run(), the valve is suspended")
                             .stringify());
                 }
                 catch (Throwable exception) {
                     congested = true;
-                    if (logTask.ready(LOG, "debug")) LOG.debug(logTask
+                    if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                             .text("Detector[${rpcWatcherId}].run(), the queue is congested")
                             .stringify());
                 }
@@ -126,24 +127,24 @@ public class OpflowRpcWatcher implements AutoCloseable {
     }
     
     public void start() {
-        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+        if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                 .text("Detector[${rpcWatcherId}].start()")
                 .stringify());
         if (enabled) {
             if (interval > 0) {
                 timer.scheduleAtFixedRate(timerTask, 0, interval);
-                if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                         .put("interval", interval)
                         .text("Detector[${rpcWatcherId}] has been started with interval: ${interval}")
                         .stringify());
             } else {
-                if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+                if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                         .put("interval", interval)
                         .text("Detector[${rpcWatcherId}] is not available. undefined interval")
                         .stringify());
             }
         } else {
-            if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+            if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                     .text("Detector[${rpcWatcherId}] is disabled")
                     .stringify());
         }
@@ -151,7 +152,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
 
     @Override
     public void close() {
-        if (logTracer.ready(LOG, "debug")) LOG.debug(logTracer
+        if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                 .text("Detector[${rpcWatcherId}].close()")
                 .stringify());
         timer.cancel();
