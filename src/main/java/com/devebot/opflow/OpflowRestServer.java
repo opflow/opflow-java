@@ -84,7 +84,7 @@ public class OpflowRestServer implements AutoCloseable {
 
     public Map<String, Object> info(Map<String, Object> params) {
         Map<String, Boolean> opts = new HashMap<>();
-        opts.put(OpflowInfoCollector.SCOPE_FULL, true);
+        opts.put(OpflowInfoCollector.SCOPE_INFO, true);
         if (params != null) {
             for (Map.Entry<String, Object> entry : params.entrySet()) {
                 if (entry.getValue() instanceof Boolean) {
@@ -96,7 +96,7 @@ public class OpflowRestServer implements AutoCloseable {
     }
     
     public OpflowRpcChecker.Info ping() {
-        Map<String, Object> me = infoCollector.collect(OpflowInfoCollector.SCOPE_BASIC);
+        Map<String, Object> me = infoCollector.collect(OpflowInfoCollector.SCOPE_PING);
         try {
             return new OpflowRpcChecker.Info(me, this.rpcChecker.send(null));
         } catch (Throwable exception) {
