@@ -81,6 +81,15 @@ public class OpflowJsonTool {
         }
     }
     
+    public static Map<String, Object> toObjectMap(InputStream inputStream) {
+        try {
+            Map<String,Object> map = GSON.fromJson(new InputStreamReader(inputStream, "UTF-8"), Map.class);
+            return map;
+        } catch (JsonSyntaxException | UnsupportedEncodingException e) {
+            throw new OpflowJsonTransformationException(e);
+        }
+    }
+    
     public static Object[] toObjectArray(String arrayString, Class[] types) {
         if (arrayString == null) return new Object[0];
         JsonArray array = JsonParser.parseString(arrayString).getAsJsonArray();

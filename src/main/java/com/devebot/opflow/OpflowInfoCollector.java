@@ -6,11 +6,11 @@ import java.util.Map;
  *
  * @author acegik
  */
-interface OpflowInfoCollector {
-    public static enum Scope {
-        BASIC,
-        FULL;
-    }
+public interface OpflowInfoCollector {
+    public static final String SCOPE_BASIC = "BASIC";
+    public static final String SCOPE_FULL = "FULL";
+
     Map<String, Object> collect();
-    Map<String, Object> collect(Scope scope);
+    Map<String, Object> collect(String scope);
+    Map<String, Object> collect(Map<String, Boolean> flags);
 }

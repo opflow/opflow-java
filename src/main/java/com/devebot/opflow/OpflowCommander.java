@@ -592,12 +592,27 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Map<String, Object> collect() {
-            return collect(null);
+            return collect(new HashMap<String, Boolean>());
         }
 
         @Override
-        public Map<String, Object> collect(Scope scope) {
-            final Scope label = (scope == null) ? Scope.BASIC : scope;
+        public Map<String, Object> collect(String scope) {
+            final String label = (scope == null) ? SCOPE_BASIC : scope;
+            
+            Map<String, Boolean> flags = new HashMap<>();
+            flags.put(label, true);
+            
+            return collect(flags);
+        }
+
+        private boolean checkOption(Map<String, Boolean> options, String optionName) {
+            Boolean opt = options.get(optionName);
+            return opt != null && opt;
+        }
+        
+        @Override
+        public Map<String, Object> collect(Map<String, Boolean> options) {
+            final Map<String, Boolean> flag = (options != null) ? options : new HashMap<String, Boolean>();
             
             OpflowObjectTree.Builder root = OpflowObjectTree.buildMap();
             
@@ -607,17 +622,17 @@ public class OpflowCommander implements AutoCloseable {
                     opts.put("instanceId", instanceId);
 
                     // measurement
-                    if (label == Scope.FULL) {
+                    if (checkOption(flag, SCOPE_FULL)) {
                         if (measurer != null) {
                             OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
                             if (counter != null) {
-                                opts.put("measurement", counter.toMap());
+                                opts.put("measurement", counter.toMap(true, checkOption(flag, "verbose")));
                             }
                         }
                     }
 
                     // restrictor information
-                    if (label == Scope.FULL) {
+                    if (checkOption(flag, SCOPE_FULL)) {
                         if (restrictor != null) {
                             opts.put("restrictor", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                                 @Override
@@ -656,19 +671,19 @@ public class OpflowCommander implements AutoCloseable {
                                 opt2.put("applicationId", engine.getApplicationId());
                                 opt2.put("exchangeName", engine.getExchangeName());
 
-                                if (label == Scope.FULL) {
+                                if (checkOption(flag, SCOPE_FULL)) {
                                     opt2.put("exchangeDurable", engine.getExchangeDurable());
                                 }
 
                                 opt2.put("routingKey", engine.getRoutingKey());
 
-                                if (label == Scope.FULL) {
+                                if (checkOption(flag, SCOPE_FULL)) {
                                     opt2.put("otherKeys", engine.getOtherKeys());
                                 }
 
                                 opt2.put("callbackQueue", rpcMaster.getCallbackName());
 
-                                if (label == Scope.FULL) {
+                                if (checkOption(flag, SCOPE_FULL)) {
                                     opt2.put("callbackDurable", rpcMaster.getCallbackDurable());
                                     opt2.put("callbackExclusive", rpcMaster.getCallbackExclusive());
                                     opt2.put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete());
@@ -682,12 +697,12 @@ public class OpflowCommander implements AutoCloseable {
                     }
                     
                     // RPC mappings
-                    if (label == Scope.FULL) {
+                    if (checkOption(flag, SCOPE_FULL)) {
                         opts.put("mappings", renderRpcInvocationHandlers(handlers));
                     }
                     
                     // RpcWatcher information
-                    if (label == Scope.FULL) {
+                    if (checkOption(flag, SCOPE_FULL)) {
                         opts.put("rpcWatcher", OpflowObjectTree.buildMap()
                                 .put("enabled", rpcWatcher.isEnabled())
                                 .put("interval", rpcWatcher.getInterval())
@@ -699,7 +714,7 @@ public class OpflowCommander implements AutoCloseable {
             }).toMap());
 
             // start-time & uptime
-            if (label == Scope.FULL) {
+            if (checkOption(flag, SCOPE_FULL)) {
                 Date currentTime = new Date();
                 root.put("miscellaneous", OpflowObjectTree.buildMap()
                         .put("threadCount", Thread.activeCount())
@@ -710,7 +725,7 @@ public class OpflowCommander implements AutoCloseable {
             }
             
             // git commit information
-            if (label == Scope.FULL) {
+            if (checkOption(flag, SCOPE_FULL)) {
                 root.put("source-code-info", OpflowObjectTree.buildMap()
                         .put("master", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
                         .put("opflow", OpflowSysInfo.getGitInfo())

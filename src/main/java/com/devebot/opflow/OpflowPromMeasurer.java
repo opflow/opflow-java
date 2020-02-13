@@ -130,29 +130,43 @@ public abstract class OpflowPromMeasurer {
             return String.format("%.2f req/s", rate);
         }
         
-        public Map<String, Object> toMap(boolean cloned) {
-            RpcInvocationCounter that = cloned ? this.copy() : this;
-            Date currentTime = new Date();
-            long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
-            double directRate = calcMessageRate(that.direct, elapsedTime);
-            double remoteRate = calcMessageRate(that.remote, elapsedTime);
+        public Map<String, Object> toMap(final boolean cloned) {
+            return toMap(cloned, false);
+        }
+        
+        public Map<String, Object> toMap(final boolean cloned, final boolean verbose) {
+            final RpcInvocationCounter that = cloned ? this.copy() : this;
+            final Date currentTime = new Date();
+            final long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
             return OpflowObjectTree.buildMap()
                     .put("rpcInvocationTotal", that.total)
-                    .put("rpcOverDirectWorker", OpflowObjectTree.buildMap()
-                            .put("rate", formatMessageRate(directRate))
-                            .put("rateNumber", directRate)
-                            .put("total", that.direct)
-                            .put("rescue", that.directRescue)
-                            .put("retain", that.directRetain)
-                            .toMap())
-                    .put("rpcOverRemoteWorker", OpflowObjectTree.buildMap()
-                            .put("rate", formatMessageRate(remoteRate))
-                            .put("rateNumber", remoteRate)
-                            .put("total", that.remote)
-                            .put("ok", that.remoteSuccess)
-                            .put("failed", that.remoteFailure)
-                            .put("timeout", that.remoteTimeout)
-                            .toMap())
+                    .put("rpcOverDirectWorker", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                        @Override
+                        public void transform(Map<String, Object> opts) {
+                            if (verbose) {
+                                double directRate = calcMessageRate(that.direct, elapsedTime);
+                                opts.put("rate", formatMessageRate(directRate));
+                                opts.put("rateNumber", directRate);
+                            }
+                            opts.put("total", that.direct);
+                            opts.put("rescue", that.directRescue);
+                            opts.put("retain", that.directRetain);
+                        }
+                    }).toMap())
+                    .put("rpcOverRemoteWorker", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                        @Override
+                        public void transform(Map<String, Object> opts) {
+                            if (verbose) {
+                                double remoteRate = calcMessageRate(that.remote, elapsedTime);
+                                opts.put("rate", formatMessageRate(remoteRate));
+                                opts.put("rateNumber", remoteRate);
+                            }
+                            opts.put("total", that.remote);
+                            opts.put("ok", that.remoteSuccess);
+                            opts.put("failed", that.remoteFailure);
+                            opts.put("timeout", that.remoteTimeout);
+                        }
+                    }).toMap())
                     .put("startTime", OpflowDateTime.toISO8601UTC(that.startTime))
                     .put("elapsedTime", OpflowDateTime.printElapsedTime(that.startTime, currentTime))
                     .toMap();
