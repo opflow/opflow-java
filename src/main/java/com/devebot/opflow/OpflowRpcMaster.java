@@ -57,6 +57,8 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final int monitorInterval;
     private final long monitorTimeout;
     
+    private final boolean autorun;
+    
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
@@ -172,7 +174,14 @@ public class OpflowRpcMaster implements AutoCloseable {
             monitorTimeout = 0;
         }
         
+        if (params.get("autorun") instanceof Boolean) {
+            autorun = (Boolean) params.get("autorun");
+        } else {
+            autorun = false;
+        }
+        
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .put("autorun", autorun)
                 .put("responseName", responseName)
                 .put("responseDurable", responseDurable)
                 .put("responseExclusive", responseExclusive)
@@ -191,6 +200,10 @@ public class OpflowRpcMaster implements AutoCloseable {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
                 .stringify());
+        
+        if (autorun) {
+            this.serve();
+        }
     }
 
     private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();
@@ -523,6 +536,12 @@ public class OpflowRpcMaster implements AutoCloseable {
         timer.purge();
     }
     
+    public final void serve() {
+        if (restrictor != null) {
+            restrictor.unblock();
+        }
+    }
+    
     @Override
     public void close() {
         if (restrictor != null) {
@@ -570,8 +589,10 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .stringify());
         } finally {
             closeLock.unlock();
-            if (restrictor != null) {
-                restrictor.unblock();
+            if (autorun) {
+                if (restrictor != null) {
+                    restrictor.unblock();
+                }
             }
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .text("RpcMaster[${rpcMasterId}].close() - lock has been released")
