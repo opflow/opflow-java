@@ -52,7 +52,7 @@ public class OpflowCommander implements AutoCloseable {
     private final String instanceId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
-    private final OpflowLoadAverage.Meter speedMeter;
+    private final OpflowThroughput.Meter speedMeter;
     private final OpflowConfig.Loader configLoader;
 
     private OpflowRestrictorMaster restrictor;
@@ -99,7 +99,7 @@ public class OpflowCommander implements AutoCloseable {
         measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get("promExporter"));
         OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
         
-        speedMeter = (new OpflowLoadAverage.Meter())
+        speedMeter = (new OpflowThroughput.Meter((Map<String, Object>) kwargs.get("speedMeter")))
                 .register(OpflowPromMeasurer.LABEL_RPC_DIRECT_WORKER, counter.getDirectWorkerInfoSource())
                 .register(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER, counter.getRemoteWorkerInfoSource());
         
@@ -585,7 +585,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRpcWatcher rpcWatcher;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
-        private final OpflowLoadAverage.Meter speedMeter;
+        private final OpflowThroughput.Meter speedMeter;
         private final Date startTime;
 
         public OpflowInfoCollectorMaster(String instanceId,
@@ -594,7 +594,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowRpcMaster rpcMaster,
                 Map<String, RpcInvocationHandler> mappings,
                 OpflowRpcWatcher rpcWatcher,
-                OpflowLoadAverage.Meter speedMeter
+                OpflowThroughput.Meter speedMeter
         ) {
             this.instanceId = instanceId;
             this.measurer = measurer;

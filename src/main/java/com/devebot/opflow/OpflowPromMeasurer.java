@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowDateTime;
+import com.devebot.opflow.supports.OpflowMathUtil;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.ConnectionFactory;
 import java.util.Date;
@@ -127,7 +128,7 @@ public abstract class OpflowPromMeasurer {
                 return -1.0;
             }
             double rate = (1000.0 * count) / ms;
-            return Math.round(rate * 100D) / 100D;
+            return OpflowMathUtil.round(rate, 1);
         }
         
         private String formatMessageRate(double rate) {
@@ -176,8 +177,8 @@ public abstract class OpflowPromMeasurer {
                     .toMap();
         }
         
-        public OpflowLoadAverage.Source getDirectWorkerInfoSource() {
-            return new OpflowLoadAverage.Source() {
+        public OpflowThroughput.Source getDirectWorkerInfoSource() {
+            return new OpflowThroughput.Source() {
                 @Override
                 public long getValue() {
                     return direct;
@@ -190,8 +191,8 @@ public abstract class OpflowPromMeasurer {
             };
         }
         
-        public OpflowLoadAverage.Source getRemoteWorkerInfoSource() {
-            return new OpflowLoadAverage.Source() {
+        public OpflowThroughput.Source getRemoteWorkerInfoSource() {
+            return new OpflowThroughput.Source() {
                 @Override
                 public long getValue() {
                     return remote;

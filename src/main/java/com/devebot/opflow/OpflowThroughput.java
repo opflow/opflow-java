@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowMathUtil;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +11,7 @@ import java.util.TimerTask;
  *
  * @author pnhung177
  */
-public class OpflowLoadAverage {
+public class OpflowThroughput {
     public static final int TAIL_LENGTH_DEFAULT = 3;
 
     public interface Source {
@@ -111,7 +112,7 @@ public class OpflowLoadAverage {
             for (int i=0; i<length; i++) {
                 Store item = stores[getIndex(i)];
                 if (item != null) {
-                    result[i] = round(item.rate, 1);
+                    result[i] = OpflowMathUtil.round(item.rate, 1);
                 }
             }
             return result;
@@ -125,6 +126,10 @@ public class OpflowLoadAverage {
         private volatile boolean running = false;
         
         private final Map<String, Gauge> gauges = new HashMap<>();
+
+        public Meter(Map<String, Object> kwargs) {
+            
+        }
         
         public Map<String, double[]> export() {
             Map<String, double[]> result = new HashMap<>();
@@ -169,17 +174,5 @@ public class OpflowLoadAverage {
                 running = false;
             }
         }
-    }
-    
-    private static int[] RATE = new int[] { 0, 10, 100, 1000, 10000, 100000, 1000000 };
-    
-    private static double round(double d, int r) {
-        if (r < 0 || r > 6) {
-            return d;
-        }
-        if (r == 0) {
-            return Math.round(d);
-        }
-        return Math.round(d * RATE[r]) / (double) RATE[r];
     }
 }
