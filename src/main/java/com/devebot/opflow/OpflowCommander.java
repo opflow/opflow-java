@@ -52,6 +52,7 @@ public class OpflowCommander implements AutoCloseable {
     private final String instanceId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
+    private final OpflowLoadAverage.Meter speedMeter;
     private final OpflowConfig.Loader configLoader;
 
     private OpflowRestrictorMaster restrictor;
@@ -96,6 +97,11 @@ public class OpflowCommander implements AutoCloseable {
                 .stringify());
 
         measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get("promExporter"));
+        OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
+        
+        speedMeter = (new OpflowLoadAverage.Meter())
+                .register(OpflowPromMeasurer.LABEL_RPC_DIRECT_WORKER, counter.getDirectWorkerInfoSource())
+                .register(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER, counter.getRemoteWorkerInfoSource());
         
         Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get("restrictor");
         
@@ -200,7 +206,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("instanceId", instanceId)
                     .toMap());
 
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcMaster, handlers, rpcWatcher);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcMaster, handlers, rpcWatcher, speedMeter);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(instanceId, measurer, restrictor, rpcMaster, handlers);
             
@@ -256,6 +262,9 @@ public class OpflowCommander implements AutoCloseable {
         if (restrictor != null) {
             restrictor.unblock();
         }
+        if (speedMeter != null) {
+            speedMeter.start();
+        }
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}].serve() end")
@@ -270,6 +279,10 @@ public class OpflowCommander implements AutoCloseable {
 
         if (restrictor != null) {
             restrictor.block();
+        }
+
+        if (speedMeter != null) {
+            speedMeter.close();
         }
 
         if (restServer != null) restServer.close();
@@ -572,6 +585,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRpcWatcher rpcWatcher;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
+        private final OpflowLoadAverage.Meter speedMeter;
         private final Date startTime;
 
         public OpflowInfoCollectorMaster(String instanceId,
@@ -579,7 +593,8 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcMaster rpcMaster,
                 Map<String, RpcInvocationHandler> mappings,
-                OpflowRpcWatcher rpcWatcher
+                OpflowRpcWatcher rpcWatcher,
+                OpflowLoadAverage.Meter speedMeter
         ) {
             this.instanceId = instanceId;
             this.measurer = measurer;
@@ -587,6 +602,7 @@ public class OpflowCommander implements AutoCloseable {
             this.rpcWatcher = rpcWatcher;
             this.rpcMaster = rpcMaster;
             this.handlers = mappings;
+            this.speedMeter = speedMeter;
             this.startTime = new Date();
         }
 
@@ -628,6 +644,9 @@ public class OpflowCommander implements AutoCloseable {
                             if (counter != null) {
                                 opts.put("measurement", counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE)));
                             }
+                        }
+                        if (speedMeter != null) {
+                            opts.put("speedMeter", speedMeter.export());
                         }
                     }
 
@@ -1095,7 +1114,7 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     public Map<String, Object> getRpcInvocationCounter() {
-        return measurer.getRpcInvocationCounter("commander").toMap(false);
+        return measurer.getRpcInvocationCounter("commander").toMap();
     }
 
     public void resetRpcInvocationCounter() {

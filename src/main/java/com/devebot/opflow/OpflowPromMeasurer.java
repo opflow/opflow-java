@@ -12,7 +12,11 @@ import java.util.Map;
  * @author acegik
  */
 public abstract class OpflowPromMeasurer {
-
+    
+    public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
+    public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverDirectWorker";
+    public static final String LABEL_RPC_REMOTE_WORKER = "rpcOverRemoteWorker";
+    
     public static enum GaugeAction { INC, DEC }
     
     public abstract void updateComponentInstance(String instanceType, String instanceId, GaugeAction action);
@@ -30,7 +34,7 @@ public abstract class OpflowPromMeasurer {
     public abstract Map<String, Object> resetRpcInvocationCounter();
     
     private static PipeMeasurer instance = new PipeMeasurer();
-
+    
     public static OpflowPromMeasurer getInstance() throws OpflowOperationException {
         return instance;
     }
@@ -139,8 +143,8 @@ public abstract class OpflowPromMeasurer {
             final Date currentTime = new Date();
             final long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
             return OpflowObjectTree.buildMap()
-                    .put("rpcInvocationTotal", that.total)
-                    .put("rpcOverDirectWorker", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                    .put(LABEL_RPC_INVOCATION_TOTAL, that.total)
+                    .put(LABEL_RPC_DIRECT_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                         @Override
                         public void transform(Map<String, Object> opts) {
                             if (verbose) {
@@ -153,7 +157,7 @@ public abstract class OpflowPromMeasurer {
                             opts.put("retain", that.directRetain);
                         }
                     }).toMap())
-                    .put("rpcOverRemoteWorker", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                    .put(LABEL_RPC_REMOTE_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                         @Override
                         public void transform(Map<String, Object> opts) {
                             if (verbose) {
@@ -170,6 +174,34 @@ public abstract class OpflowPromMeasurer {
                     .put("startTime", OpflowDateTime.toISO8601UTC(that.startTime))
                     .put("elapsedTime", OpflowDateTime.printElapsedTime(that.startTime, currentTime))
                     .toMap();
+        }
+        
+        public OpflowLoadAverage.Source getDirectWorkerInfoSource() {
+            return new OpflowLoadAverage.Source() {
+                @Override
+                public long getValue() {
+                    return direct;
+                }
+
+                @Override
+                public Date getTime() {
+                    return new Date();
+                }
+            };
+        }
+        
+        public OpflowLoadAverage.Source getRemoteWorkerInfoSource() {
+            return new OpflowLoadAverage.Source() {
+                @Override
+                public long getValue() {
+                    return remote;
+                }
+
+                @Override
+                public Date getTime() {
+                    return new Date();
+                }
+            };
         }
     }
     
@@ -262,7 +294,7 @@ public abstract class OpflowPromMeasurer {
         
         @Override
         public RpcInvocationCounter getRpcInvocationCounter(String moduleName) {
-            return counter.copy();
+            return counter;
         }
 
         @Override
