@@ -111,7 +111,7 @@ public class OpflowLoadAverage {
             for (int i=0; i<length; i++) {
                 Store item = stores[getIndex(i)];
                 if (item != null) {
-                    result[i] = item.rate;
+                    result[i] = round(item.rate, 1);
                 }
             }
             return result;
@@ -169,5 +169,17 @@ public class OpflowLoadAverage {
                 running = false;
             }
         }
+    }
+    
+    private static int[] RATE = new int[] { 0, 10, 100, 1000, 10000, 100000, 1000000 };
+    
+    private static double round(double d, int r) {
+        if (r < 0 || r > 6) {
+            return d;
+        }
+        if (r == 0) {
+            return Math.round(d);
+        }
+        return Math.round(d * RATE[r]) / (double) RATE[r];
     }
 }

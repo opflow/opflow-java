@@ -147,28 +147,28 @@ public abstract class OpflowPromMeasurer {
                     .put(LABEL_RPC_DIRECT_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                         @Override
                         public void transform(Map<String, Object> opts) {
+                            opts.put("total", that.direct);
+                            opts.put("rescue", that.directRescue);
+                            opts.put("retain", that.directRetain);
                             if (verbose) {
                                 double directRate = calcMessageRate(that.direct, elapsedTime);
                                 opts.put("rate", formatMessageRate(directRate));
                                 opts.put("rateNumber", directRate);
                             }
-                            opts.put("total", that.direct);
-                            opts.put("rescue", that.directRescue);
-                            opts.put("retain", that.directRetain);
                         }
                     }).toMap())
                     .put(LABEL_RPC_REMOTE_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
                         @Override
                         public void transform(Map<String, Object> opts) {
+                            opts.put("total", that.remote);
+                            opts.put("ok", that.remoteSuccess);
+                            opts.put("failed", that.remoteFailure);
+                            opts.put("timeout", that.remoteTimeout);
                             if (verbose) {
                                 double remoteRate = calcMessageRate(that.remote, elapsedTime);
                                 opts.put("rate", formatMessageRate(remoteRate));
                                 opts.put("rateNumber", remoteRate);
                             }
-                            opts.put("total", that.remote);
-                            opts.put("ok", that.remoteSuccess);
-                            opts.put("failed", that.remoteFailure);
-                            opts.put("timeout", that.remoteTimeout);
                         }
                     }).toMap())
                     .put("startTime", OpflowDateTime.toISO8601UTC(that.startTime))

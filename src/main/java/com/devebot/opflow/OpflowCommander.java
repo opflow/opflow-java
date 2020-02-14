@@ -578,7 +578,7 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     private static class OpflowInfoCollectorMaster implements OpflowInfoCollector {
-
+        private final static boolean LEGACY_MEASUREMENT_VIEW = false;
         private final String instanceId;
         private final OpflowPromMeasurer measurer;
         private final OpflowRestrictorMaster restrictor;
@@ -639,14 +639,36 @@ public class OpflowCommander implements AutoCloseable {
 
                     // measurement
                     if (checkOption(flag, SCOPE_INFO)) {
-                        if (measurer != null) {
-                            OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
-                            if (counter != null) {
-                                opts.put("measurement", counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE)));
+                        if (LEGACY_MEASUREMENT_VIEW) {
+                            if (measurer != null) {
+                                OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
+                                if (counter != null) {
+                                    opts.put("measurement", counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE)));
+                                }
                             }
-                        }
-                        if (speedMeter != null) {
-                            opts.put("speedMeter", speedMeter.export());
+                            if (speedMeter != null) {
+                                opts.put("speedMeter", speedMeter.export());
+                            }
+                        } else {
+                            Map<String, Object> measurement = null;
+                            if (measurer != null) {
+                                OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
+                                if (counter != null) {
+                                    measurement = counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE));
+                                }
+                            }
+                            if (speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
+                                Map<String, double[]> loadAverages = speedMeter.export();
+                                for (Map.Entry<String, double[]> load : loadAverages.entrySet()) {
+                                    if (measurement != null && measurement.containsKey(load.getKey())) {
+                                        Map<String, Object> info = (Map<String, Object>) measurement.get(load.getKey());
+                                        info.put("throughput", load.getValue());
+                                    }
+                                }
+                            }
+                            if (measurement != null) {
+                                opts.put("measurement", measurement);
+                            }
                         }
                     }
 
