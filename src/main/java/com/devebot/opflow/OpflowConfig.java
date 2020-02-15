@@ -222,6 +222,12 @@ public class OpflowConfig {
                         "interval"
                     });
                 }
+                if ("speedMeter".equals(componentName)) {
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "interval",
+                        "length"
+                    });
+                }
                 if ("promExporter".equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "host",
@@ -353,7 +359,7 @@ public class OpflowConfig {
     private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };
     
     private static final String[] INTEGER_FIELDS = new String[] {
-        "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", "semaphoreLimit",
+        "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", "semaphoreLimit", "length",
         "prefetchCount", "subscriberLimit", "redeliveredLimit", "monitorInterval", "threadPoolSize"
     };
     

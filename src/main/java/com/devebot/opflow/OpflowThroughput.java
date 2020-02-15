@@ -12,6 +12,7 @@ import java.util.TimerTask;
  * @author pnhung177
  */
 public class OpflowThroughput {
+    public static final long INTERVAL_DEFAULT = 5000l;
     public static final int TAIL_LENGTH_DEFAULT = 3;
 
     public interface Source {
@@ -120,15 +121,39 @@ public class OpflowThroughput {
     }
     
     public static class Meter {
-        private long interval = 5000;
+        private long interval = INTERVAL_DEFAULT;
+        private int length = TAIL_LENGTH_DEFAULT;
         private Timer timer;
         private TimerTask timerTask;
         private volatile boolean running = false;
-        
+        private volatile boolean active = true;
+
         private final Map<String, Gauge> gauges = new HashMap<>();
 
         public Meter(Map<String, Object> kwargs) {
-            
+            kwargs = OpflowUtil.ensureNotNull(kwargs);
+            // updating interval
+            if (kwargs.get("interval") instanceof Long) {
+                long _interval = (Long) kwargs.get("interval");
+                if (_interval > 0) {
+                    interval = _interval;
+                }
+            }
+            // customize the tail length
+            if (kwargs.get("length") instanceof Integer) {
+                int _length = (Integer) kwargs.get("length");
+                if (_length > 0 && _length <= 10) {
+                    length = _length;
+                }
+            }
+        }
+
+        public boolean isActive() {
+            return active;
+        }
+
+        public void setActive(boolean active) {
+            this.active = active;
         }
         
         public Map<String, double[]> export() {
@@ -140,7 +165,7 @@ public class OpflowThroughput {
         }
         
         public Meter register(String label, Source reader) {
-            gauges.put(label, new Gauge(reader));
+            gauges.put(label, new Gauge(length, reader));
             return this;
         }
         
@@ -153,8 +178,10 @@ public class OpflowThroughput {
                     this.timerTask = new TimerTask() {
                         @Override
                         public void run() {
-                            for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
-                                entry.getValue().update();
+                            if (isActive()) {
+                                for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                                    entry.getValue().update();
+                                }
                             }
                         }
                     };

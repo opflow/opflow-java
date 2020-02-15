@@ -132,7 +132,7 @@ public abstract class OpflowPromMeasurer {
         }
         
         private String formatMessageRate(double rate) {
-            return String.format("%.2f req/s", rate);
+            return String.format("%.1f req/s", rate);
         }
         
         public Map<String, Object> toMap(final boolean cloned) {

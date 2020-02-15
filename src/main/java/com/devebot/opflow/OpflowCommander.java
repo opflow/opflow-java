@@ -39,7 +39,7 @@ public class OpflowCommander implements AutoCloseable {
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
-        "reqExtractor", "restrictor", "rpcWatcher", "promExporter", "restServer"
+        "reqExtractor", "restrictor", "rpcWatcher", "speedMeter", "promExporter", "restServer"
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
