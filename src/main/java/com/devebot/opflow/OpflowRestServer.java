@@ -310,7 +310,7 @@ public class OpflowRestServer implements AutoCloseable {
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
                 Map<String, Object> body = null;
-                if (exchange.getRequestMethod().equalToString("POST")) {
+                if (exchange.getRequestMethod().equalToString("PUT")) {
                     body = OpflowJsonTool.toObjectMap(exchange.getInputStream());
                 }
                 Map<String, Object> result = info(body);

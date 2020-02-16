@@ -22,6 +22,25 @@ paths:
           description: "Ok"
           schema:
             $ref: "#/definitions/InfoResult"
+    put:
+      tags:
+      - "Monitoring"
+      summary: "Show the information of the RPC commander (advanced)"
+      description: "Collect and summarize the states of RPC master and workers"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Checked option list"
+        required: true
+        schema:
+          $ref: "#/definitions/OptionList"
+      responses:
+        200:
+          description: "Ok"
+          schema:
+            $ref: "#/definitions/InfoResult"
   /ping:
     get:
       tags:
@@ -133,6 +152,17 @@ paths:
         200:
           description: "Ok"
 definitions:
+  OptionList:
+    type: "object"
+    properties:
+      MESSAGE_RATE:
+        type: "boolean"
+        default: false
+        description: "Add the message per second rates to the result"
+      THROUGHPUT:
+        type: "boolean"
+        default: false
+        description: "Add the throughput information to the result"
   InfoResult:
     type: "object"
     properties:
@@ -162,6 +192,5 @@ definitions:
         type: "object"
       serverlet:
         type: "object"
-      complete:
-        type: "boolean"
-        default: false
+      summary:
+        type: "string"
