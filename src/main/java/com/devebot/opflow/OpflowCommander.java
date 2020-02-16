@@ -658,8 +658,8 @@ public class OpflowCommander implements AutoCloseable {
                                 }
                             }
                             if (speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
-                                Map<String, double[]> loadAverages = speedMeter.export();
-                                for (Map.Entry<String, double[]> load : loadAverages.entrySet()) {
+                                Map<String, OpflowThroughput.Info> loadAverages = speedMeter.export();
+                                for (Map.Entry<String, OpflowThroughput.Info> load : loadAverages.entrySet()) {
                                     if (measurement != null && measurement.containsKey(load.getKey())) {
                                         Map<String, Object> info = (Map<String, Object>) measurement.get(load.getKey());
                                         info.put("throughput", load.getValue());

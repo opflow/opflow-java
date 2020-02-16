@@ -30,6 +30,21 @@ public class OpflowThroughput {
         }
     }
     
+    public static class Top {
+        public double rate;
+        public Date time;
+
+        public Top(double rate, Date time) {
+            this.rate = rate;
+            this.time = time;
+        }
+    }
+    
+    public static class Info {
+        public Top finest;
+        public double[] speeds;
+    }
+    
     private static class Store extends Signal {
         public double rate;
 
@@ -37,7 +52,7 @@ public class OpflowThroughput {
             super(value, time);
         }
         
-        public Store(double rate, long value, Date time) {
+        public Store(long value, Date time, double rate) {
             super(value, time);
             this.rate = rate;
         }
@@ -46,6 +61,7 @@ public class OpflowThroughput {
     public static class Gauge {
         private final int length;
         private final Store[] stores;
+        private Store top = null;
         private int current = 0;
         private Source reader = null;
 
@@ -105,18 +121,36 @@ public class OpflowThroughput {
                 nextNode.rate = 1000.0 * (nextNode.value - prevNode.value) / period;
             }
 
+            if (top == null) {
+                top = nextNode;
+            } else {
+                if (top.rate < nextNode.rate) {
+                    top = nextNode;
+                }
+            }
+
             stores[next()] = nextNode;
         }
 
-        public double[] export() {
-            double[] result = new double[length];
+        public Info export() {
+            Info result = new Info();
+            // extract the top
+            if (top != null) {
+                result.finest = new Top(OpflowMathUtil.round(top.rate, 1), top.time);
+            }
+            // generate the speeds
+            result.speeds = new double[length];
             for (int i=0; i<length; i++) {
                 Store item = stores[getIndex(i)];
                 if (item != null) {
-                    result[i] = OpflowMathUtil.round(item.rate, 1);
+                    result.speeds[i] = OpflowMathUtil.round(item.rate, 1);
                 }
             }
             return result;
+        }
+        
+        public Top getTop() {
+            return new Top(top.rate, top.time);
         }
     }
     
@@ -155,24 +189,24 @@ public class OpflowThroughput {
         public void setActive(boolean active) {
             this.active = active;
         }
-        
-        public Map<String, double[]> export() {
-            Map<String, double[]> result = new HashMap<>();
+
+        public Map<String, Info> export() {
+            Map<String, Info> result = new HashMap<>();
             for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
                 result.put(entry.getKey(), entry.getValue().export());
             }
             return result;
         }
-        
+
         public Meter register(String label, Source reader) {
             gauges.put(label, new Gauge(length, reader));
             return this;
         }
-        
+
         public synchronized void start() {
             if (!this.running) {
                 if (this.timer == null) {
-                     this.timer = new Timer("Timer-" + OpflowUtil.extractClassName(Meter.class), true);
+                    this.timer = new Timer("Timer-" + OpflowUtil.extractClassName(Meter.class), true);
                 }
                 if (this.timerTask == null) {
                     this.timerTask = new TimerTask() {
@@ -190,7 +224,7 @@ public class OpflowThroughput {
                 this.running = true;
             }
         }
-        
+
         public synchronized void close() {
             if (running) {
                 timerTask.cancel();

@@ -100,7 +100,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Invalid Configurer connection parameters");
             } 
             if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(configurerCfg))) {
-                throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
+                throw new OpflowBootstrapException("Duplicated Configurer connection parameters (exchangeName-routingKey)");
             }
             if (configurerCfg.get("subscriberName") != null && !checkQueue.add(configurerCfg.get("subscriberName").toString())) {
                 throw new OpflowBootstrapException("Configurer[subscriberName] must not be duplicated");
@@ -113,7 +113,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Invalid RpcWorker connection parameters");
             }
             if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(rpcWorkerCfg))) {
-                throw new OpflowBootstrapException("Duplicated RpcWorker connection parameters");
+                throw new OpflowBootstrapException("Duplicated RpcWorker connection parameters (exchangeName-routingKey)");
             }
             if (rpcWorkerCfg.get("operatorName") != null && !checkQueue.add(rpcWorkerCfg.get("operatorName").toString())) {
                 throw new OpflowBootstrapException("RpcWorker[operatorName] must not be duplicated");
@@ -128,7 +128,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Invalid Subscriber connection parameters");
             }
             if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(subscriberCfg))) {
-                throw new OpflowBootstrapException("Duplicated Subscriber connection parameters");
+                throw new OpflowBootstrapException("Duplicated Subscriber connection parameters (exchangeName-routingKey)");
             }
             if (subscriberCfg.get("subscriberName") != null && !checkQueue.add(subscriberCfg.get("subscriberName").toString())) {
                 throw new OpflowBootstrapException("Subscriber[subscriberName] must not be duplicated");
@@ -666,7 +666,6 @@ public class OpflowServerlet implements AutoCloseable {
     }
     
     public static class OpflowRpcCheckerWorker extends OpflowRpcChecker {
-
         @Override
         public Pong send(Ping info) throws Throwable {
             return new Pong();
@@ -676,7 +675,7 @@ public class OpflowServerlet implements AutoCloseable {
     private static String getClassNameLabel(Class clazz) {
         return "throw-" + OpflowUtil.getClassSimpleName(clazz);
     }
-    
+
     @Override
     protected void finalize() throws Throwable {
         measurer.updateComponentInstance("serverlet", instanceId, OpflowPromMeasurer.GaugeAction.DEC);
