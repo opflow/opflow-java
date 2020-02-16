@@ -160,12 +160,16 @@ public class OpflowThroughput {
         private Timer timer;
         private TimerTask timerTask;
         private volatile boolean running = false;
-        private volatile boolean active = true;
+        private volatile boolean active = false;
 
         private final Map<String, Gauge> gauges = new HashMap<>();
 
         public Meter(Map<String, Object> kwargs) {
             kwargs = OpflowUtil.ensureNotNull(kwargs);
+            // load [active] value from the config, false by default
+            if (kwargs.get("active") instanceof Boolean) {
+                active = (Boolean) kwargs.get("active");
+            }
             // updating interval
             if (kwargs.get("interval") instanceof Long) {
                 long _interval = (Long) kwargs.get("interval");

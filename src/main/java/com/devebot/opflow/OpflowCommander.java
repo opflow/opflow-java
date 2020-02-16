@@ -99,9 +99,15 @@ public class OpflowCommander implements AutoCloseable {
         measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get("promExporter"));
         OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
         
-        speedMeter = (new OpflowThroughput.Meter((Map<String, Object>) kwargs.get("speedMeter")))
-                .register(OpflowPromMeasurer.LABEL_RPC_DIRECT_WORKER, counter.getDirectWorkerInfoSource())
-                .register(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER, counter.getRemoteWorkerInfoSource());
+        Map<String, Object> speedMeterCfg = (Map<String, Object>) kwargs.get("speedMeter");
+        
+        if (speedMeterCfg == null || OpflowUtil.isComponentEnabled(speedMeterCfg)) {
+            speedMeter = (new OpflowThroughput.Meter(speedMeterCfg))
+                    .register(OpflowPromMeasurer.LABEL_RPC_DIRECT_WORKER, counter.getDirectWorkerInfoSource())
+                    .register(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER, counter.getRemoteWorkerInfoSource());
+        } else {
+            speedMeter = null;
+        }
         
         Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get("restrictor");
         
@@ -478,7 +484,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRestrictorMaster restrictor;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
-
+        
         public OpflowTaskSubmitterMaster(String instanceId,
                 OpflowPromMeasurer measurer,
                 OpflowRestrictorMaster restrictor,
@@ -491,7 +497,7 @@ public class OpflowCommander implements AutoCloseable {
             this.handlers = mappings;
             this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", instanceId);
         }
-
+        
         @Override
         public Map<String, Object> pause(long duration) {
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -536,7 +542,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("measurement", measurer.resetRpcInvocationCounter())
                     .toMap();
         }
-
+        
         @Override
         public Map<String, Object> activateDetachedWorker(boolean state, Map<String, Object> opts) {
             return activateWorker("DetachedWorker", state, opts);
@@ -625,7 +631,7 @@ public class OpflowCommander implements AutoCloseable {
             Boolean opt = options.get(optionName);
             return opt != null && opt;
         }
-        
+
         @Override
         public Map<String, Object> collect(Map<String, Boolean> options) {
             final Map<String, Boolean> flag = (options != null) ? options : new HashMap<String, Boolean>();
@@ -657,13 +663,17 @@ public class OpflowCommander implements AutoCloseable {
                                     measurement = counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE));
                                 }
                             }
-                            if (speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
-                                Map<String, OpflowThroughput.Info> loadAverages = speedMeter.export();
-                                for (Map.Entry<String, OpflowThroughput.Info> load : loadAverages.entrySet()) {
-                                    if (measurement != null && measurement.containsKey(load.getKey())) {
-                                        Map<String, Object> info = (Map<String, Object>) measurement.get(load.getKey());
-                                        info.put("throughput", load.getValue());
+                            if (measurement != null && speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
+                                if (speedMeter.isActive()) {
+                                    Map<String, OpflowThroughput.Info> loadAverages = speedMeter.export();
+                                    for (Map.Entry<String, OpflowThroughput.Info> load : loadAverages.entrySet()) {
+                                        if (measurement.containsKey(load.getKey())) {
+                                            Map<String, Object> info = (Map<String, Object>) measurement.get(load.getKey());
+                                            info.put("throughput", load.getValue());
+                                        }
                                     }
+                                } else {
+                                    measurement.put("speedMeter", "disabled");
                                 }
                             }
                             if (measurement != null) {

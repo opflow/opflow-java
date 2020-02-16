@@ -224,6 +224,7 @@ public class OpflowConfig {
                 }
                 if ("speedMeter".equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "active",
                         "interval",
                         "length"
                     });
@@ -346,7 +347,7 @@ public class OpflowConfig {
     }
     
     private static final String[] BOOLEAN_FIELDS = new String[] {
-        "autorun", "enabled", "verbose", "strictMode",
+        "active", "autorun", "enabled", "verbose", "strictMode",
         "automaticRecoveryEnabled", "topologyRecoveryEnabled",
         "monitorEnabled", "pauseEnabled", "semaphoreEnabled",
         "responseDurable", "responseExclusive", "responseAutoDelete"
