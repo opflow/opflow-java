@@ -103,7 +103,7 @@ public abstract class OpflowRpcChecker {
             
             Map<String, Object> commanderInfo = (Map<String, Object>)commanderMap.get("commander");
             if (commanderInfo != null && processorObj != null) {
-                builder.put("commander", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                builder.put("commander", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         // asserts the rpcMaster Map

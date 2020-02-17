@@ -145,7 +145,7 @@ public abstract class OpflowPromMeasurer {
             final long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
             return OpflowObjectTree.buildMap()
                     .put(LABEL_RPC_INVOCATION_TOTAL, that.total)
-                    .put(LABEL_RPC_DIRECT_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                    .put(LABEL_RPC_DIRECT_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                         @Override
                         public void transform(Map<String, Object> opts) {
                             opts.put("total", that.direct);
@@ -158,7 +158,7 @@ public abstract class OpflowPromMeasurer {
                             }
                         }
                     }).toMap())
-                    .put(LABEL_RPC_REMOTE_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                    .put(LABEL_RPC_REMOTE_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                         @Override
                         public void transform(Map<String, Object> opts) {
                             opts.put("total", that.remote);

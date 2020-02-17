@@ -10,22 +10,22 @@ import java.util.Map;
  */
 public class OpflowObjectTree {
 
-    public interface Listener {
-        public void transform(Map<String, Object> opts);
+    public interface Listener<V> {
+        public void transform(Map<String, V> opts);
     }
     
-    public static class Builder {
-        private final Map<String, Object> fields;
+    public static class Builder<V> {
+        private final Map<String, V> fields;
 
         public Builder() {
             this(null);
         }
         
-        public Builder(Map<String, Object> source) {
-            fields = ensureNotNull(source);
+        public Builder(Map<String, V> source) {
+            fields = (source == null) ? new HashMap<String, V>() : source;
         }
         
-        public Builder put(String key, Object value) {
+        public Builder put(String key, V value) {
             fields.put(key, value);
             return this;
         }
@@ -34,7 +34,7 @@ public class OpflowObjectTree {
             return fields.get(key);
         }
 
-        public Map<String, Object> toMap() {
+        public Map<String, V> toMap() {
             return fields;
         }
         
@@ -48,28 +48,24 @@ public class OpflowObjectTree {
         }
     }
     
-    public static Map<String, Object> ensureNotNull(Map<String, Object> opts) {
-        return (opts == null) ? new HashMap<String, Object>() : opts;
-    }
-    
-    public static Builder buildMap() {
+    public static <V> Builder<V> buildMap() {
         return buildMap(null, null, true);
     }
     
-    public static Builder buildMap(Listener listener) {
+    public static <V> Builder<V> buildMap(Listener<V> listener) {
         return buildMap(listener, null, true);
     }
     
-    public static Builder buildMap(Map<String, Object> defaultOpts) {
+    public static <V> Builder<V> buildMap(Map<String, V> defaultOpts) {
         return buildMap(null, defaultOpts, true);
     }
     
-    public static Builder buildMap(Listener listener, Map<String, Object> defaultOpts) {
+    public static <V> Builder<V> buildMap(Listener<V> listener, Map<String, V> defaultOpts) {
         return buildMap(listener, defaultOpts, true);
     }
     
-    public static Builder buildMap(Listener listener, Map<String, Object> defaultOpts, boolean orderReserved) {
-        Map<String, Object> source = orderReserved ? new LinkedHashMap<String, Object>() : new HashMap<String, Object>();
+    public static <V> Builder<V> buildMap(Listener<V> listener, Map<String, V> defaultOpts, boolean orderReserved) {
+        Map<String, V> source = orderReserved ? new LinkedHashMap<String, V>() : new HashMap<String, V>();
         if (defaultOpts != null) {
             source.putAll(defaultOpts);
         }
@@ -79,15 +75,15 @@ public class OpflowObjectTree {
         return new Builder(source);
     }
     
-    public static Builder buildMap(boolean orderReserved) {
+    public static <V> Builder<V> buildMap(boolean orderReserved) {
         return buildMap(null, null, orderReserved);
     }
     
-    public static Builder buildMap(Listener listener, boolean orderReserved) {
+    public static <V> Builder<V> buildMap(Listener<V> listener, boolean orderReserved) {
         return buildMap(listener, null, orderReserved);
     }
     
-    public static Builder buildMap(Map<String, Object> defaultOpts, boolean orderReserved) {
+    public static <V> Builder<V> buildMap(Map<String, V> defaultOpts, boolean orderReserved) {
         return buildMap(null, defaultOpts, orderReserved);
     }
 }
