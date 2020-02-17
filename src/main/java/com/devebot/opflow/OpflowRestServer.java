@@ -78,11 +78,17 @@ public class OpflowRestServer implements AutoCloseable {
         defaultHandlers = new RoutingHandler();
         defaultHandlers.get("/exec/{action}", new BlockingHandler(new ExecHandler()))
                 .get("/info", new InfoHandler())
-                .put("/info", new BlockingHandler(new InfoHandler()))
+                .put("/traffic", new BlockingHandler(new TrafficHandler()))
                 .get("/ping", new PingHandler());
     }
 
-    public Map<String, Object> info(Map<String, Object> params) {
+    public Map<String, Object> info() {
+        Map<String, Boolean> opts = new HashMap<>();
+        opts.put(OpflowInfoCollector.SCOPE_INFO, true);
+        return infoCollector.collect(opts);
+    }
+    
+    public Map<String, Object> traffic(Map<String, Object> params) {
         Map<String, Boolean> opts = new HashMap<>();
         opts.put(OpflowInfoCollector.SCOPE_INFO, true);
         if (params != null) {
@@ -92,7 +98,7 @@ public class OpflowRestServer implements AutoCloseable {
                 }
             }
         }
-        return infoCollector.collect(opts);
+        return infoCollector.traffic(opts);
     }
     
     public OpflowRpcChecker.Info ping() {
@@ -309,11 +315,25 @@ public class OpflowRestServer implements AutoCloseable {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
+                Map<String, Object> result = info();
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                exchange.getResponseSender().send(OpflowJsonTool.toString(result, getPrettyParam(exchange)));
+            } catch (Exception exception) {
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                exchange.setStatusCode(500).getResponseSender().send(exception.toString());
+            }
+        }
+    }
+    
+    class TrafficHandler implements HttpHandler {
+        @Override
+        public void handleRequest(HttpServerExchange exchange) throws Exception {
+            try {
                 Map<String, Object> body = null;
                 if (exchange.getRequestMethod().equalToString("PUT")) {
                     body = OpflowJsonTool.toObjectMap(exchange.getInputStream());
                 }
-                Map<String, Object> result = info(body);
+                Map<String, Object> result = traffic(body);
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
                 exchange.getResponseSender().send(OpflowJsonTool.toString(result, getPrettyParam(exchange)));
             } catch (Exception exception) {

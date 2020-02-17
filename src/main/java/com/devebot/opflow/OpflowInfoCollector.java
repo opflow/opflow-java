@@ -16,4 +16,5 @@ public interface OpflowInfoCollector {
     Map<String, Object> collect();
     Map<String, Object> collect(String scope);
     Map<String, Object> collect(Map<String, Boolean> flags);
+    Map<String, Object> traffic(Map<String, Boolean> flags);
 }
