@@ -531,7 +531,7 @@ public class OpflowCommander implements AutoCloseable {
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("OpflowTaskSubmitter[${taskSubmitterId}].reset() is invoked")
                     .stringify());
-            rpcMaster.close();
+            rpcMaster.reset();
             return OpflowObjectTree.buildMap()
                     .toMap();
         }

@@ -600,6 +600,11 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
     }
     
+    public void reset() {
+        close();
+        serve();
+    }
+    
     public OpflowExecutor getExecutor() {
         return executor;
     }
