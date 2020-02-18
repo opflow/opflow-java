@@ -229,16 +229,19 @@ public class OpflowRpcMaster implements AutoCloseable {
             ) throws IOException {
                 String taskId = properties.getCorrelationId();
                 Map<String, Object> headers = properties.getHeaders();
-
-                String requestId = OpflowUtil.getRequestId(headers);
-                String requestTime = OpflowUtil.getRequestTime(headers);
                 
                 OpflowLogTracer logResult = null;
-                if (logSession.ready(LOG, Level.INFO)) {
-                    logResult = logSession.branch("requestTime", requestTime)
-                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
-                }
+                
+                if (logResult == null) {
+                    String requestId = OpflowUtil.getRequestId(headers);
+                    String requestTime = OpflowUtil.getRequestTime(headers);
 
+                    if (logSession.ready(LOG, Level.INFO)) {
+                        logResult = logSession.branch("requestTime", requestTime)
+                                .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    }
+                }
+                
                 if (logResult != null && logResult.ready(LOG, Level.INFO)) LOG.info(logResult
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - task[${correlationId}] receives a result")
