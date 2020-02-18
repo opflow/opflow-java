@@ -144,13 +144,13 @@ public class OpflowRpcWorker implements AutoCloseable {
                 String requestTime = OpflowUtil.getRequestTime(headers, false);
                 String[] requestTags = OpflowUtil.getRequestTags(headers);
 
-                OpflowLogTracer logRequest = null;
+                OpflowLogTracer reqTracer = null;
                 if (logProcess.ready(LOG, Level.INFO)) {
-                    logRequest = logProcess.branch("requestTime", requestTime)
+                    reqTracer = logProcess.branch("requestTime", requestTime)
                             .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                 }
 
-                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .put("routineId", routineId)
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}] receives a new RPC request")
                         .stringify());
@@ -163,7 +163,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
-                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .text("Request[${requestId}][${requestTime}] - RPC request processing has completed")
                         .stringify());
                 return count > 0;

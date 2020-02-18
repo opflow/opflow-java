@@ -234,16 +234,16 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 Map<String, Object> headers = properties.getHeaders();
                 String requestId = OpflowUtil.getRequestId(headers, false);
                 String requestTime = OpflowUtil.getRequestTime(headers, false);
-                OpflowLogTracer logRequest = null;
+                OpflowLogTracer reqTracer = null;
                 if (logSubscribe.ready(LOG, Level.INFO)) {
-                    logRequest = logSubscribe.branch("requestTime", requestTime).branch("requestId", requestId);
+                    reqTracer = logSubscribe.branch("requestTime", requestTime).branch("requestId", requestId);
                 }
-                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}].subscribe() receives a new request")
                         .stringify());
                 try {
                     listener.processMessage(new OpflowMessage(content, headers));
-                    if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                    if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .text("Request[${requestId}][${requestTime}] - subscribe() request processing has completed")
                             .stringify());
                 } catch (Exception exception) {
@@ -257,26 +257,26 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     AMQP.BasicProperties.Builder propBuilder = copyBasicProperties(properties);
                     AMQP.BasicProperties props = propBuilder.headers(headers).build();
                     
-                    if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                    if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("redeliveredCount", redeliveredCount)
                             .put("redeliveredLimit", redeliveredLimit)
                             .text("Request[${requestId}][${requestTime}] - subscribe() recycling failed request")
                             .stringify());
                     
                     if (redeliveredCount <= redeliveredLimit) {
-                        if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                        if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                 .text("Request[${requestId}][${requestTime}] - subscribe() requeue failed request")
                                 .stringify());
                         sendToQueue(content, props, subscriberName, channel);
                     } else {
                         if (recyclebinName != null) {
                             sendToQueue(content, props, recyclebinName, channel);
-                            if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                            if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                     .put("recyclebinName", recyclebinName)
                                     .text("Request[${requestId}][${requestTime}] - subscribe() enqueue failed request to recyclebin")
                                     .stringify());
                         } else {
-                            if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                            if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                     .text("Request[${requestId}][${requestTime}] - subscribe() discard failed request (recyclebin not found)")
                                     .stringify());
                         }

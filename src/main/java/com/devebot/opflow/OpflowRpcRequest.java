@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
-    private final OpflowLogTracer logRequest;
+    private final OpflowLogTracer reqTracer;
     private final String requestId;
     private final String requestTime;
     private final String routineId;
@@ -40,7 +40,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
             this.timeout = params.getRequestTTL();
         }
         
-        logRequest = OpflowLogTracer.ROOT.branch("requestTime", this.requestTime)
+        reqTracer = OpflowLogTracer.ROOT.branch("requestTime", this.requestTime)
                 .branch("requestId", this.requestId, params);
 
         this.completeListener = completeListener;
@@ -50,8 +50,8 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                 @Override
                 public void handleEvent() {
                     OpflowLogTracer logWatcher = null;
-                    if (logRequest.ready(LOG, Level.DEBUG)) {
-                        logWatcher = logRequest.copy();
+                    if (reqTracer.ready(LOG, Level.DEBUG)) {
+                        logWatcher = reqTracer.copy();
                     }
                     if (logWatcher != null && logWatcher.ready(LOG, Level.DEBUG)) LOG.debug(logWatcher
                             .text("Request[${requestId}][${requestTime}] timeout event has been raised")
@@ -131,8 +131,8 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         checkTimestamp();
         if(isDone(message)) {
             OpflowLogTracer pushTrail = null;
-            if (logRequest.ready(LOG, Level.DEBUG)) {
-                pushTrail = logRequest.copy();
+            if (reqTracer.ready(LOG, Level.DEBUG)) {
+                pushTrail = reqTracer.copy();
             }
             if (pushTrail != null && pushTrail.ready(LOG, Level.DEBUG)) LOG.debug(pushTrail
                     .text("Request[${requestId}][${requestTime}] has completed/failed message")
@@ -161,7 +161,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     }
     
     public OpflowRpcResult extractResult(final boolean includeProgress) {
-        OpflowLogTracer extractTrail = logRequest;
+        OpflowLogTracer extractTrail = reqTracer;
         if (extractTrail != null && extractTrail.ready(LOG, Level.TRACE)) LOG.trace(extractTrail
                 .text("Request[${requestId}][${requestTime}] - extracting result")
                 .stringify());

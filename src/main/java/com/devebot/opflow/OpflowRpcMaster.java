@@ -363,7 +363,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             params.setRequestTTL(expiration + DELAY_TIMEOUT);
         }
         
-        final OpflowLogTracer logRequest = logTracer.branch("requestTime", params.getRequestTime())
+        final OpflowLogTracer reqTracer = logTracer.branch("requestTime", params.getRequestTime())
                 .branch("requestId", params.getRequestId(), params);
         
         if (timeoutMonitor == null) {
@@ -393,7 +393,9 @@ public class OpflowRpcMaster implements AutoCloseable {
             private OpflowLogTracer logTask = null;
             
             {
-                if (logRequest != null && logRequest.ready(LOG, Level.DEBUG)) logTask = logRequest.branch("taskId", taskId);
+                if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) {
+                    logTask = reqTracer.branch("taskId", taskId);
+                }
             }
             
             @Override
@@ -457,12 +459,12 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .correlationId(taskId);
         
         if (!consumerInfo.isFixedQueue()) {
-            if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+            if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                     .put("replyTo", consumerInfo.getQueueName())
                     .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
                     .stringify());
         } else {
-            if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+            if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                     .put("replyTo", consumerInfo.getQueueName())
                     .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
                     .stringify());
@@ -475,7 +477,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         measurer.countRpcInvocation("rpc_master", "request", routineId, "begin");
         
-        engine.produce(body, headers, builder, null, logRequest);
+        engine.produce(body, headers, builder, null, reqTracer);
         
         return task;
     }

@@ -365,9 +365,9 @@ public class OpflowServerlet implements AutoCloseable {
                     final String requestTime = OpflowUtil.getRequestTime(headers);
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer logRequest = logTracer.branch("requestTime", requestTime)
+                    final OpflowLogTracer reqTracer = logTracer.branch("requestTime", requestTime)
                             .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
-                    if (logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                    if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("methodId", methodId)
                             .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives a RPC call to the method[${methodId}]")
                             .stringify());
@@ -381,7 +381,7 @@ public class OpflowServerlet implements AutoCloseable {
                         }
                         
                         String json = message.getBodyAsString();
-                        if (logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+                        if (reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                 .put("arguments", json)
                                 .text("Request[${requestId}][${requestTime}] - Method arguments in json string")
                                 .stringify());
@@ -439,7 +439,7 @@ public class OpflowServerlet implements AutoCloseable {
                                 }
                             }).toMap());
                         } else {
-                            if (logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                            if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                     .put("targetName", target.getClass().getName())
                                     .text("Request[${requestId}][${requestTime}] - The method from target[${targetName}] is invoked")
                                     .stringify());
@@ -447,13 +447,13 @@ public class OpflowServerlet implements AutoCloseable {
                         }
                         
                         String result = OpflowJsonTool.toString(returnValue);
-                        if (logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+                        if (reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                 .put("return", OpflowUtil.truncate(result))
                                 .text("Request[${requestId}][${requestTime}] - Return the output of the method")
                                 .stringify());
                         response.emitCompleted(result);
                         
-                        if (logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                        if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .text("Request[${requestId}][${requestTime}] - Method call has completed")
                             .stringify());
                     } catch (JsonSyntaxException error) {
@@ -512,9 +512,9 @@ public class OpflowServerlet implements AutoCloseable {
                     final String requestTime = OpflowUtil.getRequestTime(headers);
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer logRequest = logTracer.branch("requestTime", requestTime)
+                    final OpflowLogTracer reqTracer = logTracer.branch("requestTime", requestTime)
                             .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
-                    if (logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                    if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("routineId", routineId)
                             .put("methodId", methodId)
                             .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives an asynchronous method call [${routineId}]")
@@ -529,7 +529,7 @@ public class OpflowServerlet implements AutoCloseable {
                         }
                         
                         String json = message.getBodyAsString();
-                        if (logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+                        if (reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                 .put("arguments", json)
                                 .text("Request[${requestId}][${requestTime}] - Method arguments in json string")
                                 .stringify());
@@ -537,7 +537,7 @@ public class OpflowServerlet implements AutoCloseable {
                         
                         method.invoke(target, args);
                         
-                        if (logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                        if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                 .text("Request[${requestId}][${requestTime}] - Method call has completed")
                                 .stringify());
                     } catch (JsonSyntaxException error) {
