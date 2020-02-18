@@ -416,20 +416,23 @@ public class OpflowEngine implements AutoCloseable {
     }
     
     public void produce(final byte[] body, final Map<String, Object> headers) {
-        produce(body, headers, null, null);
+        produce(body, headers, null, null, null);
     }
     
     public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder) {
-        produce(body, headers, propBuilder, null);
+        produce(body, headers, propBuilder, null, null);
     }
     
     public void produce(final byte[] body, final Map<String, Object> headers, Map<String, Object> override) {
-        produce(body, headers, null, override);
+        produce(body, headers, null, override, null);
     }
     
-    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, Map<String, Object> override) {
+    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, OpflowLogTracer logRequest) {
+        produce(body, headers, propBuilder, null, logRequest);
+    }
+    
+    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, Map<String, Object> override, OpflowLogTracer logRequest) {
         propBuilder = (propBuilder == null) ? new AMQP.BasicProperties.Builder() : propBuilder;
-        OpflowLogTracer logRequest = null;
         
         try {
             String customKey = this.routingKey;
@@ -451,17 +454,17 @@ public class OpflowEngine implements AutoCloseable {
                 propBuilder.replyTo(override.get("replyTo").toString());
             }
             
-            String requestId = OpflowUtil.getRequestId(headers);
-            String requestTime = OpflowUtil.getRequestTime(headers);
-            
             propBuilder.headers(headers);
             
             if (logTracer.ready(LOG, Level.INFO)) {
+                String requestId = OpflowUtil.getRequestId(headers);
+                String requestTime = OpflowUtil.getRequestTime(headers);
                 logRequest = logTracer.branch("requestTime", requestTime)
                         .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
             }
             
             if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                    .put("engineId", instanceId)
                     .put("appId", appId)
                     .put("customKey", customKey)
                     .text("Request[${requestId}][${requestTime}] - Engine[${engineId}] - produce() is invoked")
