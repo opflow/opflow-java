@@ -435,28 +435,31 @@ public class OpflowEngine implements AutoCloseable {
         propBuilder = (propBuilder == null) ? new AMQP.BasicProperties.Builder() : propBuilder;
         
         try {
-            String customKey = this.routingKey;
-            if (override != null && override.get("routingKey") != null) {
-                customKey = (String) override.get("routingKey");
-            }
-            
             String appId = this.applicationId;
-            if (override != null && override.get("applicationId") != null) {
-                appId = (String) override.get("applicationId");
+            String requestKey = this.routingKey;
+            
+            if (override != null) {
+                if (override.get("routingKey") != null) {
+                    requestKey = (String) override.get("routingKey");
+                }
+
+                if (override.get("applicationId") != null) {
+                    appId = (String) override.get("applicationId");
+                }
+
+                if (override.get("correlationId") != null) {
+                    propBuilder.correlationId(override.get("correlationId").toString());
+                }
+
+                if (override.get("replyTo") != null) {
+                    propBuilder.replyTo(override.get("replyTo").toString());
+                }
             }
+            
             propBuilder.appId(appId);
-            
-            if (override != null && override.get("correlationId") != null) {
-                propBuilder.correlationId(override.get("correlationId").toString());
-            }
-            
-            if (override != null && override.get("replyTo") != null) {
-                propBuilder.replyTo(override.get("replyTo").toString());
-            }
-            
             propBuilder.headers(headers);
             
-            if (logTracer.ready(LOG, Level.INFO)) {
+            if (logRequest == null && logTracer.ready(LOG, Level.INFO)) {
                 String requestId = OpflowUtil.getRequestId(headers);
                 String requestTime = OpflowUtil.getRequestTime(headers);
                 logRequest = logTracer.branch("requestTime", requestTime)
@@ -466,7 +469,7 @@ public class OpflowEngine implements AutoCloseable {
             if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
                     .put("engineId", instanceId)
                     .put("appId", appId)
-                    .put("customKey", customKey)
+                    .put("customKey", requestKey)
                     .text("Request[${requestId}][${requestTime}] - Engine[${engineId}] - produce() is invoked")
                     .stringify());
             
@@ -474,7 +477,7 @@ public class OpflowEngine implements AutoCloseable {
             if (_channel == null || !_channel.isOpen()) {
                 throw new OpflowOperationException("Channel is null or has been closed");
             }
-            _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), body);
+            _channel.basicPublish(this.exchangeName, requestKey, propBuilder.build(), body);
         } catch (IOException exception) {
             if (logRequest != null && logRequest.ready(LOG, Level.ERROR)) LOG.error(logRequest
                     .put("exceptionClass", exception.getClass().getName())
