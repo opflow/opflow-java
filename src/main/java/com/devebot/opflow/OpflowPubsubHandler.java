@@ -234,7 +234,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     AMQP.BasicProperties properties,
                     String queueName,
                     Channel channel,
-                    String consumerTag
+                    String consumerTag,
+                    Map<String, Object> extras
             ) throws IOException {
                 Map<String, Object> headers = properties.getHeaders();
                 String requestId = OpflowUtil.getRequestId(headers, false);

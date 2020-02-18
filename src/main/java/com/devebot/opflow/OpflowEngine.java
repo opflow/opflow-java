@@ -632,7 +632,7 @@ public class OpflowEngine implements AutoCloseable {
                                     .text("Request[${requestId}][${requestTime}] invoke listener.processMessage()")
                                     .stringify());
                             
-                            boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
+                            boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag, null);
                             
                             if (captured) {
                                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer

@@ -134,7 +134,8 @@ public class OpflowRpcWorker implements AutoCloseable {
                     AMQP.BasicProperties properties,
                     String queueName,
                     Channel channel,
-                    String consumerTag
+                    String consumerTag,
+                    Map<String, Object> extras
             ) throws IOException {
                 Map<String, Object> headers = properties.getHeaders();
                 OpflowMessage request = new OpflowMessage(body, headers);
