@@ -179,7 +179,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("instanceId", instanceId);
@@ -188,7 +188,7 @@ public class OpflowCommander implements AutoCloseable {
                 }, configurerCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
-                rpcMaster = new OpflowRpcMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                rpcMaster = new OpflowRpcMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("instanceId", instanceId);
@@ -197,7 +197,7 @@ public class OpflowCommander implements AutoCloseable {
                 }, rpcMasterCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(publisherCfg)) {
-                publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("instanceId", instanceId);
@@ -584,7 +584,6 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     private static class OpflowInfoCollectorMaster implements OpflowInfoCollector {
-        private final static boolean LEGACY_MEASUREMENT_VIEW = false;
         private final String instanceId;
         private final OpflowPromMeasurer measurer;
         private final OpflowRestrictorMaster restrictor;
@@ -619,12 +618,9 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Map<String, Object> collect(String scope) {
-            final String label = (scope == null) ? SCOPE_PING : scope;
-            
-            Map<String, Boolean> flags = new HashMap<>();
-            flags.put(label, true);
-            
-            return collect(flags);
+            return collect(OpflowObjectTree.<Boolean>buildMap()
+                    .put((scope == null) ? SCOPE_PING : scope, true)
+                    .toMap());
         }
 
         private boolean checkOption(Map<String, Boolean> options, String optionName) {
@@ -638,54 +634,15 @@ public class OpflowCommander implements AutoCloseable {
             
             OpflowObjectTree.Builder root = OpflowObjectTree.buildMap();
             
-            root.put("commander", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+            root.put("commander", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     opts.put("instanceId", instanceId);
 
-                    // measurement
-                    if (checkOption(flag, SCOPE_INFO)) {
-                        if (LEGACY_MEASUREMENT_VIEW) {
-                            if (measurer != null) {
-                                OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
-                                if (counter != null) {
-                                    opts.put("measurement", counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE)));
-                                }
-                            }
-                            if (speedMeter != null) {
-                                opts.put("speedMeter", speedMeter.export());
-                            }
-                        } else {
-                            Map<String, Object> measurement = null;
-                            if (measurer != null) {
-                                OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
-                                if (counter != null) {
-                                    measurement = counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE));
-                                }
-                            }
-                            if (measurement != null && speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
-                                if (speedMeter.isActive()) {
-                                    Map<String, OpflowThroughput.Info> loadAverages = speedMeter.export();
-                                    for (Map.Entry<String, OpflowThroughput.Info> load : loadAverages.entrySet()) {
-                                        if (measurement.containsKey(load.getKey())) {
-                                            Map<String, Object> info = (Map<String, Object>) measurement.get(load.getKey());
-                                            info.put("throughput", load.getValue());
-                                        }
-                                    }
-                                } else {
-                                    measurement.put("speedMeter", "disabled");
-                                }
-                            }
-                            if (measurement != null) {
-                                opts.put("measurement", measurement);
-                            }
-                        }
-                    }
-
                     // restrictor information
                     if (checkOption(flag, SCOPE_INFO)) {
                         if (restrictor != null) {
-                            opts.put("restrictor", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                            opts.put("restrictor", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                                 @Override
                                 public void transform(Map<String, Object> opt2) {
                                     int availablePermits = restrictor.getSemaphorePermits();
@@ -713,7 +670,7 @@ public class OpflowCommander implements AutoCloseable {
                     
                     // rpcMaster information
                     if (rpcMaster != null) {
-                        opts.put("rpcMaster", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                        opts.put("rpcMaster", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                             @Override
                             public void transform(Map<String, Object> opt2) {
                                 OpflowEngine engine = rpcMaster.getEngine();
@@ -786,11 +743,44 @@ public class OpflowCommander implements AutoCloseable {
             return root.toMap();
         }
         
+        @Override
+        public Map<String, Object> traffic(Map<String, Boolean> options) {
+            final Map<String, Boolean> flag = (options != null) ? options : new HashMap<String, Boolean>();
+            
+            OpflowObjectTree.Builder root = OpflowObjectTree.buildMap();
+            
+            Map<String, Object> metrics = null;
+            if (measurer != null) {
+                OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
+                if (counter != null) {
+                    metrics = counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE));
+                }
+            }
+            if (metrics != null && speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
+                if (speedMeter.isActive()) {
+                    Map<String, OpflowThroughput.Info> loadAverages = speedMeter.export();
+                    for (Map.Entry<String, OpflowThroughput.Info> load : loadAverages.entrySet()) {
+                        if (metrics.containsKey(load.getKey())) {
+                            Map<String, Object> info = (Map<String, Object>) metrics.get(load.getKey());
+                            info.put("throughput", load.getValue());
+                        }
+                    }
+                } else {
+                    metrics.put("speedMeter", "disabled");
+                }
+            }
+            if (metrics != null) {
+                root.put("metrics", metrics);
+            }
+            
+            return root.toMap();
+        }
+        
         protected static List<Map<String, Object>> renderRpcInvocationHandlers(Map<String, RpcInvocationHandler> handlers) {
             List<Map<String, Object>> mappingInfos = new ArrayList<>();
             for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
                 final RpcInvocationHandler val = entry.getValue();
-                mappingInfos.add(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+                mappingInfos.add(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("class", entry.getKey());

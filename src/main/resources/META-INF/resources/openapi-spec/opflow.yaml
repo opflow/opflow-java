@@ -22,11 +22,12 @@ paths:
           description: "Ok"
           schema:
             $ref: "#/definitions/InfoResult"
+  /traffic:
     put:
       tags:
       - "Monitoring"
-      summary: "Show the information of the RPC commander (advanced)"
-      description: "Collect and summarize the states of RPC master and workers"
+      summary: "Show the traffic of RPC invocation"
+      description: "Collect and calculate the speed of RPC invocation"
       produces:
       - "application/json"
       parameters:
@@ -39,8 +40,6 @@ paths:
       responses:
         200:
           description: "Ok"
-          schema:
-            $ref: "#/definitions/InfoResult"
   /ping:
     get:
       tags:

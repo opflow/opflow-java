@@ -75,35 +75,20 @@ public class OpflowRestServer implements AutoCloseable {
         taskSubmitter = _taskSubmitter;
         rpcChecker = _rpcChecker;
         
+        ExecHandler execHandler = new ExecHandler();
+        
+        InfoHandler infoHandler = new InfoHandler();
+        TrafficHandler trafficHandler = new TrafficHandler();
+        PingHandler pingHandler = new PingHandler();
+        
         defaultHandlers = new RoutingHandler();
-        defaultHandlers.get("/exec/{action}", new BlockingHandler(new ExecHandler()))
-                .get("/info", new InfoHandler())
-                .put("/info", new BlockingHandler(new InfoHandler()))
-                .get("/ping", new PingHandler());
+        defaultHandlers.get("/exec/{action}", new BlockingHandler(execHandler))
+                .get("/info", infoHandler)
+                .get("/traffic", trafficHandler)
+                .put("/traffic", new BlockingHandler(trafficHandler))
+                .get("/ping", pingHandler);
     }
 
-    public Map<String, Object> info(Map<String, Object> params) {
-        Map<String, Boolean> opts = new HashMap<>();
-        opts.put(OpflowInfoCollector.SCOPE_INFO, true);
-        if (params != null) {
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
-                if (entry.getValue() instanceof Boolean) {
-                    opts.put(entry.getKey(), (Boolean) entry.getValue());
-                }
-            }
-        }
-        return infoCollector.collect(opts);
-    }
-    
-    public OpflowRpcChecker.Info ping() {
-        Map<String, Object> me = infoCollector.collect(OpflowInfoCollector.SCOPE_PING);
-        try {
-            return new OpflowRpcChecker.Info(me, this.rpcChecker.send(null));
-        } catch (Throwable exception) {
-            return new OpflowRpcChecker.Info(me, exception);
-        }
-    }
-    
     public RoutingHandler getDefaultHandlers() {
         return defaultHandlers;
     }
@@ -309,17 +294,48 @@ public class OpflowRestServer implements AutoCloseable {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
-                Map<String, Object> body = null;
-                if (exchange.getRequestMethod().equalToString("PUT")) {
-                    body = OpflowJsonTool.toObjectMap(exchange.getInputStream());
-                }
-                Map<String, Object> result = info(body);
+                Map<String, Object> result = info();
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
                 exchange.getResponseSender().send(OpflowJsonTool.toString(result, getPrettyParam(exchange)));
             } catch (Exception exception) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());
             }
+        }
+        private Map<String, Object> info() {
+            Map<String, Boolean> opts = new HashMap<>();
+            opts.put(OpflowInfoCollector.SCOPE_INFO, true);
+            return infoCollector.collect(opts);
+        }
+    }
+    
+    class TrafficHandler implements HttpHandler {
+        @Override
+        public void handleRequest(HttpServerExchange exchange) throws Exception {
+            try {
+                Map<String, Object> body = null;
+                if (exchange.getRequestMethod().equalToString("PUT")) {
+                    body = OpflowJsonTool.toObjectMap(exchange.getInputStream());
+                }
+                Map<String, Object> result = traffic(body);
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                exchange.getResponseSender().send(OpflowJsonTool.toString(result, getPrettyParam(exchange)));
+            } catch (Exception exception) {
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                exchange.setStatusCode(500).getResponseSender().send(exception.toString());
+            }
+        }
+        private Map<String, Object> traffic(Map<String, Object> params) {
+            Map<String, Boolean> opts = new HashMap<>();
+            opts.put(OpflowInfoCollector.SCOPE_INFO, true);
+            if (params != null) {
+                for (Map.Entry<String, Object> entry : params.entrySet()) {
+                    if (entry.getValue() instanceof Boolean) {
+                        opts.put(entry.getKey(), (Boolean) entry.getValue());
+                    }
+                }
+            }
+            return infoCollector.traffic(opts);
         }
     }
     
@@ -337,6 +353,14 @@ public class OpflowRestServer implements AutoCloseable {
             } catch (Exception exception) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());
+            }
+        }
+        private OpflowRpcChecker.Info ping() {
+            Map<String, Object> me = infoCollector.collect(OpflowInfoCollector.SCOPE_PING);
+            try {
+                return new OpflowRpcChecker.Info(me, rpcChecker.send(null));
+            } catch (Throwable exception) {
+                return new OpflowRpcChecker.Info(me, exception);
             }
         }
     }

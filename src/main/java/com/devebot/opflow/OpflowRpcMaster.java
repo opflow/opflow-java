@@ -269,7 +269,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 }
                 return true;
             }
-        }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+        }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("consumerId", _consumerId);
@@ -475,7 +475,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         measurer.countRpcInvocation("rpc_master", "request", routineId, "begin");
         
-        engine.produce(body, headers, builder);
+        engine.produce(body, headers, builder, null, logRequest);
         
         return task;
     }

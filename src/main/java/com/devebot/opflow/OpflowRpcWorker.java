@@ -168,7 +168,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                         .stringify());
                 return count > 0;
             }
-        }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener() {
+        }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put("consumerId", _consumerId);
