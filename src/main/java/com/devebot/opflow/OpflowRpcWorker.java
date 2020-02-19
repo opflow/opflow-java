@@ -28,6 +28,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
     
+    private final Integer prefetchCount;
     private final String operatorName;
     private final String responseName;
     
@@ -55,6 +56,12 @@ public class OpflowRpcWorker implements AutoCloseable {
         
         if (operatorName != null && responseName != null && operatorName.equals(responseName)) {
             throw new OpflowBootstrapException("operatorName should be different with responseName");
+        }
+        
+        if (params.get("prefetchCount") != null && params.get("prefetchCount") instanceof Integer) {
+            prefetchCount = (Integer) params.get("prefetchCount");
+        } else {
+            prefetchCount = null;
         }
         
         engine = new OpflowEngine(brokerParams);
@@ -176,6 +183,9 @@ public class OpflowRpcWorker implements AutoCloseable {
                 opts.put("queueName", operatorName);
                 opts.put("replyTo", responseName);
                 opts.put("binding", Boolean.TRUE);
+                if (prefetchCount != null) {
+                    opts.put("prefetchCount", prefetchCount);
+                }
             }
         }).toMap());
         if (logProcess.ready(LOG, Level.INFO)) LOG.info(logProcess

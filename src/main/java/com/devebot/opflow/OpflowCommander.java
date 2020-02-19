@@ -756,7 +756,12 @@ public class OpflowCommander implements AutoCloseable {
                     metrics = counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE));
                 }
             }
-            if (metrics != null && speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
+            if (metrics == null) {
+                metrics = OpflowObjectTree.buildMap().toMap();
+            }
+            
+            // throughput of RPC
+            if (speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
                 if (speedMeter.isActive()) {
                     Map<String, OpflowThroughput.Info> loadAverages = speedMeter.export();
                     for (Map.Entry<String, OpflowThroughput.Info> load : loadAverages.entrySet()) {
@@ -769,11 +774,15 @@ public class OpflowCommander implements AutoCloseable {
                     metrics.put("speedMeter", "disabled");
                 }
             }
-            if (metrics != null) {
-                root.put("metrics", metrics);
-            }
             
-            return root.toMap();
+            // size of the callback queue
+            Map<String, Object> rpcWaitingRequests = OpflowObjectTree.buildMap()
+                    .put("current", rpcMaster.getActiveRequestTotal())
+                    .put("top", rpcMaster.getMaxWaitingRequests())
+                    .toMap();
+            metrics.put("rpcWaitingRequests", rpcWaitingRequests);
+            
+            return root.put("metrics", metrics).toMap();
         }
         
         protected static List<Map<String, Object>> renderRpcInvocationHandlers(Map<String, RpcInvocationHandler> handlers) {

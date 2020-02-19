@@ -4,6 +4,7 @@ import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRestrictionException;
+import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BlockedListener;
@@ -13,7 +14,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -206,7 +206,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
     }
 
-    private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();
+    private final OpflowConcurrentMap<String, OpflowRpcRequest> tasks = new OpflowConcurrentMap<>();
     
     private final Object callbackConsumerLock = new Object();
     private volatile OpflowEngine.ConsumerInfo callbackConsumer;
@@ -481,7 +481,15 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         return task;
     }
-
+    
+    public int getActiveRequestTotal() {
+        return tasks.size();
+    }
+    
+    public int getMaxWaitingRequests() {
+        return tasks.getMaxSize();
+    }
+    
     public class State extends OpflowEngine.State {
         public State(OpflowEngine.State superState) {
             super(superState);
