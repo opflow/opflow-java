@@ -6,6 +6,7 @@ import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowKeytool;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BlockedListener;
