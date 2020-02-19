@@ -231,45 +231,40 @@ public class OpflowRpcMaster implements AutoCloseable {
                 String taskId = properties.getCorrelationId();
                 Map<String, Object> headers = properties.getHeaders();
                 
-                OpflowLogTracer logResult = null;
+                OpflowLogTracer reqTracer = null;
                 
-                if (logResult == null) {
+                if (extras != null && extras.containsKey(OpflowEngine.REQUEST_TRACER_NAME)) {
+                    reqTracer = (OpflowLogTracer) extras.get(OpflowEngine.REQUEST_TRACER_NAME);
+                }
+                
+                if (reqTracer == null) {
                     String requestId = OpflowUtil.getRequestId(headers);
                     String requestTime = OpflowUtil.getRequestTime(headers);
 
                     if (logSession.ready(LOG, Level.INFO)) {
-                        logResult = logSession.branch("requestTime", requestTime)
+                        reqTracer = logSession.branch("requestTime", requestTime)
                                 .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     }
                 }
                 
-                if (logResult != null && logResult.ready(LOG, Level.INFO)) LOG.info(logResult
+                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .put("correlationId", taskId)
-                        .text("initCallbackConsumer() - task[${correlationId}] receives a result")
-                        .stringify());
-
-                if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
                         .put("bodyLength", (content != null ? content.length : -1))
-                        .text("initCallbackConsumer() - result body length")
+                        .text("initCallbackConsumer() - task[${correlationId}] receives a result (size: ${bodyLength})")
                         .stringify());
 
                 OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
-                    if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
+                    if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - task[${correlationId}] not found, skipped")
                         .stringify());
                 } else {
-                    if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
+                    if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .put("correlationId", taskId)
-                        .text("initCallbackConsumer() - push Message object to task[${correlationId}]")
+                        .text("initCallbackConsumer() - push message to task[${correlationId}] and return")
                         .stringify());
-                    OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
-                    task.push(message);
-                    if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
-                        .put("correlationId", taskId)
-                        .text("initCallbackConsumer() - returned value of task[${correlationId}]")
-                        .stringify());
+                    task.push(new OpflowMessage(content, properties.getHeaders()));
                 }
                 return true;
             }
@@ -284,6 +279,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     if (responseAutoDelete != null) opts.put("autoDelete", responseAutoDelete);
                     opts.put("consumerLimit", CONSUMER_MAX);
                     opts.put("forceNewChannel", Boolean.FALSE);
+                    opts.put("reqTracerShared", Boolean.TRUE);
                 }
                 opts.put("binding", Boolean.FALSE);
                 opts.put("prefetchCount", prefetchCount);

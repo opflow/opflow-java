@@ -5,8 +5,8 @@ import com.rabbitmq.client.Channel;
 import java.io.IOException;
 import java.util.Map;
 
-public abstract class OpflowListener {
-    abstract public boolean processMessage(
+public interface OpflowListener {
+    public boolean processMessage(
             byte[] content,
             AMQP.BasicProperties properties,
             String queueName,

@@ -46,7 +46,9 @@ public class OpflowEngine implements AutoCloseable {
         "automaticRecoveryEnabled", "topologyRecoveryEnabled", "networkRecoveryInterval",
         "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
     };
-
+    
+    public final static String REQUEST_TRACER_NAME = "reqTracer";
+    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
     private final OpflowLogTracer logTracer;
     private final String instanceId;
@@ -505,6 +507,7 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Consumer[${consumerId}].consume() is invoked in Engine[${engineId}]")
                 .stringify());
         try {
+            final Boolean _reqTracerShared = Boolean.TRUE.equals(opts.get("reqTracerShared"));
             final boolean _forceNewConnection = Boolean.TRUE.equals(opts.get("forceNewConnection"));
             final Boolean _forceNewChannel = Boolean.TRUE.equals(opts.get("forceNewChannel"));
             final Channel _channel = getConsumingChannel(_forceNewConnection, _forceNewChannel);
@@ -633,7 +636,14 @@ public class OpflowEngine implements AutoCloseable {
                                     .text("Request[${requestId}][${requestTime}] invoke listener.processMessage()")
                                     .stringify());
                             
-                            boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag, null);
+                            Map<String, Object> extras = null;
+                            if (_reqTracerShared) {
+                                extras = OpflowObjectTree.buildMap(false)
+                                        .put(REQUEST_TRACER_NAME, reqTracer)
+                                        .toMap();
+                            }
+                            
+                            boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag, extras);
                             
                             if (captured) {
                                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
