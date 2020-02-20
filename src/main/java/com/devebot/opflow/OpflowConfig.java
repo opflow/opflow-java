@@ -543,18 +543,7 @@ public class OpflowConfig {
     }
     
     public static Map<String, Object> mergeConfiguration(Map<String, Object> target, Map<String, Object> source) {
-        if (target == null) target = new HashMap<>();
-        if (source == null) return target;
-        for (String key : source.keySet()) {
-            if (source.get(key) instanceof Map && target.get(key) instanceof Map) {
-                Map<String, Object> targetChild = (Map<String, Object>) target.get(key);
-                Map<String, Object> sourceChild = (Map<String, Object>) source.get(key);
-                target.put(key, mergeConfiguration(targetChild, sourceChild));
-            } else {
-                target.put(key, source.get(key));
-            }
-        }
-        return target;
+        return OpflowUtil.mergeObjectTree(target, source);
     }
     
     public static Properties filterProperties(Properties source, String filter) {

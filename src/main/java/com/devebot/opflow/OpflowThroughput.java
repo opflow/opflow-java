@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowMathUtil;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -194,10 +195,12 @@ public class OpflowThroughput {
             this.active = active;
         }
 
-        public Map<String, Info> export() {
-            Map<String, Info> result = new HashMap<>();
+        public Map<String, Object> export() {
+            Map<String, Object> result = new HashMap<>();
             for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
-                result.put(entry.getKey(), entry.getValue().export());
+                result.put(entry.getKey(), OpflowObjectTree.buildMap()
+                        .put("throughput", entry.getValue().export())
+                        .toMap());
             }
             return result;
         }

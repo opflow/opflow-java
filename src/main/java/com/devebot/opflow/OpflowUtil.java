@@ -259,6 +259,21 @@ public class OpflowUtil {
         return buildMap(listener, defaultOpts, true);
     }
     
+    public static Map<String, Object> mergeObjectTree(Map<String, Object> target, Map<String, Object> source) {
+        if (target == null) target = new HashMap<>();
+        if (source == null) return target;
+        for (String key : source.keySet()) {
+            if (source.get(key) instanceof Map && target.get(key) instanceof Map) {
+                Map<String, Object> targetChild = (Map<String, Object>) target.get(key);
+                Map<String, Object> sourceChild = (Map<String, Object>) source.get(key);
+                target.put(key, mergeObjectTree(targetChild, sourceChild));
+            } else {
+                target.put(key, source.get(key));
+            }
+        }
+        return target;
+    }
+    
     public static Map<String, Object> ensureNotNull(Map<String, Object> opts) {
         return (opts == null) ? new HashMap<String, Object>() : opts;
     }

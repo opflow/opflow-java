@@ -46,6 +46,8 @@ public class OpflowCommander implements AutoCloseable {
 
     public final static String PARAM_RESERVED_WORKER_ENABLED = "reservedWorkerEnabled";
 
+    public final static boolean KEEP_LOGIC_CLEARLY = false;
+    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
 
     private final boolean strictMode;
@@ -747,50 +749,49 @@ public class OpflowCommander implements AutoCloseable {
         public Map<String, Object> traffic(Map<String, Boolean> options) {
             final Map<String, Boolean> flag = (options != null) ? options : new HashMap<String, Boolean>();
             
-            OpflowObjectTree.Builder root = OpflowObjectTree.buildMap();
+            Map<String, Object> metrics = OpflowObjectTree.buildMap().toMap();
             
-            Map<String, Object> metrics = null;
+            // update the RPC invocation counters
             if (measurer != null) {
                 OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter("commander");
                 if (counter != null) {
-                    metrics = counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE));
+                    OpflowUtil.mergeObjectTree(metrics, counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE)));
                 }
             }
             
-            if (metrics == null) {
-                metrics = OpflowObjectTree.buildMap().toMap();
-            }
-            
-            // throughput of RPC invocation
+            // update the RPC invocation throughput
             if (speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
                 if (speedMeter.isActive()) {
-                    Map<String, OpflowThroughput.Info> loadAverages = speedMeter.export();
-                    for (Map.Entry<String, OpflowThroughput.Info> load : loadAverages.entrySet()) {
-                        String fieldName = load.getKey();
-                        Object fieldData = metrics.get(fieldName);
-                        if (fieldData instanceof Map) {
-                            Map<String, Object> info = (Map<String, Object>) fieldData;
-                            info.put("throughput", load.getValue());
-                        }
-                    }
+                    OpflowUtil.mergeObjectTree(metrics, speedMeter.export());
                 }
             }
             
             // size of the callback queue
-            Map<String, Object> parentOfQueueInfo;
-            if (metrics.containsKey(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER)) {
-                parentOfQueueInfo = (Map<String, Object>) metrics.get(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER);
+            if (KEEP_LOGIC_CLEARLY) {
+                OpflowUtil.mergeObjectTree(metrics, OpflowObjectTree.buildMap()
+                        .put(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER, OpflowObjectTree.buildMap()
+                                .put("waitingReqTotal", OpflowObjectTree.buildMap()
+                                        .put("current", rpcMaster.getActiveRequestTotal())
+                                        .put("top", rpcMaster.getMaxWaitingRequests())
+                                        .toMap())
+                                .toMap())
+                        .toMap());
             } else {
-                parentOfQueueInfo = OpflowObjectTree.buildMap().toMap();
-                metrics.put(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER, parentOfQueueInfo);
+                Map<String, Object> parentOfQueueInfo;
+                if (metrics.containsKey(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER)) {
+                    parentOfQueueInfo = (Map<String, Object>) metrics.get(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER);
+                } else {
+                    parentOfQueueInfo = OpflowObjectTree.buildMap().toMap();
+                    metrics.put(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER, parentOfQueueInfo);
+                }
+                Map<String, Object> rpcWaitingRequests = OpflowObjectTree.buildMap()
+                        .put("current", rpcMaster.getActiveRequestTotal())
+                        .put("top", rpcMaster.getMaxWaitingRequests())
+                        .toMap();
+                parentOfQueueInfo.put("waitingReqTotal", rpcWaitingRequests);
             }
-            Map<String, Object> rpcWaitingRequests = OpflowObjectTree.buildMap()
-                    .put("current", rpcMaster.getActiveRequestTotal())
-                    .put("top", rpcMaster.getMaxWaitingRequests())
-                    .toMap();
-            parentOfQueueInfo.put("waitingReqTotal", rpcWaitingRequests);
             
-            return root.put("metrics", metrics).toMap();
+            return OpflowObjectTree.buildMap().put("metrics", metrics).toMap();
         }
         
         protected static List<Map<String, Object>> renderRpcInvocationHandlers(Map<String, RpcInvocationHandler> handlers) {
