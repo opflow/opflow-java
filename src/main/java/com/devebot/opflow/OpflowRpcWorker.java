@@ -28,6 +28,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
     
+    private final Integer prefetchCount;
     private final String operatorName;
     private final String responseName;
     
@@ -55,6 +56,12 @@ public class OpflowRpcWorker implements AutoCloseable {
         
         if (operatorName != null && responseName != null && operatorName.equals(responseName)) {
             throw new OpflowBootstrapException("operatorName should be different with responseName");
+        }
+        
+        if (params.get("prefetchCount") != null && params.get("prefetchCount") instanceof Integer) {
+            prefetchCount = (Integer) params.get("prefetchCount");
+        } else {
+            prefetchCount = null;
         }
         
         engine = new OpflowEngine(brokerParams);
@@ -134,7 +141,8 @@ public class OpflowRpcWorker implements AutoCloseable {
                     AMQP.BasicProperties properties,
                     String queueName,
                     Channel channel,
-                    String consumerTag
+                    String consumerTag,
+                    Map<String, Object> extras
             ) throws IOException {
                 Map<String, Object> headers = properties.getHeaders();
                 OpflowMessage request = new OpflowMessage(body, headers);
@@ -144,13 +152,13 @@ public class OpflowRpcWorker implements AutoCloseable {
                 String requestTime = OpflowUtil.getRequestTime(headers, false);
                 String[] requestTags = OpflowUtil.getRequestTags(headers);
 
-                OpflowLogTracer logRequest = null;
+                OpflowLogTracer reqTracer = null;
                 if (logProcess.ready(LOG, Level.INFO)) {
-                    logRequest = logProcess.branch("requestTime", requestTime)
+                    reqTracer = logProcess.branch("requestTime", requestTime)
                             .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                 }
 
-                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .put("routineId", routineId)
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}] receives a new RPC request")
                         .stringify());
@@ -163,7 +171,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
                 }
-                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .text("Request[${requestId}][${requestTime}] - RPC request processing has completed")
                         .stringify());
                 return count > 0;
@@ -175,6 +183,9 @@ public class OpflowRpcWorker implements AutoCloseable {
                 opts.put("queueName", operatorName);
                 opts.put("replyTo", responseName);
                 opts.put("binding", Boolean.TRUE);
+                if (prefetchCount != null) {
+                    opts.put("prefetchCount", prefetchCount);
+                }
             }
         }).toMap());
         if (logProcess.ready(LOG, Level.INFO)) LOG.info(logProcess

@@ -6,6 +6,7 @@ import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowKeytool;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BlockedListener;
@@ -45,7 +46,9 @@ public class OpflowEngine implements AutoCloseable {
         "automaticRecoveryEnabled", "topologyRecoveryEnabled", "networkRecoveryInterval",
         "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
     };
-
+    
+    public final static String REQUEST_TRACER_NAME = "reqTracer";
+    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
     private final OpflowLogTracer logTracer;
     private final String instanceId;
@@ -427,46 +430,49 @@ public class OpflowEngine implements AutoCloseable {
         produce(body, headers, null, override, null);
     }
     
-    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, OpflowLogTracer logRequest) {
-        produce(body, headers, propBuilder, null, logRequest);
+    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, OpflowLogTracer reqTracer) {
+        produce(body, headers, propBuilder, null, reqTracer);
     }
     
-    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, Map<String, Object> override, OpflowLogTracer logRequest) {
+    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, Map<String, Object> override, OpflowLogTracer reqTracer) {
         propBuilder = (propBuilder == null) ? new AMQP.BasicProperties.Builder() : propBuilder;
         
         try {
-            String customKey = this.routingKey;
-            if (override != null && override.get("routingKey") != null) {
-                customKey = (String) override.get("routingKey");
-            }
-            
             String appId = this.applicationId;
-            if (override != null && override.get("applicationId") != null) {
-                appId = (String) override.get("applicationId");
+            String requestKey = this.routingKey;
+            
+            if (override != null) {
+                if (override.get("routingKey") != null) {
+                    requestKey = (String) override.get("routingKey");
+                }
+
+                if (override.get("applicationId") != null) {
+                    appId = (String) override.get("applicationId");
+                }
+
+                if (override.get("correlationId") != null) {
+                    propBuilder.correlationId(override.get("correlationId").toString());
+                }
+
+                if (override.get("replyTo") != null) {
+                    propBuilder.replyTo(override.get("replyTo").toString());
+                }
             }
+            
             propBuilder.appId(appId);
-            
-            if (override != null && override.get("correlationId") != null) {
-                propBuilder.correlationId(override.get("correlationId").toString());
-            }
-            
-            if (override != null && override.get("replyTo") != null) {
-                propBuilder.replyTo(override.get("replyTo").toString());
-            }
-            
             propBuilder.headers(headers);
             
-            if (logTracer.ready(LOG, Level.INFO)) {
+            if (reqTracer == null && logTracer.ready(LOG, Level.INFO)) {
                 String requestId = OpflowUtil.getRequestId(headers);
                 String requestTime = OpflowUtil.getRequestTime(headers);
-                logRequest = logTracer.branch("requestTime", requestTime)
+                reqTracer = logTracer.branch("requestTime", requestTime)
                         .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
             }
             
-            if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+            if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                     .put("engineId", instanceId)
                     .put("appId", appId)
-                    .put("customKey", customKey)
+                    .put("customKey", requestKey)
                     .text("Request[${requestId}][${requestTime}] - Engine[${engineId}] - produce() is invoked")
                     .stringify());
             
@@ -474,16 +480,16 @@ public class OpflowEngine implements AutoCloseable {
             if (_channel == null || !_channel.isOpen()) {
                 throw new OpflowOperationException("Channel is null or has been closed");
             }
-            _channel.basicPublish(this.exchangeName, customKey, propBuilder.build(), body);
+            _channel.basicPublish(this.exchangeName, requestKey, propBuilder.build(), body);
         } catch (IOException exception) {
-            if (logRequest != null && logRequest.ready(LOG, Level.ERROR)) LOG.error(logRequest
+            if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Request[${requestId}][${requestTime}] - produce() has failed")
                     .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (logRequest != null && logRequest.ready(LOG, Level.ERROR)) LOG.error(logRequest
+            if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
                     .text("Request[${requestId}][${requestTime}] - produce() is timeout")
@@ -501,6 +507,7 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Consumer[${consumerId}].consume() is invoked in Engine[${engineId}]")
                 .stringify());
         try {
+            final Boolean _reqTracerShared = Boolean.TRUE.equals(opts.get("reqTracerShared"));
             final boolean _forceNewConnection = Boolean.TRUE.equals(opts.get("forceNewConnection"));
             final Boolean _forceNewChannel = Boolean.TRUE.equals(opts.get("forceNewChannel"));
             final Channel _channel = getConsumingChannel(_forceNewConnection, _forceNewChannel);
@@ -600,10 +607,10 @@ public class OpflowEngine implements AutoCloseable {
                     final String requestId = OpflowUtil.getRequestId(headers, false);
                     final String requestTime = OpflowUtil.getRequestTime(headers, false);
                     
-                    final OpflowLogTracer logRequest = logConsume.branch("requestTime", requestTime)
+                    final OpflowLogTracer reqTracer = logConsume.branch("requestTime", requestTime)
                             .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     
-                    if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                    if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("appId", properties.getAppId())
                             .put("deliveryTag", envelope.getDeliveryTag())
                             .put("consumerTag", consumerTag)
@@ -611,13 +618,13 @@ public class OpflowEngine implements AutoCloseable {
                             .stringify());
                     
                     if (body.length <= 4096) {
-                        if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+                        if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                 .put("bodyHead", new String(body, "UTF-8"))
                                 .put("bodyLength", body.length)
                                 .text("Request[${requestId}][${requestTime}] body head (4096 bytes)")
                                 .stringify());
                     } else {
-                        if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+                        if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                 .put("bodyLength", body.length)
                                 .text("Request[${requestId}][${requestTime}] body size too large (>4KB)")
                                 .stringify());
@@ -625,23 +632,30 @@ public class OpflowEngine implements AutoCloseable {
                     
                     try {
                         if (applicationId == null || applicationId.equals(properties.getAppId())) {
-                            if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+                            if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                     .text("Request[${requestId}][${requestTime}] invoke listener.processMessage()")
                                     .stringify());
                             
-                            boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag);
+                            Map<String, Object> extras = null;
+                            if (_reqTracerShared) {
+                                extras = OpflowObjectTree.buildMap(false)
+                                        .put(REQUEST_TRACER_NAME, reqTracer)
+                                        .toMap();
+                            }
+                            
+                            boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag, extras);
                             
                             if (captured) {
-                                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                         .text("Request[${requestId}][${requestTime}] has finished successfully")
                                         .stringify());
                             } else {
-                                if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                         .text("Request[${requestId}][${requestTime}] has not matched the criteria, skipped")
                                         .stringify());
                             }
                             
-                            if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+                            if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                     .put("deliveryTag", envelope.getDeliveryTag())
                                     .put("consumerTag", consumerTag)
                                     .text("Request[${requestId}][${requestTime}] invoke ACK")
@@ -649,7 +663,7 @@ public class OpflowEngine implements AutoCloseable {
                             
                             invokeAck(envelope, true);
                         } else {
-                            if (logRequest != null && logRequest.ready(LOG, Level.INFO)) LOG.info(logRequest
+                            if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                     .put("applicationId", applicationId)
                                     .text("Request[${requestId}][${requestTime}] has been rejected, mismatched applicationId")
                                     .stringify());
@@ -657,7 +671,7 @@ public class OpflowEngine implements AutoCloseable {
                         }
                     } catch (IOException ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
-                        if (logRequest != null && logRequest.ready(LOG, Level.ERROR)) LOG.error(logRequest
+                        if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
                                 .put("deliveryTag", envelope.getDeliveryTag())
                                 .put("consumerTag", consumerTag)
                                 .put("exceptionClass", ex.getClass().getName())

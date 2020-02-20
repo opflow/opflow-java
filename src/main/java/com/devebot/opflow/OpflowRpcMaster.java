@@ -4,6 +4,7 @@ import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRestrictionException;
+import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BlockedListener;
@@ -13,7 +14,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -206,7 +206,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
     }
 
-    private final Map<String, OpflowRpcRequest> tasks = new ConcurrentHashMap<>();
+    private final OpflowConcurrentMap<String, OpflowRpcRequest> tasks = new OpflowConcurrentMap<>();
     
     private final Object callbackConsumerLock = new Object();
     private volatile OpflowEngine.ConsumerInfo callbackConsumer;
@@ -225,47 +225,46 @@ public class OpflowRpcMaster implements AutoCloseable {
                     AMQP.BasicProperties properties,
                     String queueName,
                     Channel channel,
-                    String consumerTag
+                    String consumerTag,
+                    Map<String, Object> extras
             ) throws IOException {
                 String taskId = properties.getCorrelationId();
                 Map<String, Object> headers = properties.getHeaders();
-
-                String requestId = OpflowUtil.getRequestId(headers);
-                String requestTime = OpflowUtil.getRequestTime(headers);
                 
-                OpflowLogTracer logResult = null;
-                if (logSession.ready(LOG, Level.INFO)) {
-                    logResult = logSession.branch("requestTime", requestTime)
-                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                OpflowLogTracer reqTracer = null;
+                
+                if (extras != null && extras.containsKey(OpflowEngine.REQUEST_TRACER_NAME)) {
+                    reqTracer = (OpflowLogTracer) extras.get(OpflowEngine.REQUEST_TRACER_NAME);
                 }
+                
+                if (reqTracer == null) {
+                    String requestId = OpflowUtil.getRequestId(headers);
+                    String requestTime = OpflowUtil.getRequestTime(headers);
 
-                if (logResult != null && logResult.ready(LOG, Level.INFO)) LOG.info(logResult
+                    if (logSession.ready(LOG, Level.INFO)) {
+                        reqTracer = logSession.branch("requestTime", requestTime)
+                                .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    }
+                }
+                
+                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .put("correlationId", taskId)
-                        .text("initCallbackConsumer() - task[${correlationId}] receives a result")
-                        .stringify());
-
-                if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
                         .put("bodyLength", (content != null ? content.length : -1))
-                        .text("initCallbackConsumer() - result body length")
+                        .text("initCallbackConsumer() - task[${correlationId}] receives a result (size: ${bodyLength})")
                         .stringify());
 
                 OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
-                    if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
+                    if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - task[${correlationId}] not found, skipped")
                         .stringify());
                 } else {
-                    if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
+                    if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .put("correlationId", taskId)
-                        .text("initCallbackConsumer() - push Message object to task[${correlationId}]")
+                        .text("initCallbackConsumer() - push message to task[${correlationId}] and return")
                         .stringify());
-                    OpflowMessage message = new OpflowMessage(content, properties.getHeaders());
-                    task.push(message);
-                    if (logResult != null && logResult.ready(LOG, Level.DEBUG)) LOG.debug(logResult
-                        .put("correlationId", taskId)
-                        .text("initCallbackConsumer() - returned value of task[${correlationId}]")
-                        .stringify());
+                    task.push(new OpflowMessage(content, properties.getHeaders()));
                 }
                 return true;
             }
@@ -280,6 +279,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     if (responseAutoDelete != null) opts.put("autoDelete", responseAutoDelete);
                     opts.put("consumerLimit", CONSUMER_MAX);
                     opts.put("forceNewChannel", Boolean.FALSE);
+                    opts.put("reqTracerShared", Boolean.TRUE);
                 }
                 opts.put("binding", Boolean.FALSE);
                 opts.put("prefetchCount", prefetchCount);
@@ -363,7 +363,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             params.setRequestTTL(expiration + DELAY_TIMEOUT);
         }
         
-        final OpflowLogTracer logRequest = logTracer.branch("requestTime", params.getRequestTime())
+        final OpflowLogTracer reqTracer = logTracer.branch("requestTime", params.getRequestTime())
                 .branch("requestId", params.getRequestId(), params);
         
         if (timeoutMonitor == null) {
@@ -393,7 +393,9 @@ public class OpflowRpcMaster implements AutoCloseable {
             private OpflowLogTracer logTask = null;
             
             {
-                if (logRequest != null && logRequest.ready(LOG, Level.DEBUG)) logTask = logRequest.branch("taskId", taskId);
+                if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) {
+                    logTask = reqTracer.branch("taskId", taskId);
+                }
             }
             
             @Override
@@ -457,12 +459,12 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .correlationId(taskId);
         
         if (!consumerInfo.isFixedQueue()) {
-            if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+            if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                     .put("replyTo", consumerInfo.getQueueName())
                     .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
                     .stringify());
         } else {
-            if (logRequest != null && logRequest.ready(LOG, Level.TRACE)) LOG.trace(logRequest
+            if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                     .put("replyTo", consumerInfo.getQueueName())
                     .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
                     .stringify());
@@ -475,11 +477,19 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         measurer.countRpcInvocation("rpc_master", "request", routineId, "begin");
         
-        engine.produce(body, headers, builder, null, logRequest);
+        engine.produce(body, headers, builder, null, reqTracer);
         
         return task;
     }
-
+    
+    public int getActiveRequestTotal() {
+        return tasks.size();
+    }
+    
+    public int getMaxWaitingRequests() {
+        return tasks.getMaxSize();
+    }
+    
     public class State extends OpflowEngine.State {
         public State(OpflowEngine.State superState) {
             super(superState);

@@ -274,6 +274,7 @@ public class OpflowConfig {
                 componentCfg.put("enabled", componentNode.get("enabled"));
                 if ("rpcWorker".equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        "prefetchCount",
                         "operatorName",
                         "responseName"
                     });
