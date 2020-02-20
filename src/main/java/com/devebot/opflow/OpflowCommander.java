@@ -802,7 +802,10 @@ public class OpflowCommander implements AutoCloseable {
                 parentOfQueueInfo.put("waitingReqTotal", rpcWaitingRequests);
             }
             
-            return OpflowObjectTree.buildMap().put("metrics", metrics).toMap();
+            return OpflowObjectTree.buildMap()
+                    .put("metadata", speedMeter.getMetadata())
+                    .put("metrics", metrics)
+                    .toMap();
         }
         
         protected static List<Map<String, Object>> renderRpcInvocationHandlers(Map<String, RpcInvocationHandler> handlers) {

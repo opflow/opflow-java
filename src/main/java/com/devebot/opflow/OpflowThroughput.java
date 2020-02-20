@@ -42,8 +42,8 @@ public class OpflowThroughput {
     }
     
     public static class Info {
-        public Top finest;
-        public double[] speeds;
+        public double[] timeline;
+        public Top top;
     }
     
     private static class Store extends Signal {
@@ -144,14 +144,14 @@ public class OpflowThroughput {
             Info result = new Info();
             // extract the top
             if (top != null) {
-                result.finest = new Top(OpflowMathUtil.round(top.rate, 1), top.time);
+                result.top = new Top(OpflowMathUtil.round(top.rate, 1), top.time);
             }
-            // generate the speeds
-            result.speeds = new double[length];
+            // generate the timeline
+            result.timeline = new double[length];
             for (int i=0; i<length; i++) {
                 Store item = stores[getIndex(i)];
                 if (item != null) {
-                    result.speeds[i] = OpflowMathUtil.round(item.rate, 1);
+                    result.timeline[i] = OpflowMathUtil.round(item.rate, 1);
                 }
             }
             return result;
@@ -203,6 +203,16 @@ public class OpflowThroughput {
             this.active = active;
         }
 
+        public Map<String, Object> getMetadata() {
+            return OpflowObjectTree.buildMap()
+                    .put("throughput", OpflowObjectTree.buildMap()
+                            .put("active", active)
+                            .put("interval", interval)
+                            .put("length", length)
+                            .toMap())
+                    .toMap();
+        }
+        
         public Map<String, Object> export() {
             Map<String, Object> result = new HashMap<>();
             for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
