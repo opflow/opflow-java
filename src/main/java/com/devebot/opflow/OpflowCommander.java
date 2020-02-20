@@ -756,31 +756,39 @@ public class OpflowCommander implements AutoCloseable {
                     metrics = counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE));
                 }
             }
+            
             if (metrics == null) {
                 metrics = OpflowObjectTree.buildMap().toMap();
             }
             
-            // throughput of RPC
+            // throughput of RPC invocation
             if (speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
                 if (speedMeter.isActive()) {
                     Map<String, OpflowThroughput.Info> loadAverages = speedMeter.export();
                     for (Map.Entry<String, OpflowThroughput.Info> load : loadAverages.entrySet()) {
-                        if (metrics.containsKey(load.getKey())) {
-                            Map<String, Object> info = (Map<String, Object>) metrics.get(load.getKey());
+                        String fieldName = load.getKey();
+                        Object fieldData = metrics.get(fieldName);
+                        if (fieldData instanceof Map) {
+                            Map<String, Object> info = (Map<String, Object>) fieldData;
                             info.put("throughput", load.getValue());
                         }
                     }
-                } else {
-                    metrics.put("speedMeter", "disabled");
                 }
             }
             
             // size of the callback queue
+            Map<String, Object> parentOfQueueInfo;
+            if (metrics.containsKey(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER)) {
+                parentOfQueueInfo = (Map<String, Object>) metrics.get(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER);
+            } else {
+                parentOfQueueInfo = OpflowObjectTree.buildMap().toMap();
+                metrics.put(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER, parentOfQueueInfo);
+            }
             Map<String, Object> rpcWaitingRequests = OpflowObjectTree.buildMap()
                     .put("current", rpcMaster.getActiveRequestTotal())
                     .put("top", rpcMaster.getMaxWaitingRequests())
                     .toMap();
-            metrics.put("rpcWaitingRequests", rpcWaitingRequests);
+            parentOfQueueInfo.put("waitingReqTotal", rpcWaitingRequests);
             
             return root.put("metrics", metrics).toMap();
         }
