@@ -103,7 +103,7 @@ public class OpflowThroughput {
             }
         }
 
-        public void update(Signal point) {
+        public synchronized void update(Signal point) {
             if (point == null) {
                 return;
             }
@@ -132,7 +132,14 @@ public class OpflowThroughput {
 
             stores[next()] = nextNode;
         }
-
+        
+        public synchronized void reset() {
+            top = null;
+            for (int i=0; i<length; i++) {
+                stores[i] = null;
+            }
+        }
+        
         public Info export() {
             Info result = new Info();
             // extract the top
@@ -163,6 +170,7 @@ public class OpflowThroughput {
         private volatile boolean running = false;
         private volatile boolean active = false;
 
+        private final Object lock = new Object();
         private final Map<String, Gauge> gauges = new HashMap<>();
 
         public Meter(Map<String, Object> kwargs) {
@@ -210,6 +218,16 @@ public class OpflowThroughput {
             return this;
         }
 
+        public void reset() {
+            if (isActive()) {
+                synchronized (lock) {
+                    for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                        entry.getValue().reset();
+                    }
+                }
+            }
+        }
+        
         public synchronized void start() {
             if (!this.running) {
                 if (this.timer == null) {
@@ -220,8 +238,10 @@ public class OpflowThroughput {
                         @Override
                         public void run() {
                             if (isActive()) {
-                                for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
-                                    entry.getValue().update();
+                                synchronized (lock) {
+                                    for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                                        entry.getValue().update();
+                                    }
                                 }
                             }
                         }

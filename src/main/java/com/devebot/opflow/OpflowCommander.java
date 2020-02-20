@@ -216,7 +216,7 @@ public class OpflowCommander implements AutoCloseable {
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcMaster, handlers, rpcWatcher, speedMeter);
 
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(instanceId, measurer, restrictor, rpcMaster, handlers);
+            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(instanceId, measurer, restrictor, rpcMaster, handlers, speedMeter);
             
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
                     .put("instanceId", instanceId)
@@ -486,17 +486,21 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRestrictorMaster restrictor;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
+        private final OpflowThroughput.Meter speedMeter;
         
         public OpflowTaskSubmitterMaster(String instanceId,
                 OpflowPromMeasurer measurer,
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcMaster rpcMaster,
-                Map<String, RpcInvocationHandler> mappings) {
+                Map<String, RpcInvocationHandler> mappings,
+                OpflowThroughput.Meter speedMeter
+        ) {
             this.instanceId = instanceId;
             this.measurer = measurer;
             this.restrictor = restrictor;
             this.rpcMaster = rpcMaster;
             this.handlers = mappings;
+            this.speedMeter = speedMeter;
             this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", instanceId);
         }
         
@@ -540,9 +544,16 @@ public class OpflowCommander implements AutoCloseable {
         
         @Override
         public Map<String, Object> resetRpcInvocationCounter() {
-            return OpflowObjectTree.buildMap()
-                    .put("measurement", measurer.resetRpcInvocationCounter())
-                    .toMap();
+            if (measurer != null) {
+                measurer.resetRpcInvocationCounter();
+            }
+            if (speedMeter != null) {
+                speedMeter.reset();
+            }
+            if (rpcMaster != null) {
+                rpcMaster.resetCallbackQueueCounter();
+            }
+            return OpflowObjectTree.buildMap().put("acknowledged", true).toMap();
         }
         
         @Override

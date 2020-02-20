@@ -490,6 +490,10 @@ public class OpflowRpcMaster implements AutoCloseable {
         return tasks.getMaxSize();
     }
     
+    public void resetCallbackQueueCounter() {
+        tasks.resetMaxSize();
+    }
+    
     public class State extends OpflowEngine.State {
         public State(OpflowEngine.State superState) {
             super(superState);
