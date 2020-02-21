@@ -152,7 +152,7 @@ public class OpflowRestrictor {
             private long count = 0;
             private boolean running = true;
 
-            public String getInstanceId() {
+            public String getComponentId() {
                 return componentId;
             }
 
@@ -259,7 +259,7 @@ public class OpflowRestrictor {
                 pauseThread = new PauseThread(logTracer, pauseLock);
             }
             Map<String, Object> result = OpflowObjectTree.buildMap()
-                    .put("threadId", pauseThread.getInstanceId())
+                    .put("threadId", pauseThread.getComponentId())
                     .put("status", "skipped")
                     .toMap();
             if (!pauseThread.isLocked()) {
@@ -276,7 +276,7 @@ public class OpflowRestrictor {
 
         public synchronized Map<String, Object> unpause() {
             Map<String, Object> result = OpflowObjectTree.buildMap()
-                    .put("threadId", pauseThread.getInstanceId())
+                    .put("threadId", pauseThread.getComponentId())
                     .toMap();
             if (pauseThread == null) {
                 result.put("status", "free");

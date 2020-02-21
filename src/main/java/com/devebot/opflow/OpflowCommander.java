@@ -349,7 +349,7 @@ public class OpflowCommander implements AutoCloseable {
                     .stringify());
         }
 
-        public String getInstanceId() {
+        public String getComponentId() {
             return componentId;
         }
 
@@ -690,7 +690,7 @@ public class OpflowCommander implements AutoCloseable {
                             public void transform(Map<String, Object> opt2) {
                                 OpflowEngine engine = rpcMaster.getEngine();
                                 
-                                opt2.put(CONST.COMPONENT_ID, rpcMaster.getInstanceId());
+                                opt2.put(CONST.COMPONENT_ID, rpcMaster.getComponentId());
                                 opt2.put("applicationId", engine.getApplicationId());
                                 opt2.put("exchangeName", engine.getExchangeName());
 

@@ -628,7 +628,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         return engine;
     }
     
-    public String getInstanceId() {
+    public String getComponentId() {
         return componentId;
     }
     
