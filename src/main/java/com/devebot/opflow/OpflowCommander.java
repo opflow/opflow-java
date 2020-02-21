@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowCommander implements AutoCloseable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
         "configurer", "rpcMaster", "publisher"
     });
@@ -49,7 +51,7 @@ public class OpflowCommander implements AutoCloseable {
     public final static boolean KEEP_LOGIC_CLEARLY = false;
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
-
+    
     private final boolean strictMode;
     private final String instanceId;
     private final OpflowLogTracer logTracer;
@@ -91,7 +93,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         kwargs = OpflowUtil.ensureNotNull(kwargs);
         strictMode = OpflowUtil.getOptionValue(kwargs, "strictMode", Boolean.class, Boolean.FALSE);
-        instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
+        instanceId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", instanceId);
 
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -115,7 +117,7 @@ public class OpflowCommander implements AutoCloseable {
         
         if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
             restrictor = new OpflowRestrictorMaster(OpflowObjectTree.buildMap(restrictorCfg)
-                    .put("instanceId", instanceId)
+                    .put(CONST.COMPONENT_ID, instanceId)
                     .toMap());
         }
         
@@ -184,7 +186,7 @@ public class OpflowCommander implements AutoCloseable {
                 configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put("instanceId", instanceId);
+                        opts.put(CONST.COMPONENT_ID, instanceId);
                         opts.put("measurer", measurer);
                     }
                 }, configurerCfg).toMap());
@@ -193,7 +195,7 @@ public class OpflowCommander implements AutoCloseable {
                 rpcMaster = new OpflowRpcMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put("instanceId", instanceId);
+                        opts.put(CONST.COMPONENT_ID, instanceId);
                         opts.put("measurer", measurer);
                     }
                 }, rpcMasterCfg).toMap());
@@ -202,7 +204,7 @@ public class OpflowCommander implements AutoCloseable {
                 publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put("instanceId", instanceId);
+                        opts.put(CONST.COMPONENT_ID, instanceId);
                         opts.put("measurer", measurer);
                     }
                 }, publisherCfg).toMap());
@@ -211,7 +213,7 @@ public class OpflowCommander implements AutoCloseable {
             rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcMaster);
 
             rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowObjectTree.buildMap(rpcWatcherCfg)
-                    .put("instanceId", instanceId)
+                    .put(CONST.COMPONENT_ID, instanceId)
                     .toMap());
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcMaster, handlers, rpcWatcher, speedMeter);
@@ -219,7 +221,7 @@ public class OpflowCommander implements AutoCloseable {
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(instanceId, measurer, restrictor, rpcMaster, handlers, speedMeter);
             
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
-                    .put("instanceId", instanceId)
+                    .put(CONST.COMPONENT_ID, instanceId)
                     .toMap());
         } catch(OpflowBootstrapException exception) {
             this.close();
@@ -325,7 +327,7 @@ public class OpflowCommander implements AutoCloseable {
         public OpflowRestrictorMaster(Map<String, Object> options) {
             options = OpflowUtil.ensureNotNull(options);
 
-            instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
+            instanceId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
             logTracer = OpflowLogTracer.ROOT.branch("restrictorId", instanceId);
 
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -650,7 +652,7 @@ public class OpflowCommander implements AutoCloseable {
             root.put("commander", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
-                    opts.put("instanceId", instanceId);
+                    opts.put(CONST.COMPONENT_ID, instanceId);
 
                     // restrictor information
                     if (checkOption(flag, SCOPE_INFO)) {
@@ -688,7 +690,7 @@ public class OpflowCommander implements AutoCloseable {
                             public void transform(Map<String, Object> opt2) {
                                 OpflowEngine engine = rpcMaster.getEngine();
                                 
-                                opt2.put("instanceId", rpcMaster.getInstanceId());
+                                opt2.put(CONST.COMPONENT_ID, rpcMaster.getInstanceId());
                                 opt2.put("applicationId", engine.getApplicationId());
                                 opt2.put("exchangeName", engine.getExchangeName());
 

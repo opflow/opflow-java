@@ -38,7 +38,8 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowEngine implements AutoCloseable {
-
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+    
     public static final String[] PARAMETER_NAMES = new String[] {
         "uri", "host", "port", "virtualHost", "username", "password", "channelMax", "frameMax", "heartbeat",
         "threadPoolType", "threadPoolSize",
@@ -84,7 +85,7 @@ public class OpflowEngine implements AutoCloseable {
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
+        instanceId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("engineId", instanceId);

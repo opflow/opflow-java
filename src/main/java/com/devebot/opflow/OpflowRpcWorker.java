@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowRpcWorker implements AutoCloseable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcWorker.class);
     
     private final String instanceId;
@@ -35,7 +36,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
+        instanceId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", instanceId);
@@ -46,7 +47,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put("instanceId", instanceId);
+        brokerParams.put(CONST.COMPONENT_ID, instanceId);
         brokerParams.put("measurer", measurer);
         brokerParams.put("mode", "rpc_worker");
         brokerParams.put("exchangeType", "direct");

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
  * @author acegik
  */
 public class OpflowRestServer implements AutoCloseable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRestServer.class);
 
     private final String instanceId;
@@ -53,7 +54,7 @@ public class OpflowRestServer implements AutoCloseable {
             Map<String, Object> kwargs) throws OpflowBootstrapException {
         kwargs = OpflowUtil.ensureNotNull(kwargs);
         
-        instanceId = OpflowUtil.getOptionField(kwargs, "instanceId", true);
+        instanceId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
         enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", null), Boolean.class);
         host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();
         port = OpflowUtil.detectFreePort(kwargs, "ports", new Integer[] {

@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowServerlet implements AutoCloseable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+    
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
         "configurer", "rpcWorker", "subscriber"
     });
@@ -73,7 +75,7 @@ public class OpflowServerlet implements AutoCloseable {
         
         this.kwargs = OpflowUtil.ensureNotNull(kwargs);
         
-        instanceId = OpflowUtil.getOptionField(this.kwargs, "instanceId", true);
+        instanceId = OpflowUtil.getOptionField(this.kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", instanceId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -146,7 +148,7 @@ public class OpflowServerlet implements AutoCloseable {
         try {
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
                 String pubsubHandlerId = OpflowUUID.getBase64ID();
-                configurerCfg.put("instanceId", pubsubHandlerId);
+                configurerCfg.put(CONST.COMPONENT_ID, pubsubHandlerId);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new configurer[${pubsubHandlerId}]")
@@ -161,7 +163,7 @@ public class OpflowServerlet implements AutoCloseable {
 
             if (OpflowUtil.isComponentEnabled(rpcWorkerCfg)) {
                 String rpcWorkerId = OpflowUUID.getBase64ID();
-                rpcWorkerCfg.put("instanceId", rpcWorkerId);
+                rpcWorkerCfg.put(CONST.COMPONENT_ID, rpcWorkerId);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("rpcWorkerId", rpcWorkerId)
                         .text("Serverlet[${serverletId}] creates a new rpcWorker[${rpcWorkerId}]")
@@ -191,7 +193,7 @@ public class OpflowServerlet implements AutoCloseable {
             
             if (rpcWorker != null || subscriber != null) {
                 instantiator = new Instantiator(rpcWorker, subscriber, OpflowObjectTree.buildMap(false)
-                        .put("instanceId", instanceId)
+                        .put(CONST.COMPONENT_ID, instanceId)
                         .toMap());
             }
         } catch(OpflowBootstrapException exception) {
@@ -354,7 +356,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Both of RpcWorker and subscriber must not be null");
             }
             options = OpflowUtil.ensureNotNull(options);
-            final String instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
+            final String instanceId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
             this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", instanceId);
             this.rpcWorker = worker;
             this.rpcListener = new OpflowRpcListener() {
@@ -420,9 +422,9 @@ public class OpflowServerlet implements AutoCloseable {
                                 @Override
                                 public void transform(Map<String, Object> opts) {
                                     OpflowEngine engine = rpcWorker.getEngine();
-                                    opts.put("instanceId", instanceId);
+                                    opts.put(CONST.COMPONENT_ID, instanceId);
                                     opts.put("rpcWorker", OpflowObjectTree.buildMap()
-                                            .put("instanceId", rpcWorker.getIntanceId())
+                                            .put(CONST.COMPONENT_ID, rpcWorker.getIntanceId())
                                             .put("applicationId", engine.getApplicationId())
                                             .put("exchangeName", engine.getExchangeName())
                                             .put("routingKey", engine.getRoutingKey())

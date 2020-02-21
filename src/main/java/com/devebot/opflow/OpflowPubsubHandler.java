@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowPubsubHandler implements AutoCloseable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
     private final String instanceId;
@@ -44,7 +45,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
+        instanceId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", instanceId);
         
         restrictor = new OpflowRestrictor.Valve();
@@ -55,7 +56,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put("instanceId", instanceId);
+        brokerParams.put(CONST.COMPONENT_ID, instanceId);
         brokerParams.put("mode", "pubsub");
         brokerParams.put("exchangeType", "direct");
         

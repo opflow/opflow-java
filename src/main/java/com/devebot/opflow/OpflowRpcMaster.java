@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowRpcMaster implements AutoCloseable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
     
     private final static long DELAY_TIMEOUT = 1000;
@@ -62,7 +63,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
+        instanceId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
         restrictor = new OpflowRestrictor.Valve();
@@ -75,7 +76,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put("instanceId", instanceId);
+        brokerParams.put(CONST.COMPONENT_ID, instanceId);
         brokerParams.put("measurer", measurer);
         brokerParams.put("mode", "rpc_master");
         brokerParams.put("exchangeType", "direct");
