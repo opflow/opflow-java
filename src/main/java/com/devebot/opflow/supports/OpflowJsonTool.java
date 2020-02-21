@@ -21,8 +21,9 @@ import java.util.Map;
  * @author drupalex
  */
 public class OpflowJsonTool {
-    private static final Gson GSON = new Gson();
-    private static final Gson PSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final String ISO8601_TEMPLATE = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    private static final Gson GSON = new GsonBuilder().setDateFormat(ISO8601_TEMPLATE).create();
+    private static final Gson PSON = new GsonBuilder().setDateFormat(ISO8601_TEMPLATE).setPrettyPrinting().create();
     
     public static String toString(Object jsonObj) {
         return toString(jsonObj, false);
