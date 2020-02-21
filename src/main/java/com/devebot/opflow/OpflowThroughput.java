@@ -64,10 +64,11 @@ public class OpflowThroughput {
         private final Store[] stores;
         private Store top = null;
         private int current = 0;
+        private int total = 0;
         private Source reader = null;
 
-        public Gauge(int size) {
-            this(size, null);
+        public Gauge(int length) {
+            this(length, null);
         }
         
         public Gauge(Source source) {
@@ -93,6 +94,9 @@ public class OpflowThroughput {
             current--;
             if (current < 0) {
                 current = length - 1;
+            }
+            if (total < length) {
+                total++;
             }
             return current;
         }
@@ -141,14 +145,24 @@ public class OpflowThroughput {
         }
         
         public Info export() {
+            return export(total);
+        }
+        
+        public Info export(int len) {
             Info result = new Info();
             // extract the top
             if (top != null) {
                 result.top = new Speed(OpflowMathUtil.round(top.rate, 1), top.time);
             }
             // generate the timeline
-            result.timeline = new Speed[length];
-            for (int i=0; i<length; i++) {
+            if (len <= 0) {
+                len = 1;
+            }
+            if (len > total) {
+                len = total;
+            }
+            result.timeline = new Speed[len];
+            for (int i=0; i<len; i++) {
                 Store item = stores[getIndex(i)];
                 if (item != null) {
                     result.timeline[i] = new Speed(OpflowMathUtil.round(item.rate, 1), item.time);
@@ -212,12 +226,16 @@ public class OpflowThroughput {
                             .toMap())
                     .toMap();
         }
-        
+
         public Map<String, Object> export() {
+            return export(length);
+        }
+
+        public Map<String, Object> export(int len) {
             Map<String, Object> result = new HashMap<>();
             for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
                 result.put(entry.getKey(), OpflowObjectTree.buildMap()
-                        .put("throughput", entry.getValue().export())
+                        .put("throughput", entry.getValue().export(len))
                         .toMap());
             }
             return result;
