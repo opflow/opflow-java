@@ -31,19 +31,19 @@ public class OpflowThroughput {
         }
     }
     
-    public static class Top {
+    public static class Speed {
         public double rate;
         public Date time;
 
-        public Top(double rate, Date time) {
+        public Speed(double rate, Date time) {
             this.rate = rate;
             this.time = time;
         }
     }
     
     public static class Info {
-        public double[] timeline;
-        public Top top;
+        public Speed[] timeline;
+        public Speed top;
     }
     
     private static class Store extends Signal {
@@ -144,21 +144,21 @@ public class OpflowThroughput {
             Info result = new Info();
             // extract the top
             if (top != null) {
-                result.top = new Top(OpflowMathUtil.round(top.rate, 1), top.time);
+                result.top = new Speed(OpflowMathUtil.round(top.rate, 1), top.time);
             }
             // generate the timeline
-            result.timeline = new double[length];
+            result.timeline = new Speed[length];
             for (int i=0; i<length; i++) {
                 Store item = stores[getIndex(i)];
                 if (item != null) {
-                    result.timeline[i] = OpflowMathUtil.round(item.rate, 1);
+                    result.timeline[i] = new Speed(OpflowMathUtil.round(item.rate, 1), item.time);
                 }
             }
             return result;
         }
         
-        public Top getTop() {
-            return new Top(top.rate, top.time);
+        public Speed getTop() {
+            return new Speed(top.rate, top.time);
         }
     }
     
