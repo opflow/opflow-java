@@ -473,8 +473,8 @@ public class OpflowCommander implements AutoCloseable {
 
             Pong pong = OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
             pong.getParameters().put("requestId", requestId);
-            pong.getParameters().put("startTime", OpflowDateTime.toISO8601UTC(startTime));
-            pong.getParameters().put("endTime", OpflowDateTime.toISO8601UTC(endTime));
+            pong.getParameters().put("startTime", startTime);
+            pong.getParameters().put("endTime", endTime);
             pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
             return pong;
         }
