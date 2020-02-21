@@ -41,7 +41,7 @@ public class OpflowServerlet implements AutoCloseable {
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
     
-    private final String instanceId;
+    private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
@@ -75,8 +75,8 @@ public class OpflowServerlet implements AutoCloseable {
         
         this.kwargs = OpflowUtil.ensureNotNull(kwargs);
         
-        instanceId = OpflowUtil.getOptionField(this.kwargs, CONST.COMPONENT_ID, true);
-        logTracer = OpflowLogTracer.ROOT.branch("serverletId", instanceId);
+        componentId = OpflowUtil.getOptionField(this.kwargs, CONST.COMPONENT_ID, true);
+        logTracer = OpflowLogTracer.ROOT.branch("serverletId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].new()")
@@ -193,7 +193,7 @@ public class OpflowServerlet implements AutoCloseable {
             
             if (rpcWorker != null || subscriber != null) {
                 instantiator = new Instantiator(rpcWorker, subscriber, OpflowObjectTree.buildMap(false)
-                        .put(CONST.COMPONENT_ID, instanceId)
+                        .put(CONST.COMPONENT_ID, componentId)
                         .toMap());
             }
         } catch(OpflowBootstrapException exception) {
@@ -205,7 +205,7 @@ public class OpflowServerlet implements AutoCloseable {
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
         
-        measurer.updateComponentInstance("serverlet", instanceId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("serverlet", componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
     
     public final void start() {
@@ -356,8 +356,8 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Both of RpcWorker and subscriber must not be null");
             }
             options = OpflowUtil.ensureNotNull(options);
-            final String instanceId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
-            this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", instanceId);
+            final String componentId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
+            this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", componentId);
             this.rpcWorker = worker;
             this.rpcListener = new OpflowRpcListener() {
                 @Override
@@ -422,7 +422,7 @@ public class OpflowServerlet implements AutoCloseable {
                                 @Override
                                 public void transform(Map<String, Object> opts) {
                                     OpflowEngine engine = rpcWorker.getEngine();
-                                    opts.put(CONST.COMPONENT_ID, instanceId);
+                                    opts.put(CONST.COMPONENT_ID, componentId);
                                     opts.put("rpcWorker", OpflowObjectTree.buildMap()
                                             .put(CONST.COMPONENT_ID, rpcWorker.getIntanceId())
                                             .put("applicationId", engine.getApplicationId())
@@ -680,6 +680,6 @@ public class OpflowServerlet implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance("serverlet", instanceId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("serverlet", componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

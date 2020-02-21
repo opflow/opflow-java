@@ -53,7 +53,7 @@ public class OpflowCommander implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
     
     private final boolean strictMode;
-    private final String instanceId;
+    private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowThroughput.Meter speedMeter;
@@ -93,8 +93,8 @@ public class OpflowCommander implements AutoCloseable {
         }
         kwargs = OpflowUtil.ensureNotNull(kwargs);
         strictMode = OpflowUtil.getOptionValue(kwargs, "strictMode", Boolean.class, Boolean.FALSE);
-        instanceId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
-        logTracer = OpflowLogTracer.ROOT.branch("commanderId", instanceId);
+        componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
+        logTracer = OpflowLogTracer.ROOT.branch("commanderId", componentId);
 
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}].new()")
@@ -117,7 +117,7 @@ public class OpflowCommander implements AutoCloseable {
         
         if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
             restrictor = new OpflowRestrictorMaster(OpflowObjectTree.buildMap(restrictorCfg)
-                    .put(CONST.COMPONENT_ID, instanceId)
+                    .put(CONST.COMPONENT_ID, componentId)
                     .toMap());
         }
         
@@ -127,7 +127,7 @@ public class OpflowCommander implements AutoCloseable {
         
         this.init(kwargs);
         
-        measurer.updateComponentInstance("commander", instanceId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("commander", componentId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}].new() end!")
@@ -186,7 +186,7 @@ public class OpflowCommander implements AutoCloseable {
                 configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, instanceId);
+                        opts.put(CONST.COMPONENT_ID, componentId);
                         opts.put("measurer", measurer);
                     }
                 }, configurerCfg).toMap());
@@ -195,7 +195,7 @@ public class OpflowCommander implements AutoCloseable {
                 rpcMaster = new OpflowRpcMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, instanceId);
+                        opts.put(CONST.COMPONENT_ID, componentId);
                         opts.put("measurer", measurer);
                     }
                 }, rpcMasterCfg).toMap());
@@ -204,7 +204,7 @@ public class OpflowCommander implements AutoCloseable {
                 publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, instanceId);
+                        opts.put(CONST.COMPONENT_ID, componentId);
                         opts.put("measurer", measurer);
                     }
                 }, publisherCfg).toMap());
@@ -213,15 +213,15 @@ public class OpflowCommander implements AutoCloseable {
             rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcMaster);
 
             rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowObjectTree.buildMap(rpcWatcherCfg)
-                    .put(CONST.COMPONENT_ID, instanceId)
+                    .put(CONST.COMPONENT_ID, componentId)
                     .toMap());
 
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(instanceId, measurer, restrictor, rpcMaster, handlers, rpcWatcher, speedMeter);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, rpcMaster, handlers, rpcWatcher, speedMeter);
 
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(instanceId, measurer, restrictor, rpcMaster, handlers, speedMeter);
+            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, rpcMaster, handlers, speedMeter);
             
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
-                    .put(CONST.COMPONENT_ID, instanceId)
+                    .put(CONST.COMPONENT_ID, componentId)
                     .toMap());
         } catch(OpflowBootstrapException exception) {
             this.close();
@@ -316,7 +316,7 @@ public class OpflowCommander implements AutoCloseable {
     private static class OpflowRestrictorMaster extends OpflowRestrictable.Runner implements AutoCloseable {
         private final static Logger LOG = LoggerFactory.getLogger(OpflowRestrictorMaster.class);
 
-        protected final String instanceId;
+        protected final String componentId;
         protected final OpflowLogTracer logTracer;
 
         private final OpflowRestrictor.OnOff onoffRestrictor;
@@ -327,8 +327,8 @@ public class OpflowCommander implements AutoCloseable {
         public OpflowRestrictorMaster(Map<String, Object> options) {
             options = OpflowUtil.ensureNotNull(options);
 
-            instanceId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
-            logTracer = OpflowLogTracer.ROOT.branch("restrictorId", instanceId);
+            componentId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
+            logTracer = OpflowLogTracer.ROOT.branch("restrictorId", componentId);
 
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .text("Restrictor[${restrictorId}].new()")
@@ -350,7 +350,7 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         public String getInstanceId() {
-            return instanceId;
+            return componentId;
         }
 
         public OpflowRestrictor.Valve getValveRestrictor() {
@@ -482,7 +482,7 @@ public class OpflowCommander implements AutoCloseable {
 
     private static class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
 
-        private final String instanceId;
+        private final String componentId;
         private final OpflowPromMeasurer measurer;
         private final OpflowLogTracer logTracer;
         private final OpflowRestrictorMaster restrictor;
@@ -490,20 +490,20 @@ public class OpflowCommander implements AutoCloseable {
         private final Map<String, RpcInvocationHandler> handlers;
         private final OpflowThroughput.Meter speedMeter;
         
-        public OpflowTaskSubmitterMaster(String instanceId,
+        public OpflowTaskSubmitterMaster(String componentId,
                 OpflowPromMeasurer measurer,
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcMaster rpcMaster,
                 Map<String, RpcInvocationHandler> mappings,
                 OpflowThroughput.Meter speedMeter
         ) {
-            this.instanceId = instanceId;
+            this.componentId = componentId;
             this.measurer = measurer;
             this.restrictor = restrictor;
             this.rpcMaster = rpcMaster;
             this.handlers = mappings;
             this.speedMeter = speedMeter;
-            this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", instanceId);
+            this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", componentId);
         }
         
         @Override
@@ -599,7 +599,7 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     private static class OpflowInfoCollectorMaster implements OpflowInfoCollector {
-        private final String instanceId;
+        private final String componentId;
         private final OpflowPromMeasurer measurer;
         private final OpflowRestrictorMaster restrictor;
         private final OpflowRpcWatcher rpcWatcher;
@@ -608,7 +608,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowThroughput.Meter speedMeter;
         private final Date startTime;
 
-        public OpflowInfoCollectorMaster(String instanceId,
+        public OpflowInfoCollectorMaster(String componentId,
                 OpflowPromMeasurer measurer,
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcMaster rpcMaster,
@@ -616,7 +616,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowRpcWatcher rpcWatcher,
                 OpflowThroughput.Meter speedMeter
         ) {
-            this.instanceId = instanceId;
+            this.componentId = componentId;
             this.measurer = measurer;
             this.restrictor = restrictor;
             this.rpcWatcher = rpcWatcher;
@@ -652,7 +652,7 @@ public class OpflowCommander implements AutoCloseable {
             root.put("commander", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
-                    opts.put(CONST.COMPONENT_ID, instanceId);
+                    opts.put(CONST.COMPONENT_ID, componentId);
 
                     // restrictor information
                     if (checkOption(flag, SCOPE_INFO)) {
@@ -1179,6 +1179,6 @@ public class OpflowCommander implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance("commander", instanceId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("commander", componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

@@ -21,7 +21,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcWatcher.class);
     
-    private final String instanceId;
+    private final String componentId;
     private final OpflowLogTracer logTracer;
     
     private final OpflowRpcChecker rpcChecker;
@@ -91,16 +91,16 @@ public class OpflowRpcWatcher implements AutoCloseable {
     
     public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker, Map<String, Object> kwargs) {
         if (kwargs == null) {
-            instanceId = OpflowUUID.getBase64ID();
+            componentId = OpflowUUID.getBase64ID();
             enabled = true;
             interval = RPC_DETECTION_INTERVAL;
         } else {
-            instanceId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
+            componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
             enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", Boolean.TRUE), Boolean.class);
             interval = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "interval", RPC_DETECTION_INTERVAL), Long.class);
         }
         
-        logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", instanceId);
+        logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", componentId);
         rpcChecker = _rpcChecker;
         timerTask = new MyTimerTask();
     }

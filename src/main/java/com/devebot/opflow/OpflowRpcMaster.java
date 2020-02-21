@@ -32,7 +32,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final static int PREFETCH_NUM = 1;
     private final static int CONSUMER_MAX = 1;
     
-    private final String instanceId;
+    private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowRestrictor.Valve restrictor;
@@ -63,12 +63,12 @@ public class OpflowRpcMaster implements AutoCloseable {
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
         restrictor = new OpflowRestrictor.Valve();
         
-        logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", instanceId);
+        logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new()")
@@ -76,7 +76,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put(CONST.COMPONENT_ID, instanceId);
+        brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put("measurer", measurer);
         brokerParams.put("mode", "rpc_master");
         brokerParams.put("exchangeType", "direct");
@@ -161,7 +161,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             monitorEnabled = true;
         }
         
-        monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId") : instanceId;
+        monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId") : componentId;
         
         if (params.get("monitorInterval") != null && params.get("monitorInterval") instanceof Integer) {
             monitorInterval = (Integer) params.get("monitorInterval");
@@ -196,7 +196,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].new() parameters")
                 .stringify());
         
-        measurer.updateComponentInstance("rpc_master", instanceId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("rpc_master", componentId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
@@ -629,7 +629,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     }
     
     public String getInstanceId() {
-        return instanceId;
+        return componentId;
     }
     
     public long getExpiration() {
@@ -654,6 +654,6 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance("rpc_master", instanceId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("rpc_master", componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

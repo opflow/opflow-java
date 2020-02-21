@@ -60,8 +60,8 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     }
     
     @Override
-    public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
-        Gauge.Child metric = assertComponentInstanceGauge().labels(instanceType, instanceId);
+    public void updateComponentInstance(String componentType, String componentId, GaugeAction action) {
+        Gauge.Child metric = assertComponentInstanceGauge().labels(componentType, componentId);
         switch(action) {
             case INC:
                 metric.inc();
@@ -75,8 +75,8 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     }
     
     @Override
-    public void removeComponentInstance(String instanceType, String instanceId) {
-        assertComponentInstanceGauge().remove(instanceType, instanceId);
+    public void removeComponentInstance(String componentType, String componentId) {
+        assertComponentInstanceGauge().remove(componentType, componentId);
     }
     
     private Gauge assertEngineConnectionGauge() {
@@ -117,8 +117,8 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     }
     
     @Override
-    public void updateActiveChannel(String instanceType, String instanceId, GaugeAction action) {
-        Gauge.Child metric = assertActiveChannelGauge().labels(instanceType, instanceId);
+    public void updateActiveChannel(String componentType, String componentId, GaugeAction action) {
+        Gauge.Child metric = assertActiveChannelGauge().labels(componentType, componentId);
         switch(action) {
             case INC:
                 metric.inc();

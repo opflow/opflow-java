@@ -52,7 +52,7 @@ public class OpflowEngine implements AutoCloseable {
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
     private final OpflowLogTracer logTracer;
-    private final String instanceId;
+    private final String componentId;
     private final OpflowPromMeasurer measurer;
     
     private String mode;
@@ -85,10 +85,10 @@ public class OpflowEngine implements AutoCloseable {
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
         
-        logTracer = OpflowLogTracer.ROOT.branch("engineId", instanceId);
+        logTracer = OpflowLogTracer.ROOT.branch("engineId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Engine[${engineId}].new()")
@@ -396,7 +396,7 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Engine[${engineId}].new() end!")
                 .stringify());
         
-        measurer.updateComponentInstance("engine", instanceId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("engine", componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     public String getExchangeName() {
@@ -471,7 +471,7 @@ public class OpflowEngine implements AutoCloseable {
             }
             
             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                    .put("engineId", instanceId)
+                    .put("engineId", componentId)
                     .put("appId", appId)
                     .put("customKey", requestKey)
                     .text("Request[${requestId}][${requestTime}] - Engine[${engineId}] - produce() is invoked")
@@ -1234,6 +1234,6 @@ public class OpflowEngine implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance("engine", instanceId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("engine", componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

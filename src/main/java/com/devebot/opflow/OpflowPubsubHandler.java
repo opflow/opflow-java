@@ -24,7 +24,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
-    private final String instanceId;
+    private final String componentId;
     private final OpflowLogTracer logTracer;
     
     private final OpflowRestrictor.Valve restrictor;
@@ -45,8 +45,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
-        logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", instanceId);
+        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", componentId);
         
         restrictor = new OpflowRestrictor.Valve();
 
@@ -56,7 +56,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put(CONST.COMPONENT_ID, instanceId);
+        brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put("mode", "pubsub");
         brokerParams.put("exchangeType", "direct");
         

@@ -20,13 +20,13 @@ public abstract class OpflowPromMeasurer {
     
     public static enum GaugeAction { INC, DEC }
     
-    public abstract void updateComponentInstance(String instanceType, String instanceId, GaugeAction action);
+    public abstract void updateComponentInstance(String componentType, String componentId, GaugeAction action);
     
-    public abstract void removeComponentInstance(String instanceType, String instanceId);
+    public abstract void removeComponentInstance(String componentType, String componentId);
     
     public abstract void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action);
     
-    public abstract void updateActiveChannel(String instanceType, String instanceId, GaugeAction action);
+    public abstract void updateActiveChannel(String componentType, String componentId, GaugeAction action);
     
     public abstract void countRpcInvocation(String moduleName, String eventName, String routineId, String status);
     
@@ -227,16 +227,16 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
+        public void updateComponentInstance(String componentType, String componentId, GaugeAction action) {
             if (shadow != null) {
-                shadow.removeComponentInstance(instanceType, instanceId);
+                shadow.removeComponentInstance(componentType, componentId);
             }
         }
 
         @Override
-        public void removeComponentInstance(String instanceType, String instanceId) {
+        public void removeComponentInstance(String componentType, String componentId) {
             if (shadow != null) {
-                shadow.removeComponentInstance(instanceType, instanceId);
+                shadow.removeComponentInstance(componentType, componentId);
             }
         }
 
@@ -248,9 +248,9 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void updateActiveChannel(String instanceType, String instanceId, GaugeAction action) {
+        public void updateActiveChannel(String componentType, String componentId, GaugeAction action) {
             if (shadow != null) {
-                shadow.updateActiveChannel(instanceType, instanceId, action);
+                shadow.updateActiveChannel(componentType, componentId, action);
             }
         }
 
@@ -308,11 +308,11 @@ public abstract class OpflowPromMeasurer {
     static class NullMeasurer extends OpflowPromMeasurer {
 
         @Override
-        public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
+        public void updateComponentInstance(String componentType, String componentId, GaugeAction action) {
         }
 
         @Override
-        public void removeComponentInstance(String instanceType, String instanceId) {
+        public void removeComponentInstance(String componentType, String componentId) {
         }
 
         @Override
@@ -320,7 +320,7 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void updateActiveChannel(String instanceType, String instanceId, GaugeAction action) {
+        public void updateActiveChannel(String componentType, String componentId, GaugeAction action) {
         }
 
         @Override
