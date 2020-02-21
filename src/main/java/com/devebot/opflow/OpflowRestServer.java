@@ -6,6 +6,14 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import io.undertow.Undertow;
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.AuthenticationMode;
+import io.undertow.security.handlers.AuthenticationCallHandler;
+import io.undertow.security.handlers.AuthenticationConstraintHandler;
+import io.undertow.security.handlers.AuthenticationMechanismsHandler;
+import io.undertow.security.handlers.SecurityInitialHandler;
+import io.undertow.security.idm.IdentityManager;
+import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.RoutingHandler;
@@ -20,8 +28,10 @@ import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +57,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final Thread shutdownHook;
     private Undertow server;
     private GracefulShutdownHandler shutdownHandler;
+    private OpflowIdentityManager identityManager;
     
     OpflowRestServer(OpflowInfoCollector _infoCollector,
             OpflowTaskSubmitter _taskSubmitter,
@@ -69,6 +80,8 @@ public class OpflowRestServer implements AutoCloseable {
                 close();
             }
         };
+        
+        identityManager = new OpflowIdentityManager();
         
         logTracer = OpflowLogTracer.ROOT.branch("restServerId", componentId);
         
@@ -140,10 +153,10 @@ public class OpflowRestServer implements AutoCloseable {
                         .setFallbackHandler(new PageNotFoundHandler());
 
                 shutdownHandler = new GracefulShutdownHandler(routes);
-
+                
                 server = Undertow.builder()
                         .addHttpListener(port, host)
-                        .setHandler(shutdownHandler)
+                        .setHandler(addSecurity(shutdownHandler, identityManager))
                         .build();
 
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -194,6 +207,19 @@ public class OpflowRestServer implements AutoCloseable {
             server.stop();
             server = null;
         }
+    }
+    
+    private static HttpHandler addSecurity(final HttpHandler toWrap, final IdentityManager identityManager) {
+        if (identityManager == null) {
+            return toWrap;
+        }
+        HttpHandler handler = toWrap;
+        handler = new AuthenticationCallHandler(handler);
+        handler = new AuthenticationConstraintHandler(handler);
+        final List<AuthenticationMechanism> mechanisms = Collections.<AuthenticationMechanism>singletonList(new BasicAuthenticationMechanism("Opflow-Realm"));
+        handler = new AuthenticationMechanismsHandler(handler, mechanisms);
+        handler = new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, identityManager, handler);
+        return handler;
     }
     
     protected void assertSystemShutdownHook() {
