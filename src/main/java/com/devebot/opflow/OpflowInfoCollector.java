@@ -12,6 +12,7 @@ public interface OpflowInfoCollector {
     public static final String SCOPE_LOAD_AVERAGE = "LOAD_AVERAGE";
     public static final String SCOPE_MESSAGE_RATE = "MESSAGE_RATE";
     public static final String SCOPE_THROUGHPUT = "THROUGHPUT";
+    public static final String SCOPE_LATEST_SPEED = "LATEST_SPEED";
 
     Map<String, Object> collect();
     Map<String, Object> collect(String scope);

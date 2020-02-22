@@ -775,7 +775,11 @@ public class OpflowCommander implements AutoCloseable {
             // update the RPC invocation throughput
             if (speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
                 if (speedMeter.isActive()) {
-                    OpflowUtil.mergeObjectTree(metrics, speedMeter.export());
+                    if (checkOption(flag, SCOPE_LATEST_SPEED)) {
+                        OpflowUtil.mergeObjectTree(metrics, speedMeter.export(1));
+                    } else {
+                        OpflowUtil.mergeObjectTree(metrics, speedMeter.export());
+                    }
                 }
             }
             
