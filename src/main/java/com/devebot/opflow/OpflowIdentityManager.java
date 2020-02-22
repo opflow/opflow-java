@@ -1,10 +1,12 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowObjectTree;
+import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
+import io.undertow.server.HttpServerExchange;
 
 import java.security.Principal;
 import java.util.Arrays;
@@ -52,6 +54,16 @@ public class OpflowIdentityManager implements IdentityManager {
         // TODO Auto-generated method stub
         return null;
     }
+    
+    public static String getUsername(HttpServerExchange exchange) {
+        final SecurityContext context = exchange.getSecurityContext();
+        if (context == null) return null;
+        final Account account = context.getAuthenticatedAccount();
+        if (account == null) return null;
+        final Principal principal = account.getPrincipal();
+        if (principal == null) return null;
+        return principal.getName();
+    }
 
     private boolean verifyCredential(Account account, Credential credential) {
         if (credential instanceof PasswordCredential) {
@@ -68,7 +80,6 @@ public class OpflowIdentityManager implements IdentityManager {
             return new Account() {
 
                 private final Principal principal = new Principal() {
-
                     @Override
                     public String getName() {
                         return id;
@@ -84,7 +95,6 @@ public class OpflowIdentityManager implements IdentityManager {
                 public Set<String> getRoles() {
                     return Collections.emptySet();
                 }
-
             };
         }
         return null;

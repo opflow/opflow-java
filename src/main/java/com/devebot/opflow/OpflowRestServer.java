@@ -8,10 +8,12 @@ import com.devebot.opflow.supports.OpflowObjectTree;
 import io.undertow.Undertow;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMode;
+import io.undertow.security.api.SecurityContext;
 import io.undertow.security.handlers.AuthenticationCallHandler;
 import io.undertow.security.handlers.AuthenticationConstraintHandler;
 import io.undertow.security.handlers.AuthenticationMechanismsHandler;
 import io.undertow.security.handlers.SecurityInitialHandler;
+import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
@@ -28,6 +30,7 @@ import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
 import java.nio.file.Paths;
+import java.security.Principal;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -340,6 +343,11 @@ public class OpflowRestServer implements AutoCloseable {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
+                if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                        .put("username", identityManager != null ? identityManager.getUsername(exchange) : null)
+                        .put("method", exchange.getRequestMethod())
+                        .text("RestServer[${restServerId}] - User[${username}] invokes [${method}] /traffic")
+                        .stringify());
                 Map<String, Object> body = null;
                 if (exchange.getRequestMethod().equalToString("PUT")) {
                     body = OpflowJsonTool.toObjectMap(exchange.getInputStream());
