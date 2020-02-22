@@ -54,7 +54,11 @@ public class OpflowIdentityManager implements IdentityManager {
         // TODO Auto-generated method stub
         return null;
     }
-    
+
+    public boolean isActive() {
+        return users.size() > 0;
+    }
+
     public static String getUsername(HttpServerExchange exchange) {
         final SecurityContext context = exchange.getSecurityContext();
         if (context == null) return null;
@@ -100,25 +104,21 @@ public class OpflowIdentityManager implements IdentityManager {
     }
     
     private Map<String, char[]> initUserMap() {
-        String[] propUsers = OpflowUtil.splitByComma(ENVTOOL.getSystemProperty("OPFLOW_SUPERADMIN", ""));
-        if (propUsers == null || propUsers.length == 0) {
-            propUsers = new String[] { "master:$2y$05$nntUsCdr33UxrV3UfWcVSOWHKIoEO.V/guH3aymzvC5IWfxjwffom" };
-        }
-        return toUserMap(propUsers);
+        return toUserMap(OpflowUtil.splitByComma(ENVTOOL.getSystemProperty("OPFLOW_SUPERADMIN", "")));
     }
     
     private Map<String, char[]> toUserMap(String[] userList) {
-        Map<String, char[]> users = new HashMap<>();
+        Map<String, char[]> _users = new HashMap<>();
         if (userList != null) {
             for (String user : userList) {
                 if (user != null) {
                     String[] pair = OpflowUtil.splitByComma(user, String.class, ":");
                     if (pair.length == 2) {
-                        users.put(pair[0], pair[1].toCharArray());
+                        _users.put(pair[0], pair[1].toCharArray());
                     }
                 }
             }
         }
-        return users;
+        return _users;
     }
 }

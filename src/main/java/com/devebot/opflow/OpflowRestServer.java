@@ -8,12 +8,10 @@ import com.devebot.opflow.supports.OpflowObjectTree;
 import io.undertow.Undertow;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.api.SecurityContext;
 import io.undertow.security.handlers.AuthenticationCallHandler;
 import io.undertow.security.handlers.AuthenticationConstraintHandler;
 import io.undertow.security.handlers.AuthenticationMechanismsHandler;
 import io.undertow.security.handlers.SecurityInitialHandler;
-import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
@@ -30,7 +28,6 @@ import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
 import java.nio.file.Paths;
-import java.security.Principal;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -212,8 +209,8 @@ public class OpflowRestServer implements AutoCloseable {
         }
     }
     
-    private static HttpHandler addSecurity(final HttpHandler toWrap, final IdentityManager identityManager) {
-        if (identityManager == null) {
+    private static HttpHandler addSecurity(final HttpHandler toWrap, final OpflowIdentityManager identityManager) {
+        if (identityManager == null || !identityManager.isActive()) {
             return toWrap;
         }
         HttpHandler handler = toWrap;
