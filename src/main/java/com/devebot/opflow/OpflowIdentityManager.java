@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.supports.OpflowObjectTree;
+import com.devebot.opflow.supports.OpflowCryptTool;
+import com.devebot.opflow.supports.OpflowEnvTool;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
@@ -9,8 +10,8 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 
 import java.security.Principal;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,15 +21,14 @@ import java.util.Set;
  */
 public class OpflowIdentityManager implements IdentityManager {
 
+    private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
+
     private final Map<String, char[]> users;
 
     OpflowIdentityManager() {
-        this(OpflowObjectTree.<char[]>buildMap()
-                .put("master", "Heuwnd9T4$".toCharArray())
-                .put("devops", "zaq123edcx".toCharArray())
-                .toMap());
+        this.users = initUserMap();
     }
-    
+
     OpflowIdentityManager(final Map<String, char[]> users) {
         this.users = users;
     }
@@ -69,8 +69,7 @@ public class OpflowIdentityManager implements IdentityManager {
         if (credential instanceof PasswordCredential) {
             char[] password = ((PasswordCredential) credential).getPassword();
             char[] expectedPassword = users.get(account.getPrincipal().getName());
-
-            return Arrays.equals(password, expectedPassword);
+            return OpflowCryptTool.checkPasswd(password, expectedPassword);
         }
         return false;
     }
@@ -98,5 +97,28 @@ public class OpflowIdentityManager implements IdentityManager {
             };
         }
         return null;
+    }
+    
+    private Map<String, char[]> initUserMap() {
+        String[] propUsers = OpflowUtil.splitByComma(ENVTOOL.getSystemProperty("OPFLOW_SUPERADMIN", ""));
+        if (propUsers == null || propUsers.length == 0) {
+            propUsers = new String[] { "master:$2y$05$nntUsCdr33UxrV3UfWcVSOWHKIoEO.V/guH3aymzvC5IWfxjwffom" };
+        }
+        return toUserMap(propUsers);
+    }
+    
+    private Map<String, char[]> toUserMap(String[] userList) {
+        Map<String, char[]> users = new HashMap<>();
+        if (userList != null) {
+            for (String user : userList) {
+                if (user != null) {
+                    String[] pair = OpflowUtil.splitByComma(user, String.class, ":");
+                    if (pair.length == 2) {
+                        users.put(pair[0], pair[1].toCharArray());
+                    }
+                }
+            }
+        }
+        return users;
     }
 }

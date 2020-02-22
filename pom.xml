@@ -93,6 +93,11 @@
             <version>${undertow.version}</version>
         </dependency>
         <dependency>
+            <groupId>at.favre.lib</groupId>
+            <artifactId>bcrypt</artifactId>
+            <version>0.9.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient</artifactId>
             <version>${prometheus.version}</version>
