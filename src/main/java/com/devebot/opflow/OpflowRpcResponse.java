@@ -15,6 +15,7 @@ import com.devebot.opflow.exception.OpflowOperationException;
  * @author drupalex
  */
 public class OpflowRpcResponse {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcResponse.class);
     private final OpflowLogTracer logTracer;
     private final Channel channel;
@@ -36,8 +37,8 @@ public class OpflowRpcResponse {
         this.requestId = OpflowUtil.getRequestId(headers, false);
         this.requestTime = OpflowUtil.getRequestTime(headers, false);
         
-        logTracer = OpflowLogTracer.ROOT.branch("requestTime", this.requestTime)
-                .branch("requestId", this.requestId, new OpflowLogTracer.OmitPingLogs(headers));
+        logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.requestTime)
+                .branch(CONST.REQUEST_ID, this.requestId, new OpflowLogTracer.OmitPingLogs(headers));
         
         if (properties.getReplyTo() != null) {
             this.replyQueueName = properties.getReplyTo();
@@ -170,10 +171,10 @@ public class OpflowRpcResponse {
         Map<String, Object> headers = new HashMap<>();
         headers.put("status", status);
         if (this.requestId != null) {
-            headers.put("requestId", this.requestId);
+            headers.put(CONST.REQUEST_ID, this.requestId);
         }
         if (this.requestTime != null) {
-            headers.put("requestTime", this.requestTime);
+            headers.put(CONST.REQUEST_TIME, this.requestTime);
         }
         if (this.messageScope != null) {
             headers.put("messageScope", this.messageScope);

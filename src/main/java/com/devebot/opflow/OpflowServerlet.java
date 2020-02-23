@@ -367,8 +367,8 @@ public class OpflowServerlet implements AutoCloseable {
                     final String requestTime = OpflowUtil.getRequestTime(headers);
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer reqTracer = logTracer.branch("requestTime", requestTime)
-                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
+                            .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("methodId", methodId)
                             .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives a RPC call to the method[${methodId}]")
@@ -431,8 +431,8 @@ public class OpflowServerlet implements AutoCloseable {
                                             .put("otherKeys", engine.getOtherKeys())
                                             .put("dispatchQueue", rpcWorker.getDispatchName())
                                             .put("handler", OpflowObjectTree.buildMap()
-                                                    .put("requestId", requestId)
-                                                    .put("requestTime", requestTime)
+                                                    .put(CONST.REQUEST_ID, requestId)
+                                                    .put(CONST.REQUEST_TIME, requestTime)
                                                     .put("applicationId", response.getApplicationId())
                                                     .put("replyToQueue", response.getReplyQueueName())
                                                     .put("consumerTag", response.getConsumerTag())
@@ -514,8 +514,8 @@ public class OpflowServerlet implements AutoCloseable {
                     final String requestTime = OpflowUtil.getRequestTime(headers);
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer reqTracer = logTracer.branch("requestTime", requestTime)
-                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
+                            .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("routineId", routineId)
                             .put("methodId", methodId)

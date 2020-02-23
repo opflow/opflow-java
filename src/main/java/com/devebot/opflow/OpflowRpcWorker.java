@@ -155,8 +155,8 @@ public class OpflowRpcWorker implements AutoCloseable {
 
                 OpflowLogTracer reqTracer = null;
                 if (logProcess.ready(LOG, Level.INFO)) {
-                    reqTracer = logProcess.branch("requestTime", requestTime)
-                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    reqTracer = logProcess.branch(CONST.REQUEST_TIME, requestTime)
+                            .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                 }
 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer

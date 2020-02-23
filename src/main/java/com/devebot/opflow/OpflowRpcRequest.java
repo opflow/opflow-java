@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final OpflowLogTracer reqTracer;
     private final String requestId;
@@ -40,8 +41,8 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
             this.timeout = params.getRequestTTL();
         }
         
-        reqTracer = OpflowLogTracer.ROOT.branch("requestTime", this.requestTime)
-                .branch("requestId", this.requestId, params);
+        reqTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.requestTime)
+                .branch(CONST.REQUEST_ID, this.requestId, params);
 
         this.completeListener = completeListener;
 

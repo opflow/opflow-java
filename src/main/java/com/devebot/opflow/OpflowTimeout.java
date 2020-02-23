@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowTimeout {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
     public interface Listener {
         public void handleEvent();
@@ -203,7 +204,7 @@ public class OpflowTimeout {
         
         public Watcher(String requestId, long max, Listener listener) {
             this.requestId = requestId;
-            logTracer = OpflowLogTracer.ROOT.branch("requestId", this.requestId);
+            logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_ID, this.requestId);
             if (max > 0) {
                 this.max = max;
             }

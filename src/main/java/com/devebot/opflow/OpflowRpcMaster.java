@@ -243,8 +243,8 @@ public class OpflowRpcMaster implements AutoCloseable {
                     String requestTime = OpflowUtil.getRequestTime(headers);
 
                     if (logSession.ready(LOG, Level.INFO)) {
-                        reqTracer = logSession.branch("requestTime", requestTime)
-                                .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                        reqTracer = logSession.branch(CONST.REQUEST_TIME, requestTime)
+                                .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     }
                 }
                 
@@ -364,8 +364,8 @@ public class OpflowRpcMaster implements AutoCloseable {
             params.setRequestTTL(expiration + DELAY_TIMEOUT);
         }
         
-        final OpflowLogTracer reqTracer = logTracer.branch("requestTime", params.getRequestTime())
-                .branch("requestId", params.getRequestId(), params);
+        final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRequestTime())
+                .branch(CONST.REQUEST_ID, params.getRequestId(), params);
         
         if (timeoutMonitor == null) {
             synchronized(timeoutMonitorLock) {
@@ -437,11 +437,11 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         Map<String, Object> headers = new HashMap<>();
         headers.put("routineId", task.getRoutineId());
-        headers.put("requestId", task.getRequestId());
-        headers.put("requestTime", task.getRequestTime());
+        headers.put(CONST.REQUEST_ID, task.getRequestId());
+        headers.put(CONST.REQUEST_TIME, task.getRequestTime());
         
         if (params.getRequestTags() != null) {
-            headers.put("requestTags", params.getRequestTags());
+            headers.put(CONST.REQUEST_TAGS, params.getRequestTags());
         }
         
         if (params.getMessageScope() != null) {

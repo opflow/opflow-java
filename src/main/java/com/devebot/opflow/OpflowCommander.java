@@ -472,7 +472,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             Pong pong = OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
-            pong.getParameters().put("requestId", requestId);
+            pong.getParameters().put(CONST.REQUEST_ID, requestId);
             pong.getParameters().put("startTime", startTime);
             pong.getParameters().put("endTime", endTime);
             pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
@@ -952,7 +952,7 @@ public class OpflowCommander implements AutoCloseable {
             final String requestTime = OpflowDateTime.getCurrentTimeString();
 
             // create the logTracer
-            final OpflowLogTracer reqTracer = logTracer.branch("requestTime", requestTime).branch("requestId", requestId);
+            final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime).branch(CONST.REQUEST_ID, requestId);
 
             // get the method signature
             String methodId = OpflowUtil.getMethodSignature(method);
@@ -983,8 +983,8 @@ public class OpflowCommander implements AutoCloseable {
                         .stringify());
                 measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.COMPNAME_PUBLISHER, routineId, "begin");
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
-                        .put("requestId", requestId)
-                        .put("requestTime", requestTime)
+                        .put(CONST.REQUEST_ID, requestId)
+                        .put(CONST.REQUEST_TIME, requestTime)
                         .put("routineId", routineId)
                         .toMap());
                 return null;

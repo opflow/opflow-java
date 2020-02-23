@@ -26,6 +26,8 @@ import java.util.LinkedHashMap;
  * @author drupalex
  */
 public class OpflowUtil {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+    
     private static final String INT_RANGE_DELIMITER = "-";
     private static final String INT_RANGE_PATTERN_STRING = "[\\d]{1,}\\s*\\-\\s*[\\d]{1,}";
     
@@ -279,11 +281,11 @@ public class OpflowUtil {
     }
     
     public static String getRequestId(Map<String, Object> headers) {
-        return getStringField(headers, "requestId", true, true);
+        return getStringField(headers, CONST.REQUEST_ID, true, true);
     }
     
     public static String getRequestId(Map<String, Object> headers, boolean uuidIfNotFound) {
-        return getStringField(headers, "requestId", uuidIfNotFound, true);
+        return getStringField(headers, CONST.REQUEST_ID, uuidIfNotFound, true);
     }
     
     public static String getRequestTime(Map<String, Object> headers) {
@@ -291,26 +293,26 @@ public class OpflowUtil {
     }
     
     public static String getRequestTime(Map<String, Object> headers, boolean currentIfNotFound) {
-        Object date = headers.get("requestTime");
+        Object date = headers.get(CONST.REQUEST_TIME);
         if (date instanceof String) {
             return (String) date;
         }
         if (date instanceof Date) {
             String requestTime = OpflowDateTime.toISO8601UTC((Date) date);
-            headers.put("requestTime", requestTime);
+            headers.put(CONST.REQUEST_TIME, requestTime);
             return requestTime;
         }
         if (date == null && !currentIfNotFound) {
             return null;
         } else {
             String requestTime = OpflowDateTime.getCurrentTimeString();
-            headers.put("requestTime", requestTime);
+            headers.put(CONST.REQUEST_TIME, requestTime);
             return requestTime;
         }
     }
     
     public static String[] getRequestTags(Map<String, Object> headers) {
-        Object tags = headers.get("requestTags");
+        Object tags = headers.get(CONST.REQUEST_TAGS);
         if (tags == null) {
             return null;
         }

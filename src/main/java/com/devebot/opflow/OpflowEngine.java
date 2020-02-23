@@ -466,8 +466,8 @@ public class OpflowEngine implements AutoCloseable {
             if (reqTracer == null && logTracer.ready(LOG, Level.INFO)) {
                 String requestId = OpflowUtil.getRequestId(headers);
                 String requestTime = OpflowUtil.getRequestTime(headers);
-                reqTracer = logTracer.branch("requestTime", requestTime)
-                        .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
+                        .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
             }
             
             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
@@ -608,8 +608,8 @@ public class OpflowEngine implements AutoCloseable {
                     final String requestId = OpflowUtil.getRequestId(headers, false);
                     final String requestTime = OpflowUtil.getRequestTime(headers, false);
                     
-                    final OpflowLogTracer reqTracer = logConsume.branch("requestTime", requestTime)
-                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, requestTime)
+                            .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     
                     if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("appId", properties.getAppId())
