@@ -7,8 +7,8 @@ package com.devebot.opflow;
 public class OpflowConstant {
 
     public final String INSTANCE_ID = "instanceId";
-    public final String COMPONENT_ID;
-    public final String COMPONENT_TYPE;
+    public final String COMPONENT_ID = "componentId";
+    public final String COMPONENT_TYPE = "componentType";
 
     public final String ROUTINE_ID = "routineId";
     public final String REQUEST_ID = "requestId";
@@ -32,9 +32,12 @@ public class OpflowConstant {
     public final String COMPNAME_RPC_WATCHER = "rpcWatcher";
     public final String COMPNAME_REST_SERVER = "restServer";
 
+    public final String RPC_INVOCATION_FLOW_PUBLISHER = "publisher";
+    public final String RPC_INVOCATION_FLOW_RPC_MASTER = "master";
+    public final static String RPC_INVOCATION_FLOW_DETACHED_WORKER = "detached_worker";
+    public final static String RPC_INVOCATION_FLOW_RESERVED_WORKER = "reserved_worker";
+    
     private OpflowConstant() {
-        COMPONENT_ID = "componentId";
-        COMPONENT_TYPE = "componentType";
     }
 
     private static final Object LOCK = new Object();

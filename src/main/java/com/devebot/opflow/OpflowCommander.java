@@ -981,7 +981,7 @@ public class OpflowCommander implements AutoCloseable {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.COMPNAME_PUBLISHER, routineId, "begin");
+                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.RPC_INVOCATION_FLOW_PUBLISHER, routineId, "begin");
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put(CONST.REQUEST_ID, requestId)
                         .put(CONST.REQUEST_TIME, requestTime)
@@ -992,7 +992,7 @@ public class OpflowCommander implements AutoCloseable {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
                         .stringify());
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "master", routineId, "begin");
+                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.RPC_INVOCATION_FLOW_RPC_MASTER, routineId, "begin");
             }
             
             // rpc switching

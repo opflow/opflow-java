@@ -262,7 +262,7 @@ public abstract class OpflowPromMeasurer {
             }
             if (CONST.COMPNAME_COMMANDER.equals(moduleName)) {
                 switch (eventName) {
-                    case "reserved_worker":
+                    case OpflowConstant.RPC_INVOCATION_FLOW_RESERVED_WORKER:
                         switch (status) {
                             case "rescue":
                                 counter.incDirectRescue();
@@ -272,7 +272,7 @@ public abstract class OpflowPromMeasurer {
                                 break;
                         }
                         break;
-                    case "detached_worker":
+                    case OpflowConstant.RPC_INVOCATION_FLOW_DETACHED_WORKER:
                         switch (status) {
                             case "ok":
                                 counter.incRemoteSuccess();
