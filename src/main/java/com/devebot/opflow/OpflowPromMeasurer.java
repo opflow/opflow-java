@@ -173,7 +173,7 @@ public abstract class OpflowPromMeasurer {
                             }
                         }
                     }).toMap())
-                    .put("startTime", OpflowDateTime.toISO8601UTC(that.startTime))
+                    .put("startTime", that.startTime)
                     .put("elapsedTime", OpflowDateTime.printElapsedTime(that.startTime, currentTime))
                     .toMap();
         }

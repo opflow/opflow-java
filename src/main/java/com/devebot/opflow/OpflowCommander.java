@@ -560,25 +560,25 @@ public class OpflowCommander implements AutoCloseable {
         
         @Override
         public Map<String, Object> activateDetachedWorker(boolean state, Map<String, Object> opts) {
-            return activateWorker("DetachedWorker", state, opts);
+            return activateWorker(CONST.COMPNAME_REMOTE_WORKER, state, opts);
         }
         
         @Override
         public Map<String, Object> activateReservedWorker(boolean state, Map<String, Object> opts) {
-            return activateWorker("ReservedWorker", state, opts);
+            return activateWorker(CONST.COMPNAME_NATIVE_WORKER, state, opts);
         }
         
         private Map<String, Object> activateWorker(String type, boolean state, Map<String, Object> opts) {
             String clazz = (String) OpflowUtil.getOptionField(opts, "class", null);
             for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
                 final String key = entry.getKey();
-                final RpcInvocationHandler val = entry.getValue();
+                final RpcInvocationHandler handler = entry.getValue();
                 if (clazz != null) {
                     if (clazz.equals(key)) {
-                        activateWorkerForRpcInvocation(val, type, state);
+                        activateWorkerForRpcInvocation(handler, type, state);
                     }
                 } else {
-                    activateWorkerForRpcInvocation(val, type, state);
+                    activateWorkerForRpcInvocation(handler, type, state);
                 }
             }
             return OpflowObjectTree.buildMap()
@@ -586,14 +586,14 @@ public class OpflowCommander implements AutoCloseable {
                     .toMap();
         }
         
-        private void activateWorkerForRpcInvocation(RpcInvocationHandler val, String type, boolean state) {
-            switch (type) {
-                case "DetachedWorker":
-                    val.setDetachedWorkerActive(state);
-                    break;
-                case "ReservedWorker":
-                    val.setReservedWorkerActive(state);
-                    break;
+        private void activateWorkerForRpcInvocation(RpcInvocationHandler handler, String type, boolean state) {
+            if (CONST.COMPNAME_REMOTE_WORKER.equals(type)) {
+                handler.setDetachedWorkerActive(state);
+                return;
+            }
+            if (CONST.COMPNAME_NATIVE_WORKER.equals(type)) {
+                handler.setReservedWorkerActive(state);
+                return;
             }
         }
     }
@@ -741,8 +741,8 @@ public class OpflowCommander implements AutoCloseable {
                 Date currentTime = new Date();
                 root.put("miscellaneous", OpflowObjectTree.buildMap()
                         .put("threadCount", Thread.activeCount())
-                        .put("startTime", OpflowDateTime.toISO8601UTC(startTime))
-                        .put("currentTime", OpflowDateTime.toISO8601UTC(currentTime))
+                        .put("startTime", startTime)
+                        .put("currentTime", currentTime)
                         .put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime))
                         .toMap());
             }

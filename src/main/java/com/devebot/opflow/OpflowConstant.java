@@ -14,7 +14,7 @@ public class OpflowConstant {
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
     public final String REQUEST_TAGS = "requestTags";
-    
+
     public final String COMPNAME_COMMANDER = "commander";
     public final String COMPNAME_SERVERLET = "serverlet";
     public final String COMPNAME_PUBLISHER = "publisher";
@@ -27,14 +27,16 @@ public class OpflowConstant {
     public final String COMPNAME_SPEED_METER = "speedMeter";
     public final String COMPNAME_RPC_MASTER = "rpcMaster";
     public final String COMPNAME_RPC_WORKER = "rpcWorker";
+    public final String COMPNAME_NATIVE_WORKER = "ReservedWorker";
+    public final String COMPNAME_REMOTE_WORKER = "DetachedWorker";
     public final String COMPNAME_RPC_WATCHER = "rpcWatcher";
     public final String COMPNAME_REST_SERVER = "restServer";
-    
+
     private OpflowConstant() {
         COMPONENT_ID = "componentId";
         COMPONENT_TYPE = "componentType";
     }
-    
+
     private static final Object LOCK = new Object();
     private static OpflowConstant instance = null;
 
