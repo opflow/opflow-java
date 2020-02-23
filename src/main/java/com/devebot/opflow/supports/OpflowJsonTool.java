@@ -5,8 +5,15 @@ import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 import java.io.InputStream;
@@ -14,16 +21,21 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
  *
  * @author drupalex
  */
 public class OpflowJsonTool {
-    private static final String ISO8601_TEMPLATE = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    private static final Gson GSON = new GsonBuilder().setDateFormat(ISO8601_TEMPLATE).create();
-    private static final Gson PSON = new GsonBuilder().setDateFormat(ISO8601_TEMPLATE).setPrettyPrinting().create();
+    private static final GsonUTCDateAdapter GSON_UTC_DATE_ADAPTER = new GsonUTCDateAdapter();
+    private static final Gson GSON = new GsonBuilder().registerTypeAdapter(Date.class, GSON_UTC_DATE_ADAPTER).create();
+    private static final Gson PSON = new GsonBuilder().registerTypeAdapter(Date.class, GSON_UTC_DATE_ADAPTER).setPrettyPrinting().create();
     
     public static String toString(Object jsonObj) {
         return toString(jsonObj, false);
@@ -116,6 +128,29 @@ public class OpflowJsonTool {
             return jsonObject.get(fieldName).getAsInt();
         } catch (JsonSyntaxException e) {
             throw new OpflowJsonTransformationException(e);
+        }
+    }
+    
+    private static class GsonUTCDateAdapter implements JsonSerializer<Date>, JsonDeserializer<Date> {
+        private final DateFormat dateFormat;
+
+        public GsonUTCDateAdapter() {
+            dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        }
+
+        @Override
+        public synchronized JsonElement serialize(Date date, Type type, JsonSerializationContext jsonSerializationContext) {
+            return new JsonPrimitive(dateFormat.format(date));
+        }
+
+        @Override
+        public synchronized Date deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) {
+            try {
+                return dateFormat.parse(jsonElement.getAsString());
+            } catch (ParseException e) {
+                throw new JsonParseException(e);
+            }
         }
     }
 }
