@@ -10,6 +10,7 @@ public class OpflowConstant {
     public final String COMPONENT_ID;
     public final String COMPONENT_TYPE;
 
+    public final String ROUTINE_ID = "routineId";
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
     public final String REQUEST_TAGS = "requestTags";
@@ -19,6 +20,7 @@ public class OpflowConstant {
     public final String COMPNAME_PUBLISHER = "publisher";
     public final String COMPNAME_CONFIGURER = "configurer";
     public final String COMPNAME_SUBSCRIBER = "subscriber";
+    public final String COMPNAME_MEASURER = "measurer";
     public final String COMPNAME_PROM_EXPORTER = "promExporter";
     public final String COMPNAME_RESTRICTOR = "restrictor";
     public final String COMPNAME_REQ_EXTRACTOR = "reqExtractor";

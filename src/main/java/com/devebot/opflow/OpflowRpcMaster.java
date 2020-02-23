@@ -64,7 +64,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         params = OpflowUtil.ensureNotNull(params);
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);
         
         restrictor = new OpflowRestrictor.Valve();
         
@@ -77,7 +77,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put(CONST.COMPONENT_ID, componentId);
-        brokerParams.put("measurer", measurer);
+        brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
         brokerParams.put("mode", "rpc_master");
         brokerParams.put("exchangeType", "direct");
         
@@ -436,7 +436,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<>();
-        headers.put("routineId", task.getRoutineId());
+        headers.put(CONST.ROUTINE_ID, task.getRoutineId());
         headers.put(CONST.REQUEST_ID, task.getRequestId());
         headers.put(CONST.REQUEST_TIME, task.getRequestTime());
         

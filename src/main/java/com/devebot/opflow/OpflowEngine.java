@@ -86,7 +86,7 @@ public class OpflowEngine implements AutoCloseable {
         params = OpflowUtil.ensureNotNull(params);
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("engineId", componentId);
         

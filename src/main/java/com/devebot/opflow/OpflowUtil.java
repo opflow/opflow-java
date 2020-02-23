@@ -329,11 +329,11 @@ public class OpflowUtil {
     }
     
     public static String getRoutineId(Map<String, Object> headers) {
-        return getStringField(headers, "routineId", true, true);
+        return getStringField(headers, CONST.ROUTINE_ID, true, true);
     }
     
     public static String getRoutineId(Map<String, Object> headers, boolean uuidIfNotFound) {
-        return getStringField(headers, "routineId", uuidIfNotFound, true);
+        return getStringField(headers, CONST.ROUTINE_ID, uuidIfNotFound, true);
     }
     
     public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound, boolean assigned) {

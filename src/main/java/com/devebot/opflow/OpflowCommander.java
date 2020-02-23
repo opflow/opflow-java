@@ -187,7 +187,7 @@ public class OpflowCommander implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put("measurer", measurer);
+                        opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, configurerCfg).toMap());
             }
@@ -196,7 +196,7 @@ public class OpflowCommander implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put("measurer", measurer);
+                        opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, rpcMasterCfg).toMap());
             }
@@ -205,7 +205,7 @@ public class OpflowCommander implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put("measurer", measurer);
+                        opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, publisherCfg).toMap());
             }
@@ -883,7 +883,7 @@ public class OpflowCommander implements AutoCloseable {
                     aliasOfMethod.put(methodId, alias);
                     if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                             .put("alias", alias)
-                            .put("routineId", methodId)
+                            .put(CONST.ROUTINE_ID, methodId)
                             .text("link alias to routineId")
                             .stringify());
                 }
@@ -963,7 +963,7 @@ public class OpflowCommander implements AutoCloseable {
             Boolean isAsync = methodIsAsync.getOrDefault(methodId, false);
             if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                     .put("methodId", methodId)
-                    .put("routineId", routineId)
+                    .put(CONST.ROUTINE_ID, routineId)
                     .put("isAsync", isAsync)
                     .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
                     .stringify());
@@ -985,7 +985,7 @@ public class OpflowCommander implements AutoCloseable {
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put(CONST.REQUEST_ID, requestId)
                         .put(CONST.REQUEST_TIME, requestTime)
-                        .put("routineId", routineId)
+                        .put(CONST.ROUTINE_ID, routineId)
                         .toMap());
                 return null;
             } else {

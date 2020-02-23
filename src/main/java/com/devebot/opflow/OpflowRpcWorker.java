@@ -37,7 +37,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         params = OpflowUtil.ensureNotNull(params);
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", componentId);
         
@@ -48,7 +48,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put(CONST.COMPONENT_ID, componentId);
-        brokerParams.put("measurer", measurer);
+        brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
         brokerParams.put("mode", "rpc_worker");
         brokerParams.put("exchangeType", "direct");
         
@@ -160,7 +160,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 }
 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                        .put("routineId", routineId)
+                        .put(CONST.ROUTINE_ID, routineId)
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}] receives a new RPC request")
                         .stringify());
                 int count = 0;

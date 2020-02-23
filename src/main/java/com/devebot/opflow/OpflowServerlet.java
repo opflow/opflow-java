@@ -156,7 +156,7 @@ public class OpflowServerlet implements AutoCloseable {
                 configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put("measurer", measurer);
+                        opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, configurerCfg).toMap());
             }
@@ -171,7 +171,7 @@ public class OpflowServerlet implements AutoCloseable {
                 rpcWorker = new OpflowRpcWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put("measurer", measurer);
+                        opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, rpcWorkerCfg).toMap());
             }
@@ -186,7 +186,7 @@ public class OpflowServerlet implements AutoCloseable {
                 subscriber = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put("measurer", measurer);
+                        opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, subscriberCfg).toMap());
             }
@@ -517,7 +517,7 @@ public class OpflowServerlet implements AutoCloseable {
                     final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
                             .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                            .put("routineId", routineId)
+                            .put(CONST.ROUTINE_ID, routineId)
                             .put("methodId", methodId)
                             .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives an asynchronous method call [${routineId}]")
                             .stringify());
@@ -599,7 +599,7 @@ public class OpflowServerlet implements AutoCloseable {
                             methodOfAlias.put(alias, methodId);
                             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                     .put("alias", alias)
-                                    .put("routineId", methodId)
+                                    .put(CONST.ROUTINE_ID, methodId)
                                     .text("link alias to routineId")
                                     .stringify());
                         }
@@ -613,7 +613,7 @@ public class OpflowServerlet implements AutoCloseable {
                         String methodId = OpflowUtil.getMethodSignature(method);
                         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                 .put("rpcWorkerId", rpcWorker.getIntanceId())
-                                .put("routineId", methodId)
+                                .put(CONST.ROUTINE_ID, methodId)
                                 .put("methodId", methodId)
                                 .tags("attach-method-to-RpcWorker-listener")
                                 .text("Attach the method[" + methodId + "] to the listener of RpcWorker[${rpcWorkerId}]")
