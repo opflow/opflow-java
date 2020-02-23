@@ -302,14 +302,16 @@ public class OpflowUtil {
             headers.put(CONST.REQUEST_TIME, requestTime);
             return requestTime;
         }
-        if (date == null) {
+        if (date != null) {
+            return date.toString();
+        } else {
             if (currentIfNotFound) {
                 String requestTime = OpflowDateTime.getCurrentTimeString();
                 headers.put(CONST.REQUEST_TIME, requestTime);
                 return requestTime;
             }
+            return null;
         }
-        return null;
     }
     
     public static String[] getRequestTags(Map<String, Object> headers) {
