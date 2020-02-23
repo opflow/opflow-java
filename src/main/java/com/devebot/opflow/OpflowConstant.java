@@ -12,6 +12,7 @@ public class OpflowConstant {
 
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
+    public final String REQUEST_TAGS = "requestTags";
     
     public final String COMPNAME_COMMANDER = "commander";
     public final String COMPNAME_SERVERLET = "serverlet";
@@ -21,6 +22,7 @@ public class OpflowConstant {
     public final String COMPNAME_PROM_EXPORTER = "promExporter";
     public final String COMPNAME_RESTRICTOR = "restrictor";
     public final String COMPNAME_REQ_EXTRACTOR = "reqExtractor";
+    public final String COMPNAME_SPEED_METER = "speedMeter";
     public final String COMPNAME_RPC_MASTER = "rpcMaster";
     public final String COMPNAME_RPC_WORKER = "rpcWorker";
     public final String COMPNAME_RPC_WATCHER = "rpcWatcher";

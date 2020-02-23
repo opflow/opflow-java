@@ -223,7 +223,7 @@ public class OpflowConfig {
                         "interval"
                     });
                 }
-                if ("speedMeter".equals(componentName)) {
+                if (CONST.COMPNAME_SPEED_METER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "active",
                         "interval",

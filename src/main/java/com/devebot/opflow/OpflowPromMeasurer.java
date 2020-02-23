@@ -260,7 +260,7 @@ public abstract class OpflowPromMeasurer {
             if (shadow != null) {
                 shadow.countRpcInvocation(moduleName, eventName, routineId, status);
             }
-            if (true || CONST.COMPNAME_COMMANDER.equals(moduleName)) {
+            if (CONST.COMPNAME_COMMANDER.equals(moduleName)) {
                 switch (eventName) {
                     case "reserved_worker":
                         switch (status) {
