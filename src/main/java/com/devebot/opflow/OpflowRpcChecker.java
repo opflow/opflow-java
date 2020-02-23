@@ -9,6 +9,8 @@ import java.util.Map;
  * @author acegik
  */
 public abstract class OpflowRpcChecker {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+    
     public static final String[] REQUEST_ATTRS = new String[] { "requestId", "startTime", "endTime", "elapsedTime" };
     
     public abstract Pong send(Ping info) throws Throwable;
@@ -101,16 +103,16 @@ public abstract class OpflowRpcChecker {
         public String toString(boolean pretty) {
             OpflowObjectTree.Builder builder = OpflowObjectTree.buildMap().put("status", status);
             
-            Map<String, Object> commanderInfo = (Map<String, Object>)commanderMap.get("commander");
+            Map<String, Object> commanderInfo = (Map<String, Object>)commanderMap.get(CONST.COMPNAME_COMMANDER);
             if (commanderInfo != null && processorObj != null) {
-                builder.put("commander", OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                builder.put(CONST.COMPNAME_COMMANDER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         // asserts the rpcMaster Map
-                        if (!opts.containsKey("rpcMaster") || !(opts.get("rpcMaster") instanceof Map)) {
-                            opts.put("rpcMaster", new LinkedHashMap<String, Object>());
+                        if (!opts.containsKey(CONST.COMPNAME_RPC_MASTER) || !(opts.get(CONST.COMPNAME_RPC_MASTER) instanceof Map)) {
+                            opts.put(CONST.COMPNAME_RPC_MASTER, new LinkedHashMap<String, Object>());
                         }
-                        Map<String, Object> rpcMasterMap = (Map<String, Object>) opts.get("rpcMaster");
+                        Map<String, Object> rpcMasterMap = (Map<String, Object>) opts.get(CONST.COMPNAME_RPC_MASTER);
                         // asserts the request Map
                         if (!rpcMasterMap.containsKey("request") || !(rpcMasterMap.get("request") instanceof Map)) {
                             rpcMasterMap.put("request", new LinkedHashMap<String, Object>());
@@ -129,7 +131,7 @@ public abstract class OpflowRpcChecker {
             switch (status) {
                 case "ok":
                     builder
-                            .put("serverlet", processorObj.getAccumulator())
+                            .put(CONST.COMPNAME_SERVERLET, processorObj.getAccumulator())
                             .put("summary", "The connection is ok");
                     break;
                 case "failed":

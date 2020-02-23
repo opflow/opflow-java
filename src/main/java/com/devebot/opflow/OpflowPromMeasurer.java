@@ -13,6 +13,7 @@ import java.util.Map;
  * @author acegik
  */
 public abstract class OpflowPromMeasurer {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
     public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
     public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverDirectWorker";
@@ -259,36 +260,33 @@ public abstract class OpflowPromMeasurer {
             if (shadow != null) {
                 shadow.countRpcInvocation(moduleName, eventName, routineId, status);
             }
-            switch (moduleName) {
-                case "commander": {
-                    switch (eventName) {
-                        case "reserved_worker":
-                            switch (status) {
-                                case "rescue":
-                                    counter.incDirectRescue();
-                                    break;
-                                case "retain":
-                                    counter.incDirectRetain();
-                                    break;
-                            }
-                            break;
-                        case "detached_worker":
-                            switch (status) {
-                                case "ok":
-                                    counter.incRemoteSuccess();
-                                    break;
-                                case "failed":
-                                    counter.incRemoteFailure();
-                                    break;
-                                case "timeout":
-                                    counter.incRemoteTimeout();
-                                    break;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
+            if (true || CONST.COMPNAME_COMMANDER.equals(moduleName)) {
+                switch (eventName) {
+                    case "reserved_worker":
+                        switch (status) {
+                            case "rescue":
+                                counter.incDirectRescue();
+                                break;
+                            case "retain":
+                                counter.incDirectRetain();
+                                break;
+                        }
+                        break;
+                    case "detached_worker":
+                        switch (status) {
+                            case "ok":
+                                counter.incRemoteSuccess();
+                                break;
+                            case "failed":
+                                counter.incRemoteFailure();
+                                break;
+                            case "timeout":
+                                counter.incRemoteTimeout();
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
         }

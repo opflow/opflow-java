@@ -33,6 +33,7 @@ public class OpflowConfig {
     public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
 
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowConfig.class);
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
@@ -170,7 +171,7 @@ public class OpflowConfig {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
 
             Map<String, Object> params = new HashMap<>();
-            String[] componentPath = new String[] {"opflow", "commander", ""};
+            String[] componentPath = new String[] {"opflow", CONST.COMPNAME_COMMANDER, ""};
             for(String componentName:OpflowCommander.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
@@ -182,13 +183,13 @@ public class OpflowConfig {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
                 componentCfg.put("enabled", componentNode.get("enabled"));
-                if ("reqExtractor".equals(componentName)) {
+                if (CONST.COMPNAME_REQ_EXTRACTOR.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "getRequestIdClassName",
                         "getRequestIdMethodName"
                     });
                 }
-                if ("restrictor".equals(componentName)) {
+                if (CONST.COMPNAME_RESTRICTOR.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "pauseEnabled",
                         "pauseTimeout",
@@ -197,12 +198,12 @@ public class OpflowConfig {
                         "semaphoreTimeout"
                     });
                 }
-                if ("publisher".equals(componentName)) {
+                if (CONST.COMPNAME_PUBLISHER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "subscriberName",
                     });
                 }
-                if ("rpcMaster".equals(componentName)) {
+                if (CONST.COMPNAME_RPC_MASTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "expiration",
                         "responseName",
@@ -217,7 +218,7 @@ public class OpflowConfig {
                         "monitorTimeout"
                     });
                 }
-                if ("rpcWatcher".equals(componentName)) {
+                if (CONST.COMPNAME_RPC_WATCHER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "interval"
                     });
@@ -229,13 +230,13 @@ public class OpflowConfig {
                         "length"
                     });
                 }
-                if ("promExporter".equals(componentName)) {
+                if (CONST.COMPNAME_PROM_EXPORTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "host",
                         "ports"
                     });
                 }
-                if ("restServer".equals(componentName)) {
+                if (CONST.COMPNAME_REST_SERVER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "host",
                         "ports"
@@ -265,27 +266,27 @@ public class OpflowConfig {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
         
             Map<String, Object> params = new HashMap<>();
-            String[] componentPath = new String[] {"opflow", "serverlet", ""};
+            String[] componentPath = new String[] {"opflow", CONST.COMPNAME_SERVERLET, ""};
             for(String componentName:OpflowServerlet.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
                 extractEngineParameters(componentCfg, config, componentPath);
                 Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
                 componentCfg.put("enabled", componentNode.get("enabled"));
-                if ("rpcWorker".equals(componentName)) {
+                if (CONST.COMPNAME_RPC_WORKER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "prefetchCount",
                         "operatorName",
                         "responseName"
                     });
                 }
-                if ("subscriber".equals(componentName)) {
+                if (CONST.COMPNAME_SUBSCRIBER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "subscriberName",
                         "recyclebinName"
                     });
                 }
-                if ("promExporter".equals(componentName)) {
+                if (CONST.COMPNAME_PROM_EXPORTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "host",
                         "ports"
