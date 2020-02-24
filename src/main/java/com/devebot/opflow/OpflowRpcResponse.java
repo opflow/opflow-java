@@ -18,6 +18,7 @@ public class OpflowRpcResponse {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcResponse.class);
     private final OpflowLogTracer logTracer;
+    private final String componentId;
     private final Channel channel;
     private final AMQP.BasicProperties properties;
     private final String consumerTag;
@@ -27,9 +28,10 @@ public class OpflowRpcResponse {
     private final String messageScope;
     private final Boolean progressEnabled;
     
-    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String consumerTag, String replyQueueName) {
+    public OpflowRpcResponse(String componentId, Channel channel, AMQP.BasicProperties properties, String consumerTag, String replyQueueName, Map<String, Object> extras) {
         final Map<String, Object> headers = properties.getHeaders();
         
+        this.componentId = componentId;
         this.channel = channel;
         this.properties = properties;
         this.consumerTag = consumerTag;
@@ -170,6 +172,9 @@ public class OpflowRpcResponse {
     private Map<String, Object> createHeaders(String status, boolean finished) {
         Map<String, Object> headers = new HashMap<>();
         headers.put("status", status);
+        if (this.componentId != null) {
+            headers.put(CONST.RPC_WORKER_ID, this.componentId);
+        }
         if (this.requestId != null) {
             headers.put(CONST.REQUEST_ID, this.requestId);
         }

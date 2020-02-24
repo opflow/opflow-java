@@ -267,6 +267,10 @@ public class OpflowRpcMaster implements AutoCloseable {
                         .stringify());
                     task.push(new OpflowMessage(content, properties.getHeaders()));
                 }
+                
+                // collect the information of the workers
+                String rpcWorkerId = OpflowUtil.getStringField(headers, CONST.RPC_WORKER_ID, false, true);
+                
                 return true;
             }
         }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {

@@ -10,7 +10,8 @@ public class OpflowConstant {
     public final String INSTANCE_ID = "instanceId";
     public final String COMPONENT_ID = "componentId";
     public final String COMPONENT_TYPE = "componentType";
-
+    public final String RPC_MASTER_ID = "rpcMasterId";
+    public final String RPC_WORKER_ID = "rpcWorkerId";
     public final String ROUTINE_ID = "routineId";
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
