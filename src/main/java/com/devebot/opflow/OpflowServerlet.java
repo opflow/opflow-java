@@ -27,19 +27,21 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowServerlet implements AutoCloseable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+    
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
-        "configurer", "rpcWorker", "subscriber"
+        CONST.COMPNAME_CONFIGURER, CONST.COMPNAME_RPC_WORKER, CONST.COMPNAME_SUBSCRIBER
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
-        "promExporter"
+        CONST.COMPNAME_PROM_EXPORTER
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
     
-    private final String instanceId;
+    private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
@@ -73,8 +75,8 @@ public class OpflowServerlet implements AutoCloseable {
         
         this.kwargs = OpflowUtil.ensureNotNull(kwargs);
         
-        instanceId = OpflowUtil.getOptionField(this.kwargs, "instanceId", true);
-        logTracer = OpflowLogTracer.ROOT.branch("serverletId", instanceId);
+        componentId = OpflowUtil.getOptionField(this.kwargs, CONST.COMPONENT_ID, true);
+        logTracer = OpflowLogTracer.ROOT.branch("serverletId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Serverlet[${serverletId}].new()")
@@ -85,11 +87,11 @@ public class OpflowServerlet implements AutoCloseable {
         }
         listenerMap = listeners;
         
-        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get("promExporter"));
+        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(CONST.COMPNAME_PROM_EXPORTER));
         
-        Map<String, Object> configurerCfg = (Map<String, Object>)this.kwargs.get("configurer");
-        Map<String, Object> rpcWorkerCfg = (Map<String, Object>)this.kwargs.get("rpcWorker");
-        Map<String, Object> subscriberCfg = (Map<String, Object>)this.kwargs.get("subscriber");
+        Map<String, Object> configurerCfg = (Map<String, Object>)this.kwargs.get(CONST.COMPNAME_CONFIGURER);
+        Map<String, Object> rpcWorkerCfg = (Map<String, Object>)this.kwargs.get(CONST.COMPNAME_RPC_WORKER);
+        Map<String, Object> subscriberCfg = (Map<String, Object>)this.kwargs.get(CONST.COMPNAME_SUBSCRIBER);
         
         HashSet<String> checkExchange = new HashSet<>();
         HashSet<String> checkQueue = new HashSet<>();
@@ -146,7 +148,7 @@ public class OpflowServerlet implements AutoCloseable {
         try {
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
                 String pubsubHandlerId = OpflowUUID.getBase64ID();
-                configurerCfg.put("instanceId", pubsubHandlerId);
+                configurerCfg.put(CONST.COMPONENT_ID, pubsubHandlerId);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("pubsubHandlerId", pubsubHandlerId)
                         .text("Serverlet[${serverletId}] creates a new configurer[${pubsubHandlerId}]")
@@ -154,14 +156,14 @@ public class OpflowServerlet implements AutoCloseable {
                 configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put("measurer", measurer);
+                        opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, configurerCfg).toMap());
             }
 
             if (OpflowUtil.isComponentEnabled(rpcWorkerCfg)) {
                 String rpcWorkerId = OpflowUUID.getBase64ID();
-                rpcWorkerCfg.put("instanceId", rpcWorkerId);
+                rpcWorkerCfg.put(CONST.COMPONENT_ID, rpcWorkerId);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("rpcWorkerId", rpcWorkerId)
                         .text("Serverlet[${serverletId}] creates a new rpcWorker[${rpcWorkerId}]")
@@ -169,7 +171,7 @@ public class OpflowServerlet implements AutoCloseable {
                 rpcWorker = new OpflowRpcWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put("measurer", measurer);
+                        opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, rpcWorkerCfg).toMap());
             }
@@ -184,14 +186,14 @@ public class OpflowServerlet implements AutoCloseable {
                 subscriber = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put("measurer", measurer);
+                        opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, subscriberCfg).toMap());
             }
             
             if (rpcWorker != null || subscriber != null) {
                 instantiator = new Instantiator(rpcWorker, subscriber, OpflowObjectTree.buildMap(false)
-                        .put("instanceId", instanceId)
+                        .put(CONST.COMPONENT_ID, componentId)
                         .toMap());
             }
         } catch(OpflowBootstrapException exception) {
@@ -203,7 +205,7 @@ public class OpflowServerlet implements AutoCloseable {
                 .text("Serverlet[${serverletId}].new() end!")
                 .stringify());
         
-        measurer.updateComponentInstance("serverlet", instanceId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance(CONST.COMPNAME_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
     
     public final void start() {
@@ -354,8 +356,8 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Both of RpcWorker and subscriber must not be null");
             }
             options = OpflowUtil.ensureNotNull(options);
-            final String instanceId = OpflowUtil.getOptionField(options, "instanceId", true);
-            this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", instanceId);
+            final String componentId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
+            this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", componentId);
             this.rpcWorker = worker;
             this.rpcListener = new OpflowRpcListener() {
                 @Override
@@ -365,11 +367,11 @@ public class OpflowServerlet implements AutoCloseable {
                     final String requestTime = OpflowUtil.getRequestTime(headers);
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer reqTracer = logTracer.branch("requestTime", requestTime)
-                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
+                            .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("methodId", methodId)
-                            .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives a RPC call to the method[${methodId}]")
+                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-received] - Serverlet[${instantiatorId}] receives a RPC call to the method[${methodId}]")
                             .stringify());
                     Method method = methodRef.get(methodId);
                     Object target = targetRef.get(methodId);
@@ -420,17 +422,17 @@ public class OpflowServerlet implements AutoCloseable {
                                 @Override
                                 public void transform(Map<String, Object> opts) {
                                     OpflowEngine engine = rpcWorker.getEngine();
-                                    opts.put("instanceId", instanceId);
-                                    opts.put("rpcWorker", OpflowObjectTree.buildMap()
-                                            .put("instanceId", rpcWorker.getIntanceId())
+                                    opts.put(CONST.COMPONENT_ID, componentId);
+                                    opts.put(CONST.COMPNAME_RPC_WORKER, OpflowObjectTree.buildMap()
+                                            .put(CONST.COMPONENT_ID, rpcWorker.getIntanceId())
                                             .put("applicationId", engine.getApplicationId())
                                             .put("exchangeName", engine.getExchangeName())
                                             .put("routingKey", engine.getRoutingKey())
                                             .put("otherKeys", engine.getOtherKeys())
                                             .put("dispatchQueue", rpcWorker.getDispatchName())
                                             .put("handler", OpflowObjectTree.buildMap()
-                                                    .put("requestId", requestId)
-                                                    .put("requestTime", requestTime)
+                                                    .put(CONST.REQUEST_ID, requestId)
+                                                    .put(CONST.REQUEST_TIME, requestTime)
                                                     .put("applicationId", response.getApplicationId())
                                                     .put("replyToQueue", response.getReplyQueueName())
                                                     .put("consumerTag", response.getConsumerTag())
@@ -441,7 +443,7 @@ public class OpflowServerlet implements AutoCloseable {
                         } else {
                             if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                     .put("targetName", target.getClass().getName())
-                                    .text("Request[${requestId}][${requestTime}] - The method from target[${targetName}] is invoked")
+                                    .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-processing] - The method from target[${targetName}] is invoked")
                                     .stringify());
                             returnValue = method.invoke(target, args);
                         }
@@ -454,7 +456,7 @@ public class OpflowServerlet implements AutoCloseable {
                         response.emitCompleted(result);
                         
                         if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                            .text("Request[${requestId}][${requestTime}] - Method call has completed")
+                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-completed] - Method call has completed")
                             .stringify());
                     } catch (JsonSyntaxException error) {
                         error.getStackTrace();
@@ -512,10 +514,10 @@ public class OpflowServerlet implements AutoCloseable {
                     final String requestTime = OpflowUtil.getRequestTime(headers);
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
-                    final OpflowLogTracer reqTracer = logTracer.branch("requestTime", requestTime)
-                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
+                            .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                            .put("routineId", routineId)
+                            .put(CONST.ROUTINE_ID, routineId)
                             .put("methodId", methodId)
                             .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives an asynchronous method call [${routineId}]")
                             .stringify());
@@ -597,7 +599,7 @@ public class OpflowServerlet implements AutoCloseable {
                             methodOfAlias.put(alias, methodId);
                             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                     .put("alias", alias)
-                                    .put("routineId", methodId)
+                                    .put(CONST.ROUTINE_ID, methodId)
                                     .text("link alias to routineId")
                                     .stringify());
                         }
@@ -611,7 +613,7 @@ public class OpflowServerlet implements AutoCloseable {
                         String methodId = OpflowUtil.getMethodSignature(method);
                         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                 .put("rpcWorkerId", rpcWorker.getIntanceId())
-                                .put("routineId", methodId)
+                                .put(CONST.ROUTINE_ID, methodId)
                                 .put("methodId", methodId)
                                 .tags("attach-method-to-RpcWorker-listener")
                                 .text("Attach the method[" + methodId + "] to the listener of RpcWorker[${rpcWorkerId}]")
@@ -678,6 +680,6 @@ public class OpflowServerlet implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance("serverlet", instanceId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance(CONST.COMPNAME_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

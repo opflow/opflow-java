@@ -38,7 +38,8 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowEngine implements AutoCloseable {
-
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+    
     public static final String[] PARAMETER_NAMES = new String[] {
         "uri", "host", "port", "virtualHost", "username", "password", "channelMax", "frameMax", "heartbeat",
         "threadPoolType", "threadPoolSize",
@@ -47,11 +48,9 @@ public class OpflowEngine implements AutoCloseable {
         "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
     };
     
-    public final static String REQUEST_TRACER_NAME = "reqTracer";
-    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
     private final OpflowLogTracer logTracer;
-    private final String instanceId;
+    private final String componentId;
     private final OpflowPromMeasurer measurer;
     
     private String mode;
@@ -84,10 +83,10 @@ public class OpflowEngine implements AutoCloseable {
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
+        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);
         
-        logTracer = OpflowLogTracer.ROOT.branch("engineId", instanceId);
+        logTracer = OpflowLogTracer.ROOT.branch("engineId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Engine[${engineId}].new()")
@@ -395,7 +394,7 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Engine[${engineId}].new() end!")
                 .stringify());
         
-        measurer.updateComponentInstance("engine", instanceId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("engine", componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     public String getExchangeName() {
@@ -465,15 +464,15 @@ public class OpflowEngine implements AutoCloseable {
             if (reqTracer == null && logTracer.ready(LOG, Level.INFO)) {
                 String requestId = OpflowUtil.getRequestId(headers);
                 String requestTime = OpflowUtil.getRequestTime(headers);
-                reqTracer = logTracer.branch("requestTime", requestTime)
-                        .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
+                        .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
             }
             
             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                    .put("engineId", instanceId)
+                    .put("engineId", componentId)
                     .put("appId", appId)
                     .put("customKey", requestKey)
-                    .text("Request[${requestId}][${requestTime}] - Engine[${engineId}] - produce() is invoked")
+                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish] - Engine[${engineId}] - produce() is invoked")
                     .stringify());
             
             Channel _channel = getProducingChannel();
@@ -485,14 +484,14 @@ public class OpflowEngine implements AutoCloseable {
             if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .text("Request[${requestId}][${requestTime}] - produce() has failed")
+                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish-failed] - produce() has failed")
                     .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
             if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .text("Request[${requestId}][${requestTime}] - produce() is timeout")
+                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish-timeout] - produce() is timeout")
                     .stringify());
             throw new OpflowOperationException(exception);
         }
@@ -607,14 +606,14 @@ public class OpflowEngine implements AutoCloseable {
                     final String requestId = OpflowUtil.getRequestId(headers, false);
                     final String requestTime = OpflowUtil.getRequestTime(headers, false);
                     
-                    final OpflowLogTracer reqTracer = logConsume.branch("requestTime", requestTime)
-                            .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                    final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, requestTime)
+                            .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     
                     if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("appId", properties.getAppId())
                             .put("deliveryTag", envelope.getDeliveryTag())
                             .put("consumerTag", consumerTag)
-                            .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}] receives a message")
+                            .text("Request[${requestId}][${requestTime}][x-engine-msg-received] - Consumer[${consumerId}] receives a message")
                             .stringify());
                     
                     if (body.length <= 4096) {
@@ -639,7 +638,7 @@ public class OpflowEngine implements AutoCloseable {
                             Map<String, Object> extras = null;
                             if (_reqTracerShared) {
                                 extras = OpflowObjectTree.buildMap(false)
-                                        .put(REQUEST_TRACER_NAME, reqTracer)
+                                        .put(CONST.REQUEST_TRACER_NAME, reqTracer)
                                         .toMap();
                             }
                             
@@ -647,25 +646,25 @@ public class OpflowEngine implements AutoCloseable {
                             
                             if (captured) {
                                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                                        .text("Request[${requestId}][${requestTime}] has finished successfully")
+                                        .text("Request[${requestId}][${requestTime}][x-engine-delivery-ok] has finished successfully")
                                         .stringify());
                             } else {
                                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                                        .text("Request[${requestId}][${requestTime}] has not matched the criteria, skipped")
+                                        .text("Request[${requestId}][${requestTime}][x-engine-delivery-skipped] has not matched the criteria, skipped")
                                         .stringify());
                             }
                             
                             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                     .put("deliveryTag", envelope.getDeliveryTag())
                                     .put("consumerTag", consumerTag)
-                                    .text("Request[${requestId}][${requestTime}] invoke ACK")
+                                    .text("Request[${requestId}][${requestTime}][x-engine-delivery-ack] invoke ACK")
                                     .stringify());
                             
                             invokeAck(envelope, true);
                         } else {
                             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                     .put("applicationId", applicationId)
-                                    .text("Request[${requestId}][${requestTime}] has been rejected, mismatched applicationId")
+                                    .text("Request[${requestId}][${requestTime}][x-engine-delivery-rejected] has been rejected, mismatched applicationId")
                                     .stringify());
                             invokeAck(envelope, false);
                         }
@@ -678,7 +677,7 @@ public class OpflowEngine implements AutoCloseable {
                                 .put("exceptionMessage", ex.getMessage())
                                 .put("autoAck", _autoAck)
                                 .put("requeueFailure", _requeueFailure)
-                                .text("Request[${requestId}][${requestTime}] has been failed. Service still alive")
+                                .text("Request[${requestId}][${requestTime}][x-engine-delivery-exception] has been failed. Service still alive")
                                 .stringify());
                         invokeAck(envelope, false);
                     }
@@ -1233,6 +1232,6 @@ public class OpflowEngine implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance("engine", instanceId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("engine", componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

@@ -145,15 +145,15 @@ public class OpflowRestrictor {
         
         private class PauseThread extends Thread {
             private final ReentrantReadWriteLock rwlock;
-            private final String instanceId;
+            private final String componentId;
             private final OpflowLogTracer tracer;
             private long duration = 0;
             private long elapsed = 0;
             private long count = 0;
             private boolean running = true;
 
-            public String getInstanceId() {
-                return instanceId;
+            public String getComponentId() {
+                return componentId;
             }
 
             public long getDuration() {
@@ -180,7 +180,7 @@ public class OpflowRestrictor {
 
             PauseThread(OpflowLogTracer logTracer, ReentrantReadWriteLock rwlock) {
                 this.rwlock = rwlock;
-                this.instanceId = OpflowUUID.getBase64ID();
+                this.componentId = OpflowUUID.getBase64ID();
                 this.tracer = logTracer.copy();
                 if (tracer.ready(LOG, Level.TRACE)) LOG.trace(tracer
                         .text("PauseThread[${restrictorId}] constructed")
@@ -259,7 +259,7 @@ public class OpflowRestrictor {
                 pauseThread = new PauseThread(logTracer, pauseLock);
             }
             Map<String, Object> result = OpflowObjectTree.buildMap()
-                    .put("threadId", pauseThread.getInstanceId())
+                    .put("threadId", pauseThread.getComponentId())
                     .put("status", "skipped")
                     .toMap();
             if (!pauseThread.isLocked()) {
@@ -276,7 +276,7 @@ public class OpflowRestrictor {
 
         public synchronized Map<String, Object> unpause() {
             Map<String, Object> result = OpflowObjectTree.buildMap()
-                    .put("threadId", pauseThread.getInstanceId())
+                    .put("threadId", pauseThread.getComponentId())
                     .toMap();
             if (pauseThread == null) {
                 result.put("status", "free");

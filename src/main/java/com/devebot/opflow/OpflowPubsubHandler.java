@@ -21,9 +21,10 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowPubsubHandler implements AutoCloseable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
-    private final String instanceId;
+    private final String componentId;
     private final OpflowLogTracer logTracer;
     
     private final OpflowRestrictor.Valve restrictor;
@@ -44,8 +45,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
-        logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", instanceId);
+        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", componentId);
         
         restrictor = new OpflowRestrictor.Valve();
 
@@ -55,7 +56,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put("instanceId", instanceId);
+        brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put("mode", "pubsub");
         brokerParams.put("exchangeType", "direct");
         
@@ -184,7 +185,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         OpflowLogTracer logPublish = null;
         if (logTracer.ready(LOG, Level.INFO)) {
-            logPublish = logTracer.branch("requestTime", requestTime).branch("requestId", requestId);
+            logPublish = logTracer.branch(CONST.REQUEST_TIME, requestTime).branch(CONST.REQUEST_ID, requestId);
         }
         
         Map<String, Object> override = new HashMap<>();
@@ -242,7 +243,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 String requestTime = OpflowUtil.getRequestTime(headers, false);
                 OpflowLogTracer reqTracer = null;
                 if (logSubscribe.ready(LOG, Level.INFO)) {
-                    reqTracer = logSubscribe.branch("requestTime", requestTime).branch("requestId", requestId);
+                    reqTracer = logSubscribe.branch(CONST.REQUEST_TIME, requestTime).branch(CONST.REQUEST_ID, requestId);
                 }
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}].subscribe() receives a new request")

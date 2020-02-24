@@ -38,6 +38,10 @@ public class OpflowConcurrentMap<K, V> extends ConcurrentHashMap<K, V> {
         return maxSize;
     }
     
+    public void resetMaxSize() {
+        maxSize = 0;
+    }
+    
     @Override
     public V put(K key, V value) {
         V v = super.put(key, value);

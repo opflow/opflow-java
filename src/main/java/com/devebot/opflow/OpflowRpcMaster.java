@@ -25,13 +25,14 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowRpcMaster implements AutoCloseable {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
     
     private final static long DELAY_TIMEOUT = 1000;
     private final static int PREFETCH_NUM = 1;
     private final static int CONSUMER_MAX = 1;
     
-    private final String instanceId;
+    private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowRestrictor.Valve restrictor;
@@ -62,12 +63,12 @@ public class OpflowRpcMaster implements AutoCloseable {
     public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowUtil.ensureNotNull(params);
         
-        instanceId = OpflowUtil.getOptionField(params, "instanceId", true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, "measurer", OpflowPromMeasurer.NULL);
+        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);
         
         restrictor = new OpflowRestrictor.Valve();
         
-        logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", instanceId);
+        logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new()")
@@ -75,8 +76,8 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
-        brokerParams.put("instanceId", instanceId);
-        brokerParams.put("measurer", measurer);
+        brokerParams.put(CONST.COMPONENT_ID, componentId);
+        brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
         brokerParams.put("mode", "rpc_master");
         brokerParams.put("exchangeType", "direct");
         
@@ -160,7 +161,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             monitorEnabled = true;
         }
         
-        monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId") : instanceId;
+        monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId") : componentId;
         
         if (params.get("monitorInterval") != null && params.get("monitorInterval") instanceof Integer) {
             monitorInterval = (Integer) params.get("monitorInterval");
@@ -195,7 +196,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .text("RpcMaster[${rpcMasterId}].new() parameters")
                 .stringify());
         
-        measurer.updateComponentInstance("rpc_master", instanceId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance("rpc_master", componentId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcMaster[${rpcMasterId}].new() end!")
@@ -233,8 +234,8 @@ public class OpflowRpcMaster implements AutoCloseable {
                 
                 OpflowLogTracer reqTracer = null;
                 
-                if (extras != null && extras.containsKey(OpflowEngine.REQUEST_TRACER_NAME)) {
-                    reqTracer = (OpflowLogTracer) extras.get(OpflowEngine.REQUEST_TRACER_NAME);
+                if (extras != null && extras.containsKey(CONST.REQUEST_TRACER_NAME)) {
+                    reqTracer = (OpflowLogTracer) extras.get(CONST.REQUEST_TRACER_NAME);
                 }
                 
                 if (reqTracer == null) {
@@ -242,8 +243,8 @@ public class OpflowRpcMaster implements AutoCloseable {
                     String requestTime = OpflowUtil.getRequestTime(headers);
 
                     if (logSession.ready(LOG, Level.INFO)) {
-                        reqTracer = logSession.branch("requestTime", requestTime)
-                                .branch("requestId", requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                        reqTracer = logSession.branch(CONST.REQUEST_TIME, requestTime)
+                                .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     }
                 }
                 
@@ -266,6 +267,10 @@ public class OpflowRpcMaster implements AutoCloseable {
                         .stringify());
                     task.push(new OpflowMessage(content, properties.getHeaders()));
                 }
+                
+                // collect the information of the workers
+                String rpcWorkerId = OpflowUtil.getStringField(headers, CONST.RPC_WORKER_ID, false, true);
+                
                 return true;
             }
         }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
@@ -363,8 +368,8 @@ public class OpflowRpcMaster implements AutoCloseable {
             params.setRequestTTL(expiration + DELAY_TIMEOUT);
         }
         
-        final OpflowLogTracer reqTracer = logTracer.branch("requestTime", params.getRequestTime())
-                .branch("requestId", params.getRequestId(), params);
+        final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRequestTime())
+                .branch(CONST.REQUEST_ID, params.getRequestId(), params);
         
         if (timeoutMonitor == null) {
             synchronized(timeoutMonitorLock) {
@@ -424,7 +429,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     }
                     if (logTask != null && logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                             .put("taskListSize", tasks.size())
-                            .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}]"
+                            .text("Request[${requestId}][${requestTime}][x-rpc-master-finished] - RpcMaster[${rpcMasterId}]"
                                     + "- tasksize after removing task[${taskId}]: ${taskListSize}")
                             .stringify());
                 } finally {
@@ -435,12 +440,12 @@ public class OpflowRpcMaster implements AutoCloseable {
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<>();
-        headers.put("routineId", task.getRoutineId());
-        headers.put("requestId", task.getRequestId());
-        headers.put("requestTime", task.getRequestTime());
+        headers.put(CONST.ROUTINE_ID, task.getRoutineId());
+        headers.put(CONST.REQUEST_ID, task.getRequestId());
+        headers.put(CONST.REQUEST_TIME, task.getRequestTime());
         
         if (params.getRequestTags() != null) {
-            headers.put("requestTags", params.getRequestTags());
+            headers.put(CONST.REQUEST_TAGS, params.getRequestTags());
         }
         
         if (params.getMessageScope() != null) {
@@ -461,12 +466,12 @@ public class OpflowRpcMaster implements AutoCloseable {
         if (!consumerInfo.isFixedQueue()) {
             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                     .put("replyTo", consumerInfo.getQueueName())
-                    .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
+                    .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
                     .stringify());
         } else {
             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                     .put("replyTo", consumerInfo.getQueueName())
-                    .text("Request[${requestId}][${requestTime}] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
+                    .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
                     .stringify());
         }
         builder.replyTo(consumerInfo.getQueueName());
@@ -488,6 +493,10 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     public int getMaxWaitingRequests() {
         return tasks.getMaxSize();
+    }
+    
+    public void resetCallbackQueueCounter() {
+        tasks.resetMaxSize();
     }
     
     public class State extends OpflowEngine.State {
@@ -623,8 +632,8 @@ public class OpflowRpcMaster implements AutoCloseable {
         return engine;
     }
     
-    public String getInstanceId() {
-        return instanceId;
+    public String getComponentId() {
+        return componentId;
     }
     
     public long getExpiration() {
@@ -649,6 +658,6 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance("rpc_master", instanceId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance("rpc_master", componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

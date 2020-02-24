@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowMathUtil;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,19 +31,19 @@ public class OpflowThroughput {
         }
     }
     
-    public static class Top {
+    public static class Speed {
         public double rate;
         public Date time;
 
-        public Top(double rate, Date time) {
+        public Speed(double rate, Date time) {
             this.rate = rate;
             this.time = time;
         }
     }
     
     public static class Info {
-        public Top finest;
-        public double[] speeds;
+        public Speed[] timeline;
+        public Speed top;
     }
     
     private static class Store extends Signal {
@@ -63,10 +64,11 @@ public class OpflowThroughput {
         private final Store[] stores;
         private Store top = null;
         private int current = 0;
+        private int total = 0;
         private Source reader = null;
 
-        public Gauge(int size) {
-            this(size, null);
+        public Gauge(int length) {
+            this(length, null);
         }
         
         public Gauge(Source source) {
@@ -93,6 +95,9 @@ public class OpflowThroughput {
             if (current < 0) {
                 current = length - 1;
             }
+            if (total < length) {
+                total++;
+            }
             return current;
         }
 
@@ -102,7 +107,7 @@ public class OpflowThroughput {
             }
         }
 
-        public void update(Signal point) {
+        public synchronized void update(Signal point) {
             if (point == null) {
                 return;
             }
@@ -131,26 +136,43 @@ public class OpflowThroughput {
 
             stores[next()] = nextNode;
         }
-
+        
+        public synchronized void reset() {
+            top = null;
+            for (int i=0; i<length; i++) {
+                stores[i] = null;
+            }
+        }
+        
         public Info export() {
+            return export(total);
+        }
+        
+        public Info export(int len) {
             Info result = new Info();
             // extract the top
             if (top != null) {
-                result.finest = new Top(OpflowMathUtil.round(top.rate, 1), top.time);
+                result.top = new Speed(OpflowMathUtil.round(top.rate, 1), top.time);
             }
-            // generate the speeds
-            result.speeds = new double[length];
-            for (int i=0; i<length; i++) {
+            // generate the timeline
+            if (len <= 0) {
+                len = 1;
+            }
+            if (len > total) {
+                len = total;
+            }
+            result.timeline = new Speed[len];
+            for (int i=0; i<len; i++) {
                 Store item = stores[getIndex(i)];
                 if (item != null) {
-                    result.speeds[i] = OpflowMathUtil.round(item.rate, 1);
+                    result.timeline[i] = new Speed(OpflowMathUtil.round(item.rate, 1), item.time);
                 }
             }
             return result;
         }
         
-        public Top getTop() {
-            return new Top(top.rate, top.time);
+        public Speed getTop() {
+            return new Speed(top.rate, top.time);
         }
     }
     
@@ -162,6 +184,7 @@ public class OpflowThroughput {
         private volatile boolean running = false;
         private volatile boolean active = false;
 
+        private final Object lock = new Object();
         private final Map<String, Gauge> gauges = new HashMap<>();
 
         public Meter(Map<String, Object> kwargs) {
@@ -194,10 +217,26 @@ public class OpflowThroughput {
             this.active = active;
         }
 
-        public Map<String, Info> export() {
-            Map<String, Info> result = new HashMap<>();
+        public Map<String, Object> getMetadata() {
+            return OpflowObjectTree.buildMap()
+                    .put("throughput", OpflowObjectTree.buildMap()
+                            .put("active", active)
+                            .put("interval", interval)
+                            .put("length", length)
+                            .toMap())
+                    .toMap();
+        }
+
+        public Map<String, Object> export() {
+            return export(length);
+        }
+
+        public Map<String, Object> export(int len) {
+            Map<String, Object> result = new HashMap<>();
             for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
-                result.put(entry.getKey(), entry.getValue().export());
+                result.put(entry.getKey(), OpflowObjectTree.buildMap()
+                        .put("throughput", entry.getValue().export(len))
+                        .toMap());
             }
             return result;
         }
@@ -207,6 +246,16 @@ public class OpflowThroughput {
             return this;
         }
 
+        public void reset() {
+            if (isActive()) {
+                synchronized (lock) {
+                    for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                        entry.getValue().reset();
+                    }
+                }
+            }
+        }
+        
         public synchronized void start() {
             if (!this.running) {
                 if (this.timer == null) {
@@ -217,8 +266,10 @@ public class OpflowThroughput {
                         @Override
                         public void run() {
                             if (isActive()) {
-                                for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
-                                    entry.getValue().update();
+                                synchronized (lock) {
+                                    for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                                        entry.getValue().update();
+                                    }
                                 }
                             }
                         }

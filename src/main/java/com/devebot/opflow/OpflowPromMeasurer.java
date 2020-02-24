@@ -13,6 +13,7 @@ import java.util.Map;
  * @author acegik
  */
 public abstract class OpflowPromMeasurer {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
     public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
     public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverDirectWorker";
@@ -20,13 +21,13 @@ public abstract class OpflowPromMeasurer {
     
     public static enum GaugeAction { INC, DEC }
     
-    public abstract void updateComponentInstance(String instanceType, String instanceId, GaugeAction action);
+    public abstract void updateComponentInstance(String componentType, String componentId, GaugeAction action);
     
-    public abstract void removeComponentInstance(String instanceType, String instanceId);
+    public abstract void removeComponentInstance(String componentType, String componentId);
     
     public abstract void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action);
     
-    public abstract void updateActiveChannel(String instanceType, String instanceId, GaugeAction action);
+    public abstract void updateActiveChannel(String componentType, String componentId, GaugeAction action);
     
     public abstract void countRpcInvocation(String moduleName, String eventName, String routineId, String status);
     
@@ -172,7 +173,7 @@ public abstract class OpflowPromMeasurer {
                             }
                         }
                     }).toMap())
-                    .put("startTime", OpflowDateTime.toISO8601UTC(that.startTime))
+                    .put("startTime", that.startTime)
                     .put("elapsedTime", OpflowDateTime.printElapsedTime(that.startTime, currentTime))
                     .toMap();
         }
@@ -227,16 +228,16 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
+        public void updateComponentInstance(String componentType, String componentId, GaugeAction action) {
             if (shadow != null) {
-                shadow.removeComponentInstance(instanceType, instanceId);
+                shadow.removeComponentInstance(componentType, componentId);
             }
         }
 
         @Override
-        public void removeComponentInstance(String instanceType, String instanceId) {
+        public void removeComponentInstance(String componentType, String componentId) {
             if (shadow != null) {
-                shadow.removeComponentInstance(instanceType, instanceId);
+                shadow.removeComponentInstance(componentType, componentId);
             }
         }
 
@@ -248,9 +249,9 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void updateActiveChannel(String instanceType, String instanceId, GaugeAction action) {
+        public void updateActiveChannel(String componentType, String componentId, GaugeAction action) {
             if (shadow != null) {
-                shadow.updateActiveChannel(instanceType, instanceId, action);
+                shadow.updateActiveChannel(componentType, componentId, action);
             }
         }
 
@@ -259,36 +260,33 @@ public abstract class OpflowPromMeasurer {
             if (shadow != null) {
                 shadow.countRpcInvocation(moduleName, eventName, routineId, status);
             }
-            switch (moduleName) {
-                case "commander": {
-                    switch (eventName) {
-                        case "reserved_worker":
-                            switch (status) {
-                                case "rescue":
-                                    counter.incDirectRescue();
-                                    break;
-                                case "retain":
-                                    counter.incDirectRetain();
-                                    break;
-                            }
-                            break;
-                        case "detached_worker":
-                            switch (status) {
-                                case "ok":
-                                    counter.incRemoteSuccess();
-                                    break;
-                                case "failed":
-                                    counter.incRemoteFailure();
-                                    break;
-                                case "timeout":
-                                    counter.incRemoteTimeout();
-                                    break;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
+            if (CONST.COMPNAME_COMMANDER.equals(moduleName)) {
+                switch (eventName) {
+                    case OpflowConstant.RPC_INVOCATION_FLOW_RESERVED_WORKER:
+                        switch (status) {
+                            case "rescue":
+                                counter.incDirectRescue();
+                                break;
+                            case "retain":
+                                counter.incDirectRetain();
+                                break;
+                        }
+                        break;
+                    case OpflowConstant.RPC_INVOCATION_FLOW_DETACHED_WORKER:
+                        switch (status) {
+                            case "ok":
+                                counter.incRemoteSuccess();
+                                break;
+                            case "failed":
+                                counter.incRemoteFailure();
+                                break;
+                            case "timeout":
+                                counter.incRemoteTimeout();
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -308,11 +306,11 @@ public abstract class OpflowPromMeasurer {
     static class NullMeasurer extends OpflowPromMeasurer {
 
         @Override
-        public void updateComponentInstance(String instanceType, String instanceId, GaugeAction action) {
+        public void updateComponentInstance(String componentType, String componentId, GaugeAction action) {
         }
 
         @Override
-        public void removeComponentInstance(String instanceType, String instanceId) {
+        public void removeComponentInstance(String componentType, String componentId) {
         }
 
         @Override
@@ -320,7 +318,7 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void updateActiveChannel(String instanceType, String instanceId, GaugeAction action) {
+        public void updateActiveChannel(String componentType, String componentId, GaugeAction action) {
         }
 
         @Override
