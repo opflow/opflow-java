@@ -371,7 +371,7 @@ public class OpflowServerlet implements AutoCloseable {
                             .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("methodId", methodId)
-                            .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives a RPC call to the method[${methodId}]")
+                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-received] - Serverlet[${instantiatorId}] receives a RPC call to the method[${methodId}]")
                             .stringify());
                     Method method = methodRef.get(methodId);
                     Object target = targetRef.get(methodId);
@@ -443,7 +443,7 @@ public class OpflowServerlet implements AutoCloseable {
                         } else {
                             if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                     .put("targetName", target.getClass().getName())
-                                    .text("Request[${requestId}][${requestTime}] - The method from target[${targetName}] is invoked")
+                                    .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-processing] - The method from target[${targetName}] is invoked")
                                     .stringify());
                             returnValue = method.invoke(target, args);
                         }
@@ -456,7 +456,7 @@ public class OpflowServerlet implements AutoCloseable {
                         response.emitCompleted(result);
                         
                         if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                            .text("Request[${requestId}][${requestTime}] - Method call has completed")
+                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-completed] - Method call has completed")
                             .stringify());
                     } catch (JsonSyntaxException error) {
                         error.getStackTrace();

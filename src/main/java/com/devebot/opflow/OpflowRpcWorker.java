@@ -161,7 +161,7 @@ public class OpflowRpcWorker implements AutoCloseable {
 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .put(CONST.ROUTINE_ID, routineId)
-                        .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}] receives a new RPC request")
+                        .text("Request[${requestId}][${requestTime}][x-rpc-worker-request-received] - Consumer[${consumerId}] receives a new RPC request")
                         .stringify());
                 int count = 0;
                 for(Middleware middleware : middlewares) {
@@ -173,7 +173,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                     }
                 }
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                        .text("Request[${requestId}][${requestTime}] - RPC request processing has completed")
+                        .text("Request[${requestId}][${requestTime}][x-rpc-worker-request-finished] - RPC request processing has completed")
                         .stringify());
                 return count > 0;
             }

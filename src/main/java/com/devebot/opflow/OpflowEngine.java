@@ -474,7 +474,7 @@ public class OpflowEngine implements AutoCloseable {
                     .put("engineId", componentId)
                     .put("appId", appId)
                     .put("customKey", requestKey)
-                    .text("Request[${requestId}][${requestTime}] - Engine[${engineId}] - produce() is invoked")
+                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish] - Engine[${engineId}] - produce() is invoked")
                     .stringify());
             
             Channel _channel = getProducingChannel();
@@ -486,14 +486,14 @@ public class OpflowEngine implements AutoCloseable {
             if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .text("Request[${requestId}][${requestTime}] - produce() has failed")
+                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish-failed] - produce() has failed")
                     .stringify());
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
             if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
                     .put("exceptionClass", exception.getClass().getName())
                     .put("exceptionMessage", exception.getMessage())
-                    .text("Request[${requestId}][${requestTime}] - produce() is timeout")
+                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish-timeout] - produce() is timeout")
                     .stringify());
             throw new OpflowOperationException(exception);
         }
@@ -615,7 +615,7 @@ public class OpflowEngine implements AutoCloseable {
                             .put("appId", properties.getAppId())
                             .put("deliveryTag", envelope.getDeliveryTag())
                             .put("consumerTag", consumerTag)
-                            .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}] receives a message")
+                            .text("Request[${requestId}][${requestTime}][x-engine-msg-received] - Consumer[${consumerId}] receives a message")
                             .stringify());
                     
                     if (body.length <= 4096) {
@@ -648,25 +648,25 @@ public class OpflowEngine implements AutoCloseable {
                             
                             if (captured) {
                                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                                        .text("Request[${requestId}][${requestTime}] has finished successfully")
+                                        .text("Request[${requestId}][${requestTime}][x-engine-delivery-ok] has finished successfully")
                                         .stringify());
                             } else {
                                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                                        .text("Request[${requestId}][${requestTime}] has not matched the criteria, skipped")
+                                        .text("Request[${requestId}][${requestTime}][x-engine-delivery-skipped] has not matched the criteria, skipped")
                                         .stringify());
                             }
                             
                             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                     .put("deliveryTag", envelope.getDeliveryTag())
                                     .put("consumerTag", consumerTag)
-                                    .text("Request[${requestId}][${requestTime}] invoke ACK")
+                                    .text("Request[${requestId}][${requestTime}][x-engine-delivery-ack] invoke ACK")
                                     .stringify());
                             
                             invokeAck(envelope, true);
                         } else {
                             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                                     .put("applicationId", applicationId)
-                                    .text("Request[${requestId}][${requestTime}] has been rejected, mismatched applicationId")
+                                    .text("Request[${requestId}][${requestTime}][x-engine-delivery-rejected] has been rejected, mismatched applicationId")
                                     .stringify());
                             invokeAck(envelope, false);
                         }
@@ -679,7 +679,7 @@ public class OpflowEngine implements AutoCloseable {
                                 .put("exceptionMessage", ex.getMessage())
                                 .put("autoAck", _autoAck)
                                 .put("requeueFailure", _requeueFailure)
-                                .text("Request[${requestId}][${requestTime}] has been failed. Service still alive")
+                                .text("Request[${requestId}][${requestTime}][x-engine-delivery-exception] has been failed. Service still alive")
                                 .stringify());
                         invokeAck(envelope, false);
                     }

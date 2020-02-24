@@ -53,7 +53,7 @@ public class OpflowRpcResponse {
                 .put("consumerTag", this.consumerTag)
                 .put("replyTo", this.replyQueueName)
                 .put("progressEnabled", this.progressEnabled)
-                .text("Request[${requestId}][${requestTime}] - RpcResponse is created")
+                .text("Request[${requestId}][${requestTime}][x-rpc-response-created] - RpcResponse is created")
                 .stringify());
     }
     
@@ -110,13 +110,13 @@ public class OpflowRpcResponse {
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                     .put("body", result)
                     .put("bodyLength", result.length())
-                    .text("Request[${requestId}][${requestTime}] - emitProgress()")
+                    .text("Request[${requestId}][${requestTime}][x-rpc-response-emit-progress] - emitProgress()")
                     .stringify());
         } else {
             result = "{ \"percent\": " + percent + ", \"data\": " + jsonData + "}";
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                     .put("bodyLength", result.length())
-                    .text("Request[${requestId}][${requestTime}] - emitProgress()")
+                    .text("Request[${requestId}][${requestTime}][x-rpc-response-emit-progress] - emitProgress()")
                     .stringify());
         }
         basicPublish(OpflowUtil.getBytes(result), createProperties(properties, createHeaders("progress")).build());
@@ -131,7 +131,7 @@ public class OpflowRpcResponse {
         basicPublish(error, createProperties(properties, createHeaders("failed", true)).build());
         if (logTracer.ready(LOG, Level.DEBUG)) LOG.trace(logTracer
                 .put("bodyLength", error.length)
-                .text("Request[${requestId}][${requestTime}] - emitFailed()")
+                .text("Request[${requestId}][${requestTime}][x-rpc-response-emit-failed] - emitFailed()")
                 .stringify());
     }
     
@@ -144,7 +144,7 @@ public class OpflowRpcResponse {
         basicPublish(result, createProperties(properties, createHeaders("completed", true)).build());
         if (logTracer.ready(LOG, Level.DEBUG)) LOG.trace(logTracer
                 .put("bodyLength", result.length)
-                .text("Request[${requestId}][${requestTime}] - emitCompleted()")
+                .text("Request[${requestId}][${requestTime}][x-rpc-response-emit-completed] - emitCompleted()")
                 .stringify());
     }
 
