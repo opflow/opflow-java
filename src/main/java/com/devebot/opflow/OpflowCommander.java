@@ -41,7 +41,8 @@ public class OpflowCommander implements AutoCloseable {
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
-        CONST.COMPNAME_REQ_EXTRACTOR, CONST.COMPNAME_RESTRICTOR, CONST.COMPNAME_RPC_WATCHER, CONST.COMPNAME_SPEED_METER, CONST.COMPNAME_PROM_EXPORTER, CONST.COMPNAME_REST_SERVER
+        CONST.COMPNAME_REQ_EXTRACTOR, CONST.COMPNAME_RESTRICTOR, CONST.COMPNAME_RPC_WATCHER,
+        CONST.COMPNAME_SPEED_METER, CONST.COMPNAME_PROM_EXPORTER, CONST.COMPNAME_REST_SERVER
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
@@ -750,8 +751,8 @@ public class OpflowCommander implements AutoCloseable {
             // git commit information
             if (checkOption(flag, SCOPE_INFO)) {
                 root.put("source-code-info", OpflowObjectTree.buildMap()
-                        .put("master", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
-                        .put("opflow", OpflowSysInfo.getGitInfo())
+                        .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
+                        .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
                         .toMap());
             }
             

@@ -234,8 +234,8 @@ public class OpflowRpcMaster implements AutoCloseable {
                 
                 OpflowLogTracer reqTracer = null;
                 
-                if (extras != null && extras.containsKey(OpflowEngine.REQUEST_TRACER_NAME)) {
-                    reqTracer = (OpflowLogTracer) extras.get(OpflowEngine.REQUEST_TRACER_NAME);
+                if (extras != null && extras.containsKey(CONST.REQUEST_TRACER_NAME)) {
+                    reqTracer = (OpflowLogTracer) extras.get(CONST.REQUEST_TRACER_NAME);
                 }
                 
                 if (reqTracer == null) {

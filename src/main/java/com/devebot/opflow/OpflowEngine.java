@@ -48,8 +48,6 @@ public class OpflowEngine implements AutoCloseable {
         "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
     };
     
-    public final static String REQUEST_TRACER_NAME = "reqTracer";
-    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
     private final OpflowLogTracer logTracer;
     private final String componentId;
@@ -640,7 +638,7 @@ public class OpflowEngine implements AutoCloseable {
                             Map<String, Object> extras = null;
                             if (_reqTracerShared) {
                                 extras = OpflowObjectTree.buildMap(false)
-                                        .put(REQUEST_TRACER_NAME, reqTracer)
+                                        .put(CONST.REQUEST_TRACER_NAME, reqTracer)
                                         .toMap();
                             }
                             

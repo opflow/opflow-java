@@ -5,7 +5,8 @@ package com.devebot.opflow;
  * @author acegik
  */
 public class OpflowConstant {
-
+    public final String FRAMEWORK_ID = "opflow";
+    
     public final String INSTANCE_ID = "instanceId";
     public final String COMPONENT_ID = "componentId";
     public final String COMPONENT_TYPE = "componentType";
@@ -36,7 +37,9 @@ public class OpflowConstant {
     public final String RPC_INVOCATION_FLOW_RPC_MASTER = "master";
     public final static String RPC_INVOCATION_FLOW_DETACHED_WORKER = "detached_worker";
     public final static String RPC_INVOCATION_FLOW_RESERVED_WORKER = "reserved_worker";
-    
+
+    public final static String REQUEST_TRACER_NAME = "reqTracer";
+
     private OpflowConstant() {
     }
 
