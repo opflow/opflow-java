@@ -32,6 +32,7 @@ public class OpflowConstant {
     public final String COMPNAME_NATIVE_WORKER = "ReservedWorker";
     public final String COMPNAME_REMOTE_WORKER = "DetachedWorker";
     public final String COMPNAME_RPC_WATCHER = "rpcWatcher";
+    public final String COMPNAME_RPC_OBSERVER = "rpcObserver";
     public final String COMPNAME_REST_SERVER = "restServer";
 
     public final String RPC_INVOCATION_FLOW_PUBLISHER = "publisher";

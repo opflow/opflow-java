@@ -35,6 +35,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
+    private final OpflowRpcObserver.Listener rpcObserver;;
     private final OpflowRestrictor.Valve restrictor;
     
     private final Timer timer = new Timer("Timer-" + OpflowRpcMaster.class.getSimpleName(), true);
@@ -65,7 +66,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);
-        
+        rpcObserver = (OpflowRpcObserver.Listener) OpflowUtil.getOptionField(params, CONST.COMPNAME_RPC_OBSERVER, null);
         restrictor = new OpflowRestrictor.Valve();
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", componentId);
@@ -270,6 +271,9 @@ public class OpflowRpcMaster implements AutoCloseable {
                 
                 // collect the information of the workers
                 String rpcWorkerId = OpflowUtil.getStringField(headers, CONST.RPC_WORKER_ID, false, true);
+                if (rpcObserver != null) {
+                    rpcObserver.register(rpcWorkerId, new OpflowRpcObserver.Manifest(rpcWorkerId));
+                }
                 
                 return true;
             }

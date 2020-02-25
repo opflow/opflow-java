@@ -10,6 +10,7 @@ import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
+import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import io.undertow.server.RoutingHandler;
@@ -68,6 +69,8 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowPubsubHandler publisher;
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcWatcher rpcWatcher;
+    private OpflowRpcObserverListener rpcObserver;
+    
     private OpflowRestServer restServer;
     private OpflowReqExtractor reqExtractor;
 
@@ -193,11 +196,13 @@ public class OpflowCommander implements AutoCloseable {
                 }, configurerCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
+                rpcObserver = new OpflowRpcObserverListener();
                 rpcMaster = new OpflowRpcMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
                         opts.put(CONST.COMPNAME_MEASURER, measurer);
+                        opts.put(CONST.COMPNAME_RPC_OBSERVER, rpcObserver);
                     }
                 }, rpcMasterCfg).toMap());
             }
@@ -217,7 +222,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put(CONST.COMPONENT_ID, componentId)
                     .toMap());
 
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, rpcMaster, handlers, rpcWatcher, speedMeter);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, rpcMaster, handlers, rpcObserver, rpcWatcher, speedMeter);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, rpcMaster, handlers, speedMeter);
             
@@ -481,6 +486,29 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
 
+    private static class OpflowRpcObserverListener implements OpflowRpcObserver.Listener {
+
+        private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
+
+        @Override
+        public void register(String componentId, OpflowRpcObserver.Manifest info) {
+            if (componentId != null) {
+                OpflowRpcObserver.Manifest bearer = null;
+                if (manifests.containsKey(componentId)) {
+                    bearer = manifests.get(componentId);
+                } else {
+                    bearer = new OpflowRpcObserver.Manifest(componentId);
+                    manifests.put(componentId, bearer);
+                }
+                bearer.touch();
+            }
+        }
+
+        public Object getInformation() {
+            return manifests.values();
+        }
+    }
+
     private static class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
 
         private final String componentId;
@@ -606,6 +634,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRpcWatcher rpcWatcher;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
+        private final OpflowRpcObserverListener rpcObserver;
         private final OpflowThroughput.Meter speedMeter;
         private final Date startTime;
 
@@ -614,6 +643,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcMaster rpcMaster,
                 Map<String, RpcInvocationHandler> mappings,
+                OpflowRpcObserverListener rpcObserver,
                 OpflowRpcWatcher rpcWatcher,
                 OpflowThroughput.Meter speedMeter
         ) {
@@ -623,6 +653,7 @@ public class OpflowCommander implements AutoCloseable {
             this.rpcWatcher = rpcWatcher;
             this.rpcMaster = rpcMaster;
             this.handlers = mappings;
+            this.rpcObserver = rpcObserver;
             this.speedMeter = speedMeter;
             this.startTime = new Date();
         }
@@ -723,6 +754,11 @@ public class OpflowCommander implements AutoCloseable {
                     // RPC mappings
                     if (checkOption(flag, SCOPE_INFO)) {
                         opts.put("mappings", renderRpcInvocationHandlers(handlers));
+                    }
+                    
+                    // RPC current workers
+                    if (rpcObserver != null) {
+                        opts.put(CONST.COMPNAME_RPC_WORKER, rpcObserver.getInformation());
                     }
                     
                     // RpcWatcher information
