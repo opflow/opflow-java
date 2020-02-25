@@ -491,7 +491,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
 
         @Override
-        public void register(String componentId, OpflowRpcObserver.Manifest info) {
+        public void check(String componentId) {
             if (componentId != null) {
                 OpflowRpcObserver.Manifest bearer = null;
                 if (manifests.containsKey(componentId)) {

@@ -9,7 +9,7 @@ import java.util.Date;
 public class OpflowRpcObserver {
     
     public interface Listener {
-        void register(String componentId, Manifest info);
+        void check(String componentId);
     }
     
     public static class Manifest {
