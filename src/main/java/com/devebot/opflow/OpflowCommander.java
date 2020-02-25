@@ -149,6 +149,7 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_CONFIGURER);
         Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_RPC_MASTER);
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_PUBLISHER);
+        Map<String, Object> rpcObserverCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_RPC_OBSERVER);
         Map<String, Object> rpcWatcherCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_RPC_WATCHER);
         Map<String, Object> restServerCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_REST_SERVER);
 
@@ -186,6 +187,10 @@ public class OpflowCommander implements AutoCloseable {
                 reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
             }
 
+            if (rpcObserverCfg == null || OpflowUtil.isComponentEnabled(rpcObserverCfg)) {
+                rpcObserver = new OpflowRpcObserverListener();
+            }
+
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
                 configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
@@ -196,7 +201,6 @@ public class OpflowCommander implements AutoCloseable {
                 }, configurerCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
-                rpcObserver = new OpflowRpcObserverListener();
                 rpcMaster = new OpflowRpcMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
