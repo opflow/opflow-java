@@ -241,10 +241,10 @@ public class OpflowRpcMaster implements AutoCloseable {
                 
                 if (reqTracer == null) {
                     String requestId = OpflowUtil.getRequestId(headers);
-                    String requestTime = OpflowUtil.getRequestTime(headers);
+                    String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
 
                     if (logSession.ready(LOG, Level.INFO)) {
-                        reqTracer = logSession.branch(CONST.REQUEST_TIME, requestTime)
+                        reqTracer = logSession.branch(CONST.REQUEST_TIME, routineTimestamp)
                                 .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     }
                 }
@@ -372,7 +372,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             params.setRequestTTL(expiration + DELAY_TIMEOUT);
         }
         
-        final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRequestTime())
+        final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRoutineTimestamp())
                 .branch(CONST.REQUEST_ID, params.getRequestId(), params);
         
         if (timeoutMonitor == null) {
@@ -444,12 +444,12 @@ public class OpflowRpcMaster implements AutoCloseable {
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<>();
-        headers.put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
         headers.put(CONST.REQUEST_ID, task.getRequestId());
-        headers.put(CONST.REQUEST_TIME, task.getRequestTime());
+        headers.put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
+        headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, task.getRoutineTimestamp());
         
-        if (params.getRequestTags() != null) {
-            headers.put(CONST.AMQP_HEADER_ROUTINE_TAGS, params.getRequestTags());
+        if (params.getRoutineTags() != null) {
+            headers.put(CONST.AMQP_HEADER_ROUTINE_TAGS, params.getRoutineTags());
         }
         
         if (params.getMessageScope() != null) {

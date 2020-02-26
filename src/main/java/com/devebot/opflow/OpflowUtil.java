@@ -288,27 +288,27 @@ public class OpflowUtil {
         return getStringField(headers, CONST.REQUEST_ID, uuidIfNotFound, true);
     }
     
-    public static String getRequestTime(Map<String, Object> headers) {
-        return getRequestTime(headers, true);
+    public static String getRoutineTimestamp(Map<String, Object> headers) {
+        return getRoutineTimestamp(headers, true);
     }
     
-    public static String getRequestTime(Map<String, Object> headers, boolean currentIfNotFound) {
-        Object date = headers.get(CONST.REQUEST_TIME);
+    public static String getRoutineTimestamp(Map<String, Object> headers, boolean currentIfNotFound) {
+        Object date = headers.get(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP);
         if (date instanceof String) {
             return (String) date;
         }
         if (date instanceof Date) {
-            String requestTime = OpflowDateTime.toISO8601UTC((Date) date);
-            headers.put(CONST.REQUEST_TIME, requestTime);
-            return requestTime;
+            String routineTimestamp = OpflowDateTime.toISO8601UTC((Date) date);
+            headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, routineTimestamp);
+            return routineTimestamp;
         }
         if (date != null) {
             return date.toString();
         } else {
             if (currentIfNotFound) {
-                String requestTime = OpflowDateTime.getCurrentTimeString();
-                headers.put(CONST.REQUEST_TIME, requestTime);
-                return requestTime;
+                String routineTimestamp = OpflowDateTime.getCurrentTimeString();
+                headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, routineTimestamp);
+                return routineTimestamp;
             }
             return null;
         }

@@ -17,7 +17,7 @@ public class OpflowRpcParameter implements Customizer {
     }
     
     private final String requestId;
-    private final String requestTime;
+    private final String routineTimestamp;
     private String[] requestTags = null;
     private Long requestTTL = null;
     private String routineSignature = null;
@@ -28,15 +28,15 @@ public class OpflowRpcParameter implements Customizer {
 
     public OpflowRpcParameter() {
         this.requestId = OpflowUUID.getBase64ID();
-        this.requestTime = OpflowDateTime.getCurrentTimeString();
+        this.routineTimestamp = OpflowDateTime.getCurrentTimeString();
     }
     
     public OpflowRpcParameter(Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
 
-        this.routineSignature = OpflowUtil.getRoutineSignature(options, false);
         this.requestId = OpflowUtil.getRequestId(options);
-        this.requestTime = OpflowUtil.getRequestTime(options);
+        this.routineSignature = OpflowUtil.getRoutineSignature(options, false);
+        this.routineTimestamp = OpflowUtil.getRoutineTimestamp(options);
         
         if (options.get("timeout") instanceof Long) {
             this.requestTTL = (Long) options.get("timeout");
@@ -55,9 +55,9 @@ public class OpflowRpcParameter implements Customizer {
         this.watcherEnabled = Boolean.TRUE.equals(options.get("watcherEnabled"));
     }
     
-    public OpflowRpcParameter(String requestId, String requestTime) {
+    public OpflowRpcParameter(String requestId, String routineTimestamp) {
         this.requestId = requestId;
-        this.requestTime = requestTime;
+        this.routineTimestamp = routineTimestamp;
     }
 
     public String getRoutineSignature() {
@@ -73,15 +73,15 @@ public class OpflowRpcParameter implements Customizer {
         return requestId;
     }
 
-    public String getRequestTime() {
-        return requestTime;
+    public String getRoutineTimestamp() {
+        return routineTimestamp;
     }
 
-    public String[] getRequestTags() {
+    public String[] getRoutineTags() {
         return requestTags;
     }
 
-    public OpflowRpcParameter setRequestTags(String[] requestTags) {
+    public OpflowRpcParameter setRoutineTags(String[] requestTags) {
         this.requestTags = requestTags;
         return this;
     }

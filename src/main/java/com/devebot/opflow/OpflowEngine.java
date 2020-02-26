@@ -463,8 +463,8 @@ public class OpflowEngine implements AutoCloseable {
             
             if (reqTracer == null && logTracer.ready(LOG, Level.INFO)) {
                 String requestId = OpflowUtil.getRequestId(headers);
-                String requestTime = OpflowUtil.getRequestTime(headers);
-                reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
+                String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
+                reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
                         .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
             }
             
@@ -604,9 +604,9 @@ public class OpflowEngine implements AutoCloseable {
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
                     final Map<String, Object> headers = properties.getHeaders();
                     final String requestId = OpflowUtil.getRequestId(headers, false);
-                    final String requestTime = OpflowUtil.getRequestTime(headers, false);
+                    final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
                     
-                    final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, requestTime)
+                    final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, routineTimestamp)
                             .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     
                     if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer

@@ -23,7 +23,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final OpflowLogTracer reqTracer;
     private final String requestId;
-    private final String requestTime;
+    private final String routineTimestamp;
     private final String routineSignature;
     private final long timeout;
     private final OpflowTimeout.Listener completeListener;
@@ -31,9 +31,9 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private long timestamp;
 
     public OpflowRpcRequest(final OpflowRpcParameter params, final OpflowTimeout.Listener completeListener) {
-        this.routineSignature = params.getRoutineSignature();
         this.requestId = params.getRequestId();
-        this.requestTime = params.getRequestTime();
+        this.routineSignature = params.getRoutineSignature();
+        this.routineTimestamp = params.getRoutineTimestamp();
         
         if (params.getRequestTTL() == null) {
             this.timeout = 0l;
@@ -41,7 +41,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
             this.timeout = params.getRequestTTL();
         }
         
-        reqTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.requestTime)
+        reqTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
                 .branch(CONST.REQUEST_ID, this.requestId, params);
 
         this.completeListener = completeListener;
@@ -78,8 +78,8 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         return requestId;
     }
 
-    public String getRequestTime() {
-        return requestTime;
+    public String getRoutineTimestamp() {
+        return routineTimestamp;
     }
 
     public String getRoutineSignature() {

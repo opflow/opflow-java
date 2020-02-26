@@ -24,7 +24,7 @@ public class OpflowRpcResponse {
     private final String consumerTag;
     private final String replyQueueName;
     private final String requestId;
-    private final String requestTime;
+    private final String routineTimestamp;
     private final String messageScope;
     private final Boolean progressEnabled;
     
@@ -37,9 +37,9 @@ public class OpflowRpcResponse {
         this.consumerTag = consumerTag;
         
         this.requestId = OpflowUtil.getRequestId(headers, false);
-        this.requestTime = OpflowUtil.getRequestTime(headers, false);
+        this.routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
         
-        logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.requestTime)
+        logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
                 .branch(CONST.REQUEST_ID, this.requestId, new OpflowLogTracer.OmitPingLogs(headers));
         
         if (properties.getReplyTo() != null) {
@@ -178,8 +178,8 @@ public class OpflowRpcResponse {
         if (this.requestId != null) {
             headers.put(CONST.REQUEST_ID, this.requestId);
         }
-        if (this.requestTime != null) {
-            headers.put(CONST.REQUEST_TIME, this.requestTime);
+        if (this.routineTimestamp != null) {
+            headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, this.routineTimestamp);
         }
         if (this.messageScope != null) {
             headers.put("messageScope", this.messageScope);

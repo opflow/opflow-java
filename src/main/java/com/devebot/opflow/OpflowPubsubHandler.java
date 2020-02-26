@@ -181,11 +181,11 @@ public class OpflowPubsubHandler implements AutoCloseable {
         headers = OpflowUtil.ensureNotNull(headers);
         
         String requestId = OpflowUtil.getRequestId(headers);
-        String requestTime = OpflowUtil.getRequestTime(headers);
+        String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
         
         OpflowLogTracer logPublish = null;
         if (logTracer.ready(LOG, Level.INFO)) {
-            logPublish = logTracer.branch(CONST.REQUEST_TIME, requestTime).branch(CONST.REQUEST_ID, requestId);
+            logPublish = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp).branch(CONST.REQUEST_ID, requestId);
         }
         
         Map<String, Object> override = new HashMap<>();
@@ -240,10 +240,10 @@ public class OpflowPubsubHandler implements AutoCloseable {
             ) throws IOException {
                 Map<String, Object> headers = properties.getHeaders();
                 String requestId = OpflowUtil.getRequestId(headers, false);
-                String requestTime = OpflowUtil.getRequestTime(headers, false);
+                String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
                 OpflowLogTracer reqTracer = null;
                 if (logSubscribe.ready(LOG, Level.INFO)) {
-                    reqTracer = logSubscribe.branch(CONST.REQUEST_TIME, requestTime).branch(CONST.REQUEST_ID, requestId);
+                    reqTracer = logSubscribe.branch(CONST.REQUEST_TIME, routineTimestamp).branch(CONST.REQUEST_ID, requestId);
                 }
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}].subscribe() receives a new request")

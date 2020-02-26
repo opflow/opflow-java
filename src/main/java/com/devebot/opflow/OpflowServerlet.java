@@ -364,10 +364,10 @@ public class OpflowServerlet implements AutoCloseable {
                 public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
                     final Map<String, Object> headers = message.getInfo();
                     final String requestId = OpflowUtil.getRequestId(headers);
-                    final String requestTime = OpflowUtil.getRequestTime(headers);
+                    final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
                     final String routineSignature = OpflowUtil.getRoutineSignature(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineSignature, routineSignature);
-                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
+                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
                             .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("methodId", methodId)
@@ -432,7 +432,7 @@ public class OpflowServerlet implements AutoCloseable {
                                             .put("dispatchQueue", rpcWorker.getDispatchName())
                                             .put("handler", OpflowObjectTree.buildMap()
                                                     .put(CONST.REQUEST_ID, requestId)
-                                                    .put(CONST.REQUEST_TIME, requestTime)
+                                                    .put(CONST.REQUEST_TIME, routineTimestamp)
                                                     .put("applicationId", response.getApplicationId())
                                                     .put("replyToQueue", response.getReplyQueueName())
                                                     .put("consumerTag", response.getConsumerTag())
@@ -511,10 +511,10 @@ public class OpflowServerlet implements AutoCloseable {
                 public void processMessage(OpflowMessage message) throws IOException {
                     final Map<String, Object> headers = message.getInfo();
                     final String requestId = OpflowUtil.getRequestId(headers);
-                    final String requestTime = OpflowUtil.getRequestTime(headers);
+                    final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
                     final String routineSignature = OpflowUtil.getRoutineSignature(headers);
                     final String methodId = methodOfAlias.getOrDefault(routineSignature, routineSignature);
-                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
+                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
                             .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("routineId", routineSignature)
