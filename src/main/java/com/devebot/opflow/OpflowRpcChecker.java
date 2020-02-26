@@ -11,7 +11,7 @@ import java.util.Map;
 public abstract class OpflowRpcChecker {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
-    public static final String[] REQUEST_ATTRS = new String[] { CONST.REQUEST_ID, "startTime", "endTime", "elapsedTime" };
+    public static final String[] REQUEST_ATTRS = new String[] { CONST.AMQP_HEADER_ROUTINE_ID, "startTime", "endTime", "elapsedTime" };
     
     public abstract Pong send(Ping info) throws Throwable;
     

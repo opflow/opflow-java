@@ -16,6 +16,7 @@ public class OpflowConstant {
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
     
+    public final String AMQP_HEADER_ROUTINE_ID = "requestId";
     public final String AMQP_HEADER_ROUTINE_TIMESTAMP = "requestTime";
     public final String AMQP_HEADER_ROUTINE_SIGNATURE = "routineId";
     public final String AMQP_HEADER_ROUTINE_TAGS = "requestTags";

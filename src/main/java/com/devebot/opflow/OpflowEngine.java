@@ -462,10 +462,10 @@ public class OpflowEngine implements AutoCloseable {
             propBuilder.headers(headers);
             
             if (reqTracer == null && logTracer.ready(LOG, Level.INFO)) {
-                String requestId = OpflowUtil.getRequestId(headers);
+                String routineId = OpflowUtil.getRoutineId(headers);
                 String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
                 reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
-                        .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                        .branch(CONST.REQUEST_ID, routineId, new OpflowLogTracer.OmitPingLogs(headers));
             }
             
             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
@@ -603,11 +603,11 @@ public class OpflowEngine implements AutoCloseable {
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
                     final Map<String, Object> headers = properties.getHeaders();
-                    final String requestId = OpflowUtil.getRequestId(headers, false);
+                    final String routineId = OpflowUtil.getRoutineId(headers, false);
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
                     
                     final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, routineTimestamp)
-                            .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                            .branch(CONST.REQUEST_ID, routineId, new OpflowLogTracer.OmitPingLogs(headers));
                     
                     if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("appId", properties.getAppId())

@@ -8,8 +8,8 @@ import java.util.List;
  * @author drupalex
  */
 public class OpflowRpcResult implements Serializable {
+    private final String routineId;
     private final String routineSignature;
-    private final String requestId;
     private final String consumerTag;
     private final List<Step> progress;
     private final boolean failed;
@@ -17,12 +17,12 @@ public class OpflowRpcResult implements Serializable {
     private final boolean completed;
     private final byte[] value;
     
-    public OpflowRpcResult(String routineSignature, String requestId, String consumerTag, 
+    public OpflowRpcResult(String routineSignature, String routineId, String consumerTag, 
             List<Step> progress, 
             boolean failed, byte[] error, 
             boolean completed, byte[] value) {
+        this.routineId = routineId;
         this.routineSignature = routineSignature;
-        this.requestId = requestId;
         this.consumerTag = consumerTag;
         this.progress = progress;
         this.failed = failed;
@@ -31,14 +31,14 @@ public class OpflowRpcResult implements Serializable {
         this.value = value;
     }
 
+    public String getRoutineId() {
+        return routineId;
+    }
+    
     public String getRoutineSignature() {
         return routineSignature;
     }
 
-    public String getRequestId() {
-        return requestId;
-    }
-    
     public String getConsumerTag() {
         return consumerTag;
     }

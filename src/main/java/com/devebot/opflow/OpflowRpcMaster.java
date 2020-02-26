@@ -240,12 +240,12 @@ public class OpflowRpcMaster implements AutoCloseable {
                 }
                 
                 if (reqTracer == null) {
-                    String requestId = OpflowUtil.getRequestId(headers);
+                    String routineId = OpflowUtil.getRoutineId(headers);
                     String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
 
                     if (logSession.ready(LOG, Level.INFO)) {
                         reqTracer = logSession.branch(CONST.REQUEST_TIME, routineTimestamp)
-                                .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                                .branch(CONST.REQUEST_ID, routineId, new OpflowLogTracer.OmitPingLogs(headers));
                     }
                 }
                 
@@ -373,7 +373,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRoutineTimestamp())
-                .branch(CONST.REQUEST_ID, params.getRequestId(), params);
+                .branch(CONST.REQUEST_ID, params.getRoutineId(), params);
         
         if (timeoutMonitor == null) {
             synchronized(timeoutMonitorLock) {
@@ -444,7 +444,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<>();
-        headers.put(CONST.REQUEST_ID, task.getRequestId());
+        headers.put(CONST.AMQP_HEADER_ROUTINE_ID, task.getRoutineId());
         headers.put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
         headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, task.getRoutineTimestamp());
         

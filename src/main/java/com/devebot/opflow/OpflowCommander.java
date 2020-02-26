@@ -464,9 +464,9 @@ public class OpflowCommander implements AutoCloseable {
         private Pong _send_safe(final Ping ping) throws Throwable {
             Date startTime = new Date();
             String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
-            String requestId = OpflowUUID.getBase64ID();
+            String routineId = OpflowUUID.getBase64ID();
             String routineTimestamp = OpflowDateTime.toISO8601UTC(startTime);
-            OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, (new OpflowRpcParameter(requestId, routineTimestamp))
+            OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, (new OpflowRpcParameter(routineId, routineTimestamp))
                     .setProgressEnabled(false)
                     .setMessageScope("internal"));
             OpflowRpcResult rpcResult = rpcRequest.extractResult(false);
@@ -482,7 +482,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             Pong pong = OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
-            pong.getParameters().put(CONST.REQUEST_ID, requestId);
+            pong.getParameters().put(CONST.AMQP_HEADER_ROUTINE_ID, routineId);
             pong.getParameters().put("startTime", startTime);
             pong.getParameters().put("endTime", endTime);
             pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
@@ -989,22 +989,25 @@ public class OpflowCommander implements AutoCloseable {
                 requestId = (_requestId != null) ? _requestId : OpflowUUID.getBase64ID();
             }
 
-            // determine the routine timestamp
+            // generate the routineId
+            final String routineId = OpflowUUID.getBase64ID();
+            
+            // generate the routineTimestamp
             final String routineTimestamp = OpflowDateTime.getCurrentTimeString();
 
             // create the logTracer
-            final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp).branch(CONST.REQUEST_ID, requestId);
+            final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp).branch(CONST.REQUEST_ID, routineId);
 
             // get the method signature
-            String methodId = OpflowUtil.getMethodSignature(method);
+            String methodSignature = OpflowUtil.getMethodSignature(method);
             
             // convert the method signature to routineSignature
-            String routineSignature = aliasOfMethod.getOrDefault(methodId, methodId);
+            String routineSignature = aliasOfMethod.getOrDefault(methodSignature, methodSignature);
 
-            Boolean isAsync = methodIsAsync.getOrDefault(methodId, false);
+            Boolean isAsync = methodIsAsync.getOrDefault(methodSignature, false);
             if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                     .put("isAsync", isAsync)
-                    .put("methodId", methodId)
+                    .put("methodSignature", methodSignature)
                     .put("routineSignature", routineSignature)
                     .text("Request[${requestId}][${requestTime}][x-commander-invocation-begin] - RpcInvocationHandler.invoke() - method[${routineSignature}] is async: ${isAsync}")
                     .stringify());
@@ -1024,7 +1027,7 @@ public class OpflowCommander implements AutoCloseable {
                         .stringify());
                 measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.RPC_INVOCATION_FLOW_PUBLISHER, routineSignature, "begin");
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
-                        .put(CONST.REQUEST_ID, requestId)
+                        .put(CONST.AMQP_HEADER_ROUTINE_ID, routineId)
                         .put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, routineTimestamp)
                         .put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, routineSignature)
                         .toMap());
@@ -1051,7 +1054,7 @@ public class OpflowCommander implements AutoCloseable {
                 throw new OpflowWorkerNotFoundException("both reserved worker and detached worker are deactivated");
             }
 
-            OpflowRpcRequest rpcSession = rpcMaster.request(routineSignature, body, (new OpflowRpcParameter(requestId, routineTimestamp))
+            OpflowRpcRequest rpcSession = rpcMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
                     .setProgressEnabled(false));
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
 

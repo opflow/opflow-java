@@ -16,7 +16,7 @@ public class OpflowRpcParameter implements Customizer {
         IS_PING_LOGGING_OMITTED = !"false".equals(OpflowEnvTool.instance.getSystemProperty("OPFLOW_OMIT_PING_LOGS", null));
     }
     
-    private final String requestId;
+    private final String routineId;
     private final String routineTimestamp;
     private String[] requestTags = null;
     private Long requestTTL = null;
@@ -27,36 +27,36 @@ public class OpflowRpcParameter implements Customizer {
     private Boolean watcherEnabled = false;
 
     public OpflowRpcParameter() {
-        this.requestId = OpflowUUID.getBase64ID();
+        this.routineId = OpflowUUID.getBase64ID();
         this.routineTimestamp = OpflowDateTime.getCurrentTimeString();
     }
     
-    public OpflowRpcParameter(Map<String, Object> options) {
-        options = OpflowUtil.ensureNotNull(options);
+    public OpflowRpcParameter(Map<String, Object> headers) {
+        headers = OpflowUtil.ensureNotNull(headers);
 
-        this.requestId = OpflowUtil.getRequestId(options);
-        this.routineSignature = OpflowUtil.getRoutineSignature(options, false);
-        this.routineTimestamp = OpflowUtil.getRoutineTimestamp(options);
+        this.routineId = OpflowUtil.getRoutineId(headers);
+        this.routineSignature = OpflowUtil.getRoutineSignature(headers, false);
+        this.routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
         
-        if (options.get("timeout") instanceof Long) {
-            this.requestTTL = (Long) options.get("timeout");
+        if (headers.get("timeout") instanceof Long) {
+            this.requestTTL = (Long) headers.get("timeout");
         }
         
-        if (options.get("messageScope") instanceof String) {
-            this.messageScope = (String) options.get("messageScope");
+        if (headers.get("messageScope") instanceof String) {
+            this.messageScope = (String) headers.get("messageScope");
         }
         
-        this.callbackTransient = "forked".equals((String)options.get("mode"));
+        this.callbackTransient = "forked".equals((String)headers.get("mode"));
         
-        if (options.get("progressEnabled") instanceof Boolean) {
-            this.progressEnabled = (Boolean) options.get("progressEnabled");
+        if (headers.get("progressEnabled") instanceof Boolean) {
+            this.progressEnabled = (Boolean) headers.get("progressEnabled");
         }
         
-        this.watcherEnabled = Boolean.TRUE.equals(options.get("watcherEnabled"));
+        this.watcherEnabled = Boolean.TRUE.equals(headers.get("watcherEnabled"));
     }
     
-    public OpflowRpcParameter(String requestId, String routineTimestamp) {
-        this.requestId = requestId;
+    public OpflowRpcParameter(String routineId, String routineTimestamp) {
+        this.routineId = routineId;
         this.routineTimestamp = routineTimestamp;
     }
 
@@ -69,8 +69,8 @@ public class OpflowRpcParameter implements Customizer {
         return this;
     }
     
-    public String getRequestId() {
-        return requestId;
+    public String getRoutineId() {
+        return routineId;
     }
 
     public String getRoutineTimestamp() {

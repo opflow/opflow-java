@@ -23,7 +23,7 @@ public class OpflowRpcResponse {
     private final AMQP.BasicProperties properties;
     private final String consumerTag;
     private final String replyQueueName;
-    private final String requestId;
+    private final String routineId;
     private final String routineTimestamp;
     private final String messageScope;
     private final Boolean progressEnabled;
@@ -36,11 +36,11 @@ public class OpflowRpcResponse {
         this.properties = properties;
         this.consumerTag = consumerTag;
         
-        this.requestId = OpflowUtil.getRequestId(headers, false);
+        this.routineId = OpflowUtil.getRoutineId(headers, false);
         this.routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
         
         logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
-                .branch(CONST.REQUEST_ID, this.requestId, new OpflowLogTracer.OmitPingLogs(headers));
+                .branch(CONST.REQUEST_ID, this.routineId, new OpflowLogTracer.OmitPingLogs(headers));
         
         if (properties.getReplyTo() != null) {
             this.replyQueueName = properties.getReplyTo();
@@ -62,10 +62,6 @@ public class OpflowRpcResponse {
     public String getApplicationId() {
         return properties.getAppId();
     }
-    
-    public String getRequestId() {
-        return requestId;
-    }
 
     public String getReplyQueueName() {
         return replyQueueName;
@@ -74,7 +70,7 @@ public class OpflowRpcResponse {
     public String getConsumerTag() {
         return consumerTag;
     }
-    
+
     public void emitStarted() {
         emitStarted("{}");
     }
@@ -175,8 +171,8 @@ public class OpflowRpcResponse {
         if (this.componentId != null) {
             headers.put(CONST.RPC_WORKER_ID, this.componentId);
         }
-        if (this.requestId != null) {
-            headers.put(CONST.REQUEST_ID, this.requestId);
+        if (this.routineId != null) {
+            headers.put(CONST.AMQP_HEADER_ROUTINE_ID, this.routineId);
         }
         if (this.routineTimestamp != null) {
             headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, this.routineTimestamp);

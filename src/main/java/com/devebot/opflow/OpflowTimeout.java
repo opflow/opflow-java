@@ -202,9 +202,9 @@ public class OpflowTimeout {
         private final static Logger LOG = LoggerFactory.getLogger(Watcher.class);
         private final OpflowLogTracer logTracer;
         
-        public Watcher(String requestId, long max, Listener listener) {
-            this.requestId = requestId;
-            logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_ID, this.requestId);
+        public Watcher(String routineId, long max, Listener listener) {
+            this.routineId = routineId;
+            logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_ID, this.routineId);
             if (max > 0) {
                 this.max = max;
             }
@@ -218,7 +218,7 @@ public class OpflowTimeout {
             }
         }
 
-        private String requestId;
+        private String routineId;
         private Listener listener;
         private long interval = 1000;
         private long max = 0;

@@ -22,7 +22,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
     private final OpflowLogTracer reqTracer;
-    private final String requestId;
+    private final String routineId;
     private final String routineTimestamp;
     private final String routineSignature;
     private final long timeout;
@@ -31,7 +31,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private long timestamp;
 
     public OpflowRpcRequest(final OpflowRpcParameter params, final OpflowTimeout.Listener completeListener) {
-        this.requestId = params.getRequestId();
+        this.routineId = params.getRoutineId();
         this.routineSignature = params.getRoutineSignature();
         this.routineTimestamp = params.getRoutineTimestamp();
         
@@ -42,12 +42,12 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         }
         
         reqTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
-                .branch(CONST.REQUEST_ID, this.requestId, params);
+                .branch(CONST.REQUEST_ID, this.routineId, params);
 
         this.completeListener = completeListener;
 
         if (params.getWatcherEnabled() && completeListener != null && this.timeout > 0) {
-            timeoutWatcher = new OpflowTimeout.Watcher(this.requestId, this.timeout, new OpflowTimeout.Listener() {
+            timeoutWatcher = new OpflowTimeout.Watcher(this.routineId, this.timeout, new OpflowTimeout.Listener() {
                 @Override
                 public void handleEvent() {
                     OpflowLogTracer logWatcher = null;
@@ -74,8 +74,8 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         this(new OpflowRpcParameter(options), completeListener);
     }
     
-    public String getRequestId() {
-        return requestId;
+    public String getRoutineId() {
+        return routineId;
     }
 
     public String getRoutineTimestamp() {
@@ -208,7 +208,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                 .text("Request[${requestId}][${requestTime}][x-rpc-request-extract-result-end] - extracting result has completed")
                 .stringify());
         if (!includeProgress) steps = null;
-        return new OpflowRpcResult(routineSignature, requestId, consumerTag, steps, failed, error, completed, value);
+        return new OpflowRpcResult(routineSignature, routineId, consumerTag, steps, failed, error, completed, value);
     }
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });

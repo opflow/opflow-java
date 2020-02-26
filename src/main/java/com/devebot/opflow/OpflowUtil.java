@@ -280,12 +280,12 @@ public class OpflowUtil {
         return (opts == null) ? new HashMap<String, Object>() : opts;
     }
     
-    public static String getRequestId(Map<String, Object> headers) {
-        return getStringField(headers, CONST.REQUEST_ID, true, true);
+    public static String getRoutineId(Map<String, Object> headers) {
+        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_ID, true, true);
     }
     
-    public static String getRequestId(Map<String, Object> headers, boolean uuidIfNotFound) {
-        return getStringField(headers, CONST.REQUEST_ID, uuidIfNotFound, true);
+    public static String getRoutineId(Map<String, Object> headers, boolean uuidIfNotFound) {
+        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_ID, uuidIfNotFound, true);
     }
     
     public static String getRoutineTimestamp(Map<String, Object> headers) {
