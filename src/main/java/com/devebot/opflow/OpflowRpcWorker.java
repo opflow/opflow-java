@@ -151,7 +151,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 String routineId = OpflowUtil.getRoutineId(headers, false);
                 String requestId = OpflowUtil.getRequestId(headers, false);
                 String requestTime = OpflowUtil.getRequestTime(headers, false);
-                String[] requestTags = OpflowUtil.getRequestTags(headers);
+                String[] requestTags = OpflowUtil.getRoutineTags(headers);
 
                 OpflowLogTracer reqTracer = null;
                 if (logProcess.ready(LOG, Level.INFO)) {

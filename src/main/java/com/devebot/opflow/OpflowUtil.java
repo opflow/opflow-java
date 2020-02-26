@@ -314,8 +314,12 @@ public class OpflowUtil {
         }
     }
     
-    public static String[] getRequestTags(Map<String, Object> headers) {
-        Object tags = headers.get(CONST.REQUEST_TAGS);
+    public static String[] getRoutineTags(Map<String, Object> headers) {
+        return getRoutineTags(headers, CONST.AMQP_HEADER_ROUTINE_TAGS);
+    }
+    
+    public static String[] getRoutineTags(Map<String, Object> headers, String headerName) {
+        Object tags = headers.get(headerName);
         if (tags == null) {
             return null;
         }

@@ -449,7 +449,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         headers.put(CONST.REQUEST_TIME, task.getRequestTime());
         
         if (params.getRequestTags() != null) {
-            headers.put(CONST.REQUEST_TAGS, params.getRequestTags());
+            headers.put(CONST.AMQP_HEADER_ROUTINE_TAGS, params.getRequestTags());
         }
         
         if (params.getMessageScope() != null) {
