@@ -34,7 +34,7 @@ public class OpflowRpcParameter implements Customizer {
     public OpflowRpcParameter(Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
 
-        this.routineId = OpflowUtil.getRoutineId(options, false);
+        this.routineId = OpflowUtil.getRoutineSignature(options, false);
         this.requestId = OpflowUtil.getRequestId(options);
         this.requestTime = OpflowUtil.getRequestTime(options);
         

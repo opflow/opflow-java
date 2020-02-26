@@ -335,12 +335,12 @@ public class OpflowUtil {
         return splitByComma(tags.toString());
     }
     
-    public static String getRoutineId(Map<String, Object> headers) {
-        return getStringField(headers, CONST.ROUTINE_ID, true, true);
+    public static String getRoutineSignature(Map<String, Object> headers) {
+        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, true, true);
     }
     
-    public static String getRoutineId(Map<String, Object> headers, boolean uuidIfNotFound) {
-        return getStringField(headers, CONST.ROUTINE_ID, uuidIfNotFound, true);
+    public static String getRoutineSignature(Map<String, Object> headers, boolean uuidIfNotFound) {
+        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, uuidIfNotFound, true);
     }
     
     public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound, boolean assigned) {

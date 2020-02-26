@@ -365,8 +365,8 @@ public class OpflowServerlet implements AutoCloseable {
                     final Map<String, Object> headers = message.getInfo();
                     final String requestId = OpflowUtil.getRequestId(headers);
                     final String requestTime = OpflowUtil.getRequestTime(headers);
-                    final String routineId = OpflowUtil.getRoutineId(headers);
-                    final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
+                    final String routineSignature = OpflowUtil.getRoutineSignature(headers);
+                    final String methodId = methodOfAlias.getOrDefault(routineSignature, routineSignature);
                     final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
                             .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
@@ -392,7 +392,7 @@ public class OpflowServerlet implements AutoCloseable {
                         Object returnValue;
                         
                         String pingSignature = OpflowRpcCheckerWorker.getSendMethodName();
-                        if (pingSignature.equals(routineId)) {
+                        if (pingSignature.equals(routineSignature)) {
                             if (args.length > 0) {
                                 OpflowRpcChecker.Ping p = (OpflowRpcChecker.Ping) args[0];
                                 if (p.q != null) {
@@ -512,12 +512,12 @@ public class OpflowServerlet implements AutoCloseable {
                     final Map<String, Object> headers = message.getInfo();
                     final String requestId = OpflowUtil.getRequestId(headers);
                     final String requestTime = OpflowUtil.getRequestTime(headers);
-                    final String routineId = OpflowUtil.getRoutineId(headers);
-                    final String methodId = methodOfAlias.getOrDefault(routineId, routineId);
+                    final String routineSignature = OpflowUtil.getRoutineSignature(headers);
+                    final String methodId = methodOfAlias.getOrDefault(routineSignature, routineSignature);
                     final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, requestTime)
                             .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                            .put(CONST.ROUTINE_ID, routineId)
+                            .put("routineId", routineSignature)
                             .put("methodId", methodId)
                             .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives an asynchronous method call [${routineId}]")
                             .stringify());
@@ -599,7 +599,7 @@ public class OpflowServerlet implements AutoCloseable {
                             methodOfAlias.put(alias, methodId);
                             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                     .put("alias", alias)
-                                    .put(CONST.ROUTINE_ID, methodId)
+                                    .put("routineId", methodId)
                                     .text("link alias to routineId")
                                     .stringify());
                         }
@@ -613,7 +613,7 @@ public class OpflowServerlet implements AutoCloseable {
                         String methodId = OpflowUtil.getMethodSignature(method);
                         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                 .put("rpcWorkerId", rpcWorker.getIntanceId())
-                                .put(CONST.ROUTINE_ID, methodId)
+                                .put("routineId", methodId)
                                 .put("methodId", methodId)
                                 .tags("attach-method-to-RpcWorker-listener")
                                 .text("Attach the method[" + methodId + "] to the listener of RpcWorker[${rpcWorkerId}]")

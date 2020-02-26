@@ -924,7 +924,7 @@ public class OpflowCommander implements AutoCloseable {
                     aliasOfMethod.put(methodId, alias);
                     if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                             .put("alias", alias)
-                            .put(CONST.ROUTINE_ID, methodId)
+                            .put("routineId", methodId)
                             .text("link alias to routineId")
                             .stringify());
                 }
@@ -998,14 +998,14 @@ public class OpflowCommander implements AutoCloseable {
             // get the method signature
             String methodId = OpflowUtil.getMethodSignature(method);
             
-            // convert the method signature to routineId
-            String routineId = aliasOfMethod.getOrDefault(methodId, methodId);
+            // convert the method signature to routineSignature
+            String routineSignature = aliasOfMethod.getOrDefault(methodId, methodId);
 
             Boolean isAsync = methodIsAsync.getOrDefault(methodId, false);
             if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                    .put("methodId", methodId)
-                    .put(CONST.ROUTINE_ID, routineId)
                     .put("isAsync", isAsync)
+                    .put("methodId", methodId)
+                    .put("routineId", routineSignature)
                     .text("Request[${requestId}][${requestTime}][x-commander-invocation-begin] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
                     .stringify());
 
@@ -1022,18 +1022,18 @@ public class OpflowCommander implements AutoCloseable {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-publish-method] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.RPC_INVOCATION_FLOW_PUBLISHER, routineId, "begin");
+                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.RPC_INVOCATION_FLOW_PUBLISHER, routineSignature, "begin");
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put(CONST.REQUEST_ID, requestId)
                         .put(CONST.REQUEST_TIME, requestTime)
-                        .put(CONST.ROUTINE_ID, routineId)
+                        .put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, routineSignature)
                         .toMap());
                 return null;
             } else {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-dispatch-method] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
                         .stringify());
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.RPC_INVOCATION_FLOW_RPC_MASTER, routineId, "begin");
+                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.RPC_INVOCATION_FLOW_RPC_MASTER, routineSignature, "begin");
             }
             
             // rpc switching
@@ -1042,7 +1042,7 @@ public class OpflowCommander implements AutoCloseable {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-retain] - RpcInvocationHandler.invoke() retains the reservedWorker")
                             .stringify());
-                    measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "reserved_worker", routineId, "retain");
+                    measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "reserved_worker", routineSignature, "retain");
                     return method.invoke(this.reservedWorker, args);
                 }
             }
@@ -1051,7 +1051,7 @@ public class OpflowCommander implements AutoCloseable {
                 throw new OpflowWorkerNotFoundException("both reserved worker and detached worker are deactivated");
             }
 
-            OpflowRpcRequest rpcSession = rpcMaster.request(routineId, body, (new OpflowRpcParameter(requestId, requestTime))
+            OpflowRpcRequest rpcSession = rpcMaster.request(routineSignature, body, (new OpflowRpcParameter(requestId, requestTime))
                     .setProgressEnabled(false));
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
 
@@ -1061,18 +1061,18 @@ public class OpflowCommander implements AutoCloseable {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-rescue] - RpcInvocationHandler.invoke() rescues by the reservedWorker")
                             .stringify());
-                    measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "reserved_worker", routineId, "rescue");
+                    measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "reserved_worker", routineSignature, "rescue");
                     return method.invoke(this.reservedWorker, args);
                 }
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-timeout] - RpcInvocationHandler.invoke() is timeout")
                         .stringify());
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "detached_worker", routineId, "timeout");
+                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "detached_worker", routineSignature, "timeout");
                 throw new OpflowRequestTimeoutException();
             }
 
             if (rpcResult.isFailed()) {
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "detached_worker", routineId, "failed");
+                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "detached_worker", routineSignature, "failed");
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-failed] - RpcInvocationHandler.invoke() has failed")
                         .stringify());
@@ -1086,7 +1086,7 @@ public class OpflowCommander implements AutoCloseable {
                     .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-ok] - RpcInvocationHandler.invoke() return the output")
                     .stringify());
 
-            measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "detached_worker", routineId, "ok");
+            measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, "detached_worker", routineSignature, "ok");
 
             if (method.getReturnType() == void.class) return null;
 

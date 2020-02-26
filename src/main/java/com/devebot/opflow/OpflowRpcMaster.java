@@ -444,7 +444,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<>();
-        headers.put(CONST.ROUTINE_ID, task.getRoutineId());
+        headers.put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, task.getRoutineId());
         headers.put(CONST.REQUEST_ID, task.getRequestId());
         headers.put(CONST.REQUEST_TIME, task.getRequestTime());
         

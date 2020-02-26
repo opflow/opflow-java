@@ -151,20 +151,20 @@ public class OpflowPubsubHandler implements AutoCloseable {
         publish(body, null, null);
     }
     
-    public void publish(byte[] body, Map<String, Object> options) {
-        publish(body, options, null);
+    public void publish(byte[] body, Map<String, Object> headers) {
+        publish(body, headers, null);
     }
     
-    public void publish(final byte[] body, final Map<String, Object> options, final String routingKey) {
+    public void publish(final byte[] body, final Map<String, Object> headers, final String routingKey) {
         if (restrictor == null) {
-            _publish(body, options, routingKey);
+            _publish(body, headers, routingKey);
             return;
         }
         try {
             restrictor.filter(new OpflowRestrictor.Action<Object>() {
                 @Override
                 public Object process() throws Throwable {
-                    _publish(body, options, routingKey);
+                    _publish(body, headers, routingKey);
                     return null;
                 }
             });
@@ -177,11 +177,11 @@ public class OpflowPubsubHandler implements AutoCloseable {
         }
     }
     
-    private void _publish(byte[] body, Map<String, Object> options, String routingKey) {
-        options = OpflowUtil.ensureNotNull(options);
+    private void _publish(byte[] body, Map<String, Object> headers, String routingKey) {
+        headers = OpflowUtil.ensureNotNull(headers);
         
-        String requestId = OpflowUtil.getRequestId(options);
-        String requestTime = OpflowUtil.getRequestTime(options);
+        String requestId = OpflowUtil.getRequestId(headers);
+        String requestTime = OpflowUtil.getRequestTime(headers);
         
         OpflowLogTracer logPublish = null;
         if (logTracer.ready(LOG, Level.INFO)) {
@@ -201,7 +201,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     .stringify());
         }
         
-        engine.produce(body, options, override);
+        engine.produce(body, headers, override);
         
         if (logPublish != null && logPublish.ready(LOG, Level.INFO)) LOG.info(logPublish
                 .text("Request[${requestId}][${requestTime}] - PubsubHandler[${pubsubHandlerId}].publish() request has enqueued")

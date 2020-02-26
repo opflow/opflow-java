@@ -148,7 +148,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 Map<String, Object> headers = properties.getHeaders();
                 OpflowMessage request = new OpflowMessage(body, headers);
                 OpflowRpcResponse response = new OpflowRpcResponse(componentId, channel, properties, consumerTag, queueName, null);
-                String routineId = OpflowUtil.getRoutineId(headers, false);
+                String routineSignature = OpflowUtil.getRoutineSignature(headers, false);
                 String requestId = OpflowUtil.getRequestId(headers, false);
                 String requestTime = OpflowUtil.getRequestTime(headers, false);
                 String[] requestTags = OpflowUtil.getRoutineTags(headers);
@@ -160,14 +160,14 @@ public class OpflowRpcWorker implements AutoCloseable {
                 }
 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                        .put(CONST.ROUTINE_ID, routineId)
+                        .put("routineId", routineSignature)
                         .text("Request[${requestId}][${requestTime}][x-rpc-worker-request-received] - Consumer[${consumerId}] receives a new RPC request")
                         .stringify());
                 int count = 0;
                 for(Middleware middleware : middlewares) {
-                    if (middleware.getChecker().match(routineId)) {
+                    if (middleware.getChecker().match(routineSignature)) {
                         count++;
-                        measurer.countRpcInvocation("rpc_worker", componentId, routineId, "process");
+                        measurer.countRpcInvocation("rpc_worker", componentId, routineSignature, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
