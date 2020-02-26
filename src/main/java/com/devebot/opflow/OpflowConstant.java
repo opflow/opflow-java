@@ -1,6 +1,10 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowEnvTool;
+import com.devebot.opflow.supports.OpflowJsonTool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -8,6 +12,7 @@ import com.devebot.opflow.supports.OpflowEnvTool;
  */
 public class OpflowConstant {
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowConstant.class);
 
     public final String FRAMEWORK_ID = "opflow";
 
@@ -50,8 +55,11 @@ public class OpflowConstant {
 
     public final static String REQUEST_TRACER_NAME = "reqTracer";
 
+    private final OpflowLogTracer logTracer;
+
     private OpflowConstant() {
-        switch (ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "0")) {
+        String protoVersion = ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "0");
+        switch (protoVersion) {
             case "1":
                 AMQP_HEADER_ROUTINE_ID = "oxId";
                 AMQP_HEADER_ROUTINE_TIMESTAMP = "oxTimestamp";
@@ -64,19 +72,24 @@ public class OpflowConstant {
                 AMQP_HEADER_ROUTINE_SIGNATURE = "routineId";
                 AMQP_HEADER_ROUTINE_TAGS = "requestTags";
         }
+
+        logTracer = OpflowLogTracer.ROOT.copy();
+
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .put("protoVersion", protoVersion)
+                .put("headers", OpflowJsonTool.toString(new String[] {
+                    AMQP_HEADER_ROUTINE_ID,
+                    AMQP_HEADER_ROUTINE_TIMESTAMP,
+                    AMQP_HEADER_ROUTINE_SIGNATURE,
+                    AMQP_HEADER_ROUTINE_TAGS
+                }))
+                .text("Constant[${instanceId}] - apply the protocol version [${protoVersion}] with AMQP headers: [${headers}]")
+                .stringify());
     }
 
-    private static final Object LOCK = new Object();
-    private static OpflowConstant instance = null;
+    private static volatile OpflowConstant instance = new OpflowConstant();
 
     public static OpflowConstant CURRENT() {
-        if (instance == null) {
-            synchronized (LOCK) {
-                if (instance == null) {
-                    instance = new OpflowConstant();
-                }
-            }
-        }
         return instance;
     }
 }
