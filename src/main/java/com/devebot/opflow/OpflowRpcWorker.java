@@ -97,29 +97,29 @@ public class OpflowRpcWorker implements AutoCloseable {
         return process(TRUE, listener);
     }
 
-    public OpflowEngine.ConsumerInfo process(final String routineId, final OpflowRpcListener listener) {
+    public OpflowEngine.ConsumerInfo process(final String routineSignature, final OpflowRpcListener listener) {
         return process(new Checker() {
             @Override
-            public boolean match(String originRoutineId) {
-                return routineId != null && routineId.equals(originRoutineId);
+            public boolean match(String originRoutineSignature) {
+                return routineSignature != null && routineSignature.equals(originRoutineSignature);
             }
         }, listener);
     };
     
-    public OpflowEngine.ConsumerInfo process(final String[] routineIds, final OpflowRpcListener listener) {
+    public OpflowEngine.ConsumerInfo process(final String[] routineSignatures, final OpflowRpcListener listener) {
         return process(new Checker() {
             @Override
-            public boolean match(String originRoutineId) {
-                return routineIds != null && OpflowUtil.arrayContains(routineIds, originRoutineId);
+            public boolean match(String originRoutineSignature) {
+                return routineSignatures != null && OpflowUtil.arrayContains(routineSignatures, originRoutineSignature);
             }
         }, listener);
     };
     
-    public OpflowEngine.ConsumerInfo process(final Set<String> routineIds, final OpflowRpcListener listener) {
+    public OpflowEngine.ConsumerInfo process(final Set<String> routineSignatures, final OpflowRpcListener listener) {
         return process(new Checker() {
             @Override
-            public boolean match(String originRoutineId) {
-                return routineIds != null && routineIds.contains(originRoutineId);
+            public boolean match(String originRoutineSignature) {
+                return routineSignatures != null && routineSignatures.contains(originRoutineSignature);
             }
         }, listener);
     };
@@ -161,7 +161,7 @@ public class OpflowRpcWorker implements AutoCloseable {
 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .put("routineId", routineSignature)
-                        .text("Request[${requestId}][${requestTime}][x-rpc-worker-request-received] - Consumer[${consumerId}] receives a new RPC request")
+                        .text("Request[${requestId}][${requestTime}][x-rpc-worker-request-received] - Consumer[${consumerId}] receives a new RPC [${routineId}]")
                         .stringify());
                 int count = 0;
                 for(Middleware middleware : middlewares) {
@@ -259,12 +259,12 @@ public class OpflowRpcWorker implements AutoCloseable {
     }
     
     public interface Checker {
-        public boolean match(String routineId);
+        public boolean match(String routineSignature);
     }
     
     private final Checker TRUE = new Checker() {
         @Override
-        public boolean match(String routineId) {
+        public boolean match(String routineSignature) {
             return true;
         }
     };

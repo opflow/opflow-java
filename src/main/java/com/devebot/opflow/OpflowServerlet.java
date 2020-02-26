@@ -301,8 +301,8 @@ public class OpflowServerlet implements AutoCloseable {
             return this;
         }
         
-        public DescriptorBuilder addRpcListener(String routineId, OpflowRpcListener listener) {
-            map.rpcListeners.put(routineId, listener);
+        public DescriptorBuilder addRpcListener(String routineSignature, OpflowRpcListener listener) {
+            map.rpcListeners.put(routineSignature, listener);
             return this;
         }
         
@@ -341,7 +341,7 @@ public class OpflowServerlet implements AutoCloseable {
         private final OpflowRpcListener rpcListener;
         private final OpflowPubsubHandler subscriber;
         private final OpflowPubsubListener subListener;
-        private final Set<String> routineIds = new HashSet<>();
+        private final Set<String> routineSignatures = new HashSet<>();
         private final Map<String, Method> methodRef = new HashMap<>();
         private final Map<String, Object> targetRef = new HashMap<>();
         private final Map<String, String> methodOfAlias = new HashMap<>();
@@ -561,7 +561,7 @@ public class OpflowServerlet implements AutoCloseable {
         public final void process() {
             if (!processing) {
                 if (rpcWorker != null) {
-                    rpcWorker.process(routineIds, rpcListener);
+                    rpcWorker.process(routineSignatures, rpcListener);
                 }
                 if (subscriber != null) {
                     subscriber.subscribe(subListener);
@@ -587,42 +587,41 @@ public class OpflowServerlet implements AutoCloseable {
             try {
                 if (target == null) target = type.getDeclaredConstructor().newInstance();
                 for (Method method : type.getDeclaredMethods()) {
-                    String methodId = OpflowUtil.getMethodSignature(method);
+                    String methodSignature = OpflowUtil.getMethodSignature(method);
                     OpflowTargetRoutine routine = extractMethodInfo(method);
                     if (routine != null && routine.alias() != null) {
                         String[] aliases = routine.alias();
                         for(String alias:aliases) {
                             if (methodOfAlias.containsKey(alias)) {
-                                throw new OpflowInterceptionException("Alias[" + alias + "]/routineId[" + methodId + "]" + 
-                                        " is conflicted with alias of routineId[" + methodOfAlias.get(alias) + "]");
+                                throw new OpflowInterceptionException("Alias[" + alias + "]/methodSignature[" + methodSignature + "]" + 
+                                        " is conflicted with alias of routineSignature[" + methodOfAlias.get(alias) + "]");
                             }
-                            methodOfAlias.put(alias, methodId);
+                            methodOfAlias.put(alias, methodSignature);
                             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                     .put("alias", alias)
-                                    .put("routineId", methodId)
-                                    .text("link alias to routineId")
+                                    .put("methodSignature", methodSignature)
+                                    .text("link alias to methodSignature")
                                     .stringify());
                         }
                     }
                 }
-                routineIds.addAll(methodOfAlias.keySet());
+                routineSignatures.addAll(methodOfAlias.keySet());
                 List<Class<?>> clazzes = OpflowUtil.getAllAncestorTypes(type);
                 for(Class clz: clazzes) {
                     Method[] methods = clz.getDeclaredMethods();
                     for (Method method : methods) {
-                        String methodId = OpflowUtil.getMethodSignature(method);
+                        String methodSignature = OpflowUtil.getMethodSignature(method);
                         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                 .put("rpcWorkerId", rpcWorker.getIntanceId())
-                                .put("routineId", methodId)
-                                .put("methodId", methodId)
+                                .put("methodSignature", methodSignature)
                                 .tags("attach-method-to-RpcWorker-listener")
-                                .text("Attach the method[" + methodId + "] to the listener of RpcWorker[${rpcWorkerId}]")
+                                .text("Attach the method[" + methodSignature + "] to the listener of RpcWorker[${rpcWorkerId}]")
                                 .stringify());
-                        if (!routineIds.add(methodId) && !method.equals(methodRef.get(methodId))) {
-                            throw new OpflowInterceptionException("routineId[" + methodId + "] is conflicted");
+                        if (!routineSignatures.add(methodSignature) && !method.equals(methodRef.get(methodSignature))) {
+                            throw new OpflowInterceptionException("methodSignature[" + methodSignature + "] is conflicted");
                         }
-                        methodRef.put(methodId, method);
-                        targetRef.put(methodId, target);
+                        methodRef.put(methodSignature, method);
+                        targetRef.put(methodSignature, target);
                     }
                 }
             } catch (InstantiationException except) {

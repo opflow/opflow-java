@@ -20,7 +20,7 @@ public class OpflowRpcParameter implements Customizer {
     private final String requestTime;
     private String[] requestTags = null;
     private Long requestTTL = null;
-    private String routineId = null;
+    private String routineSignature = null;
     private String messageScope = null;
     private Boolean callbackTransient = false;
     private Boolean progressEnabled = null;
@@ -34,7 +34,7 @@ public class OpflowRpcParameter implements Customizer {
     public OpflowRpcParameter(Map<String, Object> options) {
         options = OpflowUtil.ensureNotNull(options);
 
-        this.routineId = OpflowUtil.getRoutineSignature(options, false);
+        this.routineSignature = OpflowUtil.getRoutineSignature(options, false);
         this.requestId = OpflowUtil.getRequestId(options);
         this.requestTime = OpflowUtil.getRequestTime(options);
         
@@ -60,12 +60,12 @@ public class OpflowRpcParameter implements Customizer {
         this.requestTime = requestTime;
     }
 
-    public String getRoutineId() {
-        return routineId;
+    public String getRoutineSignature() {
+        return routineSignature;
     }
 
-    public OpflowRpcParameter setRoutineId(String routineId) {
-        this.routineId = routineId;
+    public OpflowRpcParameter setRoutineSignature(String routineSignature) {
+        this.routineSignature = routineSignature;
         return this;
     }
     

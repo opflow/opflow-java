@@ -914,21 +914,21 @@ public class OpflowCommander implements AutoCloseable {
             this.reservedWorker = reservedWorker;
             this.reservedWorkerEnabled = reservedWorkerEnabled;
             for (Method method : this.clazz.getDeclaredMethods()) {
-                String methodId = OpflowUtil.getMethodSignature(method);
+                String methodSignature = OpflowUtil.getMethodSignature(method);
                 OpflowSourceRoutine routine = extractMethodInfo(method);
                 if (routine != null && routine.alias() != null && routine.alias().length() > 0) {
                     String alias = routine.alias();
                     if (aliasOfMethod.containsValue(alias)) {
-                        throw new OpflowInterceptionException("Alias[" + alias + "]/routineId[" + methodId + "] is duplicated");
+                        throw new OpflowInterceptionException("Alias[" + alias + "]/methodSignature[" + methodSignature + "] is duplicated");
                     }
-                    aliasOfMethod.put(methodId, alias);
+                    aliasOfMethod.put(methodSignature, alias);
                     if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                             .put("alias", alias)
-                            .put("routineId", methodId)
-                            .text("link alias to routineId")
+                            .put("methodSignature", methodSignature)
+                            .text("link alias to methodSignature")
                             .stringify());
                 }
-                methodIsAsync.put(methodId, (routine != null) && routine.isAsync());
+                methodIsAsync.put(methodSignature, (routine != null) && routine.isAsync());
             }
         }
 

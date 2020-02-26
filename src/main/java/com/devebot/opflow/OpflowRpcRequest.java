@@ -24,14 +24,14 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final OpflowLogTracer reqTracer;
     private final String requestId;
     private final String requestTime;
-    private final String routineId;
+    private final String routineSignature;
     private final long timeout;
     private final OpflowTimeout.Listener completeListener;
     private OpflowTimeout.Watcher timeoutWatcher;
     private long timestamp;
 
     public OpflowRpcRequest(final OpflowRpcParameter params, final OpflowTimeout.Listener completeListener) {
-        this.routineId = params.getRoutineId();
+        this.routineSignature = params.getRoutineSignature();
         this.requestId = params.getRequestId();
         this.requestTime = params.getRequestTime();
         
@@ -82,8 +82,8 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         return requestTime;
     }
 
-    public String getRoutineId() {
-        return routineId;
+    public String getRoutineSignature() {
+        return routineSignature;
     }
 
     @Override
@@ -208,7 +208,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                 .text("Request[${requestId}][${requestTime}][x-rpc-request-extract-result-end] - extracting result has completed")
                 .stringify());
         if (!includeProgress) steps = null;
-        return new OpflowRpcResult(routineId, requestId, consumerTag, steps, failed, error, completed, value);
+        return new OpflowRpcResult(routineSignature, requestId, consumerTag, steps, failed, error, completed, value);
     }
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });

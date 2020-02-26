@@ -317,39 +317,39 @@ public class OpflowRpcMaster implements AutoCloseable {
         return monitor;
     }
     
-    public OpflowRpcRequest request(String routineId, String body) {
-        return request(routineId, OpflowUtil.getBytes(body), null, null);
+    public OpflowRpcRequest request(String routineSignature, String body) {
+        return request(routineSignature, OpflowUtil.getBytes(body), null, null);
     }
     
-    public OpflowRpcRequest request(String routineId, String body, Map<String, Object> options) {
-        return request(routineId, OpflowUtil.getBytes(body), null, options);
+    public OpflowRpcRequest request(String routineSignature, String body, Map<String, Object> options) {
+        return request(routineSignature, OpflowUtil.getBytes(body), null, options);
     }
     
-    public OpflowRpcRequest request(String routineId, String body, final OpflowRpcParameter params) {
-        return request(routineId, OpflowUtil.getBytes(body), params, null);
+    public OpflowRpcRequest request(String routineSignature, String body, final OpflowRpcParameter params) {
+        return request(routineSignature, OpflowUtil.getBytes(body), params, null);
     }
     
-    public OpflowRpcRequest request(String routineId, byte[] body) {
-        return request(routineId, body, null, null);
+    public OpflowRpcRequest request(String routineSignature, byte[] body) {
+        return request(routineSignature, body, null, null);
     }
     
-    public OpflowRpcRequest request(final String routineId, final byte[] body, final OpflowRpcParameter params) {
-        return request(routineId, body, params, null);
+    public OpflowRpcRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params) {
+        return request(routineSignature, body, params, null);
     }
     
-    public OpflowRpcRequest request(final String routineId, final byte[] body, final Map<String, Object> options) {
-        return request(routineId, body, null, options);
+    public OpflowRpcRequest request(final String routineSignature, final byte[] body, final Map<String, Object> options) {
+        return request(routineSignature, body, null, options);
     }
     
-    public OpflowRpcRequest request(final String routineId, final byte[] body, final OpflowRpcParameter params, final Map<String, Object> options) {
+    public OpflowRpcRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params, final Map<String, Object> options) {
         if (restrictor == null) {
-            return _request_safe(routineId, body, params, options);
+            return _request_safe(routineSignature, body, params, options);
         }
         try {
             return restrictor.filter(new OpflowRestrictor.Action<OpflowRpcRequest>() {
                 @Override
                 public OpflowRpcRequest process() throws Throwable {
-                    return _request_safe(routineId, body, params, options);
+                    return _request_safe(routineSignature, body, params, options);
                 }
             });
         }
@@ -361,11 +361,11 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
     }
     
-    private OpflowRpcRequest _request_safe(final String routineId, byte[] body, OpflowRpcParameter parameter, Map<String, Object> options) {
+    private OpflowRpcRequest _request_safe(final String routineSignature, byte[] body, OpflowRpcParameter parameter, Map<String, Object> options) {
         final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter(options);
         
-        if (routineId != null) {
-            params.setRoutineId(routineId);
+        if (routineSignature != null) {
+            params.setRoutineSignature(routineSignature);
         }
         
         if (expiration > 0) {
@@ -444,7 +444,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<>();
-        headers.put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, task.getRoutineId());
+        headers.put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
         headers.put(CONST.REQUEST_ID, task.getRequestId());
         headers.put(CONST.REQUEST_TIME, task.getRequestTime());
         
@@ -484,7 +484,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             builder.expiration(String.valueOf(expiration));
         }
         
-        measurer.countRpcInvocation("rpc_master", "request", routineId, "begin");
+        measurer.countRpcInvocation("rpc_master", "request", routineSignature, "begin");
         
         engine.produce(body, headers, builder, null, reqTracer);
         

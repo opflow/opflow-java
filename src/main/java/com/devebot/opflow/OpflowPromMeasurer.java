@@ -29,7 +29,7 @@ public abstract class OpflowPromMeasurer {
     
     public abstract void updateActiveChannel(String componentType, String componentId, GaugeAction action);
     
-    public abstract void countRpcInvocation(String moduleName, String eventName, String routineId, String status);
+    public abstract void countRpcInvocation(String moduleName, String eventName, String routineSignature, String status);
     
     public abstract RpcInvocationCounter getRpcInvocationCounter(String moduleName);
     
@@ -256,9 +256,9 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void countRpcInvocation(String moduleName, String eventName, String routineId, String status) {
+        public void countRpcInvocation(String moduleName, String eventName, String routineSignature, String status) {
             if (shadow != null) {
-                shadow.countRpcInvocation(moduleName, eventName, routineId, status);
+                shadow.countRpcInvocation(moduleName, eventName, routineSignature, status);
             }
             if (CONST.COMPNAME_COMMANDER.equals(moduleName)) {
                 switch (eventName) {
@@ -322,7 +322,7 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void countRpcInvocation(String moduleName, String eventName, String routineId, String status) {
+        public void countRpcInvocation(String moduleName, String eventName, String routineSignature, String status) {
         }
         
         @Override

@@ -143,8 +143,8 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     }
     
     @Override
-    public void countRpcInvocation(String moduleName, String eventName, String routineId, String status) {
-        assertRpcInvocationCounter().labels(moduleName, eventName, routineId, status).inc();
+    public void countRpcInvocation(String moduleName, String eventName, String routineSignature, String status) {
+        assertRpcInvocationCounter().labels(moduleName, eventName, routineSignature, status).inc();
     }
     
     @Override
