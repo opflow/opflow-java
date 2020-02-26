@@ -101,7 +101,7 @@ public class OpflowCommander implements AutoCloseable {
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}].new()")
+                .text("Commander[${commanderId}][${instanceId}].new()")
                 .stringify());
         
         measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(CONST.COMPNAME_PROM_EXPORTER));
@@ -134,7 +134,7 @@ public class OpflowCommander implements AutoCloseable {
         measurer.updateComponentInstance(CONST.COMPNAME_COMMANDER, componentId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}].new() end!")
+                .text("Commander[${commanderId}][${instanceId}].new() end!")
                 .stringify());
     }
     
@@ -1010,7 +1010,9 @@ public class OpflowCommander implements AutoCloseable {
                     .put("externalRequestId", requestId)
                     .put("methodSignature", methodSignature)
                     .put("routineSignature", routineSignature)
-                    .text("Request[${requestId}][${requestTime}][x-commander-invocation-begin] - method[${routineSignature}] is async [${isAsync}] with requestId[${externalRequestId}]")
+                    .text("Request[${requestId}][${requestTime}][x-commander-invocation-begin]" +
+                            " - Commander[${commanderId}][${instanceId}]" +
+                            " - method[${routineSignature}] is async [${isAsync}] with requestId[${externalRequestId}]")
                     .stringify());
 
             if (args == null) args = new Object[0];

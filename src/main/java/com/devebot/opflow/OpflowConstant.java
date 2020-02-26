@@ -1,10 +1,6 @@
 package com.devebot.opflow;
 
-import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowEnvTool;
-import com.devebot.opflow.supports.OpflowJsonTool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -12,7 +8,6 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowConstant {
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowConstant.class);
 
     public final String FRAMEWORK_ID = "opflow";
 
@@ -25,6 +20,7 @@ public class OpflowConstant {
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
 
+    public final String AMQP_PROTOCOL_VERSION;
     public final String AMQP_HEADER_ROUTINE_ID;
     public final String AMQP_HEADER_ROUTINE_TIMESTAMP;
     public final String AMQP_HEADER_ROUTINE_SIGNATURE;
@@ -55,11 +51,9 @@ public class OpflowConstant {
 
     public final static String REQUEST_TRACER_NAME = "reqTracer";
 
-    private final OpflowLogTracer logTracer;
-
     private OpflowConstant() {
-        String protoVersion = ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "0");
-        switch (protoVersion) {
+        AMQP_PROTOCOL_VERSION = ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "0");
+        switch (AMQP_PROTOCOL_VERSION) {
             case "1":
                 AMQP_HEADER_ROUTINE_ID = "oxId";
                 AMQP_HEADER_ROUTINE_TIMESTAMP = "oxTimestamp";
@@ -71,25 +65,20 @@ public class OpflowConstant {
                 AMQP_HEADER_ROUTINE_TIMESTAMP = "requestTime";
                 AMQP_HEADER_ROUTINE_SIGNATURE = "routineId";
                 AMQP_HEADER_ROUTINE_TAGS = "requestTags";
+                break;
         }
-
-        logTracer = OpflowLogTracer.ROOT.copy();
-
-        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .put("protoVersion", protoVersion)
-                .put("headers", OpflowJsonTool.toString(new String[] {
-                    AMQP_HEADER_ROUTINE_ID,
-                    AMQP_HEADER_ROUTINE_TIMESTAMP,
-                    AMQP_HEADER_ROUTINE_SIGNATURE,
-                    AMQP_HEADER_ROUTINE_TAGS
-                }))
-                .text("Constant[${instanceId}] - apply the protocol version [${protoVersion}] with AMQP headers: [${headers}]")
-                .stringify());
     }
 
-    private static volatile OpflowConstant instance = new OpflowConstant();
+    private static OpflowConstant instance = null;
 
     public static OpflowConstant CURRENT() {
+        if (instance == null) {
+            synchronized (OpflowConstant.class) {
+                if (instance == null) {
+                    instance = new OpflowConstant();
+                }
+            }
+        }
         return instance;
     }
 }

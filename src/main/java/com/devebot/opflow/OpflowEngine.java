@@ -5,6 +5,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowKeytool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSysInfo;
@@ -89,7 +90,18 @@ public class OpflowEngine implements AutoCloseable {
         logTracer = OpflowLogTracer.ROOT.branch("engineId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Engine[${engineId}].new()")
+                .text("Engine[${engineId}][${instanceId}].new()")
+                .stringify());
+        
+        if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
+                .put("protoVersion", CONST.AMQP_PROTOCOL_VERSION)
+                .put("headers", OpflowJsonTool.toString(new String[] {
+                        CONST.AMQP_HEADER_ROUTINE_ID,
+                        CONST.AMQP_HEADER_ROUTINE_TIMESTAMP,
+                        CONST.AMQP_HEADER_ROUTINE_SIGNATURE,
+                        CONST.AMQP_HEADER_ROUTINE_TAGS
+                }))
+                .text("Engine[${engineId}][${instanceId}] - apply the protocol version [${protoVersion}] with AMQP headers: [${headers}]")
                 .stringify());
         
         mode = params.containsKey("mode") ? params.get("mode").toString() : "engine";
@@ -602,34 +614,22 @@ public class OpflowEngine implements AutoCloseable {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
-                    final Map<String, Object> headers = properties.getHeaders();
-                    final String routineId = OpflowUtil.getRoutineId(headers, false);
-                    final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
-                    
-                    final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, routineTimestamp)
-                            .branch(CONST.REQUEST_ID, routineId, new OpflowLogTracer.OmitPingLogs(headers));
-                    
-                    if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                            .put("appId", properties.getAppId())
-                            .put("deliveryTag", envelope.getDeliveryTag())
-                            .put("consumerTag", consumerTag)
-                            .text("Request[${requestId}][${requestTime}][x-engine-msg-received] - Consumer[${consumerId}] receives a message")
-                            .stringify());
-                    
-                    if (body.length <= 4096) {
-                        if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
-                                .put("bodyHead", new String(body, "UTF-8"))
-                                .put("bodyLength", body.length)
-                                .text("Request[${requestId}][${requestTime}] body head (4096 bytes)")
-                                .stringify());
-                    } else {
-                        if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
-                                .put("bodyLength", body.length)
-                                .text("Request[${requestId}][${requestTime}] body size too large (>4KB)")
-                                .stringify());
-                    }
-                    
                     try {
+                        final Map<String, Object> headers = properties.getHeaders();
+                        final String routineId = OpflowUtil.getRoutineId(headers, false);
+                        final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
+
+                        final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, routineTimestamp)
+                                .branch(CONST.REQUEST_ID, routineId, new OpflowLogTracer.OmitPingLogs(headers));
+
+                        if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
+                                .put("appId", properties.getAppId())
+                                .put("deliveryTag", envelope.getDeliveryTag())
+                                .put("consumerTag", consumerTag)
+                                .put("bodyLength", body.length)
+                                .text("Request[${requestId}][${requestTime}][x-engine-msg-received] - Consumer[${consumerId}] receives a message (${bodyLength} bytes)")
+                                .stringify());
+
                         if (applicationId == null || applicationId.equals(properties.getAppId())) {
                             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                     .text("Request[${requestId}][${requestTime}] invoke listener.processMessage()")
@@ -668,9 +668,9 @@ public class OpflowEngine implements AutoCloseable {
                                     .stringify());
                             invokeAck(envelope, false);
                         }
-                    } catch (IOException ex) {
+                    } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
-                        if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
+                        if (logConsume != null && logConsume.ready(LOG, Level.ERROR)) LOG.error(logConsume
                                 .put("deliveryTag", envelope.getDeliveryTag())
                                 .put("consumerTag", consumerTag)
                                 .put("exceptionClass", ex.getClass().getName())
@@ -679,6 +679,7 @@ public class OpflowEngine implements AutoCloseable {
                                 .put("requeueFailure", _requeueFailure)
                                 .text("Request[${requestId}][${requestTime}][x-engine-delivery-exception] has been failed. Service still alive")
                                 .stringify());
+                        // ex.printStackTrace();
                         invokeAck(envelope, false);
                     }
                 }
