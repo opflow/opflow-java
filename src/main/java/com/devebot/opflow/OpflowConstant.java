@@ -1,10 +1,14 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowEnvTool;
+
 /**
  *
  * @author acegik
  */
 public class OpflowConstant {
+    private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
+
     public final String FRAMEWORK_ID = "opflow";
 
     public final String INSTANCE_ID = "instanceId";
@@ -15,11 +19,11 @@ public class OpflowConstant {
 
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
-    
-    public final String AMQP_HEADER_ROUTINE_ID = "requestId";
-    public final String AMQP_HEADER_ROUTINE_TIMESTAMP = "requestTime";
-    public final String AMQP_HEADER_ROUTINE_SIGNATURE = "routineId";
-    public final String AMQP_HEADER_ROUTINE_TAGS = "requestTags";
+
+    public final String AMQP_HEADER_ROUTINE_ID;
+    public final String AMQP_HEADER_ROUTINE_TIMESTAMP;
+    public final String AMQP_HEADER_ROUTINE_SIGNATURE;
+    public final String AMQP_HEADER_ROUTINE_TAGS;
 
     public final String COMPNAME_COMMANDER = "commander";
     public final String COMPNAME_SERVERLET = "serverlet";
@@ -47,6 +51,19 @@ public class OpflowConstant {
     public final static String REQUEST_TRACER_NAME = "reqTracer";
 
     private OpflowConstant() {
+        switch (ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "0")) {
+            case "1":
+                AMQP_HEADER_ROUTINE_ID = "oxId";
+                AMQP_HEADER_ROUTINE_TIMESTAMP = "oxTimestamp";
+                AMQP_HEADER_ROUTINE_SIGNATURE = "oxSignature";
+                AMQP_HEADER_ROUTINE_TAGS = "oxTags";
+                break;
+            default:
+                AMQP_HEADER_ROUTINE_ID = "requestId";
+                AMQP_HEADER_ROUTINE_TIMESTAMP = "requestTime";
+                AMQP_HEADER_ROUTINE_SIGNATURE = "routineId";
+                AMQP_HEADER_ROUTINE_TAGS = "requestTags";
+        }
     }
 
     private static final Object LOCK = new Object();

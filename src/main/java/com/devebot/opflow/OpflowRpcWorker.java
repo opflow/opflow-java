@@ -86,7 +86,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcWorker[${rpcWorkerId}].new() end!")
                 .stringify());
-    
+
         measurer.updateComponentInstance("rpc_worker", componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
