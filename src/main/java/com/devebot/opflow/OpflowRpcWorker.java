@@ -160,8 +160,8 @@ public class OpflowRpcWorker implements AutoCloseable {
                 }
 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                        .put("routineId", routineSignature)
-                        .text("Request[${requestId}][${requestTime}][x-rpc-worker-request-received] - Consumer[${consumerId}] receives a new RPC [${routineId}]")
+                        .put("routineSignature", routineSignature)
+                        .text("Request[${requestId}][${requestTime}][x-rpc-worker-request-received] - Consumer[${consumerId}] receives a new RPC [${routineSignature}]")
                         .stringify());
                 int count = 0;
                 for(Middleware middleware : middlewares) {

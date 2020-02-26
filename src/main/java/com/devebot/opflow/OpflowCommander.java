@@ -1005,8 +1005,8 @@ public class OpflowCommander implements AutoCloseable {
             if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                     .put("isAsync", isAsync)
                     .put("methodId", methodId)
-                    .put("routineId", routineSignature)
-                    .text("Request[${requestId}][${requestTime}][x-commander-invocation-begin] - RpcInvocationHandler.invoke() - method[${routineId}] is async: ${isAsync}")
+                    .put("routineSignature", routineSignature)
+                    .text("Request[${requestId}][${requestTime}][x-commander-invocation-begin] - RpcInvocationHandler.invoke() - method[${routineSignature}] is async: ${isAsync}")
                     .stringify());
 
             if (args == null) args = new Object[0];

@@ -366,15 +366,15 @@ public class OpflowServerlet implements AutoCloseable {
                     final String requestId = OpflowUtil.getRequestId(headers);
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
                     final String routineSignature = OpflowUtil.getRoutineSignature(headers);
-                    final String methodId = methodOfAlias.getOrDefault(routineSignature, routineSignature);
+                    final String methodSignature = methodOfAlias.getOrDefault(routineSignature, routineSignature);
                     final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
                             .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                            .put("methodId", methodId)
-                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-received] - Serverlet[${instantiatorId}] receives a RPC call to the method[${methodId}]")
+                            .put("methodSignature", methodSignature)
+                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-received] - Serverlet[${instantiatorId}] receives a RPC call to the routine[${methodSignature}]")
                             .stringify());
-                    Method method = methodRef.get(methodId);
-                    Object target = targetRef.get(methodId);
+                    Method method = methodRef.get(methodSignature);
+                    Object target = targetRef.get(methodSignature);
                     try {
                         Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
                         OpflowTargetRoutine routine = extractMethodInfo(origin);
@@ -513,16 +513,16 @@ public class OpflowServerlet implements AutoCloseable {
                     final String requestId = OpflowUtil.getRequestId(headers);
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
                     final String routineSignature = OpflowUtil.getRoutineSignature(headers);
-                    final String methodId = methodOfAlias.getOrDefault(routineSignature, routineSignature);
+                    final String methodSignature = methodOfAlias.getOrDefault(routineSignature, routineSignature);
                     final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
                             .branch(CONST.REQUEST_ID, requestId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                            .put("routineId", routineSignature)
-                            .put("methodId", methodId)
-                            .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives an asynchronous method call [${routineId}]")
+                            .put("routineSignature", routineSignature)
+                            .put("methodSignature", methodSignature)
+                            .text("Request[${requestId}][${requestTime}] - Serverlet[${instantiatorId}] receives an asynchronous routine call to method[${methodSignature}]")
                             .stringify());
-                    Method method = methodRef.get(methodId);
-                    Object target = targetRef.get(methodId);
+                    Method method = methodRef.get(methodSignature);
+                    Object target = targetRef.get(methodSignature);
                     try {
                         Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
                         OpflowTargetRoutine routine = extractMethodInfo(origin);
