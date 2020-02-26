@@ -980,15 +980,6 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private Object _invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            // determine the requestId
-            final String requestId;
-            if (reqExtractor == null) {
-                requestId = OpflowUUID.getBase64ID();
-            } else {
-                String _requestId = reqExtractor.extractRequestId(args);
-                requestId = (_requestId != null) ? _requestId : OpflowUUID.getBase64ID();
-            }
-
             // generate the routineId
             final String routineId = OpflowUUID.getBase64ID();
             
@@ -1004,12 +995,22 @@ public class OpflowCommander implements AutoCloseable {
             // convert the method signature to routineSignature
             String routineSignature = aliasOfMethod.getOrDefault(methodSignature, methodSignature);
 
+            // determine the requestId
+            final String requestId;
+            if (reqExtractor != null) {
+                String _requestId = reqExtractor.extractRequestId(args);
+                requestId = (_requestId != null) ? _requestId : "REQ:" + routineId;
+            } else {
+                requestId = null;
+            }
+
             Boolean isAsync = methodIsAsync.getOrDefault(methodSignature, false);
             if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                     .put("isAsync", isAsync)
+                    .put("externalRequestId", requestId)
                     .put("methodSignature", methodSignature)
                     .put("routineSignature", routineSignature)
-                    .text("Request[${requestId}][${requestTime}][x-commander-invocation-begin] - RpcInvocationHandler.invoke() - method[${routineSignature}] is async: ${isAsync}")
+                    .text("Request[${requestId}][${requestTime}][x-commander-invocation-begin] - method[${routineSignature}] is async [${isAsync}] with requestId[${externalRequestId}]")
                     .stringify());
 
             if (args == null) args = new Object[0];
