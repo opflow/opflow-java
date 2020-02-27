@@ -477,7 +477,7 @@ public class OpflowEngine implements AutoCloseable {
                 String routineId = OpflowUtil.getRoutineId(headers);
                 String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
                 reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
-                        .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitPingLogs(headers));
+                        .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
             }
             
             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
@@ -620,7 +620,7 @@ public class OpflowEngine implements AutoCloseable {
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
 
                     final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, routineTimestamp)
-                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitPingLogs(headers));
+                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
 
                     try {
                         if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer

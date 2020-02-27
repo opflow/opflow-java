@@ -4,6 +4,7 @@ import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowEnvTool;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowStringUtil;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -545,7 +546,7 @@ public class OpflowConfig {
     }
     
     public static Map<String, Object> mergeConfiguration(Map<String, Object> target, Map<String, Object> source) {
-        return OpflowUtil.mergeObjectTree(target, source);
+        return OpflowObjectTree.merge(target, source);
     }
     
     public static Properties filterProperties(Properties source, String filter) {

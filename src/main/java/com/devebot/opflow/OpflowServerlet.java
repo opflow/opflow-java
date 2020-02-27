@@ -368,7 +368,7 @@ public class OpflowServerlet implements AutoCloseable {
                     final String routineSignature = OpflowUtil.getRoutineSignature(headers);
                     final String methodSignature = methodOfAlias.getOrDefault(routineSignature, routineSignature);
                     final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
-                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitPingLogs(headers));
+                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("methodSignature", methodSignature)
                             .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-received]" +
@@ -516,7 +516,7 @@ public class OpflowServerlet implements AutoCloseable {
                     final String routineSignature = OpflowUtil.getRoutineSignature(headers);
                     final String methodSignature = methodOfAlias.getOrDefault(routineSignature, routineSignature);
                     final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
-                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitPingLogs(headers));
+                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("routineSignature", routineSignature)
                             .put("methodSignature", methodSignature)

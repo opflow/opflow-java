@@ -245,7 +245,7 @@ public class OpflowRpcMaster implements AutoCloseable {
 
                     if (logSession.ready(LOG, Level.INFO)) {
                         reqTracer = logSession.branch(CONST.REQUEST_TIME, routineTimestamp)
-                                .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitPingLogs(headers));
+                                .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
                     }
                 }
                 

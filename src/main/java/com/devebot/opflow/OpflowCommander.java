@@ -822,7 +822,7 @@ public class OpflowCommander implements AutoCloseable {
             if (measurer != null) {
                 OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter(CONST.COMPNAME_COMMANDER);
                 if (counter != null) {
-                    OpflowUtil.mergeObjectTree(metrics, counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE)));
+                    OpflowObjectTree.merge(metrics, counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE)));
                 }
             }
             
@@ -830,16 +830,16 @@ public class OpflowCommander implements AutoCloseable {
             if (speedMeter != null && checkOption(flag, SCOPE_THROUGHPUT)) {
                 if (speedMeter.isActive()) {
                     if (checkOption(flag, SCOPE_LATEST_SPEED)) {
-                        OpflowUtil.mergeObjectTree(metrics, speedMeter.export(1));
+                        OpflowObjectTree.merge(metrics, speedMeter.export(1));
                     } else {
-                        OpflowUtil.mergeObjectTree(metrics, speedMeter.export());
+                        OpflowObjectTree.merge(metrics, speedMeter.export());
                     }
                 }
             }
             
             // size of the callback queue
             if (KEEP_LOGIC_CLEARLY) {
-                OpflowUtil.mergeObjectTree(metrics, OpflowObjectTree.buildMap()
+                OpflowObjectTree.merge(metrics, OpflowObjectTree.buildMap()
                         .put(OpflowPromMeasurer.LABEL_RPC_REMOTE_WORKER, OpflowObjectTree.buildMap()
                                 .put("waitingReqTotal", OpflowObjectTree.buildMap()
                                         .put("current", rpcMaster.getActiveRequestTotal())

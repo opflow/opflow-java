@@ -40,7 +40,7 @@ public class OpflowRpcResponse {
         this.routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
         
         logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
-                .branch(CONST.REQUEST_ID, this.routineId, new OpflowUtil.OmitPingLogs(headers));
+                .branch(CONST.REQUEST_ID, this.routineId, new OpflowUtil.OmitInternalOplogs(headers));
         
         if (properties.getReplyTo() != null) {
             this.replyQueueName = properties.getReplyTo();

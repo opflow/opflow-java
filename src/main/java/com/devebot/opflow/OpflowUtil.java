@@ -41,16 +41,16 @@ public class OpflowUtil {
         IS_PING_LOGGING_OMITTED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_OMIT_PING_LOGS", null));
     }
     
-    public static class OmitPingLogs implements OpflowLogTracer.Customizer {
-        final String messageScope;
+    public static class OmitInternalOplogs implements OpflowLogTracer.Customizer {
+        final String routineScope;
                 
-        OmitPingLogs(Map<String, Object> options) {
-            messageScope = getOptionField(options, CONST.AMQP_HEADER_ROUTINE_SCOPE, false);
+        OmitInternalOplogs(Map<String, Object> options) {
+            routineScope = getOptionField(options, CONST.AMQP_HEADER_ROUTINE_SCOPE, false);
         }
         
         @Override
         public boolean isMute() {
-            return IS_PING_LOGGING_OMITTED && "internal".equals(messageScope);
+            return IS_PING_LOGGING_OMITTED && "internal".equals(routineScope);
         }
     }
 
@@ -273,21 +273,6 @@ public class OpflowUtil {
     @Deprecated
     public static MapBuilder buildOrderedMap(MapListener listener, Map<String, Object> defaultOpts) {
         return buildMap(listener, defaultOpts, true);
-    }
-    
-    public static Map<String, Object> mergeObjectTree(Map<String, Object> target, Map<String, Object> source) {
-        if (target == null) target = new HashMap<>();
-        if (source == null) return target;
-        for (String key : source.keySet()) {
-            if (source.get(key) instanceof Map && target.get(key) instanceof Map) {
-                Map<String, Object> targetChild = (Map<String, Object>) target.get(key);
-                Map<String, Object> sourceChild = (Map<String, Object>) source.get(key);
-                target.put(key, mergeObjectTree(targetChild, sourceChild));
-            } else {
-                target.put(key, source.get(key));
-            }
-        }
-        return target;
     }
     
     public static Map<String, Object> ensureNotNull(Map<String, Object> opts) {
