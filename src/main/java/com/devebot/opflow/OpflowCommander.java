@@ -96,7 +96,7 @@ public class OpflowCommander implements AutoCloseable {
             kwargs = configLoader.loadConfiguration();
         }
         kwargs = OpflowUtil.ensureNotNull(kwargs);
-        strictMode = OpflowUtil.getOptionValue(kwargs, "strictMode", Boolean.class, Boolean.FALSE);
+        strictMode = OpflowObjectTree.getOptionValue(kwargs, "strictMode", Boolean.class, Boolean.FALSE);
         componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", componentId);
         
@@ -468,7 +468,7 @@ public class OpflowCommander implements AutoCloseable {
             String routineTimestamp = OpflowDateTime.toISO8601UTC(startTime);
             OpflowRpcRequest rpcRequest = rpcMaster.request(getSendMethodName(), body, (new OpflowRpcParameter(routineId, routineTimestamp))
                     .setProgressEnabled(false)
-                    .setMessageScope("internal"));
+                    .setRoutineScope("internal"));
             OpflowRpcResult rpcResult = rpcRequest.extractResult(false);
             Date endTime = new Date();
 

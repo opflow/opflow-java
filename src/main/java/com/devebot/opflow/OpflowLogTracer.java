@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowEnvTool;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import com.devebot.opflow.supports.OpflowTextFormat;
 import com.google.gson.Gson;
@@ -45,7 +46,6 @@ public class OpflowLogTracer {
     private final static boolean IS_TAGS_EMBEDDABLE;
     private final static boolean IS_TEXT_EMBEDDABLE;
     private final static boolean IS_TEMPLATE_APPLIED;
-    private final static boolean IS_PING_LOGGING_OMITTED;
 
     static {
         ALWAYS_ENABLED = new HashSet<>();
@@ -81,7 +81,6 @@ public class OpflowLogTracer {
         IS_TEXT_EMBEDDABLE = "false".equals(ENVTOOL.getSystemProperty("OPFLOW_TEXT_EMBEDDABLE", null));
         IS_TEMPLATE_APPLIED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_TEMPLATE_APPLIED", null));
         IS_INTERCEPTOR_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_DEBUGLOG", null));
-        IS_PING_LOGGING_OMITTED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_OMIT_PING_LOGS", null));
         IS_STRINGIFY_ENABLED = true;
     }
     
@@ -89,19 +88,6 @@ public class OpflowLogTracer {
         boolean isMute();
     }
 
-     public static class OmitPingLogs implements Customizer {
-        final String messageScope;
-                
-        OmitPingLogs(Map<String, Object> options) {
-            messageScope = OpflowUtil.getOptionField(options, "messageScope", false);
-        }
-        
-        @Override
-        public boolean isMute() {
-            return IS_PING_LOGGING_OMITTED && "internal".equals(messageScope);
-        }
-    }
-    
     private final Customizer customizer;
     private final OpflowLogTracer parent;
     private final String key;
@@ -303,8 +289,8 @@ public class OpflowLogTracer {
     public static String getLibraryInfo() {
         if (libraryInfo == null) {
             Map<String, Object> repoInfo = OpflowSysInfo.getGitInfo();
-            String buildVersion = OpflowUtil.getOptionValue(repoInfo, "git.build.version", String.class, OPFLOW_VERSION);
-            String commitId = OpflowUtil.getOptionValue(repoInfo, "git.commit.id.abbrev", String.class, null);
+            String buildVersion = OpflowObjectTree.getOptionValue(repoInfo, "git.build.version", String.class, OPFLOW_VERSION);
+            String commitId = OpflowObjectTree.getOptionValue(repoInfo, "git.commit.id.abbrev", String.class, null);
             libraryInfo = new OpflowLogTracer()
                     .put("message", "Opflow Library Information")
                     .put("lib_name", "opflow-java")

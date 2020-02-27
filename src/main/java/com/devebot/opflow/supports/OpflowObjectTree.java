@@ -106,4 +106,21 @@ public class OpflowObjectTree {
         }
         return tree.get(path[path.length - 1]);
     }
+    
+    public static <T> T getOptionValue(Map<String, Object> options, String fieldName, Class<T> type, T defval) {
+        return getOptionValue(options, fieldName, type, defval, true);
+    }
+
+    public static <T> T getOptionValue(Map<String, Object> options, String fieldName, Class<T> type, T defval, boolean assigned) {
+        Object value = null;
+        if (options != null) value = options.get(fieldName);
+        if (value == null) {
+            if (assigned) {
+                options.put(fieldName, defval);
+            }
+            return defval;
+        } else {
+            return OpflowConverter.convert(value, type);
+        }
+    }
 }

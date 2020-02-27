@@ -25,7 +25,7 @@ public class OpflowRpcResponse {
     private final String replyQueueName;
     private final String routineId;
     private final String routineTimestamp;
-    private final String messageScope;
+    private final String routineScope;
     private final Boolean progressEnabled;
     
     public OpflowRpcResponse(String componentId, Channel channel, AMQP.BasicProperties properties, String consumerTag, String replyQueueName, Map<String, Object> extras) {
@@ -40,7 +40,7 @@ public class OpflowRpcResponse {
         this.routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
         
         logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
-                .branch(CONST.REQUEST_ID, this.routineId, new OpflowLogTracer.OmitPingLogs(headers));
+                .branch(CONST.REQUEST_ID, this.routineId, new OpflowUtil.OmitPingLogs(headers));
         
         if (properties.getReplyTo() != null) {
             this.replyQueueName = properties.getReplyTo();
@@ -48,7 +48,7 @@ public class OpflowRpcResponse {
             this.replyQueueName = replyQueueName;
         }
         
-        this.messageScope = OpflowUtil.getOptionField(headers, "messageScope", false);
+        this.routineScope = OpflowUtil.getOptionField(headers, CONST.AMQP_HEADER_ROUTINE_SCOPE, false);
         this.progressEnabled = (Boolean) OpflowUtil.getOptionField(headers, "progressEnabled", null);
         
         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
@@ -177,8 +177,8 @@ public class OpflowRpcResponse {
         if (this.routineTimestamp != null) {
             headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, this.routineTimestamp);
         }
-        if (this.messageScope != null) {
-            headers.put("messageScope", this.messageScope);
+        if (this.routineScope != null) {
+            headers.put(CONST.AMQP_HEADER_ROUTINE_SCOPE, this.routineScope);
         }
         if (finished) {
             headers.put(CONST.AMQP_HEADER_PROTOCOL_VERSION, CONST.AMQP_PROTOCOL_VERSION);

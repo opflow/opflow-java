@@ -245,7 +245,7 @@ public class OpflowRpcMaster implements AutoCloseable {
 
                     if (logSession.ready(LOG, Level.INFO)) {
                         reqTracer = logSession.branch(CONST.REQUEST_TIME, routineTimestamp)
-                                .branch(CONST.REQUEST_ID, routineId, new OpflowLogTracer.OmitPingLogs(headers));
+                                .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitPingLogs(headers));
                     }
                 }
                 
@@ -448,15 +448,15 @@ public class OpflowRpcMaster implements AutoCloseable {
         headers.put(CONST.AMQP_HEADER_ROUTINE_ID, task.getRoutineId());
         headers.put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
         headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, task.getRoutineTimestamp());
-        
+
         if (params.getRoutineTags() != null) {
             headers.put(CONST.AMQP_HEADER_ROUTINE_TAGS, params.getRoutineTags());
         }
-        
-        if (params.getMessageScope() != null) {
-            headers.put("messageScope", params.getMessageScope());
+
+        if (params.getRoutineScope() != null) {
+            headers.put(CONST.AMQP_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
         }
-        
+
         if (prefetchCount > 1) {
             headers.put("progressEnabled", Boolean.FALSE);
         } else {
@@ -469,6 +469,9 @@ public class OpflowRpcMaster implements AutoCloseable {
             headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_ID, task.getRoutineId());
             headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
             headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_TIMESTAMP, task.getRoutineTimestamp());
+            if (params.getRoutineScope() != null) {
+                headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
+            }
         }
 
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()

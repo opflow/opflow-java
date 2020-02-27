@@ -61,7 +61,7 @@ public class OpflowRestServer implements AutoCloseable {
                 8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
         });
         
-        shutdownTimeout = OpflowUtil.getOptionValue(kwargs, "shutdownTimeout", Long.class, 1000l);
+        shutdownTimeout = OpflowObjectTree.getOptionValue(kwargs, "shutdownTimeout", Long.class, 1000l);
         
         shutdownHook = new Thread() {
             @Override

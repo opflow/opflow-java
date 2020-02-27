@@ -10,18 +10,20 @@ import java.util.Map;
  * @author acegik
  */
 public class OpflowRpcParameter implements Customizer {
+    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+
     private final static boolean IS_PING_LOGGING_OMITTED;
-    
+
     static {
         IS_PING_LOGGING_OMITTED = !"false".equals(OpflowEnvTool.instance.getSystemProperty("OPFLOW_OMIT_PING_LOGS", null));
     }
-    
+
     private final String routineId;
     private final String routineTimestamp;
-    private String[] requestTags = null;
+    private String[] routineTags = null;
     private Long requestTTL = null;
     private String routineSignature = null;
-    private String messageScope = null;
+    private String routineScope = null;
     private Boolean callbackTransient = false;
     private Boolean progressEnabled = null;
     private Boolean watcherEnabled = false;
@@ -30,7 +32,7 @@ public class OpflowRpcParameter implements Customizer {
         this.routineId = OpflowUUID.getBase64ID();
         this.routineTimestamp = OpflowDateTime.getCurrentTimeString();
     }
-    
+
     public OpflowRpcParameter(Map<String, Object> headers) {
         headers = OpflowUtil.ensureNotNull(headers);
 
@@ -42,8 +44,8 @@ public class OpflowRpcParameter implements Customizer {
             this.requestTTL = (Long) headers.get("timeout");
         }
         
-        if (headers.get("messageScope") instanceof String) {
-            this.messageScope = (String) headers.get("messageScope");
+        if (headers.get(CONST.AMQP_HEADER_ROUTINE_SCOPE) instanceof String) {
+            this.routineScope = (String) headers.get(CONST.AMQP_HEADER_ROUTINE_SCOPE);
         }
         
         this.callbackTransient = "forked".equals((String)headers.get("mode"));
@@ -78,11 +80,11 @@ public class OpflowRpcParameter implements Customizer {
     }
 
     public String[] getRoutineTags() {
-        return requestTags;
+        return routineTags;
     }
 
     public OpflowRpcParameter setRoutineTags(String[] requestTags) {
-        this.requestTags = requestTags;
+        this.routineTags = requestTags;
         return this;
     }
 
@@ -95,12 +97,12 @@ public class OpflowRpcParameter implements Customizer {
         return this;
     }
     
-    public String getMessageScope() {
-        return messageScope;
+    public String getRoutineScope() {
+        return routineScope;
     }
     
-    public OpflowRpcParameter setMessageScope(String messageScope) {
-        this.messageScope = messageScope;
+    public OpflowRpcParameter setRoutineScope(String routineScope) {
+        this.routineScope = routineScope;
         return this;
     }
     
@@ -133,6 +135,6 @@ public class OpflowRpcParameter implements Customizer {
     
     @Override
     public boolean isMute() {
-        return IS_PING_LOGGING_OMITTED && "internal".equals(messageScope);
+        return IS_PING_LOGGING_OMITTED && "internal".equals(routineScope);
     }
 }

@@ -27,14 +27,16 @@ public class OpflowConstant {
     public final String AMQP_HEADER_ROUTINE_ID;
     public final String AMQP_HEADER_ROUTINE_TIMESTAMP;
     public final String AMQP_HEADER_ROUTINE_SIGNATURE;
+    public final String AMQP_HEADER_ROUTINE_SCOPE;
     public final String AMQP_HEADER_ROUTINE_TAGS;
 
     public final static boolean LEGACY_SUPPORT_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
     public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
     public final static String LEGACY_HEADER_ROUTINE_TIMESTAMP = "requestTime";
     public final static String LEGACY_HEADER_ROUTINE_SIGNATURE = "routineId";
+    public final static String LEGACY_HEADER_ROUTINE_SCOPE = "messageScope";
     public final static String LEGACY_HEADER_ROUTINE_TAGS = "requestTags";
-    
+
     public final String COMPNAME_COMMANDER = "commander";
     public final String COMPNAME_SERVERLET = "serverlet";
     public final String COMPNAME_PUBLISHER = "publisher";
@@ -68,12 +70,14 @@ public class OpflowConstant {
                 AMQP_HEADER_ROUTINE_ID = "oxId";
                 AMQP_HEADER_ROUTINE_TIMESTAMP = "oxTimestamp";
                 AMQP_HEADER_ROUTINE_SIGNATURE = "oxSignature";
+                AMQP_HEADER_ROUTINE_SCOPE = "oxScope";
                 AMQP_HEADER_ROUTINE_TAGS = "oxTags";
                 break;
             default:
                 AMQP_HEADER_ROUTINE_ID = LEGACY_HEADER_ROUTINE_ID;
                 AMQP_HEADER_ROUTINE_TIMESTAMP = LEGACY_HEADER_ROUTINE_TIMESTAMP;
                 AMQP_HEADER_ROUTINE_SIGNATURE = LEGACY_HEADER_ROUTINE_SIGNATURE;
+                AMQP_HEADER_ROUTINE_SCOPE = LEGACY_HEADER_ROUTINE_SCOPE;
                 AMQP_HEADER_ROUTINE_TAGS = LEGACY_HEADER_ROUTINE_TAGS;
                 break;
         }
@@ -85,11 +89,13 @@ public class OpflowConstant {
         info.put("AMQP_HEADER_ROUTINE_ID", AMQP_HEADER_ROUTINE_ID);
         info.put("AMQP_HEADER_ROUTINE_TIMESTAMP", AMQP_HEADER_ROUTINE_TIMESTAMP);
         info.put("AMQP_HEADER_ROUTINE_SIGNATURE", AMQP_HEADER_ROUTINE_SIGNATURE);
+        info.put("AMQP_HEADER_ROUTINE_SCOPE", AMQP_HEADER_ROUTINE_SCOPE);
         info.put("AMQP_HEADER_ROUTINE_TAGS", AMQP_HEADER_ROUTINE_TAGS);
         if (LEGACY_SUPPORT_ENABLED && !"0".equals(AMQP_PROTOCOL_VERSION)) {
             info.put("LEGACY_HEADER_ROUTINE_ID", LEGACY_HEADER_ROUTINE_ID);
             info.put("LEGACY_HEADER_ROUTINE_TIMESTAMP", LEGACY_HEADER_ROUTINE_TIMESTAMP);
             info.put("LEGACY_HEADER_ROUTINE_SIGNATURE", LEGACY_HEADER_ROUTINE_SIGNATURE);
+            info.put("LEGACY_HEADER_ROUTINE_SCOPE", LEGACY_HEADER_ROUTINE_SCOPE);
         }
         return info;
     }

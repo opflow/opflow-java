@@ -27,13 +27,33 @@ import java.util.LinkedHashMap;
  */
 public class OpflowUtil {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-    
+    private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
+
     private static final String INT_RANGE_DELIMITER = "-";
     private static final String INT_RANGE_PATTERN_STRING = "[\\d]{1,}\\s*\\-\\s*[\\d]{1,}";
     
     private static final String INT_ARRAY_DELIMITER = ",";
     private static final String INT_ARRAY_PATTERN_STRING = "[\\d]{1,}\\s*(\\s*,\\s*[\\d]{1,}){0,}";
+
+    private final static boolean IS_PING_LOGGING_OMITTED;
     
+    static {
+        IS_PING_LOGGING_OMITTED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_OMIT_PING_LOGS", null));
+    }
+    
+    public static class OmitPingLogs implements OpflowLogTracer.Customizer {
+        final String messageScope;
+                
+        OmitPingLogs(Map<String, Object> options) {
+            messageScope = getOptionField(options, CONST.AMQP_HEADER_ROUTINE_SCOPE, false);
+        }
+        
+        @Override
+        public boolean isMute() {
+            return IS_PING_LOGGING_OMITTED && "internal".equals(messageScope);
+        }
+    }
+
     @Deprecated
     public static String jsonObjectToString(Object jsonObj) {
         return OpflowJsonTool.toString(jsonObj);
@@ -381,23 +401,6 @@ public class OpflowUtil {
         if (pointer == null) return null;
         Object value = pointer.get(fieldNames[fieldNames.length - 1]);
         return (value == null) ? defval : value;
-    }
-
-    public static <T> T getOptionValue(Map<String, Object> options, String fieldName, Class<T> type, T defval) {
-        return getOptionValue(options, fieldName, type, defval, true);
-    }
-
-    public static <T> T getOptionValue(Map<String, Object> options, String fieldName, Class<T> type, T defval, boolean assigned) {
-        Object value = null;
-        if (options != null) value = options.get(fieldName);
-        if (value == null) {
-            if (assigned) {
-                options.put(fieldName, defval);
-            }
-            return defval;
-        } else {
-            return OpflowConverter.convert(value, type);
-        }
     }
 
     public static String[] splitByComma(String source) {
