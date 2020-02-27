@@ -497,14 +497,14 @@ public class OpflowCommander implements AutoCloseable {
         @Override
         public void check(String componentId) {
             if (componentId != null) {
-                OpflowRpcObserver.Manifest bearer = null;
+                OpflowRpcObserver.Manifest manifest = null;
                 if (manifests.containsKey(componentId)) {
-                    bearer = manifests.get(componentId);
+                    manifest = manifests.get(componentId);
                 } else {
-                    bearer = new OpflowRpcObserver.Manifest(componentId);
-                    manifests.put(componentId, bearer);
+                    manifest = new OpflowRpcObserver.Manifest(componentId);
+                    manifests.put(componentId, manifest);
                 }
-                bearer.touch();
+                manifest.touch();
             }
         }
 
@@ -751,6 +751,8 @@ public class OpflowCommander implements AutoCloseable {
                                 opt2.put("request", OpflowObjectTree.buildMap()
                                         .put("expiration", rpcMaster.getExpiration())
                                         .toMap());
+
+                                opt2.put("transport", CONST.getProtocolInfo());
                             }
                         }).toMap());
                     }

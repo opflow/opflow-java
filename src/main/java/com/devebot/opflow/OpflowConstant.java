@@ -1,6 +1,8 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowEnvTool;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  *
@@ -69,6 +71,16 @@ public class OpflowConstant {
         }
     }
 
+    public Map<String, String> getProtocolInfo() {
+        Map<String, String> info = new LinkedHashMap<>();
+        info.put("AMQP_PROTOCOL_VERSION", AMQP_PROTOCOL_VERSION);
+        info.put("AMQP_HEADER_ROUTINE_ID", AMQP_HEADER_ROUTINE_ID);
+        info.put("AMQP_HEADER_ROUTINE_TIMESTAMP", AMQP_HEADER_ROUTINE_TIMESTAMP);
+        info.put("AMQP_HEADER_ROUTINE_SIGNATURE", AMQP_HEADER_ROUTINE_SIGNATURE);
+        info.put("AMQP_HEADER_ROUTINE_TAGS", AMQP_HEADER_ROUTINE_TAGS);
+        return info;
+    }
+    
     private static OpflowConstant instance = null;
 
     public static OpflowConstant CURRENT() {
