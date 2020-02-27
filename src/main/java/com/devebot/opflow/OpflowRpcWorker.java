@@ -42,7 +42,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("RpcWorker[${rpcWorkerId}].new()")
+                .text("RpcWorker[${rpcWorkerId}][${instanceId}].new()")
                 .stringify());
         
         Map<String, Object> brokerParams = new HashMap<>();
@@ -84,7 +84,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 .stringify());
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("RpcWorker[${rpcWorkerId}].new() end!")
+                .text("RpcWorker[${rpcWorkerId}][${instanceId}].new() end!")
                 .stringify());
 
         measurer.updateComponentInstance("rpc_worker", componentId, OpflowPromMeasurer.GaugeAction.INC);
@@ -209,14 +209,14 @@ public class OpflowRpcWorker implements AutoCloseable {
     @Override
     public void close() {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("RpcWorker[${rpcWorkerId}].close()")
+                .text("RpcWorker[${rpcWorkerId}][${instanceId}].close()")
                 .stringify());
         if (engine != null) {
             engine.cancelConsumer(consumerInfo);
             engine.close();
         }
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("RpcWorker[${rpcWorkerId}].close() has completed")
+                .text("RpcWorker[${rpcWorkerId}][${instanceId}].close() end!")
                 .stringify());
     }
 

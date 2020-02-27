@@ -294,7 +294,7 @@ public class OpflowCommander implements AutoCloseable {
     @Override
     public final void close() {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}].close()")
+                .text("Commander[${commanderId}][${instanceId}].close()")
                 .stringify());
 
         if (restrictor != null) {
@@ -319,7 +319,7 @@ public class OpflowCommander implements AutoCloseable {
         OpflowUUID.release();
 
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}].close() has done!")
+                .text("Commander[${commanderId}][${instanceId}].close() end!")
                 .stringify());
     }
     

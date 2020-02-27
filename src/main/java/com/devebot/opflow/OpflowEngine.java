@@ -403,7 +403,7 @@ public class OpflowEngine implements AutoCloseable {
         }
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Engine[${engineId}].new() end!")
+                .text("Engine[${engineId}][${instanceId}].new() end!")
                 .stringify());
         
         measurer.updateComponentInstance("engine", componentId, OpflowPromMeasurer.GaugeAction.INC);
@@ -484,7 +484,7 @@ public class OpflowEngine implements AutoCloseable {
                     .put("engineId", componentId)
                     .put("appId", appId)
                     .put("customKey", requestKey)
-                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish] - Engine[${engineId}] - produce() is invoked")
+                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish] - Engine[${engineId}][${instanceId}] - produce() is invoked")
                     .stringify());
             
             Channel _channel = getProducingChannel();
@@ -611,24 +611,25 @@ public class OpflowEngine implements AutoCloseable {
                         }
                     }
                 }
+
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope,
                                            AMQP.BasicProperties properties, byte[] body) throws IOException {
+                    final Map<String, Object> headers = properties.getHeaders();
+                    final String routineId = OpflowUtil.getRoutineId(headers, false);
+                    final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
+
+                    final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, routineTimestamp)
+                            .branch(CONST.REQUEST_ID, routineId, new OpflowLogTracer.OmitPingLogs(headers));
+
                     try {
-                        final Map<String, Object> headers = properties.getHeaders();
-                        final String routineId = OpflowUtil.getRoutineId(headers, false);
-                        final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
-
-                        final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, routineTimestamp)
-                                .branch(CONST.REQUEST_ID, routineId, new OpflowLogTracer.OmitPingLogs(headers));
-
                         if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                                .put("appId", properties.getAppId())
-                                .put("deliveryTag", envelope.getDeliveryTag())
-                                .put("consumerTag", consumerTag)
-                                .put("bodyLength", body.length)
-                                .text("Request[${requestId}][${requestTime}][x-engine-msg-received] - Consumer[${consumerId}] receives a message (${bodyLength} bytes)")
-                                .stringify());
+                            .put("appId", properties.getAppId())
+                            .put("deliveryTag", envelope.getDeliveryTag())
+                            .put("consumerTag", consumerTag)
+                            .put("bodyLength", body.length)
+                            .text("Request[${requestId}][${requestTime}][x-engine-msg-received] - Consumer[${consumerId}] receives a message (${bodyLength} bytes)")
+                            .stringify());
 
                         if (applicationId == null || applicationId.equals(properties.getAppId())) {
                             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
@@ -670,7 +671,7 @@ public class OpflowEngine implements AutoCloseable {
                         }
                     } catch (Exception ex) {
                         // catch ALL of Error here: don't let it harm our service/close the channel
-                        if (logConsume != null && logConsume.ready(LOG, Level.ERROR)) LOG.error(logConsume
+                        if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
                                 .put("deliveryTag", envelope.getDeliveryTag())
                                 .put("consumerTag", consumerTag)
                                 .put("exceptionClass", ex.getClass().getName())

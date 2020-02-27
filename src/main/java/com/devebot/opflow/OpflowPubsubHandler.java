@@ -321,7 +321,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         }
         try {
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                    .text("PubsubHandler[${pubsubHandlerId}].close()")
+                    .text("PubsubHandler[${pubsubHandlerId}][${instanceId}].close()")
                     .stringify());
             if (engine != null) {
                 for(OpflowEngine.ConsumerInfo consumerInfo:consumerInfos) {
@@ -333,7 +333,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 engine.close();
             }
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                    .text("PubsubHandler[${pubsubHandlerId}].close() has completed")
+                    .text("PubsubHandler[${pubsubHandlerId}][${instanceId}].close() end!")
                     .stringify());
         }
         finally {

@@ -72,7 +72,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("RpcMaster[${rpcMasterId}].new()")
+                .text("RpcMaster[${rpcMasterId}][${instanceId}].new()")
                 .stringify());
         
         Map<String, Object> brokerParams = new HashMap<>();
@@ -200,7 +200,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         measurer.updateComponentInstance("rpc_master", componentId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("RpcMaster[${rpcMasterId}].new() end!")
+                .text("RpcMaster[${rpcMasterId}][${instanceId}].new() end!")
                 .stringify());
         
         if (autorun) {
@@ -470,12 +470,12 @@ public class OpflowRpcMaster implements AutoCloseable {
         if (!consumerInfo.isFixedQueue()) {
             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                     .put("replyTo", consumerInfo.getQueueName())
-                    .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}] - Use dynamic replyTo: ${replyTo}")
+                    .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}][${instanceId}] - Use dynamic replyTo: ${replyTo}")
                     .stringify());
         } else {
             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                     .put("replyTo", consumerInfo.getQueueName())
-                    .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}] - Use static replyTo: ${replyTo}")
+                    .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}][${instanceId}] - Use static replyTo: ${replyTo}")
                     .stringify());
         }
         builder.replyTo(consumerInfo.getQueueName());

@@ -79,7 +79,7 @@ public class OpflowServerlet implements AutoCloseable {
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Serverlet[${serverletId}].new()")
+                .text("Serverlet[${serverletId}][${instanceId}].new()")
                 .stringify());
         
         if (listeners == null) {
@@ -202,7 +202,7 @@ public class OpflowServerlet implements AutoCloseable {
         }
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Serverlet[${serverletId}].new() end!")
+                .text("Serverlet[${serverletId}][${instanceId}].new() end!")
                 .stringify());
         
         measurer.updateComponentInstance(CONST.COMPNAME_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.INC);
@@ -235,7 +235,7 @@ public class OpflowServerlet implements AutoCloseable {
         this.instantiateType(OpflowRpcCheckerWorker.class);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Serverlet[${serverletId}].start() has completed!")
+                .text("Serverlet[${serverletId}].start() end!")
                 .stringify());
     }
     
@@ -268,7 +268,7 @@ public class OpflowServerlet implements AutoCloseable {
     @Override
     public final void close() {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Serverlet[${serverletId}].close()")
+                .text("Serverlet[${serverletId}][${instanceId}].close()")
                 .stringify());
         
         if (configurer != null) configurer.close();
@@ -278,7 +278,7 @@ public class OpflowServerlet implements AutoCloseable {
         OpflowUUID.release();
 
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Serverlet[${serverletId}].close() has completed!")
+                .text("Serverlet[${serverletId}][${instanceId}].close() end!")
                 .stringify());
     }
 
@@ -371,7 +371,8 @@ public class OpflowServerlet implements AutoCloseable {
                             .branch(CONST.REQUEST_ID, routineId, new OpflowLogTracer.OmitPingLogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .put("methodSignature", methodSignature)
-                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-received] - Serverlet[${instantiatorId}] receives a RPC call to the routine[${methodSignature}]")
+                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-received]" +
+                                    " - Serverlet[${instantiatorId}][${instanceId}] receives a RPC call to the routine[${methodSignature}]")
                             .stringify());
                     Method method = methodRef.get(methodSignature);
                     Object target = targetRef.get(methodSignature);
