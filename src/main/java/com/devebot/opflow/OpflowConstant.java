@@ -28,6 +28,11 @@ public class OpflowConstant {
     public final String AMQP_HEADER_ROUTINE_SIGNATURE;
     public final String AMQP_HEADER_ROUTINE_TAGS;
 
+    public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
+    public final static String LEGACY_HEADER_ROUTINE_TIMESTAMP = "requestTime";
+    public final static String LEGACY_HEADER_ROUTINE_SIGNATURE = "routineId";
+    public final static String LEGACY_HEADER_ROUTINE_TAGS = "requestTags";
+    
     public final String COMPNAME_COMMANDER = "commander";
     public final String COMPNAME_SERVERLET = "serverlet";
     public final String COMPNAME_PUBLISHER = "publisher";
@@ -63,10 +68,10 @@ public class OpflowConstant {
                 AMQP_HEADER_ROUTINE_TAGS = "oxTags";
                 break;
             default:
-                AMQP_HEADER_ROUTINE_ID = "requestId";
-                AMQP_HEADER_ROUTINE_TIMESTAMP = "requestTime";
-                AMQP_HEADER_ROUTINE_SIGNATURE = "routineId";
-                AMQP_HEADER_ROUTINE_TAGS = "requestTags";
+                AMQP_HEADER_ROUTINE_ID = LEGACY_HEADER_ROUTINE_ID;
+                AMQP_HEADER_ROUTINE_TIMESTAMP = LEGACY_HEADER_ROUTINE_TIMESTAMP;
+                AMQP_HEADER_ROUTINE_SIGNATURE = LEGACY_HEADER_ROUTINE_SIGNATURE;
+                AMQP_HEADER_ROUTINE_TAGS = LEGACY_HEADER_ROUTINE_TAGS;
                 break;
         }
     }

@@ -5,6 +5,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRestrictionException;
 import com.devebot.opflow.supports.OpflowConcurrentMap;
+import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BlockedListener;
@@ -27,7 +28,10 @@ import org.slf4j.LoggerFactory;
 public class OpflowRpcMaster implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
-    
+
+    private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
+    private final static boolean IS_LEGACY_SUPPORTED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
+
     private final static long DELAY_TIMEOUT = 1000;
     private final static int PREFETCH_NUM = 1;
     private final static int CONSUMER_MAX = 1;
@@ -463,7 +467,13 @@ public class OpflowRpcMaster implements AutoCloseable {
                 headers.put("progressEnabled", params.getProgressEnabled());
             }
         }
-        
+
+        if (IS_LEGACY_SUPPORTED) {
+            headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_ID, task.getRoutineId());
+            headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
+            headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_TIMESTAMP, task.getRoutineTimestamp());
+        }
+
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()
                 .correlationId(taskId);
         
