@@ -228,7 +228,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         return engine;
     }
 
-    public String getIntanceId() {
+    public String getComponentId() {
         return componentId;
     }
     

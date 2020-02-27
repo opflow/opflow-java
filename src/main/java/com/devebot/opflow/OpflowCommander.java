@@ -752,7 +752,7 @@ public class OpflowCommander implements AutoCloseable {
                                         .put("expiration", rpcMaster.getExpiration())
                                         .toMap());
 
-                                opt2.put("transport", CONST.getProtocolInfo());
+                                opt2.put("transport", CONST.getProtocolInfo(OpflowConstant.LEGACY_SUPPORT_ENABLED));
                             }
                         }).toMap());
                     }

@@ -425,7 +425,7 @@ public class OpflowServerlet implements AutoCloseable {
                                     OpflowEngine engine = rpcWorker.getEngine();
                                     opts.put(CONST.COMPONENT_ID, componentId);
                                     opts.put(CONST.COMPNAME_RPC_WORKER, OpflowObjectTree.buildMap()
-                                            .put(CONST.COMPONENT_ID, rpcWorker.getIntanceId())
+                                            .put(CONST.COMPONENT_ID, rpcWorker.getComponentId())
                                             .put("applicationId", engine.getApplicationId())
                                             .put("exchangeName", engine.getExchangeName())
                                             .put("routingKey", engine.getRoutingKey())
@@ -438,6 +438,7 @@ public class OpflowServerlet implements AutoCloseable {
                                                     .put("replyToQueue", response.getReplyQueueName())
                                                     .put("consumerTag", response.getConsumerTag())
                                                     .toMap())
+                                            .put("transport", CONST.getProtocolInfo())
                                             .toMap());
                                 }
                             }).toMap());
@@ -613,7 +614,7 @@ public class OpflowServerlet implements AutoCloseable {
                     for (Method method : methods) {
                         String methodSignature = OpflowUtil.getMethodSignature(method);
                         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
-                                .put("rpcWorkerId", rpcWorker.getIntanceId())
+                                .put("rpcWorkerId", rpcWorker.getComponentId())
                                 .put("methodSignature", methodSignature)
                                 .tags("attach-method-to-RpcWorker-listener")
                                 .text("Attach the method[" + methodSignature + "] to the listener of RpcWorker[${rpcWorkerId}]")
