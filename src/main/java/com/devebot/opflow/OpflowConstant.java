@@ -23,6 +23,7 @@ public class OpflowConstant {
     public final String REQUEST_TIME = "requestTime";
 
     public final String AMQP_PROTOCOL_VERSION;
+    public final String AMQP_HEADER_PROTOCOL_VERSION;
     public final String AMQP_HEADER_ROUTINE_ID;
     public final String AMQP_HEADER_ROUTINE_TIMESTAMP;
     public final String AMQP_HEADER_ROUTINE_SIGNATURE;
@@ -61,6 +62,7 @@ public class OpflowConstant {
 
     private OpflowConstant() {
         AMQP_PROTOCOL_VERSION = ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "0");
+        AMQP_HEADER_PROTOCOL_VERSION = "oxVersion";
         switch (AMQP_PROTOCOL_VERSION) {
             case "1":
                 AMQP_HEADER_ROUTINE_ID = "oxId";
@@ -78,20 +80,16 @@ public class OpflowConstant {
     }
 
     public Map<String, String> getProtocolInfo() {
-        return getProtocolInfo(false);
-    }
-
-    public Map<String, String> getProtocolInfo(boolean isLegacySupported) {
         Map<String, String> info = new LinkedHashMap<>();
         info.put("AMQP_PROTOCOL_VERSION", AMQP_PROTOCOL_VERSION);
         info.put("AMQP_HEADER_ROUTINE_ID", AMQP_HEADER_ROUTINE_ID);
         info.put("AMQP_HEADER_ROUTINE_TIMESTAMP", AMQP_HEADER_ROUTINE_TIMESTAMP);
         info.put("AMQP_HEADER_ROUTINE_SIGNATURE", AMQP_HEADER_ROUTINE_SIGNATURE);
         info.put("AMQP_HEADER_ROUTINE_TAGS", AMQP_HEADER_ROUTINE_TAGS);
-        if (isLegacySupported) {
+        if (LEGACY_SUPPORT_ENABLED && !"0".equals(AMQP_PROTOCOL_VERSION)) {
             info.put("LEGACY_HEADER_ROUTINE_ID", LEGACY_HEADER_ROUTINE_ID);
-            info.put("LEGACY_HEADER_ROUTINE_SIGNATURE", LEGACY_HEADER_ROUTINE_SIGNATURE);
             info.put("LEGACY_HEADER_ROUTINE_TIMESTAMP", LEGACY_HEADER_ROUTINE_TIMESTAMP);
+            info.put("LEGACY_HEADER_ROUTINE_SIGNATURE", LEGACY_HEADER_ROUTINE_SIGNATURE);
         }
         return info;
     }

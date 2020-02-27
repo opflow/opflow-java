@@ -438,7 +438,6 @@ public class OpflowServerlet implements AutoCloseable {
                                                     .put("replyToQueue", response.getReplyQueueName())
                                                     .put("consumerTag", response.getConsumerTag())
                                                     .toMap())
-                                            .put("transport", CONST.getProtocolInfo())
                                             .toMap());
                                 }
                             }).toMap());

@@ -86,4 +86,24 @@ public class OpflowObjectTree {
     public static <V> Builder<V> buildMap(Map<String, V> defaultOpts, boolean orderReserved) {
         return buildMap(null, defaultOpts, orderReserved);
     }
+    
+    public static Object getTreeNode(Map<String, Object> tree, String[] path) {
+        if (tree == null || path == null || path.length == 0) {
+            return null;
+        }
+        Object node = null;
+        for (int i=0; i<(path.length - 1); i++) {
+            String step = path[i];
+            if (step == null || step.length() == 0) {
+                return null;
+            }
+            node = tree.get(step);
+            if (node instanceof Map) {
+                tree = (Map<String, Object>) node;
+            } else {
+                return null;
+            }
+        }
+        return tree.get(path[path.length - 1]);
+    }
 }

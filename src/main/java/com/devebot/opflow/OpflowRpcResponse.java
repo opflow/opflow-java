@@ -181,6 +181,7 @@ public class OpflowRpcResponse {
             headers.put("messageScope", this.messageScope);
         }
         if (finished) {
+            headers.put(CONST.AMQP_HEADER_PROTOCOL_VERSION, CONST.AMQP_PROTOCOL_VERSION);
             headers.put("consumerTag", this.consumerTag);
         }
         return headers;

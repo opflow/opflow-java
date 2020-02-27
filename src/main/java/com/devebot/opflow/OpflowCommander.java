@@ -495,9 +495,10 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
 
         @Override
-        public void check(String componentId) {
+        public void check(String componentId, String version, String payload) {
+            OpflowRpcObserver.Manifest manifest = null;
             if (componentId != null) {
-                OpflowRpcObserver.Manifest manifest = null;
+                // assure the manifest object
                 if (manifests.containsKey(componentId)) {
                     manifest = manifests.get(componentId);
                 } else {
@@ -505,6 +506,12 @@ public class OpflowCommander implements AutoCloseable {
                     manifests.put(componentId, manifest);
                 }
                 manifest.touch();
+                // update the compatible status
+                if (version == null) {
+                    manifest.setCompatible(OpflowConstant.LEGACY_SUPPORT_ENABLED);
+                } else {
+                    manifest.setCompatible(version.equals(CONST.AMQP_PROTOCOL_VERSION) || (version.equals("0") && OpflowConstant.LEGACY_SUPPORT_ENABLED));
+                }
             }
         }
 
@@ -752,7 +759,9 @@ public class OpflowCommander implements AutoCloseable {
                                         .put("expiration", rpcMaster.getExpiration())
                                         .toMap());
 
-                                opt2.put("transport", CONST.getProtocolInfo(OpflowConstant.LEGACY_SUPPORT_ENABLED));
+                                if (checkOption(flag, SCOPE_INFO)) {
+                                    opt2.put("transport", CONST.getProtocolInfo());
+                                }
                             }
                         }).toMap());
                     }
@@ -763,8 +772,10 @@ public class OpflowCommander implements AutoCloseable {
                     }
                     
                     // RPC current workers
-                    if (rpcObserver != null) {
-                        opts.put(CONST.COMPNAME_RPC_WORKER, rpcObserver.getInformation());
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        if (rpcObserver != null) {
+                            opts.put(CONST.COMPNAME_RPC_WORKER, rpcObserver.getInformation());
+                        }
                     }
                     
                     // RpcWatcher information

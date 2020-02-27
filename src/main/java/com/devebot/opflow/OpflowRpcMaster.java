@@ -272,7 +272,8 @@ public class OpflowRpcMaster implements AutoCloseable {
                 // collect the information of the workers
                 if (rpcObserver != null) {
                     String rpcWorkerId = OpflowUtil.getStringField(headers, CONST.RPC_WORKER_ID, false, true);
-                    rpcObserver.check(rpcWorkerId);
+                    String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
+                    rpcObserver.check(rpcWorkerId, version, null);
                 }
                 
                 return true;
@@ -464,7 +465,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             }
         }
 
-        if (OpflowConstant.LEGACY_SUPPORT_ENABLED) {
+        if (OpflowConstant.LEGACY_SUPPORT_ENABLED && !"0".equals(CONST.AMQP_PROTOCOL_VERSION)) {
             headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_ID, task.getRoutineId());
             headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
             headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_TIMESTAMP, task.getRoutineTimestamp());
@@ -472,7 +473,7 @@ public class OpflowRpcMaster implements AutoCloseable {
 
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()
                 .correlationId(taskId);
-        
+
         if (!consumerInfo.isFixedQueue()) {
             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                     .put("replyTo", consumerInfo.getQueueName())
@@ -485,7 +486,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     .stringify());
         }
         builder.replyTo(consumerInfo.getQueueName());
-        
+
         if (expiration > 0) {
             builder.expiration(String.valueOf(expiration));
         }
