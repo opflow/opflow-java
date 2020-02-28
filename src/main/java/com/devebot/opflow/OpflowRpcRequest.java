@@ -35,10 +35,10 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         this.routineSignature = params.getRoutineSignature();
         this.routineTimestamp = params.getRoutineTimestamp();
         
-        if (params.getRequestTTL() == null) {
+        if (params.getRoutineTTL() == null) {
             this.timeout = 0l;
         } else {
-            this.timeout = params.getRequestTTL();
+            this.timeout = params.getRoutineTTL();
         }
         
         reqTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)

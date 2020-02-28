@@ -266,7 +266,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                         .put("correlationId", taskId)
                         .text("initCallbackConsumer() - push message to task[${correlationId}] and return")
                         .stringify());
-                    task.push(new OpflowMessage(content, properties.getHeaders()));
+                    task.push(new OpflowMessage(content, headers));
                 }
                 
                 // collect the information of the workers
@@ -370,7 +370,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         if (expiration > 0) {
-            params.setRequestTTL(expiration + DELAY_TIMEOUT);
+            params.setRoutineTTL(expiration + DELAY_TIMEOUT);
         }
         
         final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRoutineTimestamp())
@@ -458,10 +458,10 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
 
         if (prefetchCount > 1) {
-            headers.put("progressEnabled", Boolean.FALSE);
+            headers.put(CONST.AMQP_HEADER_PROGRESS_ENABLED, Boolean.FALSE);
         } else {
             if (params.getProgressEnabled() != null) {
-                headers.put("progressEnabled", params.getProgressEnabled());
+                headers.put(CONST.AMQP_HEADER_PROGRESS_ENABLED, params.getProgressEnabled());
             }
         }
 

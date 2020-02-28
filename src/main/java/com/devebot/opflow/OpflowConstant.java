@@ -29,6 +29,7 @@ public class OpflowConstant {
     public final String AMQP_HEADER_ROUTINE_SIGNATURE;
     public final String AMQP_HEADER_ROUTINE_SCOPE;
     public final String AMQP_HEADER_ROUTINE_TAGS;
+    public final String AMQP_HEADER_PROGRESS_ENABLED;
 
     public final static boolean LEGACY_SUPPORT_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
     public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
@@ -81,6 +82,7 @@ public class OpflowConstant {
                 AMQP_HEADER_ROUTINE_TAGS = LEGACY_HEADER_ROUTINE_TAGS;
                 break;
         }
+        AMQP_HEADER_PROGRESS_ENABLED = "progressEnabled";
     }
 
     public Map<String, String> getProtocolInfo() {

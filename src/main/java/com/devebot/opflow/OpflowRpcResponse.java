@@ -49,7 +49,7 @@ public class OpflowRpcResponse {
         }
         
         this.routineScope = OpflowUtil.getOptionField(headers, CONST.AMQP_HEADER_ROUTINE_SCOPE, false);
-        this.progressEnabled = (Boolean) OpflowUtil.getOptionField(headers, "progressEnabled", null);
+        this.progressEnabled = (Boolean) OpflowUtil.getOptionField(headers, CONST.AMQP_HEADER_PROGRESS_ENABLED, null);
         
         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .put("consumerTag", this.consumerTag)

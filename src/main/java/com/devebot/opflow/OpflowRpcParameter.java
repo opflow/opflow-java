@@ -21,7 +21,7 @@ public class OpflowRpcParameter implements Customizer {
     private final String routineId;
     private final String routineTimestamp;
     private String[] routineTags = null;
-    private Long requestTTL = null;
+    private Long routineTTL = null;
     private String routineSignature = null;
     private String routineScope = null;
     private Boolean callbackTransient = false;
@@ -39,20 +39,21 @@ public class OpflowRpcParameter implements Customizer {
         this.routineId = OpflowUtil.getRoutineId(headers);
         this.routineSignature = OpflowUtil.getRoutineSignature(headers, false);
         this.routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
-        
-        if (headers.get("timeout") instanceof Long) {
-            this.requestTTL = (Long) headers.get("timeout");
-        }
-        
+        this.routineTags = OpflowUtil.getRoutineTags(headers);
+
         if (headers.get(CONST.AMQP_HEADER_ROUTINE_SCOPE) instanceof String) {
             this.routineScope = (String) headers.get(CONST.AMQP_HEADER_ROUTINE_SCOPE);
         }
-        
-        this.callbackTransient = "forked".equals((String)headers.get("mode"));
-        
-        if (headers.get("progressEnabled") instanceof Boolean) {
-            this.progressEnabled = (Boolean) headers.get("progressEnabled");
+
+        if (headers.get(CONST.AMQP_HEADER_PROGRESS_ENABLED) instanceof Boolean) {
+            this.progressEnabled = (Boolean) headers.get(CONST.AMQP_HEADER_PROGRESS_ENABLED);
         }
+        
+        if (headers.get("timeout") instanceof Long) {
+            this.routineTTL = (Long) headers.get("timeout");
+        }
+
+        this.callbackTransient = "forked".equals((String)headers.get("mode"));
         
         this.watcherEnabled = Boolean.TRUE.equals(headers.get("watcherEnabled"));
     }
@@ -88,12 +89,12 @@ public class OpflowRpcParameter implements Customizer {
         return this;
     }
 
-    public Long getRequestTTL() {
-        return requestTTL;
+    public Long getRoutineTTL() {
+        return routineTTL;
     }
 
-    public OpflowRpcParameter setRequestTTL(Long requestTTL) {
-        this.requestTTL = requestTTL;
+    public OpflowRpcParameter setRoutineTTL(Long routineTTL) {
+        this.routineTTL = routineTTL;
         return this;
     }
     
