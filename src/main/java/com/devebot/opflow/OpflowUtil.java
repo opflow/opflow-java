@@ -7,6 +7,7 @@ import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowNetTool;
 import java.io.UnsupportedEncodingException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -591,6 +592,15 @@ public class OpflowUtil {
     
     public static String getMethodSignature(Method method) {
         return method.toString();
+    }
+    
+    public static <T> T extractMethodAnnotation(Method method, Class<? extends Annotation> clazz) {
+        if (method.isAnnotationPresent(clazz)) {
+            Annotation annotation = method.getAnnotation(clazz);
+            T routine = (T) annotation;
+            return routine;
+        }
+        return null;
     }
     
     public static String maskPassword(String password) {

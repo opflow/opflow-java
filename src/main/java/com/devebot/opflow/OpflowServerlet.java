@@ -8,7 +8,6 @@ import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -378,7 +377,7 @@ public class OpflowServerlet implements AutoCloseable {
                     Object target = targetRef.get(methodSignature);
                     try {
                         Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
-                        OpflowTargetRoutine routine = extractMethodInfo(origin);
+                        OpflowTargetRoutine routine = OpflowUtil.extractMethodAnnotation(origin, OpflowTargetRoutine.class);;
                         if (routine != null && routine.enabled() == false) {
                             throw new UnsupportedOperationException("Method " + origin.toString() + " is disabled");
                         }
@@ -393,6 +392,11 @@ public class OpflowServerlet implements AutoCloseable {
                         Object returnValue;
                         
                         String pingSignature = OpflowRpcCheckerWorker.getSendMethodName();
+                        if (reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
+                                .put("routineSignature", routineSignature)
+                                .put("pingSignature", pingSignature)
+                                .text("Request[${requestId}][${requestTime}] - compares the routine[${routineSignature}] with ping[${pingSignature}]")
+                                .stringify());
                         if (pingSignature.equals(routineSignature)) {
                             if (args.length > 0) {
                                 OpflowRpcChecker.Ping p = (OpflowRpcChecker.Ping) args[0];
@@ -526,7 +530,7 @@ public class OpflowServerlet implements AutoCloseable {
                     Object target = targetRef.get(methodSignature);
                     try {
                         Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
-                        OpflowTargetRoutine routine = extractMethodInfo(origin);
+                        OpflowTargetRoutine routine = OpflowUtil.extractMethodAnnotation(origin, OpflowTargetRoutine.class);
                         if (routine != null && routine.enabled() == false) {
                             throw new UnsupportedOperationException("Method " + origin.toString() + " is disabled");
                         }
@@ -589,19 +593,24 @@ public class OpflowServerlet implements AutoCloseable {
                 if (target == null) target = type.getDeclaredConstructor().newInstance();
                 for (Method method : type.getDeclaredMethods()) {
                     String methodSignature = OpflowUtil.getMethodSignature(method);
-                    OpflowTargetRoutine routine = extractMethodInfo(method);
+                    OpflowTargetRoutine routine = OpflowUtil.extractMethodAnnotation(method, OpflowTargetRoutine.class);
                     if (routine != null && routine.alias() != null) {
                         String[] aliases = routine.alias();
+                        if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
+                                .put("methodSignature", methodSignature)
+                                .put("numberOfAliases", aliases.length)
+                                .text("Serverlet[${instantiatorId}].instantiateType() - method[${methodSignature}] has ${numberOfAliases} alias(es)")
+                                .stringify());
                         for(String alias:aliases) {
                             if (methodOfAlias.containsKey(alias)) {
                                 throw new OpflowInterceptionException("Alias[" + alias + "]/methodSignature[" + methodSignature + "]" + 
                                         " is conflicted with alias of routineSignature[" + methodOfAlias.get(alias) + "]");
                             }
                             methodOfAlias.put(alias, methodSignature);
-                            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
+                            if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                                     .put("alias", alias)
                                     .put("methodSignature", methodSignature)
-                                    .text("link alias to methodSignature")
+                                    .text("Serverlet[${instantiatorId}].instantiateType() - link the alias[${alias}] to the methodSignature[${methodSignature}]")
                                     .stringify());
                         }
                     }
@@ -656,19 +665,11 @@ public class OpflowServerlet implements AutoCloseable {
             }
             process();
         }
-        
-        private OpflowTargetRoutine extractMethodInfo(Method method) {
-            if (method.isAnnotationPresent(OpflowTargetRoutine.class)) {
-                Annotation annotation = method.getAnnotation(OpflowTargetRoutine.class);
-                OpflowTargetRoutine routine = (OpflowTargetRoutine) annotation;
-                return routine;
-            }
-            return null;
-        }
     }
     
     public static class OpflowRpcCheckerWorker extends OpflowRpcChecker {
         @Override
+        @OpflowTargetRoutine(alias = OpflowConstant.OPFLOW_ROUTINE_PINGPONG_ALIAS)
         public Pong send(Ping info) throws Throwable {
             return new Pong();
         }

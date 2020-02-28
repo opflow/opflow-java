@@ -1,6 +1,8 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.supports.OpflowObjectTree;
+import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -13,13 +15,24 @@ public abstract class OpflowRpcChecker {
     
     public static final String[] REQUEST_ATTRS = new String[] { "routineId", "startTime", "endTime", "elapsedTime" };
     
+    @OpflowSourceRoutine(alias = OpflowConstant.OPFLOW_ROUTINE_PINGPONG_ALIAS)
     public abstract Pong send(Ping info) throws Throwable;
     
     private static String sendMethodName = null;
     
     public static String getSendMethodName() throws NoSuchMethodException {
         if (sendMethodName == null) {
-            sendMethodName = OpflowRpcChecker.class.getMethod("send", Ping.class).toString();
+            Method method = OpflowRpcChecker.class.getMethod("send", Ping.class);
+            String alias = null;
+            OpflowSourceRoutine routine = OpflowUtil.extractMethodAnnotation(method, OpflowSourceRoutine.class);
+            if (routine != null) {
+                alias = routine.alias();
+            }
+            if (CONST.LEGACY_ROUTINE_PINGPONG_APPLIED || alias == null || alias.isEmpty()) {
+                sendMethodName = method.toString();
+            } else {
+                sendMethodName = alias;
+            }
         }
         return sendMethodName;
     }

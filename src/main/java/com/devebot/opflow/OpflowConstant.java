@@ -32,13 +32,17 @@ public class OpflowConstant {
     public final String AMQP_HEADER_PROGRESS_ENABLED;
 
     public final boolean LEGACY_SUPPORT_APPLIED;
-    public final static boolean LEGACY_SUPPORT_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
+    public final boolean LEGACY_SUPPORT_ENABLED;
+
     public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
     public final static String LEGACY_HEADER_ROUTINE_TIMESTAMP = "requestTime";
     public final static String LEGACY_HEADER_ROUTINE_SIGNATURE = "routineId";
     public final static String LEGACY_HEADER_ROUTINE_SCOPE = "messageScope";
     public final static String LEGACY_HEADER_ROUTINE_TAGS = "requestTags";
 
+    public final boolean LEGACY_ROUTINE_PINGPONG_APPLIED;
+    public final static String OPFLOW_ROUTINE_PINGPONG_ALIAS = "opflow_routine_ping_ball_pong";
+    
     public final String COMPNAME_COMMANDER = "commander";
     public final String COMPNAME_SERVERLET = "serverlet";
     public final String COMPNAME_PUBLISHER = "publisher";
@@ -84,7 +88,9 @@ public class OpflowConstant {
                 break;
         }
         AMQP_HEADER_PROGRESS_ENABLED = "progressEnabled";
+        LEGACY_SUPPORT_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
         LEGACY_SUPPORT_APPLIED = LEGACY_SUPPORT_ENABLED && !"0".equals(AMQP_PROTOCOL_VERSION);
+        LEGACY_ROUTINE_PINGPONG_APPLIED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_PINGPONG", null));
     }
 
     public Map<String, String> getProtocolInfo() {

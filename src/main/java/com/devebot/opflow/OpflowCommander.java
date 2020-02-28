@@ -14,7 +14,6 @@ import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import io.undertow.server.RoutingHandler;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -508,12 +507,12 @@ public class OpflowCommander implements AutoCloseable {
                 manifest.touch();
                 // update the compatible status
                 if (version == null) {
-                    manifest.setCompatible(OpflowConstant.LEGACY_SUPPORT_ENABLED);
+                    manifest.setCompatible(CONST.LEGACY_SUPPORT_ENABLED);
                 } else {
                     if (version.equals(CONST.AMQP_PROTOCOL_VERSION)) {
                         manifest.setCompatible(true);
                     } else {
-                        manifest.setCompatible((version.equals("0") && OpflowConstant.LEGACY_SUPPORT_ENABLED));
+                        manifest.setCompatible((version.equals("0") && CONST.LEGACY_SUPPORT_ENABLED));
                     }
                 }
             }
@@ -675,7 +674,7 @@ public class OpflowCommander implements AutoCloseable {
 
         @Override
         public Map<String, Object> collect() {
-            return collect(new HashMap<String, Boolean>());
+            return collect(new HashMap<>());
         }
 
         @Override
@@ -932,7 +931,7 @@ public class OpflowCommander implements AutoCloseable {
             this.reservedWorkerEnabled = reservedWorkerEnabled;
             for (Method method : this.clazz.getDeclaredMethods()) {
                 String methodSignature = OpflowUtil.getMethodSignature(method);
-                OpflowSourceRoutine routine = extractMethodInfo(method);
+                OpflowSourceRoutine routine = OpflowUtil.extractMethodAnnotation(method, OpflowSourceRoutine.class);
                 if (routine != null && routine.alias() != null && routine.alias().length() > 0) {
                     String alias = routine.alias();
                     if (aliasOfMethod.containsValue(alias)) {
@@ -1114,13 +1113,6 @@ public class OpflowCommander implements AutoCloseable {
             if (method.getReturnType() == void.class) return null;
 
             return OpflowJsonTool.toObject(rpcResult.getValueAsString(), method.getReturnType());
-        }
-        
-        private static OpflowSourceRoutine extractMethodInfo(Method method) {
-            if (!method.isAnnotationPresent(OpflowSourceRoutine.class)) return null;
-            Annotation annotation = method.getAnnotation(OpflowSourceRoutine.class);
-            OpflowSourceRoutine routine = (OpflowSourceRoutine) annotation;
-            return routine;
         }
     }
 
