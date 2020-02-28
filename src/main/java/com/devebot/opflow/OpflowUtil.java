@@ -366,28 +366,6 @@ public class OpflowUtil {
         return (value == null) ? defval : value;
     }
     
-    public static Object getOptionField(Map<String, Object> options, String[] fieldNames) {
-        return getOptionField(options, fieldNames, null);
-    }
-    
-    public static Object getOptionField(Map<String, Object> options, String[] fieldNames, Object defval) {
-        if (options == null) return null;
-        if (fieldNames == null || fieldNames.length == 0) return null;
-        Map<String, Object> pointer = options;
-        for(int i=0; i<fieldNames.length-1; i++) {
-            Object value = pointer.get(fieldNames[i]);
-            if (value instanceof Map) {
-                pointer = (Map<String, Object>) value;
-            } else {
-                pointer = null;
-                break;
-            }
-        }
-        if (pointer == null) return null;
-        Object value = pointer.get(fieldNames[fieldNames.length - 1]);
-        return (value == null) ? defval : value;
-    }
-
     public static String[] splitByComma(String source) {
         return splitByComma(source, String.class);
     }

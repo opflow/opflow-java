@@ -1,6 +1,5 @@
 package com.devebot.opflow.supports;
 
-import com.devebot.opflow.OpflowUtil;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.MatchResult;
@@ -25,7 +24,7 @@ public class OpflowTextFormat {
             public String apply(MatchResult t) {
                 String matched = t.group(1);
                 String[] fieldPath = matched.split("\\.");
-                Object newObj = OpflowUtil.getOptionField(params, fieldPath);
+                Object newObj = OpflowObjectTree.getObjectByPath(params, fieldPath);
                 String newVal = (newObj == null) ? "<null>" : newObj.toString();
                 newVal = newVal.replaceAll("\\$", ".");
                 return newVal;
@@ -39,7 +38,7 @@ public class OpflowTextFormat {
         String result = format;
         while (m.find()) {
             String[] fieldPath = m.group(1).split("\\.");
-            Object newObj = OpflowUtil.getOptionField(params, fieldPath);
+            Object newObj = OpflowObjectTree.getObjectByPath(params, fieldPath);
             String newVal = (newObj == null) ? "<null>" : newObj.toString();
             result = result.replaceFirst(PH_STR, newVal);
         }

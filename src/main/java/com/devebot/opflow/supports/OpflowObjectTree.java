@@ -102,6 +102,7 @@ public class OpflowObjectTree {
         return target;
     }
     
+    @Deprecated
     public static Object getTreeNode(Map<String, Object> tree, String[] path) {
         if (tree == null || path == null || path.length == 0) {
             return null;
@@ -137,5 +138,32 @@ public class OpflowObjectTree {
         } else {
             return OpflowConverter.convert(value, type);
         }
+    }
+    
+    public static Object getObjectByPath(Map<String, Object> options, String[] path) {
+        return getObjectByPath(options, path, null);
+    }
+    
+    public static Object getObjectByPath(Map<String, Object> options, String[] path, Object defval) {
+        if (options == null) return null;
+        if (path == null || path.length == 0) return null;
+        Map<String, Object> pointer = options;
+        for(int i=0; i<path.length-1; i++) {
+            String step = path[i];
+            if (step == null || step.isEmpty()) {
+                pointer = null;
+                break;
+            }
+            Object value = pointer.get(step);
+            if (value instanceof Map) {
+                pointer = (Map<String, Object>) value;
+            } else {
+                pointer = null;
+                break;
+            }
+        }
+        if (pointer == null) return null;
+        Object value = pointer.get(path[path.length - 1]);
+        return (value == null) ? defval : value;
     }
 }
