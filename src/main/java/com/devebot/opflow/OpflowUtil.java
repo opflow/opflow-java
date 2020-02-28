@@ -280,18 +280,24 @@ public class OpflowUtil {
     }
     
     public static String getRoutineId(Map<String, Object> headers) {
-        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_ID, true, true);
+        return getRoutineId(headers, true);
     }
     
     public static String getRoutineId(Map<String, Object> headers, boolean uuidIfNotFound) {
+        if (CONST.LEGACY_SUPPORT_APPLIED) {
+            String val = getStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_ID, false, false);
+            if (val != null) {
+                return val;
+            }
+        }
         return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_ID, uuidIfNotFound, true);
     }
     
     public static void setRoutineId(Map<String, Object> headers, String value) {
-        setStringField(headers, CONST.AMQP_HEADER_ROUTINE_ID, value);
         if (CONST.LEGACY_SUPPORT_APPLIED) {
             setStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_ID, value);
         }
+        setStringField(headers, CONST.AMQP_HEADER_ROUTINE_ID, value);
     }
     
     public static String getRoutineTimestamp(Map<String, Object> headers) {
@@ -299,50 +305,50 @@ public class OpflowUtil {
     }
     
     public static String getRoutineTimestamp(Map<String, Object> headers, boolean currentIfNotFound) {
-        Object date = headers.get(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP);
-        if (date instanceof String) {
-            return (String) date;
-        }
-        if (date instanceof Date) {
-            String routineTimestamp = OpflowDateTime.toISO8601UTC((Date) date);
-            headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, routineTimestamp);
-            return routineTimestamp;
-        }
-        if (date != null) {
-            return date.toString();
-        } else {
-            if (currentIfNotFound) {
-                String routineTimestamp = OpflowDateTime.getCurrentTimeString();
-                headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, routineTimestamp);
-                return routineTimestamp;
+        if (CONST.LEGACY_SUPPORT_APPLIED) {
+            String val = getDateField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_TIMESTAMP, false);
+            if (val != null) {
+                return val;
             }
-            return null;
         }
+        return getDateField(headers, CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, currentIfNotFound);
     }
     
     public static void setRoutineTimestamp(Map<String, Object> headers, String value) {
-        setStringField(headers, CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, value);
         if (CONST.LEGACY_SUPPORT_APPLIED) {
             setStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_TIMESTAMP, value);
         }
+        setStringField(headers, CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, value);
     }
     
     public static String getRoutineSignature(Map<String, Object> headers) {
-        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, true, true);
+        return getRoutineSignature(headers, true);
     }
     
     public static String getRoutineSignature(Map<String, Object> headers, boolean uuidIfNotFound) {
+        if (CONST.LEGACY_SUPPORT_APPLIED) {
+            String val = getStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_SIGNATURE, false, false);
+            if (val != null) {
+                return val;
+            }
+        }
         return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, uuidIfNotFound, true);
     }
     
     public static void setRoutineSignature(Map<String, Object> headers, String value) {
-        setStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, value);
         if (CONST.LEGACY_SUPPORT_APPLIED) {
             setStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_SIGNATURE, value);
         }
+        setStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, value);
     }
     
     public static String getRoutineScope(Map<String, Object> headers) {
+        if (CONST.LEGACY_SUPPORT_APPLIED) {
+            String val = getStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_SCOPE, false, false);
+            if (val != null) {
+                return val;
+            }
+        }
         return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SCOPE, false, false);
     }
     
@@ -380,6 +386,28 @@ public class OpflowUtil {
         if (headers == null) return;
         if (tags != null) {
             headers.put(CONST.AMQP_HEADER_ROUTINE_TAGS, tags);
+        }
+    }
+    
+    public static String getDateField(Map<String, Object> headers, String fieldName, boolean currentIfNotFound) {
+        Object date = headers.get(fieldName);
+        if (date instanceof String) {
+            return (String) date;
+        }
+        if (date instanceof Date) {
+            String routineTimestamp = OpflowDateTime.toISO8601UTC((Date) date);
+            headers.put(fieldName, routineTimestamp);
+            return routineTimestamp;
+        }
+        if (date != null) {
+            return date.toString();
+        } else {
+            if (currentIfNotFound) {
+                String routineTimestamp = OpflowDateTime.getCurrentTimeString();
+                headers.put(fieldName, routineTimestamp);
+                return routineTimestamp;
+            }
+            return null;
         }
     }
     
