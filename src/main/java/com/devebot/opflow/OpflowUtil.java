@@ -287,6 +287,13 @@ public class OpflowUtil {
         return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_ID, uuidIfNotFound, true);
     }
     
+    public static void setRoutineId(Map<String, Object> headers, String value) {
+        setStringField(headers, CONST.AMQP_HEADER_ROUTINE_ID, value);
+        if (CONST.LEGACY_SUPPORT_APPLIED) {
+            setStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_ID, value);
+        }
+    }
+    
     public static String getRoutineTimestamp(Map<String, Object> headers) {
         return getRoutineTimestamp(headers, true);
     }
@@ -313,6 +320,41 @@ public class OpflowUtil {
         }
     }
     
+    public static void setRoutineTimestamp(Map<String, Object> headers, String value) {
+        setStringField(headers, CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, value);
+        if (CONST.LEGACY_SUPPORT_APPLIED) {
+            setStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_TIMESTAMP, value);
+        }
+    }
+    
+    public static String getRoutineSignature(Map<String, Object> headers) {
+        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, true, true);
+    }
+    
+    public static String getRoutineSignature(Map<String, Object> headers, boolean uuidIfNotFound) {
+        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, uuidIfNotFound, true);
+    }
+    
+    public static void setRoutineSignature(Map<String, Object> headers, String value) {
+        setStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, value);
+        if (CONST.LEGACY_SUPPORT_APPLIED) {
+            setStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_SIGNATURE, value);
+        }
+    }
+    
+    public static String getRoutineScope(Map<String, Object> headers) {
+        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SCOPE, false, false);
+    }
+    
+    public static void setRoutineScope(Map<String, Object> headers, String value) {
+        if (value != null) {
+            setStringField(headers, CONST.AMQP_HEADER_ROUTINE_SCOPE, value);
+            if (CONST.LEGACY_SUPPORT_APPLIED) {
+                setStringField(headers, OpflowConstant.LEGACY_HEADER_ROUTINE_SCOPE, value);
+            }
+        }
+    }
+    
     public static String[] getRoutineTags(Map<String, Object> headers) {
         return getRoutineTags(headers, CONST.AMQP_HEADER_ROUTINE_TAGS);
     }
@@ -334,12 +376,11 @@ public class OpflowUtil {
         return splitByComma(tags.toString());
     }
     
-    public static String getRoutineSignature(Map<String, Object> headers) {
-        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, true, true);
-    }
-    
-    public static String getRoutineSignature(Map<String, Object> headers, boolean uuidIfNotFound) {
-        return getStringField(headers, CONST.AMQP_HEADER_ROUTINE_SIGNATURE, uuidIfNotFound, true);
+    public static void setRoutineTags(Map<String, Object> headers, String[] tags) {
+        if (headers == null) return;
+        if (tags != null) {
+            headers.put(CONST.AMQP_HEADER_ROUTINE_TAGS, tags);
+        }
     }
     
     public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound, boolean assigned) {
@@ -353,6 +394,11 @@ public class OpflowUtil {
             options.put(fieldName, valueStr);
         }
         return valueStr;
+    }
+    
+    public static void setStringField(Map<String, Object> options, String fieldName, String value) {
+        if (options == null) return;
+        options.put(fieldName, value);
     }
     
     public static String getOptionField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {

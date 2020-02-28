@@ -445,32 +445,17 @@ public class OpflowRpcMaster implements AutoCloseable {
         tasks.put(taskId, task);
         
         Map<String, Object> headers = new HashMap<>();
-        headers.put(CONST.AMQP_HEADER_ROUTINE_ID, task.getRoutineId());
-        headers.put(CONST.AMQP_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
-        headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, task.getRoutineTimestamp());
-
-        if (params.getRoutineTags() != null) {
-            headers.put(CONST.AMQP_HEADER_ROUTINE_TAGS, params.getRoutineTags());
-        }
-
-        if (params.getRoutineScope() != null) {
-            headers.put(CONST.AMQP_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
-        }
+        OpflowUtil.setRoutineId(headers, task.getRoutineId());
+        OpflowUtil.setRoutineTimestamp(headers, task.getRoutineTimestamp());
+        OpflowUtil.setRoutineSignature(headers, task.getRoutineSignature());
+        OpflowUtil.setRoutineScope(headers, params.getRoutineScope());
+        OpflowUtil.setRoutineTags(headers, params.getRoutineTags());
 
         if (prefetchCount > 1) {
             headers.put(CONST.AMQP_HEADER_PROGRESS_ENABLED, Boolean.FALSE);
         } else {
             if (params.getProgressEnabled() != null) {
                 headers.put(CONST.AMQP_HEADER_PROGRESS_ENABLED, params.getProgressEnabled());
-            }
-        }
-
-        if (OpflowConstant.LEGACY_SUPPORT_ENABLED && !"0".equals(CONST.AMQP_PROTOCOL_VERSION)) {
-            headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_ID, task.getRoutineId());
-            headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_SIGNATURE, task.getRoutineSignature());
-            headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_TIMESTAMP, task.getRoutineTimestamp());
-            if (params.getRoutineScope() != null) {
-                headers.put(OpflowConstant.LEGACY_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
             }
         }
 

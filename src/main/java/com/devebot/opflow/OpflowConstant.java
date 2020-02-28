@@ -31,6 +31,7 @@ public class OpflowConstant {
     public final String AMQP_HEADER_ROUTINE_TAGS;
     public final String AMQP_HEADER_PROGRESS_ENABLED;
 
+    public final boolean LEGACY_SUPPORT_APPLIED;
     public final static boolean LEGACY_SUPPORT_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
     public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
     public final static String LEGACY_HEADER_ROUTINE_TIMESTAMP = "requestTime";
@@ -83,6 +84,7 @@ public class OpflowConstant {
                 break;
         }
         AMQP_HEADER_PROGRESS_ENABLED = "progressEnabled";
+        LEGACY_SUPPORT_APPLIED = LEGACY_SUPPORT_ENABLED && !"0".equals(AMQP_PROTOCOL_VERSION);
     }
 
     public Map<String, String> getProtocolInfo() {
@@ -93,7 +95,7 @@ public class OpflowConstant {
         info.put("AMQP_HEADER_ROUTINE_SIGNATURE", AMQP_HEADER_ROUTINE_SIGNATURE);
         info.put("AMQP_HEADER_ROUTINE_SCOPE", AMQP_HEADER_ROUTINE_SCOPE);
         info.put("AMQP_HEADER_ROUTINE_TAGS", AMQP_HEADER_ROUTINE_TAGS);
-        if (LEGACY_SUPPORT_ENABLED && !"0".equals(AMQP_PROTOCOL_VERSION)) {
+        if (LEGACY_SUPPORT_APPLIED) {
             info.put("LEGACY_HEADER_ROUTINE_ID", LEGACY_HEADER_ROUTINE_ID);
             info.put("LEGACY_HEADER_ROUTINE_TIMESTAMP", LEGACY_HEADER_ROUTINE_TIMESTAMP);
             info.put("LEGACY_HEADER_ROUTINE_SIGNATURE", LEGACY_HEADER_ROUTINE_SIGNATURE);

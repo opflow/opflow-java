@@ -172,13 +172,13 @@ public class OpflowRpcResponse {
             headers.put(CONST.RPC_WORKER_ID, this.componentId);
         }
         if (this.routineId != null) {
-            headers.put(CONST.AMQP_HEADER_ROUTINE_ID, this.routineId);
+            OpflowUtil.setRoutineId(headers, this.routineId);
         }
         if (this.routineTimestamp != null) {
-            headers.put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, this.routineTimestamp);
+            OpflowUtil.setRoutineTimestamp(headers, this.routineTimestamp);
         }
         if (this.routineScope != null) {
-            headers.put(CONST.AMQP_HEADER_ROUTINE_SCOPE, this.routineScope);
+            OpflowUtil.setRoutineScope(headers, this.routineScope);
         }
         if (finished) {
             headers.put(CONST.AMQP_HEADER_PROTOCOL_VERSION, CONST.AMQP_PROTOCOL_VERSION);

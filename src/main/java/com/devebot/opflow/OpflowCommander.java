@@ -482,7 +482,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             Pong pong = OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
-            pong.getParameters().put(CONST.AMQP_HEADER_ROUTINE_ID, routineId);
+            pong.getParameters().put("routineId", routineId);
             pong.getParameters().put("startTime", startTime);
             pong.getParameters().put("endTime", endTime);
             pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
@@ -510,7 +510,11 @@ public class OpflowCommander implements AutoCloseable {
                 if (version == null) {
                     manifest.setCompatible(OpflowConstant.LEGACY_SUPPORT_ENABLED);
                 } else {
-                    manifest.setCompatible(version.equals(CONST.AMQP_PROTOCOL_VERSION) || (version.equals("0") && OpflowConstant.LEGACY_SUPPORT_ENABLED));
+                    if (version.equals(CONST.AMQP_PROTOCOL_VERSION)) {
+                        manifest.setCompatible(true);
+                    } else {
+                        manifest.setCompatible((version.equals("0") && OpflowConstant.LEGACY_SUPPORT_ENABLED));
+                    }
                 }
             }
         }
