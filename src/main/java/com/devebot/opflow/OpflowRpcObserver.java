@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.annotation.OpflowFieldExclude;
 import com.devebot.opflow.supports.OpflowDateTime;
 import java.util.Date;
 
@@ -18,7 +19,12 @@ public class OpflowRpcObserver {
         private final String componentId;
         private final Date originalTime;
         private Date accessedTime;
+
+        @OpflowFieldExclude
+        private long keepInTouchDuration;
         private String keepInTouchTime;
+        @OpflowFieldExclude
+        private long losingTouchDuration;
         private String losingTouchTime;
 
         public Manifest(String componentId) {
@@ -34,9 +40,15 @@ public class OpflowRpcObserver {
             this.compatible = compatible;
         }
 
+        public long getLosingTouchDuration() {
+            return losingTouchDuration;
+        }
+        
         public Manifest refresh() {
-            this.keepInTouchTime = OpflowDateTime.printElapsedTime(originalTime, accessedTime);
-            this.losingTouchTime = OpflowDateTime.printElapsedTime(accessedTime, new Date());
+            this.keepInTouchDuration = accessedTime.getTime() - originalTime.getTime();
+            this.keepInTouchTime = OpflowDateTime.printElapsedTime(this.keepInTouchDuration);
+            this.losingTouchDuration = (new Date()).getTime() - accessedTime.getTime();
+            this.losingTouchTime = OpflowDateTime.printElapsedTime(this.losingTouchDuration);
             return this;
         }
     }

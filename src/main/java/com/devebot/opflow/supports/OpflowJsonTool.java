@@ -1,7 +1,10 @@
 package com.devebot.opflow.supports;
 
 import com.devebot.opflow.OpflowMessage;
+import com.devebot.opflow.annotation.OpflowFieldExclude;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -33,9 +36,28 @@ import java.util.TimeZone;
  * @author drupalex
  */
 public class OpflowJsonTool {
+    private static final ExclusionStrategy STRATEGY = new ExclusionStrategy() {
+        @Override
+        public boolean shouldSkipClass(Class<?> clazz) {
+            return false;
+        }
+
+        @Override
+        public boolean shouldSkipField(FieldAttributes field) {
+            return field.getAnnotation(OpflowFieldExclude.class) != null;
+        }
+    };
+
     private static final GsonUTCDateAdapter GSON_UTC_DATE_ADAPTER = new GsonUTCDateAdapter();
-    private static final Gson GSON = new GsonBuilder().registerTypeAdapter(Date.class, GSON_UTC_DATE_ADAPTER).create();
-    private static final Gson PSON = new GsonBuilder().registerTypeAdapter(Date.class, GSON_UTC_DATE_ADAPTER).setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder()
+            .addSerializationExclusionStrategy(STRATEGY)
+            .registerTypeAdapter(Date.class, GSON_UTC_DATE_ADAPTER)
+            .create();
+    private static final Gson PSON = new GsonBuilder()
+            .addSerializationExclusionStrategy(STRATEGY)
+            .registerTypeAdapter(Date.class, GSON_UTC_DATE_ADAPTER)
+            .setPrettyPrinting()
+            .create();
     
     public static String toString(Object jsonObj) {
         return toString(jsonObj, false);

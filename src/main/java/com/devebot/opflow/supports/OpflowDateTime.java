@@ -42,9 +42,16 @@ public class OpflowDateTime {
         return toISO8601UTC(new Date());
     }
     
+    public static String printElapsedTime(long duration) {
+        return printElapsedTime(new Period(duration));
+    }
+    
     public static String printElapsedTime(Date startDate, Date endDate) {
         Interval interval = new Interval(startDate.getTime(), endDate.getTime());
-        Period period = interval.toPeriod();
+        return printElapsedTime(interval.toPeriod());
+    }
+    
+    private static String printElapsedTime(Period period) {
         boolean middle = false;
         List<String> strs = new ArrayList<>();
         if (period.getYears() > 0) {
@@ -66,6 +73,9 @@ public class OpflowDateTime {
         }
         if (middle || period.getSeconds() > 0) {
             strs.add(period.getSeconds() + " second(s)");
+        }
+        if (strs.isEmpty()) {
+            return "0";
         }
         return String.join(", ", strs);
     }

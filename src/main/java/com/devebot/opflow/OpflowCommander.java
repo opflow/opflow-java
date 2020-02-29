@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -491,6 +492,7 @@ public class OpflowCommander implements AutoCloseable {
 
     private static class OpflowRpcObserverListener implements OpflowRpcObserver.Listener {
 
+        private final long keepAliveTimeout = 30000;
         private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
 
         @Override
@@ -518,13 +520,22 @@ public class OpflowCommander implements AutoCloseable {
             }
         }
 
-        public Object getInformation() {
+        public Collection<OpflowRpcObserver.Manifest> rollup() {
             Set<String> keys = manifests.keySet();
             for (String key: keys) {
+                // refresh the state of the manifest
                 OpflowRpcObserver.Manifest manifest = manifests.get(key);
                 manifest.refresh();
+                // validate the state of the manifest
+                if (manifest.getLosingTouchDuration() > keepAliveTimeout) {
+                    manifests.remove(key);
+                }
             }
             return manifests.values();
+        }
+
+        public Object getInformation() {
+            return this.rollup();
         }
     }
 
