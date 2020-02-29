@@ -519,6 +519,11 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         public Object getInformation() {
+            Set<String> keys = manifests.keySet();
+            for (String key: keys) {
+                OpflowRpcObserver.Manifest manifest = manifests.get(key);
+                manifest.refresh();
+            }
             return manifests.values();
         }
     }
@@ -787,7 +792,7 @@ public class OpflowCommander implements AutoCloseable {
                                 .put("enabled", rpcWatcher.isEnabled())
                                 .put("interval", rpcWatcher.getInterval())
                                 .put("count", rpcWatcher.getCount())
-                                .put("congested", rpcWatcher.isCongested())
+                                .put("congestive", rpcWatcher.isCongested())
                                 .toMap());
                     }
                 }
