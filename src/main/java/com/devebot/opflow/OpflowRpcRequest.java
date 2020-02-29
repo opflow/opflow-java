@@ -191,12 +191,12 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                         }
                     }   break;
                 case "failed":
-                    consumerTag = getMessageField(msg, "consumerTag");
+                    consumerTag = getMessageField(msg, CONST.AMQP_HEADER_CONSUMER_TAG);
                     failed = true;
                     error = msg.getBody();
                     break;
                 case "completed":
-                    consumerTag = getMessageField(msg, "consumerTag");
+                    consumerTag = getMessageField(msg, CONST.AMQP_HEADER_CONSUMER_TAG);
                     completed = true;
                     value = msg.getBody();
                     break;

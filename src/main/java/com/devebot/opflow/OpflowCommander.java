@@ -495,6 +495,10 @@ public class OpflowCommander implements AutoCloseable {
         private final long keepAliveTimeout = 30000;
         private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
 
+        public OpflowRpcObserverListener() {
+            
+        }
+
         @Override
         public void check(String componentId, String version, String payload) {
             OpflowRpcObserver.Manifest manifest = null;
@@ -715,35 +719,6 @@ public class OpflowCommander implements AutoCloseable {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     opts.put(CONST.COMPONENT_ID, componentId);
-
-                    // restrictor information
-                    if (checkOption(flag, SCOPE_INFO)) {
-                        if (restrictor != null) {
-                            opts.put(CONST.COMPNAME_RESTRICTOR, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                                @Override
-                                public void transform(Map<String, Object> opt2) {
-                                    int availablePermits = restrictor.getSemaphorePermits();
-                                    opt2.put("pauseEnabled", restrictor.isPauseEnabled());
-                                    opt2.put("pauseTimeout", restrictor.getPauseTimeout());
-                                    boolean isPaused = restrictor.isPaused();
-                                    opt2.put("pauseStatus", isPaused ? "on" : "off");
-                                    if (isPaused) {
-                                        opt2.put("pauseElapsed", restrictor.getPauseElapsed());
-                                        opt2.put("pauseDuration", restrictor.getPauseDuration());
-                                    }
-                                    opt2.put("semaphoreLimit", restrictor.getSemaphoreLimit());
-                                    opt2.put("semaphoreUsedPermits", restrictor.getSemaphoreLimit() - availablePermits);
-                                    opt2.put("semaphoreFreePermits", availablePermits);
-                                    opt2.put("semaphoreEnabled", restrictor.isSemaphoreEnabled());
-                                    opt2.put("semaphoreTimeout", restrictor.getSemaphoreTimeout());
-                                }
-                            }).toMap());
-                        } else {
-                            opts.put(CONST.COMPNAME_RESTRICTOR, OpflowObjectTree.buildMap()
-                                    .put("enabled", false)
-                                    .toMap());
-                        }
-                    }
                     
                     // rpcMaster information
                     if (rpcMaster != null) {
@@ -806,9 +781,38 @@ public class OpflowCommander implements AutoCloseable {
                                 .put("congestive", rpcWatcher.isCongested())
                                 .toMap());
                     }
+                    
+                    // restrictor information
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        if (restrictor != null) {
+                            opts.put(CONST.COMPNAME_RESTRICTOR, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                                @Override
+                                public void transform(Map<String, Object> opt2) {
+                                    int availablePermits = restrictor.getSemaphorePermits();
+                                    opt2.put("pauseEnabled", restrictor.isPauseEnabled());
+                                    opt2.put("pauseTimeout", restrictor.getPauseTimeout());
+                                    boolean isPaused = restrictor.isPaused();
+                                    opt2.put("pauseStatus", isPaused ? "on" : "off");
+                                    if (isPaused) {
+                                        opt2.put("pauseElapsed", restrictor.getPauseElapsed());
+                                        opt2.put("pauseDuration", restrictor.getPauseDuration());
+                                    }
+                                    opt2.put("semaphoreLimit", restrictor.getSemaphoreLimit());
+                                    opt2.put("semaphoreUsedPermits", restrictor.getSemaphoreLimit() - availablePermits);
+                                    opt2.put("semaphoreFreePermits", availablePermits);
+                                    opt2.put("semaphoreEnabled", restrictor.isSemaphoreEnabled());
+                                    opt2.put("semaphoreTimeout", restrictor.getSemaphoreTimeout());
+                                }
+                            }).toMap());
+                        } else {
+                            opts.put(CONST.COMPNAME_RESTRICTOR, OpflowObjectTree.buildMap()
+                                    .put("enabled", false)
+                                    .toMap());
+                        }
+                    }
                 }
             }).toMap());
-
+            
             // start-time & uptime
             if (checkOption(flag, SCOPE_INFO)) {
                 Date currentTime = new Date();

@@ -271,7 +271,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 
                 // collect the information of the workers
                 if (rpcObserver != null) {
-                    String rpcWorkerId = OpflowUtil.getStringField(headers, CONST.RPC_WORKER_ID, false, true);
+                    String rpcWorkerId = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_CONSUMER_ID, false, true);
                     String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
                     rpcObserver.check(rpcWorkerId, version, null);
                 }

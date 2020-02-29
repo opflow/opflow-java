@@ -169,7 +169,7 @@ public class OpflowRpcResponse {
         Map<String, Object> headers = new HashMap<>();
         headers.put(CONST.AMQP_HEADER_RETURN_STATUS, status);
         if (this.componentId != null) {
-            headers.put(CONST.RPC_WORKER_ID, this.componentId);
+            headers.put(CONST.AMQP_HEADER_CONSUMER_ID, this.componentId);
         }
         if (this.routineId != null) {
             OpflowUtil.setRoutineId(headers, this.routineId);
@@ -182,7 +182,7 @@ public class OpflowRpcResponse {
         }
         if (finished) {
             headers.put(CONST.AMQP_HEADER_PROTOCOL_VERSION, CONST.AMQP_PROTOCOL_VERSION);
-            headers.put("consumerTag", this.consumerTag);
+            headers.put(CONST.AMQP_HEADER_CONSUMER_TAG, this.consumerTag);
         }
         return headers;
     }

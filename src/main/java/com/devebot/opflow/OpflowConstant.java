@@ -30,6 +30,8 @@ public class OpflowConstant {
     public final String AMQP_HEADER_ROUTINE_SCOPE;
     public final String AMQP_HEADER_ROUTINE_TAGS;
     public final String AMQP_HEADER_PROGRESS_ENABLED;
+    public final String AMQP_HEADER_CONSUMER_ID;
+    public final String AMQP_HEADER_CONSUMER_TAG;
     public final String AMQP_HEADER_RETURN_STATUS;
 
     public final boolean LEGACY_SUPPORT_APPLIED;
@@ -89,6 +91,8 @@ public class OpflowConstant {
                 break;
         }
         AMQP_HEADER_PROGRESS_ENABLED = "progressEnabled";
+        AMQP_HEADER_CONSUMER_ID = "rpcWorkerId";
+        AMQP_HEADER_CONSUMER_TAG = "consumerTag";
         AMQP_HEADER_RETURN_STATUS = "status";
         // Legacy supports for header names and pingpong routine signature
         LEGACY_SUPPORT_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
