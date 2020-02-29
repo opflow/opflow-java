@@ -155,6 +155,7 @@ public class OpflowServerlet implements AutoCloseable {
                 configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
+                        opts.put(CONST.COMPONENT_ID, componentId);
                         opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, configurerCfg).toMap());
@@ -170,6 +171,7 @@ public class OpflowServerlet implements AutoCloseable {
                 rpcWorker = new OpflowRpcWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
+                        opts.put(CONST.COMPONENT_ID, componentId);
                         opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, rpcWorkerCfg).toMap());
@@ -185,6 +187,7 @@ public class OpflowServerlet implements AutoCloseable {
                 subscriber = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
+                        opts.put(CONST.COMPONENT_ID, componentId);
                         opts.put(CONST.COMPNAME_MEASURER, measurer);
                     }
                 }, subscriberCfg).toMap());

@@ -226,10 +226,12 @@ public class OpflowCommander implements AutoCloseable {
                     .put(CONST.COMPONENT_ID, componentId)
                     .toMap());
 
+            rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
+
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, rpcMaster, handlers, rpcObserver, rpcWatcher, speedMeter);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, rpcMaster, handlers, speedMeter);
-            
+
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
                     .put(CONST.COMPONENT_ID, componentId)
                     .toMap());
@@ -491,13 +493,10 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     private static class OpflowRpcObserverListener implements OpflowRpcObserver.Listener {
+        private final static long KEEP_ALIVE_TIMEOUT = 20000;
 
-        private final long keepAliveTimeout = 30000;
+        private long keepAliveTimeout = 2 * KEEP_ALIVE_TIMEOUT;
         private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
-
-        public OpflowRpcObserverListener() {
-            
-        }
 
         @Override
         public void check(String componentId, String version, String payload) {
@@ -540,6 +539,12 @@ public class OpflowCommander implements AutoCloseable {
 
         public Object getInformation() {
             return this.rollup();
+        }
+
+        public void setKeepAliveTimeout(long timeout) {
+            if (timeout > 0) {
+                this.keepAliveTimeout = KEEP_ALIVE_TIMEOUT + Long.min(KEEP_ALIVE_TIMEOUT, timeout);
+            }
         }
     }
 
@@ -765,13 +770,6 @@ public class OpflowCommander implements AutoCloseable {
                         opts.put("mappings", renderRpcInvocationHandlers(handlers));
                     }
                     
-                    // RPC current workers
-                    if (checkOption(flag, SCOPE_INFO)) {
-                        if (rpcObserver != null) {
-                            opts.put(CONST.COMPNAME_RPC_WORKER, rpcObserver.getInformation());
-                        }
-                    }
-                    
                     // RpcWatcher information
                     if (checkOption(flag, SCOPE_INFO)) {
                         opts.put(CONST.COMPNAME_RPC_WATCHER, OpflowObjectTree.buildMap()
@@ -810,28 +808,35 @@ public class OpflowCommander implements AutoCloseable {
                                     .toMap());
                         }
                     }
+                    
+                    // start-time & uptime
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        Date currentTime = new Date();
+                        opts.put("miscellaneous", OpflowObjectTree.buildMap()
+                                .put("threadCount", Thread.activeCount())
+                                .put("startTime", startTime)
+                                .put("currentTime", currentTime)
+                                .put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime))
+                                .toMap());
+                    }
+
+                    // git commit information
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        opts.put("source-code-info", OpflowObjectTree.buildMap()
+                                .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
+                                .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
+                                .toMap());
+                    }
                 }
             }).toMap());
-            
-            // start-time & uptime
+
+            // current serverlets
             if (checkOption(flag, SCOPE_INFO)) {
-                Date currentTime = new Date();
-                root.put("miscellaneous", OpflowObjectTree.buildMap()
-                        .put("threadCount", Thread.activeCount())
-                        .put("startTime", startTime)
-                        .put("currentTime", currentTime)
-                        .put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime))
-                        .toMap());
+                if (rpcObserver != null) {
+                    root.put(CONST.COMPNAME_SERVERLET, rpcObserver.getInformation());
+                }
             }
-            
-            // git commit information
-            if (checkOption(flag, SCOPE_INFO)) {
-                root.put("source-code-info", OpflowObjectTree.buildMap()
-                        .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
-                        .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
-                        .toMap());
-            }
-            
+
             return root.toMap();
         }
         

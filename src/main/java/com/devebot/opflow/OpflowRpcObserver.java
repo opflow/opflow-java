@@ -17,8 +17,8 @@ public class OpflowRpcObserver {
     public static class Manifest {
         private Boolean compatible;
         private final String componentId;
-        private final Date startedTime;
-        private Date updatedTime;
+        private final Date reachedTimestamp;
+        private Date updatedTimestamp;
 
         @OpflowFieldExclude
         private long keepInTouchDuration;
@@ -29,11 +29,11 @@ public class OpflowRpcObserver {
 
         public Manifest(String componentId) {
             this.componentId = componentId;
-            this.startedTime = new Date();
+            this.reachedTimestamp = new Date();
         }
 
         public void touch() {
-            this.updatedTime = new Date();
+            this.updatedTimestamp = new Date();
         }
 
         public void setCompatible(boolean compatible) {
@@ -45,9 +45,9 @@ public class OpflowRpcObserver {
         }
         
         public Manifest refresh() {
-            this.keepInTouchDuration = updatedTime.getTime() - startedTime.getTime();
+            this.keepInTouchDuration = updatedTimestamp.getTime() - reachedTimestamp.getTime();
             this.keepInTouchTime = OpflowDateTime.printElapsedTime(this.keepInTouchDuration);
-            this.losingTouchDuration = (new Date()).getTime() - updatedTime.getTime();
+            this.losingTouchDuration = (new Date()).getTime() - updatedTimestamp.getTime();
             this.losingTouchTime = OpflowDateTime.printElapsedTime(this.losingTouchDuration);
             return this;
         }
