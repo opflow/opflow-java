@@ -361,7 +361,7 @@ public class OpflowServerlet implements AutoCloseable {
             this.rpcListener = new OpflowRpcListener() {
                 @Override
                 public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
-                    final Map<String, Object> headers = message.getInfo();
+                    final Map<String, Object> headers = message.getHeaders();
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
                     final String routineSignature = OpflowUtil.getRoutineSignature(headers);
@@ -514,7 +514,7 @@ public class OpflowServerlet implements AutoCloseable {
             this.subListener = new OpflowPubsubListener() {
                 @Override
                 public void processMessage(OpflowMessage message) throws IOException {
-                    final Map<String, Object> headers = message.getInfo();
+                    final Map<String, Object> headers = message.getHeaders();
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
                     final String routineSignature = OpflowUtil.getRoutineSignature(headers);

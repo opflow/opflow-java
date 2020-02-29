@@ -223,29 +223,13 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         timestamp = (new Date()).getTime();
     }
     
-    private static long getRequestTimeout(Map<String, Object> opts) {
-        if (opts == null) {
-            return 0;
-        }
-        final Object opts_timeout = opts.get("timeout");
-        if (opts_timeout == null) {
-            return 0;
-        } else if (opts_timeout instanceof Long) {
-            return (Long)opts_timeout;
-        } else if (opts_timeout instanceof Integer) {
-            return ((Integer)opts_timeout).longValue();
-        } else {
-            return 0;
-        }
-    }
-    
     private static String getStatus(OpflowMessage message) {
         return getMessageField(message, CONST.AMQP_HEADER_RETURN_STATUS);
     }
     
     private static String getMessageField(OpflowMessage message, String fieldName) {
         if (message == null || fieldName == null) return null;
-        Map<String, Object> info = message.getInfo();
+        Map<String, Object> info = message.getHeaders();
         if (info != null) {
             Object val = info.get(fieldName);
             if (val != null) {
