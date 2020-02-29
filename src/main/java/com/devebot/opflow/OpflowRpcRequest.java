@@ -191,12 +191,12 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                         }
                     }   break;
                 case "failed":
-                    consumerTag = OpflowUtil.getMessageField(msg, "consumerTag");
+                    consumerTag = getMessageField(msg, "consumerTag");
                     failed = true;
                     error = msg.getBody();
                     break;
                 case "completed":
-                    consumerTag = OpflowUtil.getMessageField(msg, "consumerTag");
+                    consumerTag = getMessageField(msg, "consumerTag");
                     completed = true;
                     value = msg.getBody();
                     break;
@@ -239,7 +239,19 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         }
     }
     
-    public static String getStatus(OpflowMessage message) {
-        return OpflowUtil.getMessageField(message, "status");
+    private static String getStatus(OpflowMessage message) {
+        return getMessageField(message, CONST.AMQP_HEADER_RETURN_STATUS);
+    }
+    
+    private static String getMessageField(OpflowMessage message, String fieldName) {
+        if (message == null || fieldName == null) return null;
+        Map<String, Object> info = message.getInfo();
+        if (info != null) {
+            Object val = info.get(fieldName);
+            if (val != null) {
+                return val.toString();
+            }
+        }
+        return null;
     }
 }

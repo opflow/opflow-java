@@ -167,7 +167,7 @@ public class OpflowRpcResponse {
     
     private Map<String, Object> createHeaders(String status, boolean finished) {
         Map<String, Object> headers = new HashMap<>();
-        headers.put("status", status);
+        headers.put(CONST.AMQP_HEADER_RETURN_STATUS, status);
         if (this.componentId != null) {
             headers.put(CONST.RPC_WORKER_ID, this.componentId);
         }

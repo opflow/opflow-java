@@ -516,18 +516,6 @@ public class OpflowUtil {
         return OpflowNetTool.detectFreePort(defaultPorts);
     }
     
-    public static String getMessageField(OpflowMessage message, String fieldName) {
-        if (message == null || fieldName == null) return null;
-        Map<String, Object> info = message.getInfo();
-        if (info != null) {
-            Object val = info.get(fieldName);
-            if (val != null) {
-                return val.toString();
-            }
-        }
-        return null;
-    }
-    
     @Deprecated
     public static String getSystemProperty(String key, String def) {
         return OpflowEnvTool.instance.getSystemProperty(key, def);
