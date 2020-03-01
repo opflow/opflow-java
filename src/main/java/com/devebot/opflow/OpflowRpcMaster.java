@@ -452,11 +452,9 @@ public class OpflowRpcMaster implements AutoCloseable {
         OpflowUtil.setRoutineTags(headers, params.getRoutineTags());
 
         if (prefetchCount > 1) {
-            headers.put(CONST.AMQP_HEADER_PROGRESS_ENABLED, Boolean.FALSE);
+            OpflowUtil.setProgressEnabled(headers, Boolean.FALSE);
         } else {
-            if (params.getProgressEnabled() != null) {
-                headers.put(CONST.AMQP_HEADER_PROGRESS_ENABLED, params.getProgressEnabled());
-            }
+            OpflowUtil.setProgressEnabled(headers, params.getProgressEnabled());
         }
 
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()
