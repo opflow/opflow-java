@@ -27,10 +27,14 @@ public class OpflowRpcParameter implements Customizer {
     private String routineScope = null;
     private Boolean callbackTransient = false;
     private Boolean progressEnabled = null;
+    
+    private final boolean isInternalOplog;
 
     public OpflowRpcParameter() {
         this.routineId = OpflowUUID.getBase64ID();
         this.routineTimestamp = OpflowDateTime.getCurrentTimeString();
+
+        this.isInternalOplog = determineInternalOplog();
     }
 
     public OpflowRpcParameter(Map<String, Object> headers) {
@@ -48,11 +52,19 @@ public class OpflowRpcParameter implements Customizer {
         }
 
         this.callbackTransient = "forked".equals((String)headers.get("mode"));
+
+        this.isInternalOplog = determineInternalOplog();
     }
     
     public OpflowRpcParameter(String routineId, String routineTimestamp) {
         this.routineId = routineId;
         this.routineTimestamp = routineTimestamp;
+
+        this.isInternalOplog = determineInternalOplog();
+    }
+
+    private boolean determineInternalOplog() {
+        return "internal".equals(this.routineScope);
     }
 
     public String getRoutineSignature() {
@@ -119,6 +131,6 @@ public class OpflowRpcParameter implements Customizer {
 
     @Override
     public boolean isMute() {
-        return IS_PING_LOGGING_OMITTED && "internal".equals(routineScope);
+        return IS_PING_LOGGING_OMITTED && isInternalOplog;
     }
 }
