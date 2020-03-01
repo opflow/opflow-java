@@ -30,13 +30,13 @@ import java.util.LinkedHashMap;
 public class OpflowUtil {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
-
+    
     private static final String INT_RANGE_DELIMITER = "-";
     private static final String INT_RANGE_PATTERN_STRING = "[\\d]{1,}\\s*\\-\\s*[\\d]{1,}";
     
     private static final String INT_ARRAY_DELIMITER = ",";
     private static final String INT_ARRAY_PATTERN_STRING = "[\\d]{1,}\\s*(\\s*,\\s*[\\d]{1,}){0,}";
-
+    
     private final static boolean IS_PING_LOGGING_OMITTED;
     
     static {
@@ -44,18 +44,19 @@ public class OpflowUtil {
     }
     
     public static class OmitInternalOplogs implements OpflowLogTracer.Customizer {
-        final String routineScope;
-                
+        final boolean isInternalOplog;
+        
         OmitInternalOplogs(Map<String, Object> options) {
-            routineScope = getOptionField(options, CONST.AMQP_HEADER_ROUTINE_SCOPE, false);
+            String routineScope = getOptionField(options, CONST.AMQP_HEADER_ROUTINE_SCOPE, false);
+            isInternalOplog = "internal".equals(routineScope);
         }
         
         @Override
         public boolean isMute() {
-            return IS_PING_LOGGING_OMITTED && "internal".equals(routineScope);
+            return IS_PING_LOGGING_OMITTED && isInternalOplog;
         }
     }
-
+    
     @Deprecated
     public static String jsonObjectToString(Object jsonObj) {
         return OpflowJsonTool.toString(jsonObj);
