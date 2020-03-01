@@ -6,6 +6,7 @@ import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowNetTool;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
@@ -198,7 +199,7 @@ public class OpflowUtil {
         }
         
         public MapBuilder(Map<String, Object> source) {
-            fields = ensureNotNull(source);
+            fields = OpflowObjectTree.ensureNonNull(source);
         }
         
         public MapBuilder put(String key, Object value) {
@@ -274,10 +275,6 @@ public class OpflowUtil {
     @Deprecated
     public static MapBuilder buildOrderedMap(MapListener listener, Map<String, Object> defaultOpts) {
         return buildMap(listener, defaultOpts, true);
-    }
-    
-    public static Map<String, Object> ensureNotNull(Map<String, Object> opts) {
-        return (opts == null) ? new HashMap<String, Object>() : opts;
     }
     
     public static String getRoutineId(Map<String, Object> headers) {

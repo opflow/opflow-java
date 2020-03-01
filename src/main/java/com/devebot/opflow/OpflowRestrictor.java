@@ -38,7 +38,7 @@ public class OpflowRestrictor {
         private boolean active;
         
         public OnOff(Map<String, Object> options) {
-            options = OpflowUtil.ensureNotNull(options);
+            options = OpflowObjectTree.ensureNonNull(options);
 
             if (options.get("active") instanceof Boolean) {
                 active = (Boolean) options.get("active");
@@ -128,7 +128,7 @@ public class OpflowRestrictor {
         }
 
         public Pause(Map<String, Object> options) {
-            options = OpflowUtil.ensureNotNull(options);
+            options = OpflowObjectTree.ensureNonNull(options);
 
             pauseLock = new ReentrantReadWriteLock();
 
@@ -389,7 +389,7 @@ public class OpflowRestrictor {
         private final Semaphore semaphore;
         
         public Limit(Map<String, Object> options) {
-            options = OpflowUtil.ensureNotNull(options);
+            options = OpflowObjectTree.ensureNonNull(options);
             
             if (options.get("semaphoreEnabled") instanceof Boolean) {
                 semaphoreEnabled = (Boolean) options.get("semaphoreEnabled");

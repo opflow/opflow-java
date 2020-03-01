@@ -93,7 +93,7 @@ public class OpflowCommander implements AutoCloseable {
         if (configLoader != null) {
             kwargs = configLoader.loadConfiguration();
         }
-        kwargs = OpflowUtil.ensureNotNull(kwargs);
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         strictMode = OpflowObjectTree.getOptionValue(kwargs, "strictMode", Boolean.class, Boolean.FALSE);
         componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", componentId);
@@ -335,7 +335,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRestrictor.Limit limitRestrictor;
 
         public OpflowRestrictorMaster(Map<String, Object> options) {
-            options = OpflowUtil.ensureNotNull(options);
+            options = OpflowObjectTree.ensureNonNull(options);
 
             componentId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
             logTracer = OpflowLogTracer.ROOT.branch("restrictorId", componentId);

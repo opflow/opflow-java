@@ -87,6 +87,10 @@ public class OpflowObjectTree {
         return buildMap(null, defaultOpts, orderReserved);
     }
     
+    public static Map<String, Object> ensureNonNull(Map<String, Object> opts) {
+        return (opts == null) ? new HashMap<String, Object>() : opts;
+    }
+    
     public static Map<String, Object> merge(Map<String, Object> target, Map<String, Object> source) {
         if (target == null) target = new HashMap<>();
         if (source == null) return target;

@@ -34,7 +34,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     private final String responseName;
     
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
-        params = OpflowUtil.ensureNotNull(params);
+        params = OpflowObjectTree.ensureNonNull(params);
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);

@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.ConnectionFactory;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
@@ -28,7 +29,7 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     private Counter rpcInvocationCounter;
     
     public OpflowPromExporter(Map<String, Object> kwargs) throws OpflowOperationException {
-        kwargs = OpflowUtil.ensureNotNull(kwargs);
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
         // get the host from configuration
         host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();

@@ -43,7 +43,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private final boolean autorun;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
-        params = OpflowUtil.ensureNotNull(params);
+        params = OpflowObjectTree.ensureNonNull(params);
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", componentId);
@@ -178,7 +178,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     }
     
     private void _publish(byte[] body, Map<String, Object> headers, String routingKey) {
-        headers = OpflowUtil.ensureNotNull(headers);
+        headers = OpflowObjectTree.ensureNonNull(headers);
         
         String routineId = OpflowUtil.getRoutineId(headers);
         String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);

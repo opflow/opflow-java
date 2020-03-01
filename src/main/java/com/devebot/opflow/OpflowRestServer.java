@@ -52,7 +52,7 @@ public class OpflowRestServer implements AutoCloseable {
             OpflowTaskSubmitter _taskSubmitter,
             OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs) throws OpflowBootstrapException {
-        kwargs = OpflowUtil.ensureNotNull(kwargs);
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
         componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
         enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "enabled", null), Boolean.class);

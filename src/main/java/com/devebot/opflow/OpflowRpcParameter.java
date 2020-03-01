@@ -3,6 +3,7 @@ package com.devebot.opflow;
 import com.devebot.opflow.OpflowLogTracer.Customizer;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowEnvTool;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Map;
 
 /**
@@ -33,7 +34,7 @@ public class OpflowRpcParameter implements Customizer {
     }
 
     public OpflowRpcParameter(Map<String, Object> headers) {
-        headers = OpflowUtil.ensureNotNull(headers);
+        headers = OpflowObjectTree.ensureNonNull(headers);
 
         this.routineId = OpflowUtil.getRoutineId(headers);
         this.routineSignature = OpflowUtil.getRoutineSignature(headers);

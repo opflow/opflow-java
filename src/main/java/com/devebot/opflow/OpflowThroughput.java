@@ -188,7 +188,7 @@ public class OpflowThroughput {
         private final Map<String, Gauge> gauges = new HashMap<>();
 
         public Meter(Map<String, Object> kwargs) {
-            kwargs = OpflowUtil.ensureNotNull(kwargs);
+            kwargs = OpflowObjectTree.ensureNonNull(kwargs);
             // load [active] value from the config, false by default
             if (kwargs.get("active") instanceof Boolean) {
                 active = (Boolean) kwargs.get("active");
