@@ -87,7 +87,7 @@ public class OpflowLogTracer {
     public interface Customizer {
         boolean isMute();
     }
-
+    
     private final Customizer customizer;
     private final OpflowLogTracer parent;
     private final String key;

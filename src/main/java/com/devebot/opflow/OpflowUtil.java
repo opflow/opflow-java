@@ -39,15 +39,15 @@ public class OpflowUtil {
     public static class OmitInternalOplogs implements OpflowLogTracer.Customizer {
         final boolean isInternalOplog;
         
-        OmitInternalOplogs(boolean internal) {
+        public OmitInternalOplogs(boolean internal) {
             this.isInternalOplog = internal;
         }
         
-        OmitInternalOplogs(String routineScope) {
+        public OmitInternalOplogs(String routineScope) {
             this("internal".equals(routineScope));
         }
         
-        OmitInternalOplogs(Map<String, Object> options) {
+        public OmitInternalOplogs(Map<String, Object> options) {
             this(getOptionField(options, CONST.AMQP_HEADER_ROUTINE_SCOPE, false));
         }
         

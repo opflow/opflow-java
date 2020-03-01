@@ -146,19 +146,6 @@ public abstract class OpflowPromMeasurer {
             final long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
             return OpflowObjectTree.buildMap()
                     .put(LABEL_RPC_INVOCATION_TOTAL, that.total)
-                    .put(LABEL_RPC_DIRECT_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                        @Override
-                        public void transform(Map<String, Object> opts) {
-                            opts.put("total", that.direct);
-                            opts.put("rescue", that.directRescue);
-                            opts.put("retain", that.directRetain);
-                            if (verbose) {
-                                double directRate = calcMessageRate(that.direct, elapsedTime);
-                                opts.put("rate", formatMessageRate(directRate));
-                                opts.put("rateNumber", directRate);
-                            }
-                        }
-                    }).toMap())
                     .put(LABEL_RPC_REMOTE_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                         @Override
                         public void transform(Map<String, Object> opts) {
@@ -170,6 +157,19 @@ public abstract class OpflowPromMeasurer {
                                 double remoteRate = calcMessageRate(that.remote, elapsedTime);
                                 opts.put("rate", formatMessageRate(remoteRate));
                                 opts.put("rateNumber", remoteRate);
+                            }
+                        }
+                    }).toMap())
+                    .put(LABEL_RPC_DIRECT_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                        @Override
+                        public void transform(Map<String, Object> opts) {
+                            opts.put("total", that.direct);
+                            opts.put("rescue", that.directRescue);
+                            opts.put("retain", that.directRetain);
+                            if (verbose) {
+                                double directRate = calcMessageRate(that.direct, elapsedTime);
+                                opts.put("rate", formatMessageRate(directRate));
+                                opts.put("rateNumber", directRate);
                             }
                         }
                     }).toMap())

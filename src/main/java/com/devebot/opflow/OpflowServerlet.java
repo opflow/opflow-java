@@ -5,6 +5,8 @@ import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.annotation.OpflowTargetRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.devebot.opflow.exception.OpflowMethodNotFoundException;
+import com.devebot.opflow.exception.OpflowTargetNotFoundException;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import com.google.gson.JsonSyntaxException;
@@ -213,7 +215,7 @@ public class OpflowServerlet implements AutoCloseable {
     
     public final void start() {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Serverlet[${serverletId}].start()")
+                .text("Serverlet[${serverletId}][${instanceId}].start()")
                 .stringify());
         
         if (configurer != null && listenerMap.getConfigurer() != null) {
@@ -238,7 +240,7 @@ public class OpflowServerlet implements AutoCloseable {
         this.instantiateType(OpflowRpcCheckerWorker.class);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Serverlet[${serverletId}].start() end!")
+                .text("Serverlet[${serverletId}][${instanceId}].start() end!")
                 .stringify());
     }
     
@@ -250,7 +252,7 @@ public class OpflowServerlet implements AutoCloseable {
         if (instantiator != null) {
             instantiator.instantiateType(type, target);
         } else {
-            throw new UnsupportedOperationException("instantiator is nulls");
+            throw new UnsupportedOperationException("instantiator is null");
         }
     }
     
@@ -379,6 +381,7 @@ public class OpflowServerlet implements AutoCloseable {
                             .stringify());
                     Method method = methodRef.get(methodSignature);
                     Object target = targetRef.get(methodSignature);
+                    assertMethodNotNull(methodSignature, method, target, reqTracer);
                     try {
                         Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
                         OpflowTargetRoutine routine = OpflowUtil.extractMethodAnnotation(origin, OpflowTargetRoutine.class);;
@@ -536,6 +539,7 @@ public class OpflowServerlet implements AutoCloseable {
                             .stringify());
                     Method method = methodRef.get(methodSignature);
                     Object target = targetRef.get(methodSignature);
+                    assertMethodNotNull(methodSignature, method, target, reqTracer);
                     try {
                         Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
                         OpflowTargetRoutine routine = OpflowUtil.extractMethodAnnotation(origin, OpflowTargetRoutine.class);
@@ -672,6 +676,23 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowInterceptionException("Unknown exception", except);
             }
             process();
+        }
+        
+        private void assertMethodNotNull(String methodSignature, Method method, Object target, OpflowLogTracer reqTracer) {
+            if (method == null) {
+                if (reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
+                        .put("methodSignature", methodSignature)
+                        .text("Request[${requestId}][${requestTime}] - method[${methodSignature}] not found")
+                        .stringify());
+                throw new OpflowMethodNotFoundException();
+            }
+            if (target == null) {
+                if (reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
+                        .put("methodSignature", methodSignature)
+                        .text("Request[${requestId}][${requestTime}] - target[${methodSignature}] not found")
+                        .stringify());
+                throw new OpflowTargetNotFoundException();
+            }
         }
     }
     
