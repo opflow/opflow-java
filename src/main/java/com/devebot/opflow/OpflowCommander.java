@@ -718,7 +718,7 @@ public class OpflowCommander implements AutoCloseable {
                                 .put("enabled", rpcWatcher.isEnabled())
                                 .put("interval", rpcWatcher.getInterval())
                                 .put("count", rpcWatcher.getCount())
-                                .put("congestive", rpcWatcher.isCongested())
+                                .put("congestive", rpcWatcher.isCongestive())
                                 .toMap());
                     }
                     
@@ -754,7 +754,7 @@ public class OpflowCommander implements AutoCloseable {
                     // start-time & uptime
                     if (checkOption(flag, SCOPE_INFO)) {
                         Date currentTime = new Date();
-                        opts.put("miscellaneous", OpflowObjectTree.buildMap()
+                        opts.put(OpflowConstant.INFO_SECTION_RUNTIME, OpflowObjectTree.buildMap()
                                 .put("threadCount", Thread.activeCount())
                                 .put("startTime", startTime)
                                 .put("currentTime", currentTime)
@@ -764,7 +764,7 @@ public class OpflowCommander implements AutoCloseable {
 
                     // git commit information
                     if (checkOption(flag, SCOPE_INFO)) {
-                        opts.put("source-code-info", OpflowObjectTree.buildMap()
+                        opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
                                 .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
                                 .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
                                 .toMap());
@@ -1026,7 +1026,7 @@ public class OpflowCommander implements AutoCloseable {
             }
             
             // rpc switching
-            if (rpcWatcher.isCongested() || !detachedWorkerActive) {
+            if (rpcWatcher.isCongestive() || !detachedWorkerActive) {
                 if (this.isReservedWorkerAvailable()) {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-retain] - RpcInvocationHandler.invoke() retains the reservedWorker")
@@ -1045,7 +1045,7 @@ public class OpflowCommander implements AutoCloseable {
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
 
             if (rpcResult.isTimeout()) {
-                rpcWatcher.setCongested(true);
+                rpcWatcher.setCongestive(true);
                 if (this.isReservedWorkerAvailable()) {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-rescue] - RpcInvocationHandler.invoke() rescues by the reservedWorker")

@@ -147,11 +147,13 @@ public class OpflowRpcWorker implements AutoCloseable {
             ) throws IOException {
                 Map<String, Object> headers = properties.getHeaders();
                 OpflowMessage request = new OpflowMessage(body, headers);
-                OpflowRpcResponse response = new OpflowRpcResponse(componentId, channel, properties, consumerTag, queueName, null);
+
                 String routineId = OpflowUtil.getRoutineId(headers, false);
                 String routineSignature = OpflowUtil.getRoutineSignature(headers, false);
                 String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
                 String[] routineTags = OpflowUtil.getRoutineTags(headers);
+
+                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, componentId, consumerTag, queueName, null);
 
                 OpflowLogTracer reqTracer = null;
                 if (logProcess.ready(LOG, Level.INFO)) {

@@ -28,7 +28,7 @@ public class OpflowRpcResponse {
     private final String routineScope;
     private final Boolean progressEnabled;
     
-    public OpflowRpcResponse(String componentId, Channel channel, AMQP.BasicProperties properties, String consumerTag, String replyQueueName, Map<String, Object> extras) {
+    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String componentId, String consumerTag, String replyQueueName, Map<String, Object> extras) {
         final Map<String, Object> headers = properties.getHeaders();
         
         this.componentId = componentId;
