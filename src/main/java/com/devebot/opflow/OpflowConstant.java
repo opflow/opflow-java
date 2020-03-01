@@ -64,6 +64,9 @@ public class OpflowConstant {
     public final String COMPNAME_RPC_OBSERVER = "rpcObserver";
     public final String COMPNAME_REST_SERVER = "restServer";
 
+    public final static String INFO_SECTION_RUNTIME = "miscellaneous";
+    public final static String INFO_SECTION_SOURCE_CODE = "source-code-info";
+
     public final String RPC_INVOCATION_FLOW_PUBLISHER = "publisher";
     public final String RPC_INVOCATION_FLOW_RPC_MASTER = "master";
     public final static String RPC_INVOCATION_FLOW_DETACHED_WORKER = "detached_worker";

@@ -26,7 +26,6 @@ public class OpflowRpcParameter implements Customizer {
     private String routineScope = null;
     private Boolean callbackTransient = false;
     private Boolean progressEnabled = null;
-    private Boolean watcherEnabled = false;
 
     public OpflowRpcParameter() {
         this.routineId = OpflowUUID.getBase64ID();
@@ -37,25 +36,17 @@ public class OpflowRpcParameter implements Customizer {
         headers = OpflowUtil.ensureNotNull(headers);
 
         this.routineId = OpflowUtil.getRoutineId(headers);
-        this.routineSignature = OpflowUtil.getRoutineSignature(headers, false);
+        this.routineSignature = OpflowUtil.getRoutineSignature(headers);
         this.routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
         this.routineTags = OpflowUtil.getRoutineTags(headers);
+        this.routineScope = OpflowUtil.getRoutineScope(headers);
+        this.progressEnabled = OpflowUtil.getProgressEnabled(headers);
 
-        if (headers.get(CONST.AMQP_HEADER_ROUTINE_SCOPE) instanceof String) {
-            this.routineScope = (String) headers.get(CONST.AMQP_HEADER_ROUTINE_SCOPE);
-        }
-
-        if (headers.get(CONST.AMQP_HEADER_PROGRESS_ENABLED) instanceof Boolean) {
-            this.progressEnabled = (Boolean) headers.get(CONST.AMQP_HEADER_PROGRESS_ENABLED);
-        }
-        
         if (headers.get("timeout") instanceof Long) {
             this.routineTTL = (Long) headers.get("timeout");
         }
 
         this.callbackTransient = "forked".equals((String)headers.get("mode"));
-        
-        this.watcherEnabled = Boolean.TRUE.equals(headers.get("watcherEnabled"));
     }
     
     public OpflowRpcParameter(String routineId, String routineTimestamp) {
@@ -125,15 +116,6 @@ public class OpflowRpcParameter implements Customizer {
         return this;
     }
 
-    public Boolean getWatcherEnabled() {
-        return watcherEnabled;
-    }
-    
-    public OpflowRpcParameter setWatcherEnabled(Boolean watcherEnabled) {
-        this.watcherEnabled = watcherEnabled;
-        return this;
-    }
-    
     @Override
     public boolean isMute() {
         return IS_PING_LOGGING_OMITTED && "internal".equals(routineScope);

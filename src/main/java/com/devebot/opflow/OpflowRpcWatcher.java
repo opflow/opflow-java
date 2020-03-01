@@ -30,7 +30,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
     private final Timer timer = new Timer("Timer-" + OpflowRpcWatcher.class.getSimpleName(), true);
     private final MyTimerTask timerTask;
     
-    private boolean congested = false;
+    private boolean congestive = false;
     
     public class MyTimerTask extends TimerTask {
 
@@ -65,7 +65,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
                         .stringify());
                 try {
                     OpflowRpcChecker.Pong result = rpcChecker.send(null);
-                    congested = false;
+                    congestive = false;
                     if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                             .text("Detector[${rpcWatcherId}].run(), the queue is drained")
                             .stringify());
@@ -76,7 +76,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
                             .stringify());
                 }
                 catch (Throwable exception) {
-                    congested = true;
+                    congestive = true;
                     if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                             .text("Detector[${rpcWatcherId}].run(), the queue is congested")
                             .stringify());
@@ -120,12 +120,12 @@ public class OpflowRpcWatcher implements AutoCloseable {
         return interval;
     }
 
-    public boolean isCongested() {
-        return congested;
+    public boolean isCongestive() {
+        return congestive;
     }
     
-    public void setCongested(boolean _congested) {
-        congested = _congested;
+    public void setCongestive(boolean congestive) {
+        this.congestive = congestive;
     }
     
     public void start() {

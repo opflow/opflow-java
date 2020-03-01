@@ -35,7 +35,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
-    private final OpflowRpcObserver.Listener rpcObserver;;
+    private final OpflowRpcObserver rpcObserver;;
     private final OpflowRestrictor.Valve restrictor;
     
     private final Timer timer = new Timer("Timer-" + OpflowRpcMaster.class.getSimpleName(), true);
@@ -66,7 +66,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);
-        rpcObserver = (OpflowRpcObserver.Listener) OpflowUtil.getOptionField(params, CONST.COMPNAME_RPC_OBSERVER, null);
+        rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, CONST.COMPNAME_RPC_OBSERVER, null);
         restrictor = new OpflowRestrictor.Valve();
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", componentId);
@@ -452,11 +452,9 @@ public class OpflowRpcMaster implements AutoCloseable {
         OpflowUtil.setRoutineTags(headers, params.getRoutineTags());
 
         if (prefetchCount > 1) {
-            headers.put(CONST.AMQP_HEADER_PROGRESS_ENABLED, Boolean.FALSE);
+            OpflowUtil.setProgressEnabled(headers, Boolean.FALSE);
         } else {
-            if (params.getProgressEnabled() != null) {
-                headers.put(CONST.AMQP_HEADER_PROGRESS_ENABLED, params.getProgressEnabled());
-            }
+            OpflowUtil.setProgressEnabled(headers, params.getProgressEnabled());
         }
 
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()

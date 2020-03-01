@@ -27,7 +27,6 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final String routineSignature;
     private final long timeout;
     private final OpflowTimeout.Listener completeListener;
-    private OpflowTimeout.Watcher timeoutWatcher;
     private long timestamp;
 
     public OpflowRpcRequest(final OpflowRpcParameter params, final OpflowTimeout.Listener completeListener) {
@@ -43,30 +42,9 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         
         reqTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
                 .branch(CONST.REQUEST_ID, this.routineId, params);
-
+        
         this.completeListener = completeListener;
-
-        if (params.getWatcherEnabled() && completeListener != null && this.timeout > 0) {
-            timeoutWatcher = new OpflowTimeout.Watcher(this.routineId, this.timeout, new OpflowTimeout.Listener() {
-                @Override
-                public void handleEvent() {
-                    OpflowLogTracer logWatcher = null;
-                    if (reqTracer.ready(LOG, Level.DEBUG)) {
-                        logWatcher = reqTracer.copy();
-                    }
-                    if (logWatcher != null && logWatcher.ready(LOG, Level.DEBUG)) LOG.debug(logWatcher
-                            .text("Request[${requestId}][${requestTime}][x-rpc-request-watcher-timeout] timeout event has been raised")
-                            .stringify());
-                    list.add(OpflowMessage.ERROR);
-                    if (logWatcher != null && logWatcher.ready(LOG, Level.DEBUG)) LOG.debug(logWatcher
-                            .text("Request[${requestId}][${requestTime}] raise completeListener (timeout)")
-                            .stringify());
-                    completeListener.handleEvent();
-                }
-            });
-            timeoutWatcher.start();
-        }
-
+        
         checkTimestamp();
     }
     
@@ -126,9 +104,6 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     
     public void push(OpflowMessage message) {
         list.add(message);
-        if (timeoutWatcher != null) {
-            timeoutWatcher.check();
-        }
         checkTimestamp();
         if(isDone(message)) {
             OpflowLogTracer pushTrail = null;
@@ -144,9 +119,6 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                         .text("Request[${requestId}][${requestTime}][x-rpc-request-callback] raises completeListener (completed)")
                         .stringify());
                 completeListener.handleEvent();
-            }
-            if (timeoutWatcher != null) {
-                timeoutWatcher.close();
             }
         }
     }

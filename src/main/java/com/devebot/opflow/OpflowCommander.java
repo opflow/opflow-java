@@ -10,7 +10,6 @@ import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
-import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import io.undertow.server.RoutingHandler;
@@ -19,7 +18,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,7 +67,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowPubsubHandler publisher;
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcWatcher rpcWatcher;
-    private OpflowRpcObserverListener rpcObserver;
+    private OpflowRpcObserver rpcObserver;
     
     private OpflowRestServer restServer;
     private OpflowReqExtractor reqExtractor;
@@ -188,7 +186,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             if (rpcObserverCfg == null || OpflowUtil.isComponentEnabled(rpcObserverCfg)) {
-                rpcObserver = new OpflowRpcObserverListener();
+                rpcObserver = new OpflowRpcObserver();
             }
 
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
@@ -492,62 +490,6 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
 
-    private static class OpflowRpcObserverListener implements OpflowRpcObserver.Listener {
-        private final static long KEEP_ALIVE_TIMEOUT = 20000;
-
-        private long keepAliveTimeout = 2 * KEEP_ALIVE_TIMEOUT;
-        private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
-
-        @Override
-        public void check(String componentId, String version, String payload) {
-            OpflowRpcObserver.Manifest manifest = null;
-            if (componentId != null) {
-                // assure the manifest object
-                if (manifests.containsKey(componentId)) {
-                    manifest = manifests.get(componentId);
-                } else {
-                    manifest = new OpflowRpcObserver.Manifest(componentId);
-                    manifests.put(componentId, manifest);
-                }
-                manifest.touch();
-                // update the compatible status
-                if (version == null) {
-                    manifest.setCompatible(CONST.LEGACY_SUPPORT_ENABLED);
-                } else {
-                    if (version.equals(CONST.AMQP_PROTOCOL_VERSION)) {
-                        manifest.setCompatible(true);
-                    } else {
-                        manifest.setCompatible((version.equals("0") && CONST.LEGACY_SUPPORT_ENABLED));
-                    }
-                }
-            }
-        }
-
-        public Collection<OpflowRpcObserver.Manifest> rollup() {
-            Set<String> keys = manifests.keySet();
-            for (String key: keys) {
-                // refresh the state of the manifest
-                OpflowRpcObserver.Manifest manifest = manifests.get(key);
-                manifest.refresh();
-                // validate the state of the manifest
-                if (manifest.getLosingTouchDuration() > keepAliveTimeout) {
-                    manifests.remove(key);
-                }
-            }
-            return manifests.values();
-        }
-
-        public Object getInformation() {
-            return this.rollup();
-        }
-
-        public void setKeepAliveTimeout(long timeout) {
-            if (timeout > 0) {
-                this.keepAliveTimeout = KEEP_ALIVE_TIMEOUT + Long.min(KEEP_ALIVE_TIMEOUT, timeout);
-            }
-        }
-    }
-
     private static class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
 
         private final String componentId;
@@ -673,7 +615,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRpcWatcher rpcWatcher;
         private final OpflowRpcMaster rpcMaster;
         private final Map<String, RpcInvocationHandler> handlers;
-        private final OpflowRpcObserverListener rpcObserver;
+        private final OpflowRpcObserver rpcObserver;
         private final OpflowThroughput.Meter speedMeter;
         private final Date startTime;
 
@@ -682,7 +624,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcMaster rpcMaster,
                 Map<String, RpcInvocationHandler> mappings,
-                OpflowRpcObserverListener rpcObserver,
+                OpflowRpcObserver rpcObserver,
                 OpflowRpcWatcher rpcWatcher,
                 OpflowThroughput.Meter speedMeter
         ) {
@@ -776,7 +718,7 @@ public class OpflowCommander implements AutoCloseable {
                                 .put("enabled", rpcWatcher.isEnabled())
                                 .put("interval", rpcWatcher.getInterval())
                                 .put("count", rpcWatcher.getCount())
-                                .put("congestive", rpcWatcher.isCongested())
+                                .put("congestive", rpcWatcher.isCongestive())
                                 .toMap());
                     }
                     
@@ -812,7 +754,7 @@ public class OpflowCommander implements AutoCloseable {
                     // start-time & uptime
                     if (checkOption(flag, SCOPE_INFO)) {
                         Date currentTime = new Date();
-                        opts.put("miscellaneous", OpflowObjectTree.buildMap()
+                        opts.put(OpflowConstant.INFO_SECTION_RUNTIME, OpflowObjectTree.buildMap()
                                 .put("threadCount", Thread.activeCount())
                                 .put("startTime", startTime)
                                 .put("currentTime", currentTime)
@@ -822,7 +764,7 @@ public class OpflowCommander implements AutoCloseable {
 
                     // git commit information
                     if (checkOption(flag, SCOPE_INFO)) {
-                        opts.put("source-code-info", OpflowObjectTree.buildMap()
+                        opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
                                 .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
                                 .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
                                 .toMap());
@@ -1084,7 +1026,7 @@ public class OpflowCommander implements AutoCloseable {
             }
             
             // rpc switching
-            if (rpcWatcher.isCongested() || !detachedWorkerActive) {
+            if (rpcWatcher.isCongestive() || !detachedWorkerActive) {
                 if (this.isReservedWorkerAvailable()) {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-retain] - RpcInvocationHandler.invoke() retains the reservedWorker")
@@ -1103,7 +1045,7 @@ public class OpflowCommander implements AutoCloseable {
             OpflowRpcResult rpcResult = rpcSession.extractResult(false);
 
             if (rpcResult.isTimeout()) {
-                rpcWatcher.setCongested(true);
+                rpcWatcher.setCongestive(true);
                 if (this.isReservedWorkerAvailable()) {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-rescue] - RpcInvocationHandler.invoke() rescues by the reservedWorker")

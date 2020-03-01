@@ -28,7 +28,7 @@ public class OpflowRpcResponse {
     private final String routineScope;
     private final Boolean progressEnabled;
     
-    public OpflowRpcResponse(String componentId, Channel channel, AMQP.BasicProperties properties, String consumerTag, String replyQueueName, Map<String, Object> extras) {
+    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties, String componentId, String consumerTag, String replyQueueName, Map<String, Object> extras) {
         final Map<String, Object> headers = properties.getHeaders();
         
         this.componentId = componentId;
@@ -48,8 +48,8 @@ public class OpflowRpcResponse {
             this.replyQueueName = replyQueueName;
         }
         
-        this.routineScope = OpflowUtil.getOptionField(headers, CONST.AMQP_HEADER_ROUTINE_SCOPE, false);
-        this.progressEnabled = (Boolean) OpflowUtil.getOptionField(headers, CONST.AMQP_HEADER_PROGRESS_ENABLED, null);
+        this.routineScope = OpflowUtil.getRoutineScope(headers);
+        this.progressEnabled = OpflowUtil.getProgressEnabled(headers);
         
         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .put("consumerTag", this.consumerTag)

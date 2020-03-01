@@ -6,6 +6,7 @@ import com.devebot.opflow.annotation.OpflowTargetRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.supports.OpflowObjectTree;
+import com.devebot.opflow.supports.OpflowSysInfo;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -438,13 +439,17 @@ public class OpflowServerlet implements AutoCloseable {
                                             .put("routingKey", engine.getRoutingKey())
                                             .put("otherKeys", engine.getOtherKeys())
                                             .put("dispatchQueue", rpcWorker.getDispatchName())
-                                            .put("handler", OpflowObjectTree.buildMap()
+                                            .put("request", OpflowObjectTree.buildMap()
                                                     .put("routineId", routineId)
                                                     .put("routineTimestamp", routineTimestamp)
                                                     .put("applicationId", response.getApplicationId())
                                                     .put("replyToQueue", response.getReplyQueueName())
                                                     .put("consumerTag", response.getConsumerTag())
                                                     .toMap())
+                                            .toMap());
+                                    opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
+                                            .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-worker/git-info.json"))
+                                            .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
                                             .toMap());
                                 }
                             }).toMap());

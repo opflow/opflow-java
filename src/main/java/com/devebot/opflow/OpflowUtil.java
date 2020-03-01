@@ -390,6 +390,19 @@ public class OpflowUtil {
         }
     }
     
+    public static Boolean getProgressEnabled(Map<String, Object> headers) {
+        if (headers.get(CONST.AMQP_HEADER_PROGRESS_ENABLED) instanceof Boolean) {
+            return (Boolean) headers.get(CONST.AMQP_HEADER_PROGRESS_ENABLED);
+        }
+        return null;
+    }
+    
+    public static void setProgressEnabled(Map<String, Object> headers, Boolean value) {
+        if (value != null) {
+            headers.put(CONST.AMQP_HEADER_PROGRESS_ENABLED, value);
+        }
+    }
+    
     public static String getDateField(Map<String, Object> headers, String fieldName, boolean currentIfNotFound) {
         Object date = headers.get(fieldName);
         if (date instanceof String) {

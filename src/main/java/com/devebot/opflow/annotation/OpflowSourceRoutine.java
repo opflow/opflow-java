@@ -14,4 +14,5 @@ import java.lang.annotation.Target;
 public @interface OpflowSourceRoutine {
     String alias() default "";
     boolean isAsync() default false;
+    boolean skipped() default false;
 }
