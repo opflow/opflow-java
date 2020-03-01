@@ -461,17 +461,11 @@ public class OpflowRpcMaster implements AutoCloseable {
         AMQP.BasicProperties.Builder builder = new AMQP.BasicProperties.Builder()
                 .correlationId(taskId);
 
-        if (!consumerInfo.isFixedQueue()) {
-            if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
-                    .put("replyTo", consumerInfo.getQueueName())
-                    .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}][${instanceId}] - Use dynamic replyTo: ${replyTo}")
-                    .stringify());
-        } else {
-            if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
-                    .put("replyTo", consumerInfo.getQueueName())
-                    .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}][${instanceId}] - Use static replyTo: ${replyTo}")
-                    .stringify());
-        }
+        if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
+                .put("replyTo", consumerInfo.getQueueName())
+                .put("replyToType", consumerInfo.isFixedQueue() ? "static" : "dynamic")
+                .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}][${instanceId}] - Use ${replyToType} replyTo: ${replyTo}")
+                .stringify());
         builder.replyTo(consumerInfo.getQueueName());
 
         if (expiration > 0) {

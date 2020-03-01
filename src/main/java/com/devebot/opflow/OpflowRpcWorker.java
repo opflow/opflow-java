@@ -162,7 +162,8 @@ public class OpflowRpcWorker implements AutoCloseable {
                 
                 String routineSignature = OpflowUtil.getRoutineSignature(headers, false);
                 
-                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, componentId, consumerTag, queueName, routineId, routineTimestamp, routineScope);
+                OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, componentId, consumerTag, queueName,
+                        routineId, routineTimestamp, routineScope, routineSignature);
                 
                 OpflowLogTracer reqTracer = null;
                 if (logProcess.ready(LOG, Level.INFO)) {

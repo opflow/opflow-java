@@ -26,6 +26,7 @@ public class OpflowRpcResponse {
     private final String routineId;
     private final String routineTimestamp;
     private final String routineScope;
+    private final String routineSignature;
     private final Boolean progressEnabled;
     
     public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties,
@@ -34,7 +35,8 @@ public class OpflowRpcResponse {
             String replyQueueName,
             String routineId,
             String routineTimestamp,
-            String routineScope
+            String routineScope,
+            String routineSignature
     ) {
         final Map<String, Object> headers = properties.getHeaders();
         
@@ -46,6 +48,7 @@ public class OpflowRpcResponse {
         this.routineId = routineId;
         this.routineTimestamp = routineTimestamp;
         this.routineScope = routineScope;
+        this.routineSignature = routineSignature;
         
         logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
                 .branch(CONST.REQUEST_ID, this.routineId, new OpflowUtil.OmitInternalOplogs(this.routineScope));
@@ -76,6 +79,22 @@ public class OpflowRpcResponse {
 
     public String getConsumerTag() {
         return consumerTag;
+    }
+
+    public String getRoutineId() {
+        return routineId;
+    }
+
+    public String getRoutineTimestamp() {
+        return routineTimestamp;
+    }
+
+    public String getRoutineScope() {
+        return routineScope;
+    }
+
+    public String getRoutineSignature() {
+        return routineSignature;
     }
 
     public void emitStarted() {
