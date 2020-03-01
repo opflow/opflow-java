@@ -385,7 +385,7 @@ public class OpflowConfig {
             }
             if (OpflowUtil.arrayContains(STRING_ARRAY_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
-                    params.put(key, OpflowUtil.splitByComma((String)params.get(key)));
+                    params.put(key, OpflowStringUtil.splitByComma((String)params.get(key)));
                 }
             }
             if (OpflowUtil.arrayContains(INTEGER_FIELDS, key)) {
@@ -404,16 +404,16 @@ public class OpflowConfig {
             if (OpflowUtil.arrayContains(INTEGER_ARRAY_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     String intArrayStr = (String) params.get(key);
-                    if (OpflowUtil.isIntegerArray(intArrayStr)) {
-                        params.put(key, OpflowUtil.splitByComma(intArrayStr, Integer.class));
+                    if (OpflowStringUtil.isIntegerArray(intArrayStr)) {
+                        params.put(key, OpflowStringUtil.splitByComma(intArrayStr, Integer.class));
                     }
                 }
             }
             if (OpflowUtil.arrayContains(INTEGER_RANGE_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     String intRangeStr = (String) params.get(key);
-                    if (OpflowUtil.isIntegerRange(intRangeStr)) {
-                        Integer[] range = OpflowUtil.getIntegerRange(intRangeStr);
+                    if (OpflowStringUtil.isIntegerRange(intRangeStr)) {
+                        Integer[] range = OpflowStringUtil.getIntegerRange(intRangeStr);
                         if (range != null) {
                             params.put(key, new Integer[] { -1, range[0], range[1] });
                         }
