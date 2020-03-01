@@ -72,8 +72,6 @@ public class OpflowConstant {
     public final static String RPC_INVOCATION_FLOW_DETACHED_WORKER = "detached_worker";
     public final static String RPC_INVOCATION_FLOW_RESERVED_WORKER = "reserved_worker";
 
-    public final static String REQUEST_TRACER_NAME = "reqTracer";
-
     private OpflowConstant() {
         AMQP_PROTOCOL_VERSION = ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "0");
         AMQP_HEADER_PROTOCOL_VERSION = "oxVersion";

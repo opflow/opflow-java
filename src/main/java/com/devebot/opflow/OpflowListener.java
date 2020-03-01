@@ -12,5 +12,5 @@ public interface OpflowListener {
             String queueName,
             Channel channel,
             String consumerTag,
-            Map<String, Object> extras) throws IOException;
+            Map<String, String> extras) throws IOException;
 }

@@ -228,43 +228,45 @@ public class OpflowRpcMaster implements AutoCloseable {
                     String queueName,
                     Channel channel,
                     String consumerTag,
-                    Map<String, Object> extras
+                    Map<String, String> extras
             ) throws IOException {
                 String taskId = properties.getCorrelationId();
                 Map<String, Object> headers = properties.getHeaders();
                 
-                OpflowLogTracer reqTracer = null;
-                
-                if (extras != null && extras.containsKey(CONST.REQUEST_TRACER_NAME)) {
-                    reqTracer = (OpflowLogTracer) extras.get(CONST.REQUEST_TRACER_NAME);
+                if (extras == null) {
+                    extras = new HashMap<>();
                 }
                 
-                if (reqTracer == null) {
-                    String routineId = OpflowUtil.getRoutineId(headers);
-                    String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
-
-                    if (logSession.ready(LOG, Level.INFO)) {
-                        reqTracer = logSession.branch(CONST.REQUEST_TIME, routineTimestamp)
-                                .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
-                    }
+                String routineId = extras.get(CONST.AMQP_HEADER_ROUTINE_ID);
+                String routineTimestamp = extras.get(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP);
+                String routineScope = extras.get(CONST.AMQP_HEADER_ROUTINE_SCOPE);
+                
+                if (routineId == null) routineId = OpflowUtil.getRoutineId(headers);
+                if (routineTimestamp == null) routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
+                if (routineScope == null) routineScope = OpflowUtil.getRoutineScope(headers);
+                
+                OpflowLogTracer reqTracer = null;
+                if (logSession.ready(LOG, Level.INFO)) {
+                    reqTracer = logSession.branch(CONST.REQUEST_TIME, routineTimestamp)
+                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
                 }
                 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .put("correlationId", taskId)
                         .put("bodyLength", (content != null ? content.length : -1))
-                        .text("initCallbackConsumer() - task[${correlationId}] receives a result (size: ${bodyLength})")
+                        .text("Request[${requestId}][${requestTime}][x-rpc-master-callback-consumed] - task[${correlationId}] receives a result (size: ${bodyLength})")
                         .stringify());
 
                 OpflowRpcRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
                     if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .put("correlationId", taskId)
-                        .text("initCallbackConsumer() - task[${correlationId}] not found, skipped")
+                        .text("Request[${requestId}][${requestTime}][x-rpc-master-callback-skipped] - task[${correlationId}] not found, skipped")
                         .stringify());
                 } else {
                     if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .put("correlationId", taskId)
-                        .text("initCallbackConsumer() - push message to task[${correlationId}] and return")
+                        .text("Request[${requestId}][${requestTime}][x-rpc-master-callback-finished] - push message to task[${correlationId}] and return")
                         .stringify());
                     task.push(new OpflowMessage(content, headers));
                 }
@@ -289,7 +291,6 @@ public class OpflowRpcMaster implements AutoCloseable {
                     if (responseAutoDelete != null) opts.put("autoDelete", responseAutoDelete);
                     opts.put("consumerLimit", CONSUMER_MAX);
                     opts.put("forceNewChannel", Boolean.FALSE);
-                    opts.put("reqTracerShared", Boolean.TRUE);
                 }
                 opts.put("binding", Boolean.FALSE);
                 opts.put("prefetchCount", prefetchCount);

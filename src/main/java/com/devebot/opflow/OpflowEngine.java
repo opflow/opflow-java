@@ -518,7 +518,6 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Consumer[${consumerId}].consume() is invoked in Engine[${engineId}]")
                 .stringify());
         try {
-            final Boolean _reqTracerShared = Boolean.TRUE.equals(opts.get("reqTracerShared"));
             final boolean _forceNewConnection = Boolean.TRUE.equals(opts.get("forceNewConnection"));
             final Boolean _forceNewChannel = Boolean.TRUE.equals(opts.get("forceNewChannel"));
             final Channel _channel = getConsumingChannel(_forceNewConnection, _forceNewChannel);
@@ -618,9 +617,10 @@ public class OpflowEngine implements AutoCloseable {
                     final Map<String, Object> headers = properties.getHeaders();
                     final String routineId = OpflowUtil.getRoutineId(headers, false);
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
+                    final String routineScope = OpflowUtil.getRoutineScope(headers);
 
                     final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, routineTimestamp)
-                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
+                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
 
                     try {
                         if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
@@ -636,12 +636,11 @@ public class OpflowEngine implements AutoCloseable {
                                     .text("Request[${requestId}][${requestTime}] invoke listener.processMessage()")
                                     .stringify());
                             
-                            Map<String, Object> extras = null;
-                            if (_reqTracerShared) {
-                                extras = OpflowObjectTree.buildMap(false)
-                                        .put(CONST.REQUEST_TRACER_NAME, reqTracer)
-                                        .toMap();
-                            }
+                            Map<String, String> extras = OpflowObjectTree.buildMap(false)
+                                    .put(CONST.AMQP_HEADER_ROUTINE_ID, routineId)
+                                    .put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, routineTimestamp)
+                                    .put(CONST.AMQP_HEADER_ROUTINE_SCOPE, routineScope)
+                                    .toMap();
                             
                             boolean captured = listener.processMessage(body, properties, _replyToName, _channel, consumerTag, extras);
                             

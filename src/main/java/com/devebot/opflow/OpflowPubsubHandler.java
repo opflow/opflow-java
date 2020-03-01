@@ -236,7 +236,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                     String queueName,
                     Channel channel,
                     String consumerTag,
-                    Map<String, Object> extras
+                    Map<String, String> extras
             ) throws IOException {
                 Map<String, Object> headers = properties.getHeaders();
                 String routineId = OpflowUtil.getRoutineId(headers, false);

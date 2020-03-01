@@ -143,25 +143,33 @@ public class OpflowRpcWorker implements AutoCloseable {
                     String queueName,
                     Channel channel,
                     String consumerTag,
-                    Map<String, Object> extras
+                    Map<String, String> extras
             ) throws IOException {
                 Map<String, Object> headers = properties.getHeaders();
                 OpflowMessage request = new OpflowMessage(body, headers);
-
-                String routineId = OpflowUtil.getRoutineId(headers, false);
+                
+                if (extras == null) {
+                    extras = new HashMap<>();
+                }
+                
+                String routineId = extras.get(CONST.AMQP_HEADER_ROUTINE_ID);
+                String routineTimestamp = extras.get(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP);
+                String routineScope = extras.get(CONST.AMQP_HEADER_ROUTINE_SCOPE);
+                
+                if (routineId == null) routineId = OpflowUtil.getRoutineId(headers);
+                if (routineTimestamp == null) routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
+                if (routineScope == null) routineScope = OpflowUtil.getRoutineScope(headers);
+                
                 String routineSignature = OpflowUtil.getRoutineSignature(headers, false);
-                String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
-                String routineScope = OpflowUtil.getRoutineScope(headers);
-                String[] routineTags = OpflowUtil.getRoutineTags(headers);
-
+                
                 OpflowRpcResponse response = new OpflowRpcResponse(channel, properties, componentId, consumerTag, queueName, routineId, routineTimestamp, routineScope);
-
+                
                 OpflowLogTracer reqTracer = null;
                 if (logProcess.ready(LOG, Level.INFO)) {
                     reqTracer = logProcess.branch(CONST.REQUEST_TIME, routineTimestamp)
                             .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
                 }
-
+                
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .put("routineSignature", routineSignature)
                         .text("Request[${requestId}][${requestTime}][x-rpc-worker-request-received] - Consumer[${consumerId}] receives a new RPC [${routineSignature}]")
