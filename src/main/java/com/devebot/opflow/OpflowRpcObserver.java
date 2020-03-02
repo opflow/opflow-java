@@ -5,6 +5,8 @@ import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowDateTime;
 import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -20,15 +22,9 @@ public class OpflowRpcObserver {
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
 
     public void check(String componentId, String version, String payload) {
-        OpflowRpcObserver.Manifest manifest = null;
         if (componentId != null) {
-            // assure the manifest object
-            if (manifests.containsKey(componentId)) {
-                manifest = manifests.get(componentId);
-            } else {
-                manifest = new OpflowRpcObserver.Manifest(componentId);
-                manifests.put(componentId, manifest);
-            }
+            OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
+            // inform the manifest status
             manifest.touch();
             // update the compatible status
             if (version == null) {
@@ -38,6 +34,25 @@ public class OpflowRpcObserver {
                     manifest.setCompatible(true);
                 } else {
                     manifest.setCompatible((version.equals("0") && CONST.LEGACY_HEADER_ENABLED));
+                }
+            }
+        }
+    }
+    
+    public boolean containsInfo(String componentId, String name) {
+        if (componentId == null) return false;
+        OpflowRpcObserver.Manifest manifest = manifests.get(componentId);
+        if (manifest == null) return false;
+        return (manifest.information.containsKey(name));
+    }
+    
+    public void updateInfo(String componentId, String name, Object data) {
+        if (componentId == null) return;
+        if (manifests.containsKey(componentId)) {
+            OpflowRpcObserver.Manifest manifest = manifests.get(componentId);
+            if (manifest != null) {
+                synchronized (manifest.information) {
+                    manifest.information.put(name, data);
                 }
             }
         }
@@ -67,9 +82,21 @@ public class OpflowRpcObserver {
         }
     }
 
+    private Manifest assertManifest(String componentId) {
+        OpflowRpcObserver.Manifest manifest = null;
+        if (manifests.containsKey(componentId)) {
+            manifest = manifests.get(componentId);
+        } else {
+            manifest = new OpflowRpcObserver.Manifest(componentId);
+            manifests.put(componentId, manifest);
+        }
+        return manifest;
+    }
+    
     public static class Manifest {
         private Boolean compatible;
         private final String componentId;
+        private final Map<String, Object> information;
         private final Date reachedTimestamp;
         private Date updatedTimestamp;
 
@@ -82,6 +109,7 @@ public class OpflowRpcObserver {
 
         public Manifest(String componentId) {
             this.componentId = componentId;
+            this.information = new LinkedHashMap<>();
             this.reachedTimestamp = new Date();
         }
 

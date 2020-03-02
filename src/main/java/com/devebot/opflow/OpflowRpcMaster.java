@@ -616,12 +616,16 @@ public class OpflowRpcMaster implements AutoCloseable {
         serve();
     }
     
+    public OpflowEngine getEngine() {
+        return engine;
+    }
+    
     public OpflowExecutor getExecutor() {
         return executor;
     }
     
-    public OpflowEngine getEngine() {
-        return engine;
+    public OpflowRpcObserver getRpcObserver() {
+        return rpcObserver;
     }
     
     public String getComponentId() {

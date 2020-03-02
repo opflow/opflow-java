@@ -443,10 +443,16 @@ public class OpflowCommander implements AutoCloseable {
 
         private final OpflowRestrictor.Valve restrictor;
         private final OpflowRpcMaster rpcMaster;
+        private final OpflowRpcObserver rpcObserver;
 
         OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcMaster rpcMaster) throws OpflowBootstrapException {
             this.restrictor = restrictor;
             this.rpcMaster = rpcMaster;
+            if (rpcMaster != null) {
+                rpcObserver = rpcMaster.getRpcObserver();
+            } else {
+                rpcObserver = null;
+            }
         }
 
         @Override
@@ -482,6 +488,22 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             Pong pong = OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
+            // updateInfo the observation result
+            if (rpcObserver != null) {
+                Map<String, Object> serverletInfo = pong.getAccumulator();
+                if (serverletInfo != null) {
+                    String componentId = serverletInfo.getOrDefault(CONST.COMPONENT_ID, "").toString();
+                    if (!componentId.isEmpty()) {
+                        if (!rpcObserver.containsInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE)) {
+                            Object serverletCodeRef = serverletInfo.get(OpflowConstant.INFO_SECTION_SOURCE_CODE);
+                            if (serverletCodeRef != null) {
+                                rpcObserver.updateInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE, serverletCodeRef);
+                            }
+                        }
+                    }
+                }
+            }
+            // append the context of ping
             pong.getParameters().put("routineId", routineId);
             pong.getParameters().put("startTime", startTime);
             pong.getParameters().put("endTime", endTime);
