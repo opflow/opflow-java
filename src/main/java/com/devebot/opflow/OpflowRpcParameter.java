@@ -28,7 +28,7 @@ public class OpflowRpcParameter implements Customizer {
     private Boolean callbackTransient = false;
     private Boolean progressEnabled = null;
     
-    private final boolean isInternalOplog;
+    private boolean isInternalOplog;
 
     public OpflowRpcParameter() {
         this.routineId = OpflowUUID.getBase64ID();
@@ -105,12 +105,13 @@ public class OpflowRpcParameter implements Customizer {
     public String getRoutineScope() {
         return routineScope;
     }
-    
+
     public OpflowRpcParameter setRoutineScope(String routineScope) {
         this.routineScope = routineScope;
+        this.isInternalOplog = determineInternalOplog();
         return this;
     }
-    
+
     public Boolean getCallbackTransient() {
         return callbackTransient;
     }
