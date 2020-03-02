@@ -42,8 +42,9 @@ public class OpflowEngine implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
     public static final String[] PARAMETER_NAMES = new String[] {
-        "uri", "host", "port", "virtualHost", "username", "password", "channelMax", "frameMax", "heartbeat",
-        "threadPoolType", "threadPoolSize",
+        OpflowConstant.AMQP_CONARG_URI, OpflowConstant.AMQP_CONARG_HOST, OpflowConstant.AMQP_CONARG_PORT,
+        OpflowConstant.AMQP_CONARG_VHOST, OpflowConstant.AMQP_CONARG_USERNAME, OpflowConstant.AMQP_CONARG_PASSWORD,
+        "channelMax", "frameMax", "heartbeat", "threadPoolType", "threadPoolSize",
         "exchangeName", "exchangeType", "exchangeDurable", "routingKey", "otherKeys", "applicationId",
         "automaticRecoveryEnabled", "topologyRecoveryEnabled", "networkRecoveryInterval",
         "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
@@ -98,6 +99,7 @@ public class OpflowEngine implements AutoCloseable {
                 .put("headers", OpflowJsonTool.toString(new String[] {
                         CONST.AMQP_HEADER_ROUTINE_ID,
                         CONST.AMQP_HEADER_ROUTINE_TIMESTAMP,
+                        CONST.AMQP_HEADER_ROUTINE_SCOPE,
                         CONST.AMQP_HEADER_ROUTINE_SIGNATURE,
                         CONST.AMQP_HEADER_ROUTINE_TAGS
                 }))
@@ -160,7 +162,7 @@ public class OpflowEngine implements AutoCloseable {
                         .stringify());
             }
             
-            String uri = (String) params.get("uri");
+            String uri = (String) params.get(OpflowConstant.AMQP_CONARG_URI);
             if (uri != null && uri.length() > 0) {
                 factory.setUri(uri);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -168,27 +170,27 @@ public class OpflowEngine implements AutoCloseable {
                         .text("Engine[${engineId}] make connection using URI: ${uri}")
                         .stringify());
             } else {
-                String host = (String) params.getOrDefault("host", "localhost");
+                String host = (String) params.getOrDefault(OpflowConstant.AMQP_CONARG_HOST, "localhost");
                 factory.setHost(host);
                 
                 Integer port = null;
-                if (params.get("port") instanceof Integer) {
-                    factory.setPort(port = (Integer)params.get("port"));
+                if (params.get(OpflowConstant.AMQP_CONARG_PORT) instanceof Integer) {
+                    factory.setPort(port = (Integer)params.get(OpflowConstant.AMQP_CONARG_PORT));
                 }
                 
                 String virtualHost = null;
-                if (params.get("virtualHost") instanceof String) {
-                    factory.setVirtualHost(virtualHost = (String) params.get("virtualHost"));
+                if (params.get(OpflowConstant.AMQP_CONARG_VHOST) instanceof String) {
+                    factory.setVirtualHost(virtualHost = (String) params.get(OpflowConstant.AMQP_CONARG_VHOST));
                 }
                 
                 String username = null;
-                if (params.get("username") instanceof String) {
-                    factory.setUsername(username = (String) params.get("username"));
+                if (params.get(OpflowConstant.AMQP_CONARG_USERNAME) instanceof String) {
+                    factory.setUsername(username = (String) params.get(OpflowConstant.AMQP_CONARG_USERNAME));
                 }
                 
                 String password = null;
-                if (params.get("password") instanceof String) {
-                    factory.setPassword(password = (String) params.get("password"));
+                if (params.get(OpflowConstant.AMQP_CONARG_PASSWORD) instanceof String) {
+                    factory.setPassword(password = (String) params.get(OpflowConstant.AMQP_CONARG_PASSWORD));
                 }
                 
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
