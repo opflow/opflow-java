@@ -52,6 +52,7 @@ public class OpflowRestServer implements AutoCloseable {
     private final RoutingHandler defaultHandlers;
     private final String host;
     private final Integer port;
+    private final String[] credentials;
     private final Boolean enabled;
     private final long shutdownTimeout;
     private final Thread shutdownHook;
@@ -72,6 +73,12 @@ public class OpflowRestServer implements AutoCloseable {
                 8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
         });
         
+        if (kwargs.get("credentials") instanceof String[]) {
+            credentials = (String[])kwargs.get("credentials");
+        } else {
+            credentials = null;
+        }
+        
         shutdownTimeout = OpflowObjectTree.getOptionValue(kwargs, "shutdownTimeout", Long.class, 1000l);
         
         shutdownHook = new Thread() {
@@ -81,7 +88,7 @@ public class OpflowRestServer implements AutoCloseable {
             }
         };
         
-        identityManager = new OpflowIdentityManager();
+        identityManager = new OpflowIdentityManager(credentials);
         
         logTracer = OpflowLogTracer.ROOT.branch("restServerId", componentId);
         

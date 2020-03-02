@@ -241,7 +241,8 @@ public class OpflowConfig {
                 if (CONST.COMPNAME_REST_SERVER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "host",
-                        "ports"
+                        "ports",
+                        "credentials"
                     });
                 }
                 transformParameters(componentCfg);
@@ -361,7 +362,7 @@ public class OpflowConfig {
         "responseQueueSuffix"
     };
     
-    private static final String[] STRING_ARRAY_FIELDS = new String[] { "otherKeys" };
+    private static final String[] STRING_ARRAY_FIELDS = new String[] { "credentials", "otherKeys" };
     
     private static final String[] INTEGER_FIELDS = new String[] {
         "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", "semaphoreLimit", "length",

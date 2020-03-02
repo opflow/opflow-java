@@ -135,6 +135,8 @@ public class OpflowConstant {
         return info;
     }
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SINGLETON
+    
     private static OpflowConstant instance = null;
 
     public static OpflowConstant CURRENT() {

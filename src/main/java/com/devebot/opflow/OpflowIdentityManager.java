@@ -27,11 +27,19 @@ public class OpflowIdentityManager implements IdentityManager {
     private final Map<String, char[]> users;
 
     OpflowIdentityManager() {
-        this.users = initUserMap();
+        this.users = initUserMap((String) null);
+    }
+
+    OpflowIdentityManager(String credentials) {
+        this.users = initUserMap(credentials);
+    }
+
+    OpflowIdentityManager(String[] userList) {
+        this.users = initUserMap(userList);
     }
 
     OpflowIdentityManager(final Map<String, char[]> users) {
-        this.users = users;
+        this.users = applyRootCredentials(users);
     }
 
     @Override
@@ -104,8 +112,16 @@ public class OpflowIdentityManager implements IdentityManager {
         return null;
     }
     
-    private Map<String, char[]> initUserMap() {
-        return toUserMap(OpflowStringUtil.splitByComma(ENVTOOL.getSystemProperty("OPFLOW_SUPERADMIN", "")));
+    private Map<String, char[]> initUserMap(String credentials) {
+        return applyRootCredentials(toUserMap(credentials));
+    }
+    
+    private Map<String, char[]> initUserMap(String[] userList) {
+        return applyRootCredentials(toUserMap(userList));
+    }
+    
+    private Map<String, char[]> toUserMap(String credentials) {
+        return toUserMap(OpflowStringUtil.splitByComma(credentials));
     }
     
     private Map<String, char[]> toUserMap(String[] userList) {
@@ -121,5 +137,24 @@ public class OpflowIdentityManager implements IdentityManager {
             }
         }
         return _users;
+    }
+    
+    private Map<String, char[]> applyRootCredentials(Map<String, char[]> userMap) {
+        return mergeUserMap(userMap, toUserMap(ENVTOOL.getSystemProperty("OPFLOW_ROOT_CREDENTIALS", "")));
+    }
+    
+    private Map<String, char[]> mergeUserMap(Map<String, char[]> target, Map<String, char[]>...sources) {
+        if (target == null) {
+            target = new HashMap<>();
+        }
+        if (sources != null) {
+            for(Map<String, char[]> source : sources) {
+                if (source == null) continue;
+                for (Map.Entry<String, char[]> user : source.entrySet()) {
+                    target.put(user.getKey(), user.getValue());
+                }
+            }
+        }
+        return target;
     }
 }
