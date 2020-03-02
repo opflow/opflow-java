@@ -26,16 +26,8 @@ public class OpflowRpcObserver {
             OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
             // inform the manifest status
             manifest.touch();
-            // update the compatible status
-            if (version == null) {
-                manifest.setCompatible(CONST.LEGACY_HEADER_ENABLED);
-            } else {
-                if (version.equals(CONST.AMQP_PROTOCOL_VERSION)) {
-                    manifest.setCompatible(true);
-                } else {
-                    manifest.setCompatible((version.equals("0") && CONST.LEGACY_HEADER_ENABLED));
-                }
-            }
+            // update the protocol version
+            manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
         }
     }
     
@@ -61,18 +53,18 @@ public class OpflowRpcObserver {
     public Collection<OpflowRpcObserver.Manifest> rollup() {
         Set<String> keys = manifests.keySet();
         for (String key: keys) {
-            // refresh the state of the manifest
             OpflowRpcObserver.Manifest manifest = manifests.get(key);
-            manifest.refresh();
-            // validate the state of the manifest
-            if (manifest.getLosingTouchDuration() > keepAliveTimeout) {
+            // refresh the state of the manifest
+            manifest.refresh(keepAliveTimeout);
+            // filter the active manifests
+            if (manifest.expired()) {
                 manifests.remove(key);
             }
         }
         return manifests.values();
     }
 
-    public Object getInformation() {
+    public Object summary() {
         return this.rollup();
     }
 
@@ -94,6 +86,12 @@ public class OpflowRpcObserver {
     }
     
     public static class Manifest {
+        public final static String STATUS_OK = "green";
+        public final static String STATUS_ABSENT = "yellow";
+        public final static String STATUS_BROKEN = "red";
+        public final static String STATUS_CUTOFF = "gray";
+
+        private String status;
         private Boolean compatible;
         private final String componentId;
         private final Map<String, Object> information;
@@ -116,21 +114,43 @@ public class OpflowRpcObserver {
         public void touch() {
             this.updatedTimestamp = new Date();
         }
-
-        public void setCompatible(boolean compatible) {
-            this.compatible = compatible;
-        }
-
-        public long getLosingTouchDuration() {
-            return losingTouchDuration;
-        }
         
-        public Manifest refresh() {
+        public Manifest refresh(long keepAliveTimeout) {
+            // update the timestamps
             this.keepInTouchDuration = updatedTimestamp.getTime() - reachedTimestamp.getTime();
             this.keepInTouchTime = OpflowDateTime.printElapsedTime(this.keepInTouchDuration);
             this.losingTouchDuration = (new Date()).getTime() - updatedTimestamp.getTime();
             this.losingTouchTime = OpflowDateTime.printElapsedTime(this.losingTouchDuration);
+            // update the compatible field
+            if (compatible == null) {
+                Object version = information.get("AMQP_PROTOCOL_VERSION");
+                if (version != null) {
+                    if (version.equals(CONST.AMQP_PROTOCOL_VERSION)) {
+                        this.compatible = true;
+                    } else {
+                        if (version.equals("0")) {
+                            this.compatible = CONST.LEGACY_HEADER_ENABLED;
+                        } else {
+                            this.compatible = false;
+                        }
+                    }
+                }
+            }
+            // update the status of the manifest
+            if (losingTouchDuration > keepAliveTimeout * 3) {
+                this.status = STATUS_CUTOFF;
+            } else if (losingTouchDuration > keepAliveTimeout * 2) {
+                this.status = STATUS_BROKEN;
+            } else if (losingTouchDuration > keepAliveTimeout) {
+                this.status = STATUS_ABSENT;
+            } else {
+                this.status = STATUS_OK;
+            }
             return this;
+        }
+        
+        public boolean expired() {
+            return STATUS_CUTOFF.equals(this.status);
         }
     }
 }

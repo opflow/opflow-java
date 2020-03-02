@@ -797,7 +797,7 @@ public class OpflowCommander implements AutoCloseable {
             // current serverlets
             if (checkOption(flag, SCOPE_INFO)) {
                 if (rpcObserver != null) {
-                    root.put(CONST.COMPNAME_SERVERLET, rpcObserver.getInformation());
+                    root.put(CONST.COMPNAME_SERVERLET, rpcObserver.summary());
                 }
             }
 
