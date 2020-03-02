@@ -90,7 +90,7 @@ public class OpflowConstant {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONSTRUCTORS
 
     private OpflowConstant() {
-        AMQP_PROTOCOL_VERSION = ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "0");
+        AMQP_PROTOCOL_VERSION = ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "1");
         AMQP_HEADER_PROTOCOL_VERSION = "oxVersion";
         switch (AMQP_PROTOCOL_VERSION) {
             case "1":

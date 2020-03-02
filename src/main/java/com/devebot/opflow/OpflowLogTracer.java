@@ -119,7 +119,7 @@ public class OpflowLogTracer {
     }
     
     public OpflowLogTracer branch(String key, Object value) {
-        return branch(key, value, null);
+        return branch(key, value, this.customizer);
     }
     
     public OpflowLogTracer branch(String key, Object value, Customizer customizer) {
