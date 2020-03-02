@@ -1,6 +1,5 @@
 package com.devebot.opflow.supports;
 
-import com.devebot.opflow.OpflowMessage;
 import com.devebot.opflow.annotation.OpflowFieldExclude;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import com.google.gson.ExclusionStrategy;
@@ -101,10 +100,6 @@ public class OpflowJsonTool {
     
     public static <T> T toObject(Reader reader, Class<T> type) {
         return GSON.fromJson(new JsonReader(reader), type);
-    }
-    
-    public static <T> T toObject(OpflowMessage message, Class<T> type) {
-        return GSON.fromJson(message.getBodyAsString(), type);
     }
     
     public static Map<String, Object> toObjectMap(String json) {

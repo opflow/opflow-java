@@ -350,7 +350,7 @@ public class OpflowServerlet implements AutoCloseable {
         private final Map<String, Method> methodRef = new HashMap<>();
         private final Map<String, Object> targetRef = new HashMap<>();
         private final Map<String, String> methodOfAlias = new HashMap<>();
-        private boolean processing = false;
+        private volatile boolean processing = false;
         
         public Instantiator(OpflowRpcWorker worker, OpflowPubsubHandler subscriber) throws OpflowBootstrapException {
             this(worker, subscriber, null);
@@ -576,7 +576,7 @@ public class OpflowServerlet implements AutoCloseable {
             }
         }
         
-        public final void process() {
+        public final synchronized void process() {
             if (!processing) {
                 if (rpcWorker != null) {
                     rpcWorker.process(routineSignatures, rpcListener);

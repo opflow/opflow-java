@@ -57,13 +57,13 @@ public class OpflowEngine implements AutoCloseable {
     private String mode;
     private ConnectionFactory factory;
     private String producingConnectionId;
-    private Connection producingConnection;
-    private Channel producingChannel;
-    private BlockedListener producingBlockedListener;
+    private volatile Connection producingConnection;
+    private volatile Channel producingChannel;
+    private volatile BlockedListener producingBlockedListener;
     private String consumingConnectionId;
-    private Connection consumingConnection;
-    private Channel consumingChannel;
-    private BlockedListener consumingBlockedListener;
+    private volatile Connection consumingConnection;
+    private volatile Channel consumingChannel;
+    private volatile BlockedListener consumingBlockedListener;
     private List<ConsumerInfo> consumerInfos = new LinkedList<>();
     private ExecutorService threadExecutor;
     
@@ -1106,7 +1106,9 @@ public class OpflowEngine implements AutoCloseable {
     }
     
     public void setProducingBlockedListener(BlockedListener producingBlockedListener) {
-        this.producingBlockedListener = producingBlockedListener;
+        synchronized (producingBlockedListenerLock) {
+            this.producingBlockedListener = producingBlockedListener;
+        }
     }
     
     private Connection getConsumingConnection(boolean forceNewConnection) throws IOException, TimeoutException {
@@ -1210,7 +1212,9 @@ public class OpflowEngine implements AutoCloseable {
     }
     
     public void setConsumingBlockedListener(BlockedListener consumingBlockedListener) {
-        this.consumingBlockedListener = consumingBlockedListener;
+        synchronized (consumingBlockedListenerLock) {
+            this.consumingBlockedListener = consumingBlockedListener;
+        }
     }
     
     private void bindExchange(Channel _channel, String _exchangeName, String _queueName, String _routingKey) throws IOException {

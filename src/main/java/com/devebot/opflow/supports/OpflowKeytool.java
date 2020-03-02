@@ -1,7 +1,5 @@
 package com.devebot.opflow.supports;
 
-import com.devebot.opflow.OpflowLogTracer;
-import com.devebot.opflow.OpflowLogTracer.Level;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -13,6 +11,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.text.MessageFormat;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -25,7 +24,6 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowKeytool {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowKeytool.class);
-    private final static OpflowLogTracer TRACER = OpflowLogTracer.ROOT.copy();
     
     public static SSLContext buildSSLContextWithCertFile(String pkcs12File, String pkcs12Passphrase, String caCertFile) {
         try {
@@ -84,10 +82,8 @@ public class OpflowKeytool {
     }
     
     private static void logException(Exception e) {
-        if (TRACER.ready(LOG, Level.ERROR)) LOG.error(TRACER
-                .put("exceptionClass", e.getClass().getName())
-                .put("exceptionMessage", e.getMessage())
-                .text("Instance[${instanceId}] buildSSLContext() exception[${exceptionClass}]: ${exceptionMessage}")
-                .stringify());
+        if (LOG.isErrorEnabled()) {
+            LOG.error(MessageFormat.format("buildSSLContext() raises an exception[{0}]: {1}", new Object[] { e.getClass().getName(), e.getMessage() }), e);
+        }
     }
 }

@@ -378,7 +378,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .branch(CONST.REQUEST_ID, params.getRoutineId(), params);
         
         if (timeoutMonitor == null) {
-            synchronized(timeoutMonitorLock) {
+            synchronized (timeoutMonitorLock) {
                 if (timeoutMonitor == null) {
                     timeoutMonitor = initTimeoutMonitor();
                 }
@@ -390,7 +390,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             consumerInfo = initCallbackConsumer(true);
         } else {
             if (callbackConsumer == null) {
-                synchronized(callbackConsumerLock) {
+                synchronized (callbackConsumerLock) {
                     if (callbackConsumer == null) {
                         callbackConsumer = initCallbackConsumer(false);
                     }

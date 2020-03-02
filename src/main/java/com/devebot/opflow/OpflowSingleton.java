@@ -55,7 +55,7 @@ public class OpflowSingleton {
     private static <T> T assertHandler(String configFile, Class<T> clazz, Map<String, T> map) throws OpflowBootstrapException {
         String uniqCode = genUniqCode(configFile);
         if (!map.containsKey(uniqCode)) {
-            synchronized(map) {
+            synchronized (map) {
                 if (!map.containsKey(uniqCode)) {
                     if (LOG_TRACER.ready(LOG, Level.DEBUG)) LOG.debug(LOG_TRACER
                             .tags(new String[] { clazz.getCanonicalName(), "OpflowSingleton.assertHandler" })
