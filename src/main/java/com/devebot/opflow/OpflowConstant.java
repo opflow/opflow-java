@@ -87,6 +87,14 @@ public class OpflowConstant {
     public final static String AMQP_CONARG_USERNAME = "username";
     public final static String AMQP_CONARG_PASSWORD = "password";
 
+    public final static String AMQP_CONARG_REQUESTED_CHANNEL_MAX = "channelMax";
+    public final static String AMQP_CONARG_REQUESTED_FRAME_MAX = "frameMax";
+    public final static String AMQP_CONARG_REQUESTED_HEARTBEAT = "heartbeat";
+
+    public final static String AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED = "automaticRecoveryEnabled";
+    public final static String AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED = "topologyRecoveryEnabled";
+    public final static String AMQP_CONARG_NETWORK_RECOVERY_INTERVAL = "networkRecoveryInterval";
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONSTRUCTORS
 
     private OpflowConstant() {
@@ -136,7 +144,7 @@ public class OpflowConstant {
     }
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SINGLETON
-    
+
     private static OpflowConstant instance = null;
 
     public static OpflowConstant CURRENT() {

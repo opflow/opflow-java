@@ -44,9 +44,10 @@ public class OpflowEngine implements AutoCloseable {
     public static final String[] PARAMETER_NAMES = new String[] {
         OpflowConstant.AMQP_CONARG_URI, OpflowConstant.AMQP_CONARG_HOST, OpflowConstant.AMQP_CONARG_PORT,
         OpflowConstant.AMQP_CONARG_VHOST, OpflowConstant.AMQP_CONARG_USERNAME, OpflowConstant.AMQP_CONARG_PASSWORD,
-        "channelMax", "frameMax", "heartbeat", "threadPoolType", "threadPoolSize",
+        OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX, OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX, OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT,
+        "threadPoolType", "threadPoolSize",
         "exchangeName", "exchangeType", "exchangeDurable", "routingKey", "otherKeys", "applicationId",
-        "automaticRecoveryEnabled", "topologyRecoveryEnabled", "networkRecoveryInterval",
+        OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED, OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED, OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL,
         "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
     };
     
@@ -204,18 +205,18 @@ public class OpflowEngine implements AutoCloseable {
             }
             
             Integer channelMax = null;
-            if (params.get("channelMax") instanceof Integer) {
-                factory.setRequestedChannelMax(channelMax = (Integer)params.get("channelMax"));
+            if (params.get(OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX) instanceof Integer) {
+                factory.setRequestedChannelMax(channelMax = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX));
             }
 
             Integer frameMax = null;
-            if (params.get("frameMax") instanceof Integer) {
-                factory.setRequestedFrameMax(frameMax = (Integer)params.get("frameMax"));
+            if (params.get(OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX) instanceof Integer) {
+                factory.setRequestedFrameMax(frameMax = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX));
             }
 
             Integer heartbeat;
-            if (params.get("heartbeat") instanceof Integer) {
-                heartbeat = (Integer)params.get("heartbeat");
+            if (params.get(OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT) instanceof Integer) {
+                heartbeat = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT);
                 if (heartbeat < 5) heartbeat = 5;
             } else {
                 heartbeat = 20; // default 20 seconds
@@ -225,18 +226,18 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             Boolean automaticRecoveryEnabled = null;
-            if (params.get("automaticRecoveryEnabled") instanceof Boolean) {
-                factory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled = (Boolean)params.get("automaticRecoveryEnabled"));
+            if (params.get(OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED) instanceof Boolean) {
+                factory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled = (Boolean)params.get(OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED));
             }
 
             Boolean topologyRecoveryEnabled = null;
-            if (params.get("topologyRecoveryEnabled") instanceof Boolean) {
-                factory.setTopologyRecoveryEnabled(topologyRecoveryEnabled = (Boolean)params.get("topologyRecoveryEnabled"));
+            if (params.get(OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED) instanceof Boolean) {
+                factory.setTopologyRecoveryEnabled(topologyRecoveryEnabled = (Boolean)params.get(OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED));
             }
 
             Integer networkRecoveryInterval;
-            if (params.get("networkRecoveryInterval") instanceof Integer) {
-                networkRecoveryInterval = (Integer)params.get("networkRecoveryInterval");
+            if (params.get(OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL) instanceof Integer) {
+                networkRecoveryInterval = (Integer)params.get(OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL);
                 if (networkRecoveryInterval <= 0) networkRecoveryInterval = null;
             } else {
                 networkRecoveryInterval = 2500; // change default from 5000 to 2500
@@ -306,8 +307,7 @@ public class OpflowEngine implements AutoCloseable {
                 } else if (serverCertFile != null) {
                     sslContext = OpflowKeytool.buildSSLContextWithCertFile(pkcs12File, pkcs12Passphrase, serverCertFile);
                 } else if (trustStoreFile != null && trustPassphrase != null) {
-                    sslContext = OpflowKeytool.buildSSLContextWithKeyStore(pkcs12File, pkcs12Passphrase,
-                            trustStoreFile, trustPassphrase);
+                    sslContext = OpflowKeytool.buildSSLContextWithKeyStore(pkcs12File, pkcs12Passphrase, trustStoreFile, trustPassphrase);
                 }
             }
 
