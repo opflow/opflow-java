@@ -32,12 +32,12 @@ public class OpflowRpcObserver {
             manifest.touch();
             // update the compatible status
             if (version == null) {
-                manifest.setCompatible(CONST.LEGACY_SUPPORT_ENABLED);
+                manifest.setCompatible(CONST.LEGACY_HEADER_ENABLED);
             } else {
                 if (version.equals(CONST.AMQP_PROTOCOL_VERSION)) {
                     manifest.setCompatible(true);
                 } else {
-                    manifest.setCompatible((version.equals("0") && CONST.LEGACY_SUPPORT_ENABLED));
+                    manifest.setCompatible((version.equals("0") && CONST.LEGACY_HEADER_ENABLED));
                 }
             }
         }

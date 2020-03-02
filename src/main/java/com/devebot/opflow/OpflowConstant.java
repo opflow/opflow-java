@@ -11,6 +11,8 @@ import java.util.Map;
 public class OpflowConstant {
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW
+
     public final String FRAMEWORK_ID = "opflow";
 
     public final String INSTANCE_ID = "instanceId";
@@ -21,6 +23,8 @@ public class OpflowConstant {
 
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW/AMQP PROTOCOL
 
     public final String AMQP_PROTOCOL_VERSION;
     public final String AMQP_HEADER_PROTOCOL_VERSION;
@@ -34,8 +38,8 @@ public class OpflowConstant {
     public final String AMQP_HEADER_CONSUMER_TAG;
     public final String AMQP_HEADER_RETURN_STATUS;
 
-    public final boolean LEGACY_SUPPORT_APPLIED;
-    public final boolean LEGACY_SUPPORT_ENABLED;
+    public final boolean LEGACY_HEADER_APPLIED;
+    public final boolean LEGACY_HEADER_ENABLED;
 
     public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
     public final static String LEGACY_HEADER_ROUTINE_TIMESTAMP = "requestTime";
@@ -46,6 +50,8 @@ public class OpflowConstant {
     public final boolean LEGACY_ROUTINE_PINGPONG_APPLIED;
     public final static String OPFLOW_ROUTINE_PINGPONG_ALIAS = "opflow_routine_ping_ball_pong";
     
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW COMPONENTS
+
     public final String COMPNAME_COMMANDER = "commander";
     public final String COMPNAME_SERVERLET = "serverlet";
     public final String COMPNAME_PUBLISHER = "publisher";
@@ -72,6 +78,17 @@ public class OpflowConstant {
     public final static String RPC_INVOCATION_FLOW_DETACHED_WORKER = "detached_worker";
     public final static String RPC_INVOCATION_FLOW_RESERVED_WORKER = "reserved_worker";
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AMQP PARAMETERS
+
+    public final static String AMQP_CONARG_URI = "uri";
+    public final static String AMQP_CONARG_HOST = "host";
+    public final static String AMQP_CONARG_PORT = "port";
+    public final static String AMQP_CONARG_VHOST = "virtualHost";
+    public final static String AMQP_CONARG_USERNAME = "username";
+    public final static String AMQP_CONARG_PASSWORD = "password";
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONSTRUCTORS
+
     private OpflowConstant() {
         AMQP_PROTOCOL_VERSION = ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "0");
         AMQP_HEADER_PROTOCOL_VERSION = "oxVersion";
@@ -96,8 +113,8 @@ public class OpflowConstant {
         AMQP_HEADER_CONSUMER_TAG = "consumerTag";
         AMQP_HEADER_RETURN_STATUS = "status";
         // Legacy supports for header names and pingpong routine signature
-        LEGACY_SUPPORT_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
-        LEGACY_SUPPORT_APPLIED = LEGACY_SUPPORT_ENABLED && !"0".equals(AMQP_PROTOCOL_VERSION);
+        LEGACY_HEADER_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
+        LEGACY_HEADER_APPLIED = LEGACY_HEADER_ENABLED && !"0".equals(AMQP_PROTOCOL_VERSION);
         LEGACY_ROUTINE_PINGPONG_APPLIED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_PINGPONG", null));
     }
 
@@ -109,7 +126,7 @@ public class OpflowConstant {
         info.put("AMQP_HEADER_ROUTINE_SIGNATURE", AMQP_HEADER_ROUTINE_SIGNATURE);
         info.put("AMQP_HEADER_ROUTINE_SCOPE", AMQP_HEADER_ROUTINE_SCOPE);
         info.put("AMQP_HEADER_ROUTINE_TAGS", AMQP_HEADER_ROUTINE_TAGS);
-        if (LEGACY_SUPPORT_APPLIED) {
+        if (LEGACY_HEADER_APPLIED) {
             info.put("LEGACY_HEADER_ROUTINE_ID", LEGACY_HEADER_ROUTINE_ID);
             info.put("LEGACY_HEADER_ROUTINE_TIMESTAMP", LEGACY_HEADER_ROUTINE_TIMESTAMP);
             info.put("LEGACY_HEADER_ROUTINE_SIGNATURE", LEGACY_HEADER_ROUTINE_SIGNATURE);
