@@ -119,10 +119,10 @@ public class OpflowServerlet implements AutoCloseable {
             if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(rpcWorkerCfg))) {
                 throw new OpflowBootstrapException("Duplicated RpcWorker connection parameters (exchangeName-routingKey)");
             }
-            if (rpcWorkerCfg.get("operatorName") != null && !checkQueue.add(rpcWorkerCfg.get("operatorName").toString())) {
+            if (rpcWorkerCfg.get(OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME) != null && !checkQueue.add(rpcWorkerCfg.get(OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME).toString())) {
                 throw new OpflowBootstrapException("RpcWorker[operatorName] must not be duplicated");
             }
-            if (rpcWorkerCfg.get("responseName") != null && !checkQueue.add(rpcWorkerCfg.get("responseName").toString())) {
+            if (rpcWorkerCfg.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME) != null && !checkQueue.add(rpcWorkerCfg.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME).toString())) {
                 throw new OpflowBootstrapException("RpcWorker[responseName] must not be duplicated");
             }
         }

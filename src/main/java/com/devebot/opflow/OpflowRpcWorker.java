@@ -52,15 +52,15 @@ public class OpflowRpcWorker implements AutoCloseable {
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "rpc_worker");
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, "direct");
         
-        operatorName = (String) params.get("operatorName");
-        responseName = (String) params.get("responseName");
+        operatorName = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME);
+        responseName = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME);
         
         if (operatorName != null && responseName != null && operatorName.equals(responseName)) {
             throw new OpflowBootstrapException("operatorName should be different with responseName");
         }
         
-        if (params.get("prefetchCount") != null && params.get("prefetchCount") instanceof Integer) {
-            prefetchCount = (Integer) params.get("prefetchCount");
+        if (params.get(OpflowConstant.OPFLOW_DISPATCH_PREFETCH_COUNT) instanceof Integer) {
+            prefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_DISPATCH_PREFETCH_COUNT);
         } else {
             prefetchCount = null;
         }

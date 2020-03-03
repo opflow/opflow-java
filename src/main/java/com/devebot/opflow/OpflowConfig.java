@@ -66,12 +66,12 @@ public class OpflowConfig {
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
                 "autorun",
-                "responseName",
-                "responseQueueSuffix",
-                "responseDurable",
-                "responseExclusive",
-                "responseAutoDelete",
-                "prefetchCount",
+                OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME,
+                OpflowConstant.OPFLOW_CALLBACK_QUEUE_SUFFIX,
+                OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE,
+                OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE,
+                OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE,
+                OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT,
             });
 
             transformParameters(params);
@@ -102,13 +102,13 @@ public class OpflowConfig {
             Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID});
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
-                "operatorName",
-                "responseName",
-                "prefetchCount",
+                OpflowConstant.OPFLOW_DISPATCH_PREFETCH_COUNT,
+                OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME,
+                OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME
             });
 
-            if (handlerNode.get("operatorName") == null) {
-                params.put("operatorName", opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
+            if (handlerNode.get(OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME) == null) {
+                params.put(OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME, opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
             }
 
             transformParameters(params);
@@ -208,12 +208,12 @@ public class OpflowConfig {
                 if (CONST.COMPNAME_RPC_MASTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "expiration",
-                        "responseName",
-                        "responseQueueSuffix",
-                        "responseDurable",
-                        "responseExclusive",
-                        "responseAutoDelete",
-                        "prefetchCount",
+                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME,
+                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_SUFFIX,
+                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE,
+                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE,
+                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE,
+                        OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT,
                         "monitorId",
                         "monitorEnabled",
                         "monitorInterval",
@@ -278,9 +278,9 @@ public class OpflowConfig {
                 componentCfg.put("enabled", componentNode.get("enabled"));
                 if (CONST.COMPNAME_RPC_WORKER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        "prefetchCount",
-                        "operatorName",
-                        "responseName"
+                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME,
+                        OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME,
+                        OpflowConstant.OPFLOW_DISPATCH_PREFETCH_COUNT
                     });
                 }
                 if (CONST.COMPNAME_SUBSCRIBER.equals(componentName)) {
@@ -355,11 +355,11 @@ public class OpflowConfig {
         "active", "autorun", "enabled", "verbose", "strictMode",
         "automaticRecoveryEnabled", "topologyRecoveryEnabled",
         "monitorEnabled", "pauseEnabled", "semaphoreEnabled",
-        "responseDurable", "responseExclusive", "responseAutoDelete"
+        OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE, OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE, OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE
     };
 
     private static final String[] STRING_FIELDS = new String[] {
-        "responseQueueSuffix"
+        OpflowConstant.OPFLOW_CALLBACK_QUEUE_SUFFIX
     };
     
     private static final String[] STRING_ARRAY_FIELDS = new String[] { "credentials", OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS };
