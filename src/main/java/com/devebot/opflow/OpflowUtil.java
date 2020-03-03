@@ -572,11 +572,11 @@ public class OpflowUtil {
     }
     
     public static boolean isAMQPEntrypointNull(Map<String, Object> cfg) {
-        return cfg.get("exchangeName") == null || cfg.get("routingKey") == null;
+        return cfg.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME) == null || cfg.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY) == null;
     }
     
     public static String getAMQPEntrypointCode(Map<String, Object> cfg) {
-        return cfg.get("exchangeName").toString() + cfg.get("routingKey").toString();
+        return cfg.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME).toString() + cfg.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY).toString();
     }
     
     public static String getClassSimpleName(Class clazz) {

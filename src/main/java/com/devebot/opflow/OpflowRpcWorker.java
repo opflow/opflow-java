@@ -232,12 +232,12 @@ public class OpflowRpcWorker implements AutoCloseable {
                 .stringify());
     }
 
-    public OpflowExecutor getExecutor() {
-        return executor;
-    }
-
     public OpflowEngine getEngine() {
         return engine;
+    }
+
+    public OpflowExecutor getExecutor() {
+        return executor;
     }
 
     public String getComponentId() {

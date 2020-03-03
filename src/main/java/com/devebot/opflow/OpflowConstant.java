@@ -24,14 +24,18 @@ public class OpflowConstant {
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
 
+    public final static String OPFLOW_COMMON_APP_ID = "applicationId";
+
     public final static String OPFLOW_PRODUCING_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_PRODUCING_EXCHANGE_TYPE = "exchangeType";
     public final static String OPFLOW_PRODUCING_EXCHANGE_DURABLE = "exchangeDurable";
+    public final static String OPFLOW_PRODUCING_ROUTING_KEY = "routingKey";
 
     public final static String OPFLOW_CONSUMING_QUEUE_NAME = "queueName";
     public final static String OPFLOW_CONSUMING_QUEUE_AUTO_DELETE = "autoDelete";
     public final static String OPFLOW_CONSUMING_QUEUE_DURABLE = "durable";
     public final static String OPFLOW_CONSUMING_QUEUE_EXCLUSIVE = "exclusive";
+    public final static String OPFLOW_CONSUMING_BINDING_KEYS = "otherKeys";
     public final static String OPFLOW_CONSUMING_PREFETCH_COUNT = "prefetchCount";
     public final static String OPFLOW_CONSUMING_AUTO_ACK = "autoAck";
     public final static String OPFLOW_CONSUMING_AUTO_BINDING = "binding";

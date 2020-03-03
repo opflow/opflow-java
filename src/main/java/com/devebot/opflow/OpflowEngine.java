@@ -46,7 +46,8 @@ public class OpflowEngine implements AutoCloseable {
         OpflowConstant.AMQP_CONARG_VHOST, OpflowConstant.AMQP_CONARG_USERNAME, OpflowConstant.AMQP_CONARG_PASSWORD,
         OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX, OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX, OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT,
         "threadPoolType", "threadPoolSize",
-        "exchangeName", "exchangeType", "exchangeDurable", "routingKey", "otherKeys", "applicationId",
+        OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE,
+        OpflowConstant.OPFLOW_COMMON_APP_ID, OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS,
         OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED, OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED, OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL,
         "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
     };
@@ -349,17 +350,21 @@ public class OpflowEngine implements AutoCloseable {
         }
         
         try {
-            if (params.get("exchangeName") instanceof String) {
-                exchangeName = (String) params.get("exchangeName");
+            if (params.get(OpflowConstant.OPFLOW_COMMON_APP_ID) instanceof String) {
+                applicationId = (String) params.get(OpflowConstant.OPFLOW_COMMON_APP_ID);
             }
             
-            if (params.get("exchangeType") instanceof String) {
-                exchangeType = (String) params.get("exchangeType");
+            if (params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME) instanceof String) {
+                exchangeName = (String) params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME);
+            }
+            
+            if (params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE) instanceof String) {
+                exchangeType = (String) params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE);
             }
             if (exchangeType == null) exchangeType = "direct";
             
-            if (params.get("exchangeDurable") instanceof Boolean) {
-                exchangeDurable = (Boolean) params.get("exchangeDurable");
+            if (params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE) instanceof Boolean) {
+                exchangeDurable = (Boolean) params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE);
             }
             if (exchangeDurable == null) exchangeDurable = true;
             
@@ -367,16 +372,12 @@ public class OpflowEngine implements AutoCloseable {
                 getProducingChannel().exchangeDeclare(exchangeName, exchangeType, exchangeDurable);
             }
             
-            if (params.get("routingKey") instanceof String) {
-                routingKey = (String) params.get("routingKey");
+            if (params.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY) instanceof String) {
+                routingKey = (String) params.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY);
             }
             
-            if (params.get("otherKeys") instanceof String[]) {
-                otherKeys = (String[])params.get("otherKeys");
-            }
-            
-            if (params.get("applicationId") instanceof String) {
-                applicationId = (String) params.get("applicationId");
+            if (params.get(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS) instanceof String[]) {
+                otherKeys = (String[])params.get(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS);
             }
             
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -451,12 +452,12 @@ public class OpflowEngine implements AutoCloseable {
             String requestKey = this.routingKey;
             
             if (override != null) {
-                if (override.get("routingKey") != null) {
-                    requestKey = (String) override.get("routingKey");
+                if (override.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY) != null) {
+                    requestKey = (String) override.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY);
                 }
 
-                if (override.get("applicationId") != null) {
-                    appId = (String) override.get("applicationId");
+                if (override.get(OpflowConstant.OPFLOW_COMMON_APP_ID) != null) {
+                    appId = (String) override.get(OpflowConstant.OPFLOW_COMMON_APP_ID);
                 }
 
                 if (override.get("correlationId") != null) {

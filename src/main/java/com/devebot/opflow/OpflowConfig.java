@@ -362,7 +362,7 @@ public class OpflowConfig {
         "responseQueueSuffix"
     };
     
-    private static final String[] STRING_ARRAY_FIELDS = new String[] { "credentials", "otherKeys" };
+    private static final String[] STRING_ARRAY_FIELDS = new String[] { "credentials", OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS };
     
     private static final String[] INTEGER_FIELDS = new String[] {
         "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", "semaphoreLimit", "length",
