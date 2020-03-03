@@ -108,7 +108,11 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Engine[${engineId}][${instanceId}] - apply the protocol version [${protoVersion}] with AMQP headers: [${headers}]")
                 .stringify());
         
-        mode = params.containsKey("mode") ? params.get("mode").toString() : "engine";
+        mode = CONST.COMPNAME_ENGINE;
+        if (params.containsKey(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER)) {
+            mode = params.get(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER).toString();
+        }
+        
         try {
             factory = new ConnectionFactory();
             
@@ -460,12 +464,8 @@ public class OpflowEngine implements AutoCloseable {
                     appId = (String) override.get(OpflowConstant.OPFLOW_COMMON_APP_ID);
                 }
 
-                if (override.get("correlationId") != null) {
-                    propBuilder.correlationId(override.get("correlationId").toString());
-                }
-
-                if (override.get("replyTo") != null) {
-                    propBuilder.replyTo(override.get("replyTo").toString());
+                if (override.get(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO) != null) {
+                    propBuilder.replyTo(override.get(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO).toString());
                 }
             }
             
@@ -710,7 +710,7 @@ public class OpflowEngine implements AutoCloseable {
                     .stringify());
             ConsumerInfo info = new ConsumerInfo(_connection, !_forceNewConnection, 
                     _channel, !_forceNewChannel, _queueName, _fixedQueue, _consumerId, _consumerTag);
-            if ("engine".equals(mode)) consumerInfos.add(info);
+            if (CONST.COMPNAME_ENGINE.equals(mode)) consumerInfos.add(info);
             return info;
         } catch(IOException exception) {
             if (logConsume.ready(LOG, Level.ERROR)) LOG.error(logConsume
@@ -954,7 +954,7 @@ public class OpflowEngine implements AutoCloseable {
             }
         }
         
-        if ("engine".equals(mode)) {
+        if (CONST.COMPNAME_ENGINE.equals(mode)) {
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .put("mode", mode)
                     .text("Engine[${engineId}].close() - cancel consumers")

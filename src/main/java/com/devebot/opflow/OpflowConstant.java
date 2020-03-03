@@ -25,6 +25,7 @@ public class OpflowConstant {
     public final String REQUEST_TIME = "requestTime";
 
     public final static String OPFLOW_COMMON_APP_ID = "applicationId";
+    public final static String OPFLOW_COMMON_INSTANCE_OWNER = "mode";
 
     public final static String OPFLOW_PRODUCING_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_PRODUCING_EXCHANGE_TYPE = "exchangeType";
@@ -54,6 +55,7 @@ public class OpflowConstant {
     public final static String OPFLOW_CALLBACK_QUEUE_AUTO_DELETE = "responseAutoDelete";
     public final static String OPFLOW_CALLBACK_QUEUE_DURABLE = "responseDurable";
     public final static String OPFLOW_CALLBACK_QUEUE_EXCLUSIVE = "responseExclusive";
+    public final static String OPFLOW_CALLBACK_PREFETCH_COUNT = "prefetchCount";
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW/AMQP PROTOCOL
 
@@ -83,6 +85,7 @@ public class OpflowConstant {
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW COMPONENTS
 
+    public final String COMPNAME_ENGINE = "engine";
     public final String COMPNAME_COMMANDER = "commander";
     public final String COMPNAME_SERVERLET = "serverlet";
     public final String COMPNAME_PUBLISHER = "publisher";

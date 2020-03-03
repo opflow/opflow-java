@@ -49,8 +49,8 @@ public class OpflowRpcWorker implements AutoCloseable {
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
-        brokerParams.put("mode", "rpc_worker");
-        brokerParams.put("exchangeType", "direct");
+        brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "rpc_worker");
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, "direct");
         
         operatorName = (String) params.get("operatorName");
         responseName = (String) params.get("responseName");
