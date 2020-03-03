@@ -24,6 +24,28 @@ public class OpflowConstant {
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
 
+    public final static String OPFLOW_PRODUCING_EXCHANGE_NAME = "exchangeName";
+    public final static String OPFLOW_PRODUCING_EXCHANGE_TYPE = "exchangeType";
+    public final static String OPFLOW_PRODUCING_EXCHANGE_DURABLE = "exchangeDurable";
+
+    public final static String OPFLOW_CONSUMING_QUEUE_NAME = "queueName";
+    public final static String OPFLOW_CONSUMING_QUEUE_AUTO_DELETE = "autoDelete";
+    public final static String OPFLOW_CONSUMING_QUEUE_DURABLE = "durable";
+    public final static String OPFLOW_CONSUMING_QUEUE_EXCLUSIVE = "exclusive";
+    public final static String OPFLOW_CONSUMING_PREFETCH_COUNT = "prefetchCount";
+
+    public final static String OPFLOW_DISPATCH_EXCHANGE_NAME = "exchangeName";
+    public final static String OPFLOW_DISPATCH_EXCHANGE_TYPE = "exchangeType";
+    public final static String OPFLOW_DISPATCH_EXCHANGE_DURABLE = "exchangeDurable";
+    public final static String OPFLOW_DISPATCH_QUEUE_NAME = "operatorName";
+    public final static String OPFLOW_DISPATCH_PREFETCH_COUNT = "prefetchCount";
+
+    public final static String OPFLOW_CALLBACK_QUEUE_NAME = "responseName";
+    public final static String OPFLOW_CALLBACK_QUEUE_SUFFIX = "responseQueueSuffix";
+    public final static String OPFLOW_CALLBACK_QUEUE_AUTO_DELETE = "responseAutoDelete";
+    public final static String OPFLOW_CALLBACK_QUEUE_DURABLE = "responseDurable";
+    public final static String OPFLOW_CALLBACK_QUEUE_EXCLUSIVE = "responseExclusive";
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW/AMQP PROTOCOL
 
     public final String AMQP_PROTOCOL_VERSION;
@@ -95,10 +117,14 @@ public class OpflowConstant {
     public final static String AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED = "topologyRecoveryEnabled";
     public final static String AMQP_CONARG_NETWORK_RECOVERY_INTERVAL = "networkRecoveryInterval";
 
+    public final static String AMQP_PARAM_APP_ID = "appId";
+    public final static String AMQP_PARAM_MESSAGE_TTL = "expiration";
+    public final static String AMQP_PARAM_REPLY_TO = "replyTo";
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONSTRUCTORS
 
     private OpflowConstant() {
-        AMQP_PROTOCOL_VERSION = ENVTOOL.getSystemProperty("OPFLOW_AMQP_PROTOCOL_VERSION", "1");
+        AMQP_PROTOCOL_VERSION = ENVTOOL.getEnvironVariable("OPFLOW_AMQP_PROTOCOL_VERSION", "1");
         AMQP_HEADER_PROTOCOL_VERSION = "oxVersion";
         switch (AMQP_PROTOCOL_VERSION) {
             case "1":
@@ -121,9 +147,9 @@ public class OpflowConstant {
         AMQP_HEADER_CONSUMER_TAG = "consumerTag";
         AMQP_HEADER_RETURN_STATUS = "status";
         // Legacy supports for header names and pingpong routine signature
-        LEGACY_HEADER_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_SUPPORTED", null));
+        LEGACY_HEADER_ENABLED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_SUPPORTED", null));
         LEGACY_HEADER_APPLIED = LEGACY_HEADER_ENABLED && !"0".equals(AMQP_PROTOCOL_VERSION);
-        LEGACY_ROUTINE_PINGPONG_APPLIED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_LEGACY_PINGPONG", null));
+        LEGACY_ROUTINE_PINGPONG_APPLIED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_PINGPONG", null));
     }
 
     public Map<String, String> getProtocolInfo() {

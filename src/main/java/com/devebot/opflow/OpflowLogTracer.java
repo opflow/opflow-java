@@ -49,12 +49,12 @@ public class OpflowLogTracer {
 
     static {
         ALWAYS_ENABLED = new HashSet<>();
-        String[] _levels = ENVTOOL.getSystemProperty("OPFLOW_ALWAYS_ENABLED", "").split(",");
+        String[] _levels = ENVTOOL.getEnvironVariable("OPFLOW_ALWAYS_ENABLED", "").split(",");
         for(String _level: _levels) {
             ALWAYS_ENABLED.add(_level.trim());
         }
         
-        String treepath = ENVTOOL.getSystemProperty("OPFLOW_TRACKING_DEPTH", null);
+        String treepath = ENVTOOL.getEnvironVariable("OPFLOW_TRACKING_DEPTH", null);
         if (null == treepath) TRACKING_DEPTH = 2;
         else switch (treepath) {
             case "none":
@@ -71,16 +71,16 @@ public class OpflowLogTracer {
                 break;
         }
         
-        KEEP_ORDER = (ENVTOOL.getSystemProperty("OPFLOW_LOGKEEPORDER", null) == null);
+        KEEP_ORDER = (ENVTOOL.getEnvironVariable("OPFLOW_LOGKEEPORDER", null) == null);
         
-        TAGS_FIELD_NAME = ENVTOOL.getSystemProperty("OPFLOW_TAGS_FIELD_NAME", "_tags_");
-        TEXT_FIELD_NAME = ENVTOOL.getSystemProperty("OPFLOW_TEXT_FIELD_NAME", "_text_");
+        TAGS_FIELD_NAME = ENVTOOL.getEnvironVariable("OPFLOW_TAGS_FIELD_NAME", "_tags_");
+        TEXT_FIELD_NAME = ENVTOOL.getEnvironVariable("OPFLOW_TEXT_FIELD_NAME", "_text_");
         
-        IS_TRACING_ID_PREDEFINED = "true".equals(ENVTOOL.getSystemProperty("OPFLOW_TRACING_ID_PREDEFINED", null));
-        IS_TAGS_EMBEDDABLE = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_TAGS_EMBEDDABLE", null));
-        IS_TEXT_EMBEDDABLE = "false".equals(ENVTOOL.getSystemProperty("OPFLOW_TEXT_EMBEDDABLE", null));
-        IS_TEMPLATE_APPLIED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_TEMPLATE_APPLIED", null));
-        IS_INTERCEPTOR_ENABLED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_DEBUGLOG", null));
+        IS_TRACING_ID_PREDEFINED = "true".equals(ENVTOOL.getEnvironVariable("OPFLOW_TRACING_ID_PREDEFINED", null));
+        IS_TAGS_EMBEDDABLE = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_TAGS_EMBEDDABLE", null));
+        IS_TEXT_EMBEDDABLE = "false".equals(ENVTOOL.getEnvironVariable("OPFLOW_TEXT_EMBEDDABLE", null));
+        IS_TEMPLATE_APPLIED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_TEMPLATE_APPLIED", null));
+        IS_INTERCEPTOR_ENABLED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_DEBUGLOG", null));
         IS_STRINGIFY_ENABLED = true;
     }
     
@@ -100,7 +100,7 @@ public class OpflowLogTracer {
     public final static OpflowLogTracer ROOT = new OpflowLogTracer();
     
     public OpflowLogTracer() {
-        this(null, "instanceId", ENVTOOL.getSystemProperty("OPFLOW_INSTANCE_ID", OPFLOW_INSTANCE_ID), null);
+        this(null, "instanceId", ENVTOOL.getEnvironVariable("OPFLOW_INSTANCE_ID", OPFLOW_INSTANCE_ID), null);
     }
     
     private OpflowLogTracer(OpflowLogTracer ref, String key, Object value, Customizer customizer) {

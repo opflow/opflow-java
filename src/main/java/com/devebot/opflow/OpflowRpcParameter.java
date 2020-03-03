@@ -11,12 +11,13 @@ import java.util.Map;
  * @author acegik
  */
 public class OpflowRpcParameter implements Customizer {
+    private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
 
     private final static boolean IS_PING_LOGGING_OMITTED;
 
     static {
-        IS_PING_LOGGING_OMITTED = !"false".equals(OpflowEnvTool.instance.getSystemProperty("OPFLOW_OMIT_PING_LOGS", null));
+        IS_PING_LOGGING_OMITTED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_OMIT_PING_LOGS", null));
     }
 
     private final String routineId;

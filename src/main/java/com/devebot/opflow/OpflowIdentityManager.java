@@ -27,11 +27,11 @@ public class OpflowIdentityManager implements IdentityManager {
     private final Map<String, char[]> users;
 
     OpflowIdentityManager() {
-        this.users = initUserMap((String) null);
+        this.users = initUserMap((String[]) null);
     }
 
     OpflowIdentityManager(String credentials) {
-        this.users = initUserMap(credentials);
+        this.users = initUserMap(OpflowStringUtil.splitByComma(credentials));
     }
 
     OpflowIdentityManager(String[] userList) {
@@ -112,12 +112,12 @@ public class OpflowIdentityManager implements IdentityManager {
         return null;
     }
     
-    private Map<String, char[]> initUserMap(String credentials) {
-        return applyRootCredentials(toUserMap(credentials));
-    }
-    
     private Map<String, char[]> initUserMap(String[] userList) {
         return applyRootCredentials(toUserMap(userList));
+    }
+    
+    private Map<String, char[]> applyRootCredentials(Map<String, char[]> userMap) {
+        return mergeUserMap(userMap, toUserMap(ENVTOOL.getEnvironVariable("OPFLOW_ROOT_CREDENTIALS", "")));
     }
     
     private Map<String, char[]> toUserMap(String credentials) {
@@ -137,10 +137,6 @@ public class OpflowIdentityManager implements IdentityManager {
             }
         }
         return _users;
-    }
-    
-    private Map<String, char[]> applyRootCredentials(Map<String, char[]> userMap) {
-        return mergeUserMap(userMap, toUserMap(ENVTOOL.getSystemProperty("OPFLOW_ROOT_CREDENTIALS", "")));
     }
     
     private Map<String, char[]> mergeUserMap(Map<String, char[]> target, Map<String, char[]>...sources) {

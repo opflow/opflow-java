@@ -33,7 +33,7 @@ public class OpflowUtil {
     private final static boolean IS_PING_LOGGING_OMITTED;
     
     static {
-        IS_PING_LOGGING_OMITTED = !"false".equals(ENVTOOL.getSystemProperty("OPFLOW_OMIT_PING_LOGS", null));
+        IS_PING_LOGGING_OMITTED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_OMIT_PING_LOGS", null));
     }
     
     public static class OmitInternalOplogs implements OpflowLogTracer.Customizer {
