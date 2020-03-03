@@ -283,17 +283,17 @@ public class OpflowRpcMaster implements AutoCloseable {
         }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
             @Override
             public void transform(Map<String, Object> opts) {
-                opts.put("consumerId", _consumerId);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
                 if (!isTransient) {
-                    opts.put("queueName", responseName);
-                    if (responseDurable != null) opts.put("durable", responseDurable);
-                    if (responseExclusive != null) opts.put("exclusive", responseExclusive);
-                    if (responseAutoDelete != null) opts.put("autoDelete", responseAutoDelete);
-                    opts.put("consumerLimit", CONSUMER_MAX);
+                    opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, responseName);
+                    if (responseDurable != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_DURABLE, responseDurable);
+                    if (responseExclusive != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_EXCLUSIVE, responseExclusive);
+                    if (responseAutoDelete != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE, responseAutoDelete);
+                    opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_LIMIT, CONSUMER_MAX);
                     opts.put("forceNewChannel", Boolean.FALSE);
                 }
-                opts.put("binding", Boolean.FALSE);
-                opts.put("prefetchCount", prefetchCount);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING, Boolean.FALSE);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, prefetchCount);
             }
         }).toMap());
     }

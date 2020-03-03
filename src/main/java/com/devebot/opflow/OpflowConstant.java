@@ -33,6 +33,11 @@ public class OpflowConstant {
     public final static String OPFLOW_CONSUMING_QUEUE_DURABLE = "durable";
     public final static String OPFLOW_CONSUMING_QUEUE_EXCLUSIVE = "exclusive";
     public final static String OPFLOW_CONSUMING_PREFETCH_COUNT = "prefetchCount";
+    public final static String OPFLOW_CONSUMING_AUTO_ACK = "autoAck";
+    public final static String OPFLOW_CONSUMING_AUTO_BINDING = "binding";
+    public final static String OPFLOW_CONSUMING_REPLY_TO = "replyTo";
+    public final static String OPFLOW_CONSUMING_CONSUMER_ID = "consumerId";
+    public final static String OPFLOW_CONSUMING_CONSUMER_LIMIT = "consumerLimit";
 
     public final static String OPFLOW_DISPATCH_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_DISPATCH_EXCHANGE_TYPE = "exchangeType";

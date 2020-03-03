@@ -294,11 +294,11 @@ public class OpflowPubsubHandler implements AutoCloseable {
         }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
             @Override
             public void transform(Map<String, Object> opts) {
-                opts.put("consumerId", _consumerId);
-                opts.put("autoAck", Boolean.TRUE);
-                opts.put("queueName", subscriberName);
-                if (prefetchCount > 0) opts.put("prefetchCount", prefetchCount);
-                if (subscriberLimit > 0) opts.put("consumerLimit", subscriberLimit);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_ACK, Boolean.TRUE);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, subscriberName);
+                if (prefetchCount > 0) opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, prefetchCount);
+                if (subscriberLimit > 0) opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_LIMIT, subscriberLimit);
             }
         }).toMap());
         consumerInfos.add(consumer);

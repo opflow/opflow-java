@@ -108,7 +108,7 @@ public class OpflowConfig {
             });
 
             if (handlerNode.get("operatorName") == null) {
-                params.put("operatorName", opflowNode.get("queueName"));
+                params.put("operatorName", opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
             }
 
             transformParameters(params);
@@ -148,7 +148,7 @@ public class OpflowConfig {
             });
 
             if (handlerNode.get("subscriberName") == null) {
-                params.put("subscriberName", opflowNode.get("queueName"));
+                params.put("subscriberName", opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
             }
 
             transformParameters(params);

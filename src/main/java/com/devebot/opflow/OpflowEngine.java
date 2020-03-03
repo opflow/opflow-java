@@ -443,10 +443,6 @@ public class OpflowEngine implements AutoCloseable {
         produce(body, headers, null, override, null);
     }
     
-    public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, OpflowLogTracer reqTracer) {
-        produce(body, headers, propBuilder, null, reqTracer);
-    }
-    
     public void produce(final byte[] body, final Map<String, Object> headers, AMQP.BasicProperties.Builder propBuilder, Map<String, Object> override, OpflowLogTracer reqTracer) {
         propBuilder = (propBuilder == null) ? new AMQP.BasicProperties.Builder() : propBuilder;
         
@@ -513,7 +509,7 @@ public class OpflowEngine implements AutoCloseable {
     
     public ConsumerInfo consume(final OpflowListener listener, final Map<String, Object> options) {
         final Map<String, Object> opts = OpflowObjectTree.ensureNonNull(options);
-        final String _consumerId = OpflowUtil.getOptionField(opts, "consumerId", true);
+        final String _consumerId = OpflowUtil.getOptionField(opts, OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, true);
         final OpflowLogTracer logConsume = logTracer.branch("consumerId", _consumerId);
         
         if (logConsume.ready(LOG, Level.INFO)) LOG.info(logConsume
@@ -521,13 +517,13 @@ public class OpflowEngine implements AutoCloseable {
                 .stringify());
         try {
             final boolean _forceNewConnection = Boolean.TRUE.equals(opts.get("forceNewConnection"));
-            final Boolean _forceNewChannel = Boolean.TRUE.equals(opts.get("forceNewChannel"));
+            final boolean _forceNewChannel = Boolean.TRUE.equals(opts.get("forceNewChannel"));
             final Channel _channel = getConsumingChannel(_forceNewConnection, _forceNewChannel);
             final Connection _connection = _channel.getConnection();
             
             Integer _prefetchCount = null;
-            if (opts.get("prefetchCount") instanceof Integer) {
-                _prefetchCount = (Integer) opts.get("prefetchCount");
+            if (opts.get(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT) instanceof Integer) {
+                _prefetchCount = (Integer) opts.get(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT);
             }
             if (_prefetchCount != null && _prefetchCount > 0) {
                 _channel.basicQos(_prefetchCount);
@@ -535,10 +531,10 @@ public class OpflowEngine implements AutoCloseable {
             
             final String _queueName;
             final boolean _fixedQueue;
-            String opts_queueName = (String) opts.get("queueName");
-            final boolean opts_durable = !Boolean.FALSE.equals(opts.get("durable"));
-            final boolean opts_exclusive = Boolean.TRUE.equals(opts.get("exclusive"));
-            final boolean opts_autoDelete = Boolean.TRUE.equals(opts.get("autoDelete"));
+            String opts_queueName = (String) opts.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME);
+            final boolean opts_durable = !Boolean.FALSE.equals(opts.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_DURABLE));
+            final boolean opts_exclusive = Boolean.TRUE.equals(opts.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_EXCLUSIVE));
+            final boolean opts_autoDelete = Boolean.TRUE.equals(opts.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE));
             AMQP.Queue.DeclareOk _declareOk;
             if (opts_queueName != null) {
                 _declareOk = _channel.queueDeclare(opts_queueName, opts_durable, opts_exclusive, opts_autoDelete, null);
@@ -548,7 +544,7 @@ public class OpflowEngine implements AutoCloseable {
                 _fixedQueue = false;
             }
             _queueName = _declareOk.getQueue();
-            final Integer _consumerLimit = (Integer) opts.get("consumerLimit");
+            final Integer _consumerLimit = (Integer) opts.get(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_LIMIT);
             if (logConsume.ready(LOG, Level.TRACE)) LOG.trace(logConsume
                     .put("consumerCount", _declareOk.getConsumerCount())
                     .put("consumerLimit", _consumerLimit)
@@ -566,7 +562,7 @@ public class OpflowEngine implements AutoCloseable {
                 }
             }
             
-            final Boolean _binding = (Boolean) opts.get("binding");
+            final Boolean _binding = (Boolean) opts.get(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING);
             if (!Boolean.FALSE.equals(_binding) && exchangeName != null) {
                 if (routingKey != null) {
                     bindExchange(_channel, exchangeName, _queueName, routingKey);
@@ -577,7 +573,7 @@ public class OpflowEngine implements AutoCloseable {
             }
             
             final String _replyToName;
-            String opts_replyToName = (String) opts.get("replyTo");
+            String opts_replyToName = (String) opts.get(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO);
             if (opts_replyToName != null) {
                 _replyToName = _channel.queueDeclarePassive(opts_replyToName).getQueue();
             } else {
@@ -585,14 +581,14 @@ public class OpflowEngine implements AutoCloseable {
             }
             
             final Boolean _autoAck;
-            if (opts.get("autoAck") != null && opts.get("autoAck") instanceof Boolean) {
-                _autoAck = (Boolean) opts.get("autoAck");
+            if (opts.get(OpflowConstant.OPFLOW_CONSUMING_AUTO_ACK) instanceof Boolean) {
+                _autoAck = (Boolean) opts.get(OpflowConstant.OPFLOW_CONSUMING_AUTO_ACK);
             } else {
                 _autoAck = Boolean.TRUE;
             }
             
             final Boolean _requeueFailure;
-            if (opts.get("requeueFailure") != null && opts.get("requeueFailure") instanceof Boolean) {
+            if (opts.get("requeueFailure") instanceof Boolean) {
                 _requeueFailure = (Boolean) opts.get("requeueFailure");
             } else {
                 _requeueFailure = Boolean.FALSE;
@@ -756,7 +752,6 @@ public class OpflowEngine implements AutoCloseable {
         final OpflowLogTracer logCancel = logTracer.branch("consumerId", consumerInfo.getConsumerId());
         try {
             if (logCancel.ready(LOG, Level.DEBUG)) LOG.debug(logCancel
-                    .put("queueName", consumerInfo.getQueueName())
                     .text("Consumer[${consumerId}].cancelConsumer() - consumer will be cancelled")
                     .stringify());
 

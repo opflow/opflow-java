@@ -192,12 +192,12 @@ public class OpflowRpcWorker implements AutoCloseable {
         }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
             @Override
             public void transform(Map<String, Object> opts) {
-                opts.put("consumerId", _consumerId);
-                opts.put("queueName", operatorName);
-                opts.put("replyTo", responseName);
-                opts.put("binding", Boolean.TRUE);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, operatorName);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO, responseName);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING, Boolean.TRUE);
                 if (prefetchCount != null) {
-                    opts.put("prefetchCount", prefetchCount);
+                    opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, prefetchCount);
                 }
             }
         }).toMap());
