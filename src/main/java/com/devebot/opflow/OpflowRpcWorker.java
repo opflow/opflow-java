@@ -30,7 +30,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     private final OpflowExecutor executor;
     
     private final Integer prefetchCount;
-    private final String operatorName;
+    private final String dispatchName;
     private final String responseName;
     
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
@@ -52,11 +52,11 @@ public class OpflowRpcWorker implements AutoCloseable {
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "rpc_worker");
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, "direct");
         
-        operatorName = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME);
+        dispatchName = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME);
         responseName = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME);
         
-        if (operatorName != null && responseName != null && operatorName.equals(responseName)) {
-            throw new OpflowBootstrapException("operatorName should be different with responseName");
+        if (dispatchName != null && responseName != null && dispatchName.equals(responseName)) {
+            throw new OpflowBootstrapException("dispatchQueueName should be different with responseQueueName");
         }
         
         if (params.get(OpflowConstant.OPFLOW_DISPATCH_PREFETCH_COUNT) instanceof Integer) {
@@ -68,8 +68,8 @@ public class OpflowRpcWorker implements AutoCloseable {
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         
-        if (operatorName != null) {
-            executor.assertQueue(operatorName);
+        if (dispatchName != null) {
+            executor.assertQueue(dispatchName);
         }
         
         if (responseName != null) {
@@ -77,10 +77,10 @@ public class OpflowRpcWorker implements AutoCloseable {
         }
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .put("operatorName", operatorName)
+                .put("dispatchName", dispatchName)
                 .put("responseName", responseName)
                 .tags("RpcWorker.new() parameters")
-                .text("RpcWorker[${rpcWorkerId}].new() operatorName: '${operatorName}', responseName: '${responseName}'")
+                .text("RpcWorker[${rpcWorkerId}].new() dispatchQueueName: '${dispatchName}', responseQueueName: '${responseName}'")
                 .stringify());
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -193,7 +193,7 @@ public class OpflowRpcWorker implements AutoCloseable {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
-                opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, operatorName);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, dispatchName);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO, responseName);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING, Boolean.TRUE);
                 if (prefetchCount != null) {
@@ -245,7 +245,7 @@ public class OpflowRpcWorker implements AutoCloseable {
     }
     
     public String getDispatchName() {
-        return operatorName;
+        return dispatchName;
     }
 
     public String getCallbackName() {

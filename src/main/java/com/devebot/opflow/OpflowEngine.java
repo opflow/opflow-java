@@ -419,6 +419,10 @@ public class OpflowEngine implements AutoCloseable {
     public String getExchangeName() {
         return exchangeName;
     }
+    
+    public String getExchangeType() {
+        return exchangeType;
+    }
 
     public Boolean getExchangeDurable() {
         return exchangeDurable;

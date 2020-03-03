@@ -697,25 +697,26 @@ public class OpflowCommander implements AutoCloseable {
                                 OpflowEngine engine = rpcMaster.getEngine();
                                 
                                 opt2.put(CONST.COMPONENT_ID, rpcMaster.getComponentId());
-                                opt2.put("applicationId", engine.getApplicationId());
-                                opt2.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, engine.getExchangeName());
+                                opt2.put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId());
+                                opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, engine.getExchangeName());
 
                                 if (checkOption(flag, SCOPE_INFO)) {
-                                    opt2.put("exchangeDurable", engine.getExchangeDurable());
+                                    opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE, engine.getExchangeType());
+                                    opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE, engine.getExchangeDurable());
                                 }
 
-                                opt2.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, engine.getRoutingKey());
+                                opt2.put(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY, engine.getRoutingKey());
 
                                 if (checkOption(flag, SCOPE_INFO)) {
                                     opt2.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, engine.getOtherKeys());
                                 }
 
-                                opt2.put("callbackQueue", rpcMaster.getCallbackName());
+                                opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME, rpcMaster.getCallbackName());
 
                                 if (checkOption(flag, SCOPE_INFO)) {
-                                    opt2.put("callbackDurable", rpcMaster.getCallbackDurable());
-                                    opt2.put("callbackExclusive", rpcMaster.getCallbackExclusive());
-                                    opt2.put("callbackAutoDelete", rpcMaster.getCallbackAutoDelete());
+                                    opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE, rpcMaster.getCallbackAutoDelete());
+                                    opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE, rpcMaster.getCallbackDurable());
+                                    opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE, rpcMaster.getCallbackExclusive());
                                 }
 
                                 opt2.put("request", OpflowObjectTree.buildMap()

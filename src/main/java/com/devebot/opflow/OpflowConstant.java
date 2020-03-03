@@ -24,6 +24,7 @@ public class OpflowConstant {
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
 
+    // engine - rabbitMQ
     public final static String OPFLOW_COMMON_APP_ID = "applicationId";
     public final static String OPFLOW_COMMON_INSTANCE_OWNER = "mode";
 
@@ -44,11 +45,13 @@ public class OpflowConstant {
     public final static String OPFLOW_CONSUMING_CONSUMER_ID = "consumerId";
     public final static String OPFLOW_CONSUMING_CONSUMER_LIMIT = "consumerLimit";
 
+    // producer - master
     public final static String OPFLOW_DISPATCH_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_DISPATCH_EXCHANGE_TYPE = "exchangeType";
     public final static String OPFLOW_DISPATCH_EXCHANGE_DURABLE = "exchangeDurable";
     public final static String OPFLOW_DISPATCH_QUEUE_NAME = "operatorName";
     public final static String OPFLOW_DISPATCH_PREFETCH_COUNT = "prefetchCount";
+    public final static String OPFLOW_DISPATCH_ROUTING_KEY = "routingKey";
 
     public final static String OPFLOW_CALLBACK_QUEUE_NAME = "responseName";
     public final static String OPFLOW_CALLBACK_QUEUE_SUFFIX = "responseQueueSuffix";
@@ -56,6 +59,18 @@ public class OpflowConstant {
     public final static String OPFLOW_CALLBACK_QUEUE_DURABLE = "responseDurable";
     public final static String OPFLOW_CALLBACK_QUEUE_EXCLUSIVE = "responseExclusive";
     public final static String OPFLOW_CALLBACK_PREFETCH_COUNT = "prefetchCount";
+
+    // consumer - worker
+    public final static String OPFLOW_INCOMING_QUEUE_NAME = "operatorName";
+    public final static String OPFLOW_INCOMING_QUEUE_AUTO_DELETE = "responseAutoDelete";
+    public final static String OPFLOW_INCOMING_QUEUE_DURABLE = "responseDurable";
+    public final static String OPFLOW_INCOMING_QUEUE_EXCLUSIVE = "responseExclusive";
+    public final static String OPFLOW_INCOMING_PREFETCH_COUNT = "prefetchCount";
+
+    public final static String OPFLOW_OUTGOING_EXCHANGE_NAME = "exchangeName";
+    public final static String OPFLOW_OUTGOING_EXCHANGE_TYPE = "exchangeType";
+    public final static String OPFLOW_OUTGOING_EXCHANGE_DURABLE = "exchangeDurable";
+    public final static String OPFLOW_OUTGOING_ROUTING_KEY = "routingKey";
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW/AMQP PROTOCOL
 

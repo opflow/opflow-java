@@ -102,9 +102,9 @@ public class OpflowConfig {
             Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID});
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
-                OpflowConstant.OPFLOW_DISPATCH_PREFETCH_COUNT,
+                OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME,
                 OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME,
-                OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME
+                OpflowConstant.OPFLOW_DISPATCH_PREFETCH_COUNT
             });
 
             if (handlerNode.get(OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME) == null) {
@@ -353,7 +353,7 @@ public class OpflowConfig {
     
     private static final String[] BOOLEAN_FIELDS = new String[] {
         "active", "autorun", "enabled", "verbose", "strictMode",
-        "automaticRecoveryEnabled", "topologyRecoveryEnabled",
+        OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED, OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED,
         "monitorEnabled", "pauseEnabled", "semaphoreEnabled",
         OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE, OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE, OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE
     };

@@ -101,7 +101,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             }
         });
         
-        if (params.get("expiration") != null && params.get("expiration") instanceof Long) {
+        if (params.get("expiration") instanceof Long) {
             expiration = (Long) params.get("expiration");
         } else {
             expiration = 0;
@@ -156,21 +156,25 @@ public class OpflowRpcMaster implements AutoCloseable {
             executor.assertQueue(responseName, responseDurable, responseExclusive, responseAutoDelete);
         }
         
-        if (params.get("monitorEnabled") != null && params.get("monitorEnabled") instanceof Boolean) {
+        if (params.get("monitorEnabled") instanceof Boolean) {
             monitorEnabled = (Boolean) params.get("monitorEnabled");
         } else {
             monitorEnabled = true;
         }
         
-        monitorId = params.get("monitorId") instanceof String ? (String)params.get("monitorId") : componentId;
+        if (params.get("monitorId") instanceof String) {
+            monitorId = (String) params.get("monitorId");
+        } else {
+            monitorId = componentId;
+        }
         
-        if (params.get("monitorInterval") != null && params.get("monitorInterval") instanceof Integer) {
+        if (params.get("monitorInterval") instanceof Integer) {
             monitorInterval = (Integer) params.get("monitorInterval");
         } else {
             monitorInterval = 14000; // can run 2-3 times in 30s
         }
         
-        if (params.get("monitorTimeout") != null && params.get("monitorTimeout") instanceof Long) {
+        if (params.get("monitorTimeout") instanceof Long) {
             monitorTimeout = (Long) params.get("monitorTimeout");
         } else {
             monitorTimeout = 0;
