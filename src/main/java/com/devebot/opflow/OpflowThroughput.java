@@ -190,8 +190,8 @@ public class OpflowThroughput {
         public Meter(Map<String, Object> kwargs) {
             kwargs = OpflowObjectTree.ensureNonNull(kwargs);
             // load [active] value from the config, false by default
-            if (kwargs.get("active") instanceof Boolean) {
-                active = (Boolean) kwargs.get("active");
+            if (kwargs.get(OpflowConstant.OPFLOW_COMMON_ACTIVE) instanceof Boolean) {
+                active = (Boolean) kwargs.get(OpflowConstant.OPFLOW_COMMON_ACTIVE);
             }
             // updating interval
             if (kwargs.get("interval") instanceof Long) {
@@ -220,7 +220,7 @@ public class OpflowThroughput {
         public Map<String, Object> getMetadata() {
             return OpflowObjectTree.buildMap()
                     .put("throughput", OpflowObjectTree.buildMap()
-                            .put("active", active)
+                            .put(OpflowConstant.OPFLOW_COMMON_ACTIVE, active)
                             .put("interval", interval)
                             .put("length", length)
                             .toMap())

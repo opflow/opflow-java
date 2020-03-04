@@ -36,12 +36,18 @@ public class OpflowCommander implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
 
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
-        CONST.COMPNAME_CONFIGURER, CONST.COMPNAME_PUBLISHER, CONST.COMPNAME_RPC_MASTER
+        CONST.COMPNAME_CONFIGURER,
+        CONST.COMPNAME_PUBLISHER,
+        CONST.COMPNAME_RPC_MASTER
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
-        CONST.COMPNAME_REQ_EXTRACTOR, CONST.COMPNAME_RESTRICTOR, CONST.COMPNAME_RPC_WATCHER,
-        CONST.COMPNAME_SPEED_METER, CONST.COMPNAME_PROM_EXPORTER, CONST.COMPNAME_REST_SERVER
+        CONST.COMPNAME_REQ_EXTRACTOR,
+        CONST.COMPNAME_RESTRICTOR,
+        CONST.COMPNAME_RPC_WATCHER,
+        CONST.COMPNAME_SPEED_METER,
+        CONST.COMPNAME_PROM_EXPORTER,
+        CONST.COMPNAME_REST_SERVER
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
@@ -246,7 +252,7 @@ public class OpflowCommander implements AutoCloseable {
     public void setReservedWorkerEnabled(boolean enabled) {
         this.reservedWorkerEnabled = enabled;
     }
-
+    
     public RoutingHandler getDefaultHandlers() {
         if (restServer != null) {
             return restServer.getDefaultHandlers();
@@ -261,7 +267,7 @@ public class OpflowCommander implements AutoCloseable {
     public final void serve() {
         serve(null);
     }
-
+    
     public final void serve(RoutingHandler httpHandlers) {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}].serve() begin")
@@ -290,7 +296,7 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}].serve() end")
                 .stringify());
     }
-
+    
     @Override
     public final void close() {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -720,7 +726,7 @@ public class OpflowCommander implements AutoCloseable {
                                 }
 
                                 opt2.put("request", OpflowObjectTree.buildMap()
-                                        .put("expiration", rpcMaster.getExpiration())
+                                        .put(OpflowConstant.AMQP_PARAM_MESSAGE_TTL, rpcMaster.getExpiration())
                                         .toMap());
 
                                 if (checkOption(flag, SCOPE_INFO)) {
@@ -738,7 +744,7 @@ public class OpflowCommander implements AutoCloseable {
                     // RpcWatcher information
                     if (checkOption(flag, SCOPE_INFO)) {
                         opts.put(CONST.COMPNAME_RPC_WATCHER, OpflowObjectTree.buildMap()
-                                .put("enabled", rpcWatcher.isEnabled())
+                                .put(OpflowConstant.OPFLOW_COMMON_ENABLED, rpcWatcher.isEnabled())
                                 .put("interval", rpcWatcher.getInterval())
                                 .put("count", rpcWatcher.getCount())
                                 .put("congestive", rpcWatcher.isCongestive())
@@ -769,7 +775,7 @@ public class OpflowCommander implements AutoCloseable {
                             }).toMap());
                         } else {
                             opts.put(CONST.COMPNAME_RESTRICTOR, OpflowObjectTree.buildMap()
-                                    .put("enabled", false)
+                                    .put(OpflowConstant.OPFLOW_COMMON_ENABLED, false)
                                     .toMap());
                         }
                     }

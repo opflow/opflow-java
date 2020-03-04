@@ -33,6 +33,11 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_VERBOSE = "verbose";
     public final static String OPFLOW_COMMON_HOST = "host";
     public final static String OPFLOW_COMMON_PORTS = "ports";
+    
+    public final static String OPFLOW_RPC_MONITOR_ID = "monitorId";
+    public final static String OPFLOW_RPC_MONITOR_ENABLED = "monitorEnabled";
+    public final static String OPFLOW_RPC_MONITOR_INTERVAL = "monitorInterval";
+    public final static String OPFLOW_RPC_MONITOR_TIMEOUT = "monitorTimeout";
 
     public final static String OPFLOW_PRODUCING_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_PRODUCING_EXCHANGE_TYPE = "exchangeType";
@@ -62,7 +67,7 @@ public class OpflowConstant {
     public final static String OPFLOW_RESPONSE_QUEUE_AUTO_DELETE = "responseAutoDelete";
     public final static String OPFLOW_RESPONSE_QUEUE_DURABLE = "responseDurable";
     public final static String OPFLOW_RESPONSE_QUEUE_EXCLUSIVE = "responseExclusive";
-    public final static String OPFLOW_CALLBACK_PREFETCH_COUNT = "prefetchCount";
+    public final static String OPFLOW_RESPONSE_PREFETCH_COUNT = "prefetchCount";
 
     // consumer - worker
     public final static String OPFLOW_INCOMING_QUEUE_NAME = "operatorName";

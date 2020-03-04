@@ -106,8 +106,8 @@ public class OpflowRpcMaster implements AutoCloseable {
             }
         });
         
-        if (params.get("expiration") instanceof Long) {
-            expiration = (Long) params.get("expiration");
+        if (params.get(OpflowConstant.AMQP_PARAM_MESSAGE_TTL) instanceof Long) {
+            expiration = (Long) params.get(OpflowConstant.AMQP_PARAM_MESSAGE_TTL);
         } else {
             expiration = 0;
         }
@@ -151,8 +151,8 @@ public class OpflowRpcMaster implements AutoCloseable {
             responseQueueAutoDelete = responseQueueSuffix != null ? true : null;
         }
         
-        if (params.get(OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT) instanceof Integer) {
-            responsePrefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT);
+        if (params.get(OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT) instanceof Integer) {
+            responsePrefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT);
         } else {
             responsePrefetchCount = PREFETCH_NUM;
         }
@@ -161,26 +161,26 @@ public class OpflowRpcMaster implements AutoCloseable {
             executor.assertQueue(responseQueueName, responseQueueDurable, responseQueueExclusive, responseQueueAutoDelete);
         }
         
-        if (params.get("monitorEnabled") instanceof Boolean) {
-            monitorEnabled = (Boolean) params.get("monitorEnabled");
+        if (params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED) instanceof Boolean) {
+            monitorEnabled = (Boolean) params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED);
         } else {
             monitorEnabled = true;
         }
         
-        if (params.get("monitorId") instanceof String) {
-            monitorId = (String) params.get("monitorId");
+        if (params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ID) instanceof String) {
+            monitorId = (String) params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ID);
         } else {
             monitorId = componentId;
         }
         
-        if (params.get("monitorInterval") instanceof Integer) {
-            monitorInterval = (Integer) params.get("monitorInterval");
+        if (params.get(OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL) instanceof Integer) {
+            monitorInterval = (Integer) params.get(OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL);
         } else {
             monitorInterval = 14000; // can run 2-3 times in 30s
         }
         
-        if (params.get("monitorTimeout") instanceof Long) {
-            monitorTimeout = (Long) params.get("monitorTimeout");
+        if (params.get(OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT) instanceof Long) {
+            monitorTimeout = (Long) params.get(OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT);
         } else {
             monitorTimeout = 0;
         }

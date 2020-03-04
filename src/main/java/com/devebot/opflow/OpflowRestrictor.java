@@ -40,10 +40,10 @@ public class OpflowRestrictor {
         public OnOff(Map<String, Object> options) {
             options = OpflowObjectTree.ensureNonNull(options);
 
-            if (options.get("active") instanceof Boolean) {
-                active = (Boolean) options.get("active");
-            } if (options.get("enabled") instanceof Boolean) {
-                active = (Boolean) options.get("enabled");
+            if (options.get(OpflowConstant.OPFLOW_COMMON_ACTIVE) instanceof Boolean) {
+                active = (Boolean) options.get(OpflowConstant.OPFLOW_COMMON_ACTIVE);
+            } if (options.get(OpflowConstant.OPFLOW_COMMON_ENABLED) instanceof Boolean) {
+                active = (Boolean) options.get(OpflowConstant.OPFLOW_COMMON_ENABLED);
             } else {
                 active = true;
             }

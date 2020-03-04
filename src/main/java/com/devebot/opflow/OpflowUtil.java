@@ -568,7 +568,7 @@ public class OpflowUtil {
     }
     
     public static boolean isComponentEnabled(Map<String, Object> cfg) {
-        return cfg != null && !Boolean.FALSE.equals(cfg.get("enabled"));
+        return cfg != null && !Boolean.FALSE.equals(cfg.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
     }
     
     public static boolean isAMQPEntrypointNull(Map<String, Object> cfg) {

@@ -78,7 +78,7 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
                 OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE,
                 OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE,
-                OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT,
+                OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
             });
 
             transformParameters(params);
@@ -197,7 +197,7 @@ public class OpflowConfig {
                 } else {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
-                componentCfg.put("enabled", componentNode.get("enabled"));
+                componentCfg.put(OpflowConstant.OPFLOW_COMMON_ENABLED, componentNode.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
                 if (CONST.COMPNAME_REQ_EXTRACTOR.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         "getRequestIdClassName",
@@ -220,7 +220,7 @@ public class OpflowConfig {
                 }
                 if (CONST.COMPNAME_RPC_MASTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        "expiration",
+                        OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
                         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
                         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE,
                         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE,
@@ -232,11 +232,11 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
                         OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE,
                         OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE,
-                        OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT,
-                        "monitorId",
-                        "monitorEnabled",
-                        "monitorInterval",
-                        "monitorTimeout"
+                        OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
+                        OpflowConstant.OPFLOW_RPC_MONITOR_ID,
+                        OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED,
+                        OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL,
+                        OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
                     });
                 }
                 if (CONST.COMPNAME_RPC_WATCHER.equals(componentName)) {
@@ -246,7 +246,7 @@ public class OpflowConfig {
                 }
                 if (CONST.COMPNAME_SPEED_METER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        "active",
+                        OpflowConstant.OPFLOW_COMMON_ACTIVE,
                         "interval",
                         "length"
                     });
@@ -294,7 +294,7 @@ public class OpflowConfig {
                 Map<String, Object> componentCfg = new HashMap<>();
                 extractEngineParameters(componentCfg, config, componentPath);
                 Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
-                componentCfg.put("enabled", componentNode.get("enabled"));
+                componentCfg.put(OpflowConstant.OPFLOW_COMMON_ENABLED, componentNode.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
                 if (CONST.COMPNAME_RPC_WORKER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
@@ -350,7 +350,7 @@ public class OpflowConfig {
         }
         Map<String, Object> blank = new HashMap<>();
         if (disableByEmpty) {
-            blank.put("enabled", false);
+            blank.put(OpflowConstant.OPFLOW_COMMON_ENABLED, false);
         }
         return blank;
     }
@@ -377,16 +377,16 @@ public class OpflowConfig {
     }
     
     private static final String[] BOOLEAN_FIELDS = OpflowCollectionUtil.distinct(new String[] {
-        "active",
+        OpflowConstant.OPFLOW_COMMON_ACTIVE,
         OpflowConstant.OPFLOW_COMMON_AUTORUN,
-        "enabled",
-        "verbose",
+        OpflowConstant.OPFLOW_COMMON_ENABLED,
+        OpflowConstant.OPFLOW_COMMON_VERBOSE,
         "strictMode",
-        OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED,
-        OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED,
-        "monitorEnabled",
+        OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED,
         "pauseEnabled",
         "semaphoreEnabled",
+        OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED,
+        OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED,
         
         OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE,
         OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE,
@@ -424,10 +424,10 @@ public class OpflowConfig {
         "length",
         OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT,
         OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
-        OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT,
+        OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
         "subscriberLimit",
         "redeliveredLimit",
-        "monitorInterval",
+        OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL,
         "threadPoolSize"
     });
     
@@ -436,7 +436,11 @@ public class OpflowConfig {
     private static final String[] INTEGER_RANGE_FIELDS = new String[] { "ports" };
     
     private static final String[] LONGINT_FIELDS = OpflowCollectionUtil.distinct(new String[] {
-        "expiration", "interval", "monitorTimeout", "pauseTimeout", "semaphoreTimeout"
+        OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
+        "interval",
+        OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
+        "pauseTimeout",
+        "semaphoreTimeout"
     });
     
     private static void transformParameters(Map<String, Object> params) {
