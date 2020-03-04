@@ -297,6 +297,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_ACK, Boolean.TRUE);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, subscriberName);
+                opts.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, engine.getRoutingKey());
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, engine.getOtherKeys());
                 if (prefetchCount > 0) opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, prefetchCount);
                 if (subscriberLimit > 0) opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_LIMIT, subscriberLimit);
             }

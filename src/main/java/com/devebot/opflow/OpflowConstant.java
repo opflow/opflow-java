@@ -49,8 +49,6 @@ public class OpflowConstant {
     public final static String OPFLOW_DISPATCH_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_DISPATCH_EXCHANGE_TYPE = "exchangeType";
     public final static String OPFLOW_DISPATCH_EXCHANGE_DURABLE = "exchangeDurable";
-    public final static String OPFLOW_DISPATCH_QUEUE_NAME = "operatorName";
-    public final static String OPFLOW_DISPATCH_PREFETCH_COUNT = "prefetchCount";
     public final static String OPFLOW_DISPATCH_ROUTING_KEY = "routingKey";
 
     public final static String OPFLOW_CALLBACK_QUEUE_NAME = "responseName";
@@ -62,15 +60,16 @@ public class OpflowConstant {
 
     // consumer - worker
     public final static String OPFLOW_INCOMING_QUEUE_NAME = "operatorName";
-    public final static String OPFLOW_INCOMING_QUEUE_AUTO_DELETE = "responseAutoDelete";
-    public final static String OPFLOW_INCOMING_QUEUE_DURABLE = "responseDurable";
-    public final static String OPFLOW_INCOMING_QUEUE_EXCLUSIVE = "responseExclusive";
+    public final static String OPFLOW_INCOMING_QUEUE_AUTO_DELETE = "operatorAutoDelete";
+    public final static String OPFLOW_INCOMING_QUEUE_DURABLE = "operatorDurable";
+    public final static String OPFLOW_INCOMING_QUEUE_EXCLUSIVE = "operatorExclusive";
+    public final static String OPFLOW_INCOMING_BINDING_KEYS = "otherKeys";
     public final static String OPFLOW_INCOMING_PREFETCH_COUNT = "prefetchCount";
 
-    public final static String OPFLOW_OUTGOING_EXCHANGE_NAME = "exchangeName";
-    public final static String OPFLOW_OUTGOING_EXCHANGE_TYPE = "exchangeType";
-    public final static String OPFLOW_OUTGOING_EXCHANGE_DURABLE = "exchangeDurable";
-    public final static String OPFLOW_OUTGOING_ROUTING_KEY = "routingKey";
+    public final static String OPFLOW_OUTGOING_EXCHANGE_NAME = "outgoingExchangeName";
+    public final static String OPFLOW_OUTGOING_EXCHANGE_TYPE = "outgoingExchangeType";
+    public final static String OPFLOW_OUTGOING_EXCHANGE_DURABLE = "outgoingExchangeDurable";
+    public final static String OPFLOW_OUTGOING_ROUTING_KEY = "outgoingRoutingKey";
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW/AMQP PROTOCOL
 

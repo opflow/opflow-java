@@ -28,10 +28,15 @@ public class OpflowRpcWorker implements AutoCloseable {
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
-    
-    private final Integer prefetchCount;
+
     private final String dispatchName;
+    private final Boolean incomingQueueAutoDelete;
+    private final Boolean incomingQueueDurable;
+    private final Boolean incomingQueueExclusive;
     private final String responseName;
+    private String routingKey;
+    private String[] bindingKeys;
+    private final Integer prefetchCount;
     
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
@@ -50,17 +55,43 @@ public class OpflowRpcWorker implements AutoCloseable {
         brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "rpc_worker");
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, "direct");
-        
-        dispatchName = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_QUEUE_NAME);
+
+        dispatchName = (String) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
         responseName = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME);
         
         if (dispatchName != null && responseName != null && dispatchName.equals(responseName)) {
             throw new OpflowBootstrapException("dispatchQueueName should be different with responseQueueName");
         }
         
-        if (params.get(OpflowConstant.OPFLOW_DISPATCH_PREFETCH_COUNT) instanceof Integer) {
-            prefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_DISPATCH_PREFETCH_COUNT);
+        if (params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE) instanceof Boolean) {
+            incomingQueueAutoDelete = (Boolean) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE);
+        } else {
+            incomingQueueAutoDelete = null;
+        }
+        
+        if (params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE) instanceof Boolean) {
+            incomingQueueDurable = (Boolean) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE);
+        } else {
+            incomingQueueDurable = null;
+        }
+        
+        if (params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE) instanceof Boolean) {
+            incomingQueueExclusive = (Boolean) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE);
+        } else {
+            incomingQueueExclusive = null;
+        }
+        
+        // Deprecated
+        if (params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY) instanceof String) {
+            routingKey = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY);
+        }
+
+        if (params.get(OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS) instanceof String[]) {
+            bindingKeys = (String[])params.get(OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS);
+        }
+        
+        if (params.get(OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT) instanceof Integer) {
+            prefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT);
         } else {
             prefetchCount = null;
         }
@@ -194,6 +225,11 @@ public class OpflowRpcWorker implements AutoCloseable {
             public void transform(Map<String, Object> opts) {
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, dispatchName);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE, incomingQueueAutoDelete);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_DURABLE, incomingQueueDurable);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_EXCLUSIVE, incomingQueueExclusive);
+                opts.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, routingKey);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, bindingKeys);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO, responseName);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING, Boolean.TRUE);
                 if (prefetchCount != null) {

@@ -42,14 +42,31 @@ public class OpflowEngine implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
     public static final String[] PARAMETER_NAMES = new String[] {
-        OpflowConstant.AMQP_CONARG_URI, OpflowConstant.AMQP_CONARG_HOST, OpflowConstant.AMQP_CONARG_PORT,
-        OpflowConstant.AMQP_CONARG_VHOST, OpflowConstant.AMQP_CONARG_USERNAME, OpflowConstant.AMQP_CONARG_PASSWORD,
-        OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX, OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX, OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT,
+        OpflowConstant.AMQP_CONARG_URI,
+        OpflowConstant.AMQP_CONARG_HOST,
+        OpflowConstant.AMQP_CONARG_PORT,
+        OpflowConstant.AMQP_CONARG_VHOST,
+        OpflowConstant.AMQP_CONARG_USERNAME,
+        OpflowConstant.AMQP_CONARG_PASSWORD,
+        OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX,
+        OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX,
+        OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT,
+        OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED,
+        OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED,
+        OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL,
+        OpflowConstant.OPFLOW_COMMON_APP_ID,
         "threadPoolType", "threadPoolSize",
-        OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE,
-        OpflowConstant.OPFLOW_COMMON_APP_ID, OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS,
-        OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED, OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED, OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL,
-        "pkcs12File", "pkcs12Passphrase", "caCertFile", "serverCertFile", "trustStoreFile", "trustPassphrase"
+        OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME,
+        OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE,
+        OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE,
+        OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY,
+        OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS,
+        "pkcs12File",
+        "pkcs12Passphrase",
+        "caCertFile",
+        "serverCertFile",
+        "trustStoreFile",
+        "trustPassphrase"
     };
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
@@ -567,13 +584,15 @@ public class OpflowEngine implements AutoCloseable {
                 }
             }
             
+            final String _routingKey = (String) opts.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY);
+            final String[] _bindingKeys = (String[]) opts.get(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS);
             final Boolean _binding = (Boolean) opts.get(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING);
             if (!Boolean.FALSE.equals(_binding) && exchangeName != null) {
-                if (routingKey != null) {
-                    bindExchange(_channel, exchangeName, _queueName, routingKey);
+                if (_routingKey != null) {
+                    bindExchange(_channel, exchangeName, _queueName, _routingKey);
                 }
-                if (otherKeys != null) {
-                    bindExchange(_channel, exchangeName, _queueName, otherKeys);
+                if (_bindingKeys != null) {
+                    bindExchange(_channel, exchangeName, _queueName, _bindingKeys);
                 }
             }
             

@@ -77,10 +77,15 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
+        
         brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "rpc_master");
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, "direct");
+        
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.getOrDefault(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE, "direct"));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY));
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
