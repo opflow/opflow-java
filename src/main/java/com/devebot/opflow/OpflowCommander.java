@@ -711,12 +711,12 @@ public class OpflowCommander implements AutoCloseable {
                                     opt2.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, engine.getOtherKeys());
                                 }
 
-                                opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME, rpcMaster.getCallbackName());
+                                opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME, rpcMaster.getResponseQueueName());
 
                                 if (checkOption(flag, SCOPE_INFO)) {
-                                    opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE, rpcMaster.getCallbackAutoDelete());
-                                    opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE, rpcMaster.getCallbackDurable());
-                                    opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE, rpcMaster.getCallbackExclusive());
+                                    opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE, rpcMaster.getResponseQueueAutoDelete());
+                                    opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE, rpcMaster.getResponseQueueDurable());
+                                    opt2.put(OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE, rpcMaster.getResponseQueueExclusive());
                                 }
 
                                 opt2.put("request", OpflowObjectTree.buildMap()

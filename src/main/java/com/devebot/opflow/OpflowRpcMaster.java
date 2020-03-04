@@ -48,11 +48,11 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final OpflowExecutor executor;
     
     private final long expiration;
-    private final String responseName;
-    private final Boolean responseDurable;
-    private final Boolean responseExclusive;
-    private final Boolean responseAutoDelete;
-    private final Integer prefetchCount;
+    private final String responseQueueName;
+    private final Boolean responseQueueDurable;
+    private final Boolean responseQueueExclusive;
+    private final Boolean responseQueueAutoDelete;
+    private final Integer responsePrefetchCount;
     
     private final boolean monitorEnabled;
     private final String monitorId;
@@ -126,39 +126,39 @@ public class OpflowRpcMaster implements AutoCloseable {
             }
         }
         
-        String _callbackQueueName = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME);
-        if (_callbackQueueName != null) {
-            responseName = responseQueueSuffix != null ? _callbackQueueName + '_' + responseQueueSuffix : _callbackQueueName;
+        String _responseQueueName = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME);
+        if (_responseQueueName != null) {
+            responseQueueName = responseQueueSuffix != null ? _responseQueueName + '_' + responseQueueSuffix : _responseQueueName;
         } else {
-            responseName = null;
+            responseQueueName = null;
         }
         
         if (params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE) instanceof Boolean) {
-            responseDurable = (Boolean) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE);
+            responseQueueDurable = (Boolean) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE);
         } else {
-            responseDurable = responseQueueSuffix != null ? false : null;
+            responseQueueDurable = responseQueueSuffix != null ? false : null;
         }
         
         if (params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE) instanceof Boolean) {
-            responseExclusive = (Boolean) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE);
+            responseQueueExclusive = (Boolean) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE);
         } else {
-            responseExclusive = responseQueueSuffix != null ? true : null;
+            responseQueueExclusive = responseQueueSuffix != null ? true : null;
         }
         
         if (params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE) instanceof Boolean) {
-            responseAutoDelete = (Boolean) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE);
+            responseQueueAutoDelete = (Boolean) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE);
         } else {
-            responseAutoDelete = responseQueueSuffix != null ? true : null;
+            responseQueueAutoDelete = responseQueueSuffix != null ? true : null;
         }
         
         if (params.get(OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT) instanceof Integer) {
-            prefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT);
+            responsePrefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT);
         } else {
-            prefetchCount = PREFETCH_NUM;
+            responsePrefetchCount = PREFETCH_NUM;
         }
         
-        if (responseName != null) {
-            executor.assertQueue(responseName, responseDurable, responseExclusive, responseAutoDelete);
+        if (responseQueueName != null) {
+            executor.assertQueue(responseQueueName, responseQueueDurable, responseQueueExclusive, responseQueueAutoDelete);
         }
         
         if (params.get("monitorEnabled") instanceof Boolean) {
@@ -193,11 +193,11 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("autorun", autorun)
-                .put("responseName", responseName)
-                .put("responseDurable", responseDurable)
-                .put("responseExclusive", responseExclusive)
-                .put("responseAutoDelete", responseAutoDelete)
-                .put("prefetchCount", prefetchCount)
+                .put("responseName", responseQueueName)
+                .put("responseDurable", responseQueueDurable)
+                .put("responseExclusive", responseQueueExclusive)
+                .put("responseAutoDelete", responseQueueAutoDelete)
+                .put("prefetchCount", responsePrefetchCount)
                 .put("monitorId", monitorId)
                 .put("monitorEnabled", monitorEnabled)
                 .put("monitorInterval", monitorInterval)
@@ -294,15 +294,14 @@ public class OpflowRpcMaster implements AutoCloseable {
             public void transform(Map<String, Object> opts) {
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
                 if (!isTransient) {
-                    opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, responseName);
-                    if (responseDurable != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_DURABLE, responseDurable);
-                    if (responseExclusive != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_EXCLUSIVE, responseExclusive);
-                    if (responseAutoDelete != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE, responseAutoDelete);
+                    opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, responseQueueName);
+                    if (responseQueueDurable != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_DURABLE, responseQueueDurable);
+                    if (responseQueueExclusive != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_EXCLUSIVE, responseQueueExclusive);
+                    if (responseQueueAutoDelete != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE, responseQueueAutoDelete);
                     opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_LIMIT, CONSUMER_MAX);
-                    opts.put("forceNewChannel", Boolean.FALSE);
                 }
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING, Boolean.FALSE);
-                opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, prefetchCount);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, responsePrefetchCount);
             }
         }).toMap());
     }
@@ -461,7 +460,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         OpflowUtil.setRoutineScope(headers, params.getRoutineScope());
         OpflowUtil.setRoutineTags(headers, params.getRoutineTags());
 
-        if (prefetchCount > 1) {
+        if (responsePrefetchCount > 1) {
             OpflowUtil.setProgressEnabled(headers, Boolean.FALSE);
         } else {
             OpflowUtil.setProgressEnabled(headers, params.getProgressEnabled());
@@ -645,20 +644,20 @@ public class OpflowRpcMaster implements AutoCloseable {
         return expiration;
     }
     
-    public String getCallbackName() {
-        return responseName;
+    public String getResponseQueueName() {
+        return responseQueueName;
     }
     
-    public Boolean getCallbackDurable() {
-        return responseDurable;
+    public Boolean getResponseQueueAutoDelete() {
+        return responseQueueAutoDelete;
     }
 
-    public Boolean getCallbackExclusive() {
-        return responseExclusive;
+    public Boolean getResponseQueueDurable() {
+        return responseQueueDurable;
     }
 
-    public Boolean getCallbackAutoDelete() {
-        return responseAutoDelete;
+    public Boolean getResponseQueueExclusive() {
+        return responseQueueExclusive;
     }
 
     @Override

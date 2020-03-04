@@ -34,12 +34,12 @@ public class OpflowPubsubHandler implements AutoCloseable {
 
     private final String subscriberName;
     private final String recyclebinName;
-    private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<>();
     private int prefetchCount = 0;
     private int subscriberLimit = 0;
     private int redeliveredLimit = 0;
     private OpflowPubsubListener listener;
 
+    private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<>();
     private final boolean autorun;
 
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
@@ -294,13 +294,14 @@ public class OpflowPubsubHandler implements AutoCloseable {
         }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
             @Override
             public void transform(Map<String, Object> opts) {
+                opts.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, engine.getExchangeName());
+                opts.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, engine.getRoutingKey());
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_ACK, Boolean.TRUE);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, subscriberName);
-                opts.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, engine.getRoutingKey());
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, engine.getOtherKeys());
-                if (prefetchCount > 0) opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, prefetchCount);
-                if (subscriberLimit > 0) opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_LIMIT, subscriberLimit);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, prefetchCount);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_LIMIT, subscriberLimit);
             }
         }).toMap());
         consumerInfos.add(consumer);

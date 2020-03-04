@@ -439,7 +439,7 @@ public class OpflowServerlet implements AutoCloseable {
                                     opts.put(CONST.COMPNAME_RPC_WORKER, OpflowObjectTree.buildMap()
                                             .put(CONST.COMPONENT_ID, rpcWorker.getComponentId())
                                             .put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId())
-                                            .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, rpcWorker.getDispatchName())
+                                            .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, rpcWorker.getIncomingQueueName())
                                             .put("request", OpflowObjectTree.buildMap()
                                                     .put("routineId", routineId)
                                                     .put("routineTimestamp", routineTimestamp)

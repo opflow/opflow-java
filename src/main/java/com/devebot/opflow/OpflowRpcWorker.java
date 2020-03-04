@@ -28,15 +28,18 @@ public class OpflowRpcWorker implements AutoCloseable {
     
     private final OpflowEngine engine;
     private final OpflowExecutor executor;
-
-    private final String dispatchName;
+    
+    private final String dispatchExchangeName;
+    private final String dispatchRoutingKey;
+    
+    private final String incomingQueueName;
     private final Boolean incomingQueueAutoDelete;
     private final Boolean incomingQueueDurable;
     private final Boolean incomingQueueExclusive;
-    private final String responseName;
-    private String routingKey;
-    private String[] bindingKeys;
-    private final Integer prefetchCount;
+    private final Integer incomingPrefetchCount;
+    private final String[] incomingBindingKeys;
+    
+    private final String responseQueueName;
     
     public OpflowRpcWorker(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
@@ -56,10 +59,24 @@ public class OpflowRpcWorker implements AutoCloseable {
         brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "rpc_worker");
 
-        dispatchName = (String) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
-        responseName = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME);
+        // Deprecated
+        if (params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME) instanceof String) {
+            dispatchExchangeName = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME);
+        } else {
+            dispatchExchangeName = null;
+        }
         
-        if (dispatchName != null && responseName != null && dispatchName.equals(responseName)) {
+        // Deprecated
+        if (params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY) instanceof String) {
+            dispatchRoutingKey = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY);
+        } else {
+            dispatchRoutingKey = null;
+        }
+        
+        incomingQueueName = (String) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
+        responseQueueName = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME);
+        
+        if (incomingQueueName != null && responseQueueName != null && incomingQueueName.equals(responseQueueName)) {
             throw new OpflowBootstrapException("dispatchQueueName should be different with responseQueueName");
         }
         
@@ -81,35 +98,32 @@ public class OpflowRpcWorker implements AutoCloseable {
             incomingQueueExclusive = null;
         }
         
-        // Deprecated
-        if (params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY) instanceof String) {
-            routingKey = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY);
-        }
-
         if (params.get(OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS) instanceof String[]) {
-            bindingKeys = (String[])params.get(OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS);
+            incomingBindingKeys = (String[])params.get(OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS);
+        } else {
+            incomingBindingKeys = null;
         }
         
         if (params.get(OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT) instanceof Integer) {
-            prefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT);
+            incomingPrefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT);
         } else {
-            prefetchCount = null;
+            incomingPrefetchCount = null;
         }
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
         
-        if (dispatchName != null) {
-            executor.assertQueue(dispatchName);
+        if (incomingQueueName != null) {
+            executor.assertQueue(incomingQueueName);
         }
         
-        if (responseName != null) {
-            executor.assertQueue(responseName);
+        if (responseQueueName != null) {
+            executor.assertQueue(responseQueueName);
         }
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .put("dispatchName", dispatchName)
-                .put("responseName", responseName)
+                .put("dispatchName", incomingQueueName)
+                .put("responseName", responseQueueName)
                 .tags("RpcWorker.new() parameters")
                 .text("RpcWorker[${rpcWorkerId}].new() dispatchQueueName: '${dispatchName}', responseQueueName: '${responseName}'")
                 .stringify());
@@ -223,18 +237,17 @@ public class OpflowRpcWorker implements AutoCloseable {
         }, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
             @Override
             public void transform(Map<String, Object> opts) {
+                opts.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, dispatchExchangeName);
+                opts.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, dispatchRoutingKey);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
-                opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, dispatchName);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, incomingQueueName);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE, incomingQueueAutoDelete);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_DURABLE, incomingQueueDurable);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_EXCLUSIVE, incomingQueueExclusive);
-                opts.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, routingKey);
-                opts.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, bindingKeys);
-                opts.put(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO, responseName);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, incomingBindingKeys);
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO, responseQueueName);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING, Boolean.TRUE);
-                if (prefetchCount != null) {
-                    opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, prefetchCount);
-                }
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, incomingPrefetchCount);
             }
         }).toMap());
         if (logProcess.ready(LOG, Level.INFO)) LOG.info(logProcess
@@ -280,12 +293,20 @@ public class OpflowRpcWorker implements AutoCloseable {
         return componentId;
     }
     
-    public String getDispatchName() {
-        return dispatchName;
+    public String getIncomingQueueName() {
+        return incomingQueueName;
     }
 
-    public String getCallbackName() {
-        return responseName;
+    public Boolean getIncomingQueueAutoDelete() {
+        return incomingQueueAutoDelete;
+    }
+
+    public Boolean getIncomingQueueDurable() {
+        return incomingQueueDurable;
+    }
+
+    public Boolean getIncomingQueueExclusive() {
+        return incomingQueueExclusive;
     }
     
     public class Middleware {

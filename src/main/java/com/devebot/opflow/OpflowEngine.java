@@ -584,15 +584,17 @@ public class OpflowEngine implements AutoCloseable {
                 }
             }
             
+            final String _exchangeName = (String) opts.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME);
             final String _routingKey = (String) opts.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY);
+
             final String[] _bindingKeys = (String[]) opts.get(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS);
-            final Boolean _binding = (Boolean) opts.get(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING);
-            if (!Boolean.FALSE.equals(_binding) && exchangeName != null) {
+            final Boolean _autoBinding = (Boolean) opts.get(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING);
+            if (!Boolean.FALSE.equals(_autoBinding) && _exchangeName != null) {
                 if (_routingKey != null) {
-                    bindExchange(_channel, exchangeName, _queueName, _routingKey);
+                    bindExchange(_channel, _exchangeName, _queueName, _routingKey);
                 }
                 if (_bindingKeys != null) {
-                    bindExchange(_channel, exchangeName, _queueName, _bindingKeys);
+                    bindExchange(_channel, _exchangeName, _queueName, _bindingKeys);
                 }
             }
             
