@@ -113,8 +113,8 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         String responseQueuePattern = null;
-        if (params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_SUFFIX) instanceof String) {
-            responseQueuePattern = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_SUFFIX);
+        if (params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX) instanceof String) {
+            responseQueuePattern = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX);
         }
         
         String responseQueueSuffix = null;
@@ -126,27 +126,27 @@ public class OpflowRpcMaster implements AutoCloseable {
             }
         }
         
-        String _responseQueueName = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME);
+        String _responseQueueName = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
         if (_responseQueueName != null) {
             responseQueueName = responseQueueSuffix != null ? _responseQueueName + '_' + responseQueueSuffix : _responseQueueName;
         } else {
             responseQueueName = null;
         }
         
-        if (params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE) instanceof Boolean) {
-            responseQueueDurable = (Boolean) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE);
+        if (params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE) instanceof Boolean) {
+            responseQueueDurable = (Boolean) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE);
         } else {
             responseQueueDurable = responseQueueSuffix != null ? false : null;
         }
         
-        if (params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE) instanceof Boolean) {
-            responseQueueExclusive = (Boolean) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE);
+        if (params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE) instanceof Boolean) {
+            responseQueueExclusive = (Boolean) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE);
         } else {
             responseQueueExclusive = responseQueueSuffix != null ? true : null;
         }
         
-        if (params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE) instanceof Boolean) {
-            responseQueueAutoDelete = (Boolean) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE);
+        if (params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE) instanceof Boolean) {
+            responseQueueAutoDelete = (Boolean) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE);
         } else {
             responseQueueAutoDelete = responseQueueSuffix != null ? true : null;
         }
@@ -185,8 +185,8 @@ public class OpflowRpcMaster implements AutoCloseable {
             monitorTimeout = 0;
         }
         
-        if (params.get("autorun") instanceof Boolean) {
-            autorun = (Boolean) params.get("autorun");
+        if (params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN) instanceof Boolean) {
+            autorun = (Boolean) params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN);
         } else {
             autorun = false;
         }

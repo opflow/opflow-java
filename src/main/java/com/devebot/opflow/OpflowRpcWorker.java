@@ -74,7 +74,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         }
         
         incomingQueueName = (String) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
-        responseQueueName = (String) params.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME);
+        responseQueueName = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
         
         if (incomingQueueName != null && responseQueueName != null && incomingQueueName.equals(responseQueueName)) {
             throw new OpflowBootstrapException("dispatchQueueName should be different with responseQueueName");

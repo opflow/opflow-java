@@ -27,6 +27,12 @@ public class OpflowConstant {
     // engine - rabbitMQ
     public final static String OPFLOW_COMMON_APP_ID = "applicationId";
     public final static String OPFLOW_COMMON_INSTANCE_OWNER = "mode";
+    public final static String OPFLOW_COMMON_ACTIVE = "active";
+    public final static String OPFLOW_COMMON_AUTORUN = "autorun";
+    public final static String OPFLOW_COMMON_ENABLED = "enabled";
+    public final static String OPFLOW_COMMON_VERBOSE = "verbose";
+    public final static String OPFLOW_COMMON_HOST = "host";
+    public final static String OPFLOW_COMMON_PORTS = "ports";
 
     public final static String OPFLOW_PRODUCING_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_PRODUCING_EXCHANGE_TYPE = "exchangeType";
@@ -51,11 +57,11 @@ public class OpflowConstant {
     public final static String OPFLOW_DISPATCH_EXCHANGE_DURABLE = "exchangeDurable";
     public final static String OPFLOW_DISPATCH_ROUTING_KEY = "routingKey";
 
-    public final static String OPFLOW_CALLBACK_QUEUE_NAME = "responseName";
-    public final static String OPFLOW_CALLBACK_QUEUE_SUFFIX = "responseQueueSuffix";
-    public final static String OPFLOW_CALLBACK_QUEUE_AUTO_DELETE = "responseAutoDelete";
-    public final static String OPFLOW_CALLBACK_QUEUE_DURABLE = "responseDurable";
-    public final static String OPFLOW_CALLBACK_QUEUE_EXCLUSIVE = "responseExclusive";
+    public final static String OPFLOW_RESPONSE_QUEUE_NAME = "responseName";
+    public final static String OPFLOW_RESPONSE_QUEUE_SUFFIX = "responseQueueSuffix";
+    public final static String OPFLOW_RESPONSE_QUEUE_AUTO_DELETE = "responseAutoDelete";
+    public final static String OPFLOW_RESPONSE_QUEUE_DURABLE = "responseDurable";
+    public final static String OPFLOW_RESPONSE_QUEUE_EXCLUSIVE = "responseExclusive";
     public final static String OPFLOW_CALLBACK_PREFETCH_COUNT = "prefetchCount";
 
     // consumer - worker
@@ -142,6 +148,13 @@ public class OpflowConstant {
     public final static String AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED = "automaticRecoveryEnabled";
     public final static String AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED = "topologyRecoveryEnabled";
     public final static String AMQP_CONARG_NETWORK_RECOVERY_INTERVAL = "networkRecoveryInterval";
+
+    public final static String AMQP_CONARG_PKCS12_FILE = "pkcs12File";
+    public final static String AMQP_CONARG_PKCS12_PASSPHRASE = "pkcs12Passphrase";
+    public final static String AMQP_CONARG_CA_CERT_FILE = "caCertFile";
+    public final static String AMQP_CONARG_SERVER_CERT_FILE = "serverCertFile";
+    public final static String AMQP_CONARG_TRUST_STORE_FILE = "trustStoreFile";
+    public final static String AMQP_CONARG_TRUST_PASSPHRASE = "trustPassphrase";
 
     public final static String AMQP_PARAM_APP_ID = "appId";
     public final static String AMQP_PARAM_MESSAGE_TTL = "expiration";

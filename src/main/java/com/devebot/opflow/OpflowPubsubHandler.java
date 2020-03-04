@@ -109,8 +109,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
         
-        if (params.get("autorun") instanceof Boolean) {
-            autorun = (Boolean) params.get("autorun");
+        if (params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN) instanceof Boolean) {
+            autorun = (Boolean) params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN);
         } else {
             autorun = false;
         }

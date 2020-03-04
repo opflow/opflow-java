@@ -54,6 +54,12 @@ public class OpflowEngine implements AutoCloseable {
         OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED,
         OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED,
         OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL,
+        OpflowConstant.AMQP_CONARG_PKCS12_FILE,
+        OpflowConstant.AMQP_CONARG_PKCS12_PASSPHRASE,
+        OpflowConstant.AMQP_CONARG_CA_CERT_FILE,
+        OpflowConstant.AMQP_CONARG_SERVER_CERT_FILE,
+        OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE,
+        OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE,
         OpflowConstant.OPFLOW_COMMON_APP_ID,
         "threadPoolType", "threadPoolSize",
         OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME,
@@ -61,12 +67,6 @@ public class OpflowEngine implements AutoCloseable {
         OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE,
         OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY,
         OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS,
-        "pkcs12File",
-        "pkcs12Passphrase",
-        "caCertFile",
-        "serverCertFile",
-        "trustStoreFile",
-        "trustPassphrase"
     };
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
@@ -269,8 +269,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String pkcs12File = null;
-            if (params.get("pkcs12File") instanceof String) {
-                pkcs12File = (String) params.get("pkcs12File");
+            if (params.get(OpflowConstant.AMQP_CONARG_PKCS12_FILE) instanceof String) {
+                pkcs12File = (String) params.get(OpflowConstant.AMQP_CONARG_PKCS12_FILE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("pkcs12File", pkcs12File)
                         .text("Engine[${engineId}] - PKCS12 file: ${pkcs12File}")
@@ -278,8 +278,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String pkcs12Passphrase = null;
-            if (params.get("pkcs12Passphrase") instanceof String) {
-                pkcs12Passphrase = (String) params.get("pkcs12Passphrase");
+            if (params.get(OpflowConstant.AMQP_CONARG_PKCS12_PASSPHRASE) instanceof String) {
+                pkcs12Passphrase = (String) params.get(OpflowConstant.AMQP_CONARG_PKCS12_PASSPHRASE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("pkcs12Passphrase", OpflowUtil.maskPassword(pkcs12Passphrase))
                         .text("Engine[${engineId}] - PKCS12 passphrase: ${pkcs12Passphrase}")
@@ -287,8 +287,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String caCertFile = null;
-            if (params.get("caCertFile") instanceof String) {
-                caCertFile = (String) params.get("caCertFile");
+            if (params.get(OpflowConstant.AMQP_CONARG_CA_CERT_FILE) instanceof String) {
+                caCertFile = (String) params.get(OpflowConstant.AMQP_CONARG_CA_CERT_FILE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("caCertFile", caCertFile)
                         .text("Engine[${engineId}] - CA file: ${caCertFile}")
@@ -296,8 +296,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String serverCertFile = null;
-            if (params.get("serverCertFile") instanceof String) {
-                serverCertFile = (String) params.get("serverCertFile");
+            if (params.get(OpflowConstant.AMQP_CONARG_SERVER_CERT_FILE) instanceof String) {
+                serverCertFile = (String) params.get(OpflowConstant.AMQP_CONARG_SERVER_CERT_FILE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("serverCertFile", serverCertFile)
                         .text("Engine[${engineId}] - server certificate file: ${serverCertFile}")
@@ -305,8 +305,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String trustStoreFile = null;
-            if (params.get("trustStoreFile") instanceof String) {
-                trustStoreFile = (String) params.get("trustStoreFile");
+            if (params.get(OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE) instanceof String) {
+                trustStoreFile = (String) params.get(OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("trustStoreFile", trustStoreFile)
                         .text("Engine[${engineId}] - trust keystore file: ${trustStoreFile}")
@@ -314,8 +314,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String trustPassphrase = null;
-            if (params.get("trustPassphrase") instanceof String) {
-                trustPassphrase = (String) params.get("trustPassphrase");
+            if (params.get(OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE) instanceof String) {
+                trustPassphrase = (String) params.get(OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("trustPassphrase", OpflowUtil.maskPassword(trustPassphrase))
                         .text("Engine[${engineId}] - trust keystore passphrase: ${trustPassphrase}")

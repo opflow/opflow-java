@@ -122,7 +122,7 @@ public class OpflowServerlet implements AutoCloseable {
             if (rpcWorkerCfg.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME) != null && !checkQueue.add(rpcWorkerCfg.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME).toString())) {
                 throw new OpflowBootstrapException("RpcWorker[incomingQueueName] must not be duplicated");
             }
-            if (rpcWorkerCfg.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME) != null && !checkQueue.add(rpcWorkerCfg.get(OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME).toString())) {
+            if (rpcWorkerCfg.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME) != null && !checkQueue.add(rpcWorkerCfg.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME).toString())) {
                 throw new OpflowBootstrapException("RpcWorker[responseQueueName] must not be duplicated");
             }
         }
@@ -567,7 +567,7 @@ public class OpflowServerlet implements AutoCloseable {
                     }
                 }
             };
-            if (Boolean.TRUE.equals(options.get("autorun"))) {
+            if (Boolean.TRUE.equals(options.get(OpflowConstant.OPFLOW_COMMON_AUTORUN))) {
                 process();
             }
         }

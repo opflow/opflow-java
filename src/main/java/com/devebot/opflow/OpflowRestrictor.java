@@ -53,8 +53,8 @@ public class OpflowRestrictor {
             return active;
         }
 
-        public void setActive(boolean enabled) {
-            this.active = enabled;
+        public void setActive(boolean active) {
+            this.active = active;
         }
         
         @Override

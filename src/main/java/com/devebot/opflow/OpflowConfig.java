@@ -66,18 +66,18 @@ public class OpflowConfig {
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
-                "autorun",
+                OpflowConstant.OPFLOW_COMMON_AUTORUN,
                 OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
                 OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE,
                 OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE,
                 OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
                 OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
                 OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
-                OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME,
-                OpflowConstant.OPFLOW_CALLBACK_QUEUE_SUFFIX,
-                OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE,
-                OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE,
-                OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE,
+                OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
+                OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX,
+                OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
+                OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE,
+                OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE,
                 OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT,
             });
 
@@ -109,7 +109,7 @@ public class OpflowConfig {
             Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID});
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
-                OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME,
+                OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
                 OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
                 OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
                 OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
@@ -152,7 +152,7 @@ public class OpflowConfig {
             Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID});
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
-                "autorun",
+                OpflowConstant.OPFLOW_COMMON_AUTORUN,
                 "subscriberName",
                 "recyclebinName",
                 "prefetchCount",
@@ -227,11 +227,11 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
                         OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
                         OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
-                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME,
-                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_SUFFIX,
-                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE,
-                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE,
-                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE,
+                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
+                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX,
+                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
+                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE,
+                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE,
                         OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT,
                         "monitorId",
                         "monitorEnabled",
@@ -297,7 +297,7 @@ public class OpflowConfig {
                 componentCfg.put("enabled", componentNode.get("enabled"));
                 if (CONST.COMPNAME_RPC_WORKER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_CALLBACK_QUEUE_NAME,
+                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
                         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
                         OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
                         OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
@@ -377,10 +377,16 @@ public class OpflowConfig {
     }
     
     private static final String[] BOOLEAN_FIELDS = OpflowCollectionUtil.distinct(new String[] {
-        "active", "autorun", "enabled", "verbose", "strictMode",
+        "active",
+        OpflowConstant.OPFLOW_COMMON_AUTORUN,
+        "enabled",
+        "verbose",
+        "strictMode",
         OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED,
         OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED,
-        "monitorEnabled", "pauseEnabled", "semaphoreEnabled",
+        "monitorEnabled",
+        "pauseEnabled",
+        "semaphoreEnabled",
         
         OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE,
         OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE,
@@ -388,9 +394,9 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_CONSUMING_QUEUE_EXCLUSIVE,
         
         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE,
-        OpflowConstant.OPFLOW_CALLBACK_QUEUE_AUTO_DELETE,
-        OpflowConstant.OPFLOW_CALLBACK_QUEUE_DURABLE,
-        OpflowConstant.OPFLOW_CALLBACK_QUEUE_EXCLUSIVE,
+        OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE,
+        OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
+        OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE,
         
         OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
         OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
@@ -399,7 +405,7 @@ public class OpflowConfig {
     });
 
     private static final String[] STRING_FIELDS = OpflowCollectionUtil.distinct(new String[] {
-        OpflowConstant.OPFLOW_CALLBACK_QUEUE_SUFFIX
+        OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX
     });
     
     private static final String[] STRING_ARRAY_FIELDS = OpflowCollectionUtil.distinct(new String[] {
@@ -409,20 +415,29 @@ public class OpflowConfig {
     });
     
     private static final String[] INTEGER_FIELDS = OpflowCollectionUtil.distinct(new String[] {
-        "port", "channelMax", "frameMax", "heartbeat", "networkRecoveryInterval", "semaphoreLimit", "length",
+        OpflowConstant.AMQP_CONARG_PORT,
+        OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX,
+        OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX,
+        OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT,
+        OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL,
+        "semaphoreLimit",
+        "length",
         OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT,
         OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
         OpflowConstant.OPFLOW_CALLBACK_PREFETCH_COUNT,
-        "subscriberLimit", "redeliveredLimit", "monitorInterval", "threadPoolSize"
+        "subscriberLimit",
+        "redeliveredLimit",
+        "monitorInterval",
+        "threadPoolSize"
     });
     
     private static final String[] INTEGER_ARRAY_FIELDS = new String[] { "ports" };
     
     private static final String[] INTEGER_RANGE_FIELDS = new String[] { "ports" };
     
-    private static final String[] LONGINT_FIELDS = new String[] {
+    private static final String[] LONGINT_FIELDS = OpflowCollectionUtil.distinct(new String[] {
         "expiration", "interval", "monitorTimeout", "pauseTimeout", "semaphoreTimeout"
-    };
+    });
     
     private static void transformParameters(Map<String, Object> params) {
         for(String key: params.keySet()) {
