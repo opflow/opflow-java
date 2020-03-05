@@ -37,6 +37,7 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_HOST = "host";
     public final static String OPFLOW_COMMON_PORTS = "ports";
     public final static String OPFLOW_COMMON_CREDENTIALS = "credentials";
+    public final static String OPFLOW_COMMON_CONGESTIVE = "congestive";
     
     public final static String OPFLOW_RPC_MONITOR_ID = "monitorId";
     public final static String OPFLOW_RPC_MONITOR_ENABLED = "monitorEnabled";

@@ -742,7 +742,7 @@ public class OpflowCommander implements AutoCloseable {
                                 .put(OpflowConstant.OPFLOW_COMMON_ENABLED, rpcWatcher.isEnabled())
                                 .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, rpcWatcher.getInterval())
                                 .put(OpflowConstant.OPFLOW_COMMON_COUNT, rpcWatcher.getCount())
-                                .put("congestive", rpcWatcher.isCongestive())
+                                .put(OpflowConstant.OPFLOW_COMMON_CONGESTIVE, rpcWatcher.isCongestive())
                                 .toMap());
                     }
                     

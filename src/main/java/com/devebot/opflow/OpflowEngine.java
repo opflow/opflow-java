@@ -468,18 +468,23 @@ public class OpflowEngine implements AutoCloseable {
         
         try {
             String appId = this.applicationId;
-            String requestKey = this.routingKey;
+            String reqExchangeName = this.exchangeName;
+            String reqRoutingKey = this.routingKey;
             
             if (override != null) {
-                if (override.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY) != null) {
-                    requestKey = (String) override.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY);
-                }
-
-                if (override.get(OpflowConstant.OPFLOW_COMMON_APP_ID) != null) {
+                if (override.get(OpflowConstant.OPFLOW_COMMON_APP_ID) instanceof String) {
                     appId = (String) override.get(OpflowConstant.OPFLOW_COMMON_APP_ID);
                 }
-
-                if (override.get(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO) != null) {
+                
+                if (override.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME) instanceof String) {
+                    reqExchangeName = (String) override.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME);
+                }
+                
+                if (override.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY) instanceof String) {
+                    reqRoutingKey = (String) override.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY);
+                }
+                
+                if (override.get(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO) instanceof String) {
                     propBuilder.replyTo(override.get(OpflowConstant.OPFLOW_CONSUMING_REPLY_TO).toString());
                 }
             }
@@ -497,7 +502,7 @@ public class OpflowEngine implements AutoCloseable {
             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                     .put("engineId", componentId)
                     .put("appId", appId)
-                    .put("customKey", requestKey)
+                    .put("customKey", reqRoutingKey)
                     .text("Request[${requestId}][${requestTime}][x-engine-msg-publish] - Engine[${engineId}][${instanceId}] - produce() is invoked")
                     .stringify());
             
@@ -505,7 +510,7 @@ public class OpflowEngine implements AutoCloseable {
             if (_channel == null || !_channel.isOpen()) {
                 throw new OpflowOperationException("Channel is null or has been closed");
             }
-            _channel.basicPublish(this.exchangeName, requestKey, propBuilder.build(), body);
+            _channel.basicPublish(reqExchangeName, reqRoutingKey, propBuilder.build(), body);
         } catch (IOException exception) {
             if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
                     .put("exceptionClass", exception.getClass().getName())
