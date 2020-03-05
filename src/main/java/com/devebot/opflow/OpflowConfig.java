@@ -158,15 +158,15 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
                 OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
                 OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS,
-                "subscriberName",
-                "recyclebinName",
-                "prefetchCount",
-                "subscriberLimit",
-                "redeliveredLimit",
+                OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
+                OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT,
+                OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT,
+                OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT,
+                OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME,
             });
 
-            if (handlerNode.get("subscriberName") == null) {
-                params.put("subscriberName", opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
+            if (handlerNode.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME) == null) {
+                params.put(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME, opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
             }
 
             transformParameters(params);
@@ -227,7 +227,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
                         OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                        "subscriberName"
+                        OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
                     });
                 }
                 if (CONST.COMPNAME_PUBLISHER.equals(componentName)) {
@@ -237,7 +237,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
                         OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                        "subscriberName",
+                        OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
                     });
                 }
                 if (CONST.COMPNAME_RPC_MASTER.equals(componentName)) {
@@ -342,7 +342,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
                         OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                        "subscriberName"
+                        OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
                     });
                 }
                 if (CONST.COMPNAME_SUBSCRIBER.equals(componentName)) {
@@ -352,8 +352,8 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
                         OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                        "subscriberName",
-                        "recyclebinName"
+                        OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
+                        OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME
                     });
                 }
                 if (CONST.COMPNAME_PROM_EXPORTER.equals(componentName)) {
@@ -469,8 +469,8 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT,
         OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
         OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
-        "subscriberLimit",
-        "redeliveredLimit",
+        OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT,
+        OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT,
         "threadPoolSize"
     });
     

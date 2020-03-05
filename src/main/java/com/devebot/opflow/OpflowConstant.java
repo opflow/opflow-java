@@ -77,15 +77,17 @@ public class OpflowConstant {
     public final static String OPFLOW_PUBSUB_ROUTING_KEY = "routingKey";
 
     public final static String OPFLOW_PUBSUB_BINDING_KEYS = "otherKeys";
-    public final static String OPFLOW_PUBSUB_QUEUE_NAME = "queueName";
-    public final static String OPFLOW_PUBSUB_QUEUE_AUTO_DELETE = "autoDelete";
-    public final static String OPFLOW_PUBSUB_QUEUE_DURABLE = "durable";
-    public final static String OPFLOW_PUBSUB_QUEUE_EXCLUSIVE = "exclusive";
+    public final static String OPFLOW_PUBSUB_QUEUE_NAME = "subscriberName";
+    public final static String OPFLOW_PUBSUB_QUEUE_DURABLE = "queueDurable";
+    public final static String OPFLOW_PUBSUB_QUEUE_EXCLUSIVE = "queueExclusive";
+    public final static String OPFLOW_PUBSUB_QUEUE_AUTO_DELETE = "queueAutoDelete";
     public final static String OPFLOW_PUBSUB_PREFETCH_COUNT = "prefetchCount";
     public final static String OPFLOW_PUBSUB_AUTO_BINDING = "binding";
     public final static String OPFLOW_PUBSUB_REPLY_TO = "replyTo";
     public final static String OPFLOW_PUBSUB_CONSUMER_ID = "consumerId";
-    public final static String OPFLOW_PUBSUB_CONSUMER_LIMIT = "consumerLimit";
+    public final static String OPFLOW_PUBSUB_CONSUMER_LIMIT = "subscriberLimit";
+    public final static String OPFLOW_PUBSUB_REDELIVERED_LIMIT = "redeliveredLimit";
+    public final static String OPFLOW_PUBSUB_TRASH_NAME = "recyclebinName";
 
     // producer - master
     public final static String OPFLOW_DISPATCH_EXCHANGE_NAME = "exchangeName";

@@ -295,9 +295,9 @@ public class OpflowRpcMaster implements AutoCloseable {
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
                 if (!isTransient) {
                     opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, responseQueueName);
-                    if (responseQueueDurable != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_DURABLE, responseQueueDurable);
-                    if (responseQueueExclusive != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_EXCLUSIVE, responseQueueExclusive);
-                    if (responseQueueAutoDelete != null) opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE, responseQueueAutoDelete);
+                    opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_DURABLE, responseQueueDurable);
+                    opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_EXCLUSIVE, responseQueueExclusive);
+                    opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_AUTO_DELETE, responseQueueAutoDelete);
                     opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_LIMIT, CONSUMER_MAX);
                 }
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_BINDING, Boolean.FALSE);

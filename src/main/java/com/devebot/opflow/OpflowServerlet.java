@@ -109,11 +109,11 @@ public class OpflowServerlet implements AutoCloseable {
                     throw new OpflowBootstrapException("Duplicated Configurer connection parameters (exchangeName-routingKey)");
                 }
             }
-            if (configurerCfg.get("subscriberName") != null && !checkQueue.add(configurerCfg.get("subscriberName").toString())) {
+            if (configurerCfg.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME) != null && !checkQueue.add(configurerCfg.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME).toString())) {
                 throw new OpflowBootstrapException("Configurer[subscriberName] must not be duplicated");
             }
-            if (configurerCfg.get("recyclebinName") != null) {
-                checkRecyclebin.add(configurerCfg.get("recyclebinName").toString());
+            if (configurerCfg.get(OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME) != null) {
+                checkRecyclebin.add(configurerCfg.get(OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME).toString());
             }
         }
 
@@ -137,11 +137,11 @@ public class OpflowServerlet implements AutoCloseable {
                     throw new OpflowBootstrapException("Duplicated Subscriber connection parameters (exchangeName-routingKey)");
                 }
             }
-            if (subscriberCfg.get("subscriberName") != null && !checkQueue.add(subscriberCfg.get("subscriberName").toString())) {
+            if (subscriberCfg.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME) != null && !checkQueue.add(subscriberCfg.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME).toString())) {
                 throw new OpflowBootstrapException("Subscriber[subscriberName] must not be duplicated");
             }
-            if (subscriberCfg.get("recyclebinName") != null) {
-                checkRecyclebin.add(subscriberCfg.get("recyclebinName").toString());
+            if (subscriberCfg.get(OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME) != null) {
+                checkRecyclebin.add(subscriberCfg.get(OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME).toString());
             }
         }
 

@@ -67,8 +67,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY));
         brokerParams.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, params.get(OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS));
         
-        subscriberName = (String) params.get("subscriberName");
-        recyclebinName = (String) params.get("recyclebinName");
+        subscriberName = (String) params.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME);
+        recyclebinName = (String) params.get(OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME);
         
         if (subscriberName != null && recyclebinName != null && subscriberName.equals(recyclebinName)) {
             throw new OpflowBootstrapException("subscriberName should be different with recyclebinName");
@@ -101,18 +101,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
             executor.assertQueue(recyclebinName);
         }
         
-        if (params.get("prefetchCount") instanceof Integer) {
-            prefetchCount = (Integer) params.get("prefetchCount");
+        if (params.get(OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT) instanceof Integer) {
+            prefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT);
             if (prefetchCount < 0) prefetchCount = 0;
         }
         
-        if (params.get("subscriberLimit") instanceof Integer) {
-            subscriberLimit = (Integer) params.get("subscriberLimit");
+        if (params.get(OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT) instanceof Integer) {
+            subscriberLimit = (Integer) params.get(OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT);
             if (subscriberLimit < 0) subscriberLimit = 0;
         }
         
-        if (params.get("redeliveredLimit") instanceof Integer) {
-            redeliveredLimit = (Integer) params.get("redeliveredLimit");
+        if (params.get(OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT) instanceof Integer) {
+            redeliveredLimit = (Integer) params.get(OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT);
             if (redeliveredLimit < 0) redeliveredLimit = 0;
         }
         
