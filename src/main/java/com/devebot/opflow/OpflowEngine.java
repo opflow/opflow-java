@@ -102,7 +102,6 @@ public class OpflowEngine implements AutoCloseable {
     private String exchangeType;
     private Boolean exchangeDurable;
     private String routingKey;
-    private String[] otherKeys;
     private String applicationId;
     
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
@@ -401,16 +400,11 @@ public class OpflowEngine implements AutoCloseable {
                 routingKey = (String) params.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY);
             }
             
-            if (params.get(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS) instanceof String[]) {
-                otherKeys = (String[])params.get(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS);
-            }
-            
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .put("exchangeName", exchangeName)
                     .put("exchangeType", exchangeType)
                     .put("exchangeDurable", exchangeDurable)
                     .put("routingKey", routingKey)
-                    .put("otherKeys", otherKeys)
                     .put("applicationId", applicationId)
                     .text("Engine[${engineId}] exchangeName: '${exchangeName}' and routingKeys: ${routingKey}")
                     .stringify());
@@ -451,10 +445,6 @@ public class OpflowEngine implements AutoCloseable {
 
     public String getRoutingKey() {
         return routingKey;
-    }
-
-    public String[] getOtherKeys() {
-        return otherKeys;
     }
 
     public String getApplicationId() {

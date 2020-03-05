@@ -33,12 +33,12 @@ public class OpflowRpcWorker implements AutoCloseable {
     private final String dispatchExchangeName;
     private final String dispatchRoutingKey;
     
+    private final String[] incomingBindingKeys;
     private final String incomingQueueName;
     private final Boolean incomingQueueAutoDelete;
     private final Boolean incomingQueueDurable;
     private final Boolean incomingQueueExclusive;
     private final Integer incomingPrefetchCount;
-    private final String[] incomingBindingKeys;
     
     private final String responseQueueName;
     

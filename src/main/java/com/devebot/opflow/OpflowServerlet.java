@@ -34,7 +34,9 @@ public class OpflowServerlet implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
 
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[]{
-        CONST.COMPNAME_CONFIGURER, CONST.COMPNAME_RPC_WORKER, CONST.COMPNAME_SUBSCRIBER
+        CONST.COMPNAME_CONFIGURER,
+        CONST.COMPNAME_RPC_WORKER,
+        CONST.COMPNAME_SUBSCRIBER
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[]{

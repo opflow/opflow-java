@@ -705,21 +705,15 @@ public class OpflowCommander implements AutoCloseable {
                                 
                                 opt2.put(CONST.COMPONENT_ID, rpcMaster.getComponentId());
                                 opt2.put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId());
-                                opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, engine.getExchangeName());
 
+                                opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, engine.getExchangeName());
                                 if (checkOption(flag, SCOPE_INFO)) {
                                     opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE, engine.getExchangeType());
                                     opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE, engine.getExchangeDurable());
                                 }
-
                                 opt2.put(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY, engine.getRoutingKey());
 
-                                if (checkOption(flag, SCOPE_INFO)) {
-                                    opt2.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, engine.getOtherKeys());
-                                }
-
                                 opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME, rpcMaster.getResponseQueueName());
-
                                 if (checkOption(flag, SCOPE_INFO)) {
                                     opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE, rpcMaster.getResponseQueueAutoDelete());
                                     opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE, rpcMaster.getResponseQueueDurable());

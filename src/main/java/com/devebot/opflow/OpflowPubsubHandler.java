@@ -34,6 +34,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
 
     private final String subscriberName;
     private final String recyclebinName;
+    private String[] bindingKeys;
     private int prefetchCount = 0;
     private int subscriberLimit = 0;
     private int redeliveredLimit = 0;
@@ -65,7 +66,6 @@ public class OpflowPubsubHandler implements AutoCloseable {
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.getOrDefault(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE, "direct"));
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, params.get(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE));
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY));
-        brokerParams.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, params.get(OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS));
         
         subscriberName = (String) params.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME);
         recyclebinName = (String) params.get(OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME);
@@ -99,6 +99,10 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         if (recyclebinName != null) {
             executor.assertQueue(recyclebinName);
+        }
+        
+        if (params.get(OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS) instanceof String[]) {
+            bindingKeys = (String[])params.get(OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS);
         }
         
         if (params.get(OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT) instanceof Integer) {
@@ -306,7 +310,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, _consumerId);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_AUTO_ACK, Boolean.TRUE);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME, subscriberName);
-                opts.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, engine.getOtherKeys());
+                opts.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, bindingKeys);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT, prefetchCount);
                 opts.put(OpflowConstant.OPFLOW_CONSUMING_CONSUMER_LIMIT, subscriberLimit);
             }
