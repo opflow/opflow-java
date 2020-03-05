@@ -55,10 +55,17 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 .stringify());
         
         Map<String, Object> brokerParams = new HashMap<>();
+        
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
+        
         brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "pubsub");
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, "direct");
+        
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.getOrDefault(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE, "direct"));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, params.get(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY));
+        brokerParams.put(OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS, params.get(OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS));
         
         subscriberName = (String) params.get("subscriberName");
         recyclebinName = (String) params.get("recyclebinName");

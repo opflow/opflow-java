@@ -55,19 +55,24 @@ public class OpflowRpcWorker implements AutoCloseable {
                 .stringify());
         
         Map<String, Object> brokerParams = new HashMap<>();
+
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
+
         brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "rpc_worker");
 
-        // Deprecated
+        // Deprecated: support BDD testing script
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY));
+        
+        // Use for autoBinding
         if (params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME) instanceof String) {
             dispatchExchangeName = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME);
         } else {
             dispatchExchangeName = null;
         }
         
-        // Deprecated
         if (params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY) instanceof String) {
             dispatchRoutingKey = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY);
         } else {
@@ -78,7 +83,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         responseQueueName = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
         
         if (incomingQueueName != null && responseQueueName != null && incomingQueueName.equals(responseQueueName)) {
-            throw new OpflowBootstrapException("dispatchQueueName should be different with responseQueueName");
+            throw new OpflowBootstrapException("incomingQueueName should be different with responseQueueName");
         }
         
         if (params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE) instanceof Boolean) {

@@ -69,6 +69,24 @@ public class OpflowConstant {
     public final static String OPFLOW_CONSUMING_CONSUMER_ID = "consumerId";
     public final static String OPFLOW_CONSUMING_CONSUMER_LIMIT = "consumerLimit";
 
+    // publisher - subscriber
+
+    public final static String OPFLOW_PUBSUB_EXCHANGE_NAME = "exchangeName";
+    public final static String OPFLOW_PUBSUB_EXCHANGE_TYPE = "exchangeType";
+    public final static String OPFLOW_PUBSUB_EXCHANGE_DURABLE = "exchangeDurable";
+    public final static String OPFLOW_PUBSUB_ROUTING_KEY = "routingKey";
+
+    public final static String OPFLOW_PUBSUB_BINDING_KEYS = "otherKeys";
+    public final static String OPFLOW_PUBSUB_QUEUE_NAME = "queueName";
+    public final static String OPFLOW_PUBSUB_QUEUE_AUTO_DELETE = "autoDelete";
+    public final static String OPFLOW_PUBSUB_QUEUE_DURABLE = "durable";
+    public final static String OPFLOW_PUBSUB_QUEUE_EXCLUSIVE = "exclusive";
+    public final static String OPFLOW_PUBSUB_PREFETCH_COUNT = "prefetchCount";
+    public final static String OPFLOW_PUBSUB_AUTO_BINDING = "binding";
+    public final static String OPFLOW_PUBSUB_REPLY_TO = "replyTo";
+    public final static String OPFLOW_PUBSUB_CONSUMER_ID = "consumerId";
+    public final static String OPFLOW_PUBSUB_CONSUMER_LIMIT = "consumerLimit";
+
     // producer - master
     public final static String OPFLOW_DISPATCH_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_DISPATCH_EXCHANGE_TYPE = "exchangeType";

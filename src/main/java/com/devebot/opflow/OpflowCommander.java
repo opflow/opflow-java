@@ -170,10 +170,10 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         if (OpflowUtil.isComponentEnabled(rpcMasterCfg)) {
-            if (OpflowUtil.isAMQPEntrypointNull(rpcMasterCfg)) {
+            if (OpflowUtil.isAMQPEntrypointNull(rpcMasterCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY)) {
                 throw new OpflowBootstrapException("Invalid RpcMaster connection parameters");
             }
-            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(rpcMasterCfg))) {
+            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(rpcMasterCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY))) {
                 throw new OpflowBootstrapException("Duplicated RpcMaster connection parameters");
             }
         }

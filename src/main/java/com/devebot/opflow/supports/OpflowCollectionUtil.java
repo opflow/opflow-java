@@ -10,7 +10,26 @@ import java.util.List;
  * @author acegik
  */
 public class OpflowCollectionUtil {
+    
+    public static String[] mergeArrays(final String[] array1, final String[] array2) {
+        int length = array1.length + array2.length;
 
+        String[] result = new String[length];
+        int pos = 0;
+        
+        for (String element : array1) {
+            result[pos] = element;
+            pos++;
+        }
+
+        for (String element : array2) {
+            result[pos] = element;
+            pos++;
+        }
+        
+        return result;
+    }
+    
     public static <T> boolean arrayContains(final T[] array, final T v) {
         if (v == null) {
             for (final T e : array) if (e == null) return true;

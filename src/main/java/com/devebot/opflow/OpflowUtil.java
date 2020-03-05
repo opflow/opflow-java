@@ -554,11 +554,26 @@ public class OpflowUtil {
     }
     
     public static boolean isAMQPEntrypointNull(Map<String, Object> cfg) {
-        return cfg.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME) == null || cfg.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY) == null;
+        return isAMQPEntrypointNull(cfg,  OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME, OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY);
+    }
+    
+    public static boolean isAMQPEntrypointNull(Map<String, Object> cfg, String exchangeName, String routingKey) {
+        return cfg.get(exchangeName) == null || cfg.get(routingKey) == null;
     }
     
     public static String getAMQPEntrypointCode(Map<String, Object> cfg) {
-        return cfg.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME).toString() + cfg.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY).toString();
+        return getAMQPEntrypointCode(cfg, OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME, OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY);
+    }
+    
+    public static String getAMQPEntrypointCode(Map<String, Object> cfg, String exchangeName, String routingKey) {
+        String result = null;
+        if (cfg.get(exchangeName) != null) {
+            result = result + cfg.get(exchangeName).toString();
+        }
+        if (cfg.get(routingKey) != null) {
+            result = result + cfg.get(routingKey);
+        }
+        return result;
     }
     
     public static String getClassSimpleName(Class clazz) {

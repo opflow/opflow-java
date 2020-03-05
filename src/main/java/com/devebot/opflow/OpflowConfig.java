@@ -153,6 +153,11 @@ public class OpflowConfig {
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
                 OpflowConstant.OPFLOW_COMMON_AUTORUN,
+                OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
+                OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS,
                 "subscriberName",
                 "recyclebinName",
                 "prefetchCount",
@@ -215,9 +220,23 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
                     });
                 }
+                if (CONST.COMPNAME_CONFIGURER.equals(componentName)) {
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                        OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
+                        "subscriberName"
+                    });
+                }
                 if (CONST.COMPNAME_PUBLISHER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                        OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
                         "subscriberName",
                     });
                 }
@@ -316,9 +335,23 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT
                     });
                 }
+                if (CONST.COMPNAME_CONFIGURER.equals(componentName)) {
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                        OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
+                        "subscriberName"
+                    });
+                }
                 if (CONST.COMPNAME_SUBSCRIBER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                        OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
                         "subscriberName",
                         "recyclebinName"
                     });
@@ -375,7 +408,7 @@ public class OpflowConfig {
                 break;
             }
         }
-        for(String field: OpflowEngine.PARAMETER_NAMES) {
+        for(String field: OpflowEngine.SHARED_PARAMETERS) {
             Iterator<Map<String, Object>> iter = maps.iterator();
             while(iter.hasNext() && !target.containsKey(field)) {
                 Map<String, Object> map = iter.next();
