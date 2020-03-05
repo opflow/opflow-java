@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -155,7 +156,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         return process(new Checker() {
             @Override
             public boolean match(String originRoutineSignature) {
-                return routineSignatures != null && OpflowUtil.arrayContains(routineSignatures, originRoutineSignature);
+                return routineSignatures != null && OpflowCollectionUtil.arrayContains(routineSignatures, originRoutineSignature);
             }
         }, listener);
     };

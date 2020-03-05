@@ -31,13 +31,26 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_AUTORUN = "autorun";
     public final static String OPFLOW_COMMON_ENABLED = "enabled";
     public final static String OPFLOW_COMMON_VERBOSE = "verbose";
+    public final static String OPFLOW_COMMON_INTERVAL = "interval";
+    public final static String OPFLOW_COMMON_COUNT = "count";
+    public final static String OPFLOW_COMMON_LENGTH = "length";
     public final static String OPFLOW_COMMON_HOST = "host";
     public final static String OPFLOW_COMMON_PORTS = "ports";
+    public final static String OPFLOW_COMMON_CREDENTIALS = "credentials";
     
     public final static String OPFLOW_RPC_MONITOR_ID = "monitorId";
     public final static String OPFLOW_RPC_MONITOR_ENABLED = "monitorEnabled";
     public final static String OPFLOW_RPC_MONITOR_INTERVAL = "monitorInterval";
     public final static String OPFLOW_RPC_MONITOR_TIMEOUT = "monitorTimeout";
+
+    public final static String OPFLOW_RESTRICT_PAUSE_ENABLED = "pauseEnabled";
+    public final static String OPFLOW_RESTRICT_PAUSE_TIMEOUT = "pauseTimeout";
+
+    public final static String OPFLOW_RESTRICT_SEMAPHORE_ENABLED = "semaphoreEnabled";
+    public final static String OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT = "semaphoreTimeout";
+    public final static String OPFLOW_RESTRICT_SEMAPHORE_PERMITS = "semaphoreLimit";
+    public final static String OPFLOW_RESTRICT_SEMAPHORE_FREE_PERMITS = "semaphoreFreePermits";
+    public final static String OPFLOW_RESTRICT_SEMAPHORE_USED_PERMITS = "semaphoreUsedPermits";
 
     public final static String OPFLOW_PRODUCING_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_PRODUCING_EXCHANGE_TYPE = "exchangeType";

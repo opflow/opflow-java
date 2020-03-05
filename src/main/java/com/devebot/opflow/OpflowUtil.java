@@ -168,24 +168,6 @@ public class OpflowUtil {
         }
     }
     
-    public static <T> boolean arrayContains(final T[] array, final T v) {
-        if (v == null) {
-            for (final T e : array) if (e == null) return true;
-        } else {
-            for (final T e : array) if (e == v || v.equals(e)) return true;
-        }
-        return false;
-    }
-    
-    public static <T> List<T> mergeLists(List<T> list1, List<T> list2) {
-	List<T> list = new ArrayList<>();
-
-	list.addAll(list1);
-	list.addAll(list2);
-
-	return list;
-    }
-    
     @Deprecated
     public interface MapListener {
         public void transform(Map<String, Object> opts);

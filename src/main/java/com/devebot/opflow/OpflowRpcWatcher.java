@@ -97,7 +97,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
         } else {
             componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
             enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_ENABLED, Boolean.TRUE), Boolean.class);
-            interval = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, "interval", RPC_DETECTION_INTERVAL), Long.class);
+            interval = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_INTERVAL, RPC_DETECTION_INTERVAL), Long.class);
         }
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", componentId);

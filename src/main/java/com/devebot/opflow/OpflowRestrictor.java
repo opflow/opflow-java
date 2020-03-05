@@ -132,14 +132,14 @@ public class OpflowRestrictor {
 
             pauseLock = new ReentrantReadWriteLock();
 
-            if (options.get("pauseEnabled") instanceof Boolean) {
-                pauseEnabled = (Boolean) options.get("pauseEnabled");
+            if (options.get(OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED) instanceof Boolean) {
+                pauseEnabled = (Boolean) options.get(OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED);
             }
 
-            if (options.get("pauseTimeout") instanceof Long) {
-                pauseTimeout = (Long) options.get("pauseTimeout");
-            } else if (options.get("pauseTimeout") instanceof Integer) {
-                pauseTimeout = (Integer) options.get("pauseTimeout");
+            if (options.get(OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT) instanceof Long) {
+                pauseTimeout = (Long) options.get(OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT);
+            } else if (options.get(OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT) instanceof Integer) {
+                pauseTimeout = (Integer) options.get(OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT);
             }
         }
         
@@ -391,18 +391,18 @@ public class OpflowRestrictor {
         public Limit(Map<String, Object> options) {
             options = OpflowObjectTree.ensureNonNull(options);
             
-            if (options.get("semaphoreEnabled") instanceof Boolean) {
-                semaphoreEnabled = (Boolean) options.get("semaphoreEnabled");
+            if (options.get(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED) instanceof Boolean) {
+                semaphoreEnabled = (Boolean) options.get(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED);
             }
 
-            if (options.get("semaphoreTimeout") instanceof Long ) {
-                semaphoreTimeout = (Long) options.get("semaphoreTimeout");
-            } else if (options.get("semaphoreTimeout") instanceof Integer) {
-                semaphoreTimeout = (Integer) options.get("semaphoreTimeout");
+            if (options.get(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT) instanceof Long ) {
+                semaphoreTimeout = (Long) options.get(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT);
+            } else if (options.get(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT) instanceof Integer) {
+                semaphoreTimeout = (Integer) options.get(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT);
             }
 
-            if (options.get("semaphoreLimit") instanceof Integer) {
-                int _limit = (Integer) options.get("semaphoreLimit");
+            if (options.get(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS) instanceof Integer) {
+                int _limit = (Integer) options.get(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS);
                 semaphoreLimit = (_limit > 0) ? _limit : SEMAPHORE_LIMIT_DEFAULT;
             } else {
                 semaphoreLimit = SEMAPHORE_LIMIT_DEFAULT;

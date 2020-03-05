@@ -194,15 +194,15 @@ public class OpflowThroughput {
                 active = (Boolean) kwargs.get(OpflowConstant.OPFLOW_COMMON_ACTIVE);
             }
             // updating interval
-            if (kwargs.get("interval") instanceof Long) {
-                long _interval = (Long) kwargs.get("interval");
+            if (kwargs.get(OpflowConstant.OPFLOW_COMMON_INTERVAL) instanceof Long) {
+                long _interval = (Long) kwargs.get(OpflowConstant.OPFLOW_COMMON_INTERVAL);
                 if (_interval > 0) {
                     interval = _interval;
                 }
             }
             // customize the tail length
-            if (kwargs.get("length") instanceof Integer) {
-                int _length = (Integer) kwargs.get("length");
+            if (kwargs.get(OpflowConstant.OPFLOW_COMMON_LENGTH) instanceof Integer) {
+                int _length = (Integer) kwargs.get(OpflowConstant.OPFLOW_COMMON_LENGTH);
                 if (_length > 0 && _length <= 10) {
                     length = _length;
                 }
@@ -221,8 +221,8 @@ public class OpflowThroughput {
             return OpflowObjectTree.buildMap()
                     .put("throughput", OpflowObjectTree.buildMap()
                             .put(OpflowConstant.OPFLOW_COMMON_ACTIVE, active)
-                            .put("interval", interval)
-                            .put("length", length)
+                            .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, interval)
+                            .put(OpflowConstant.OPFLOW_COMMON_LENGTH, length)
                             .toMap())
                     .toMap();
         }

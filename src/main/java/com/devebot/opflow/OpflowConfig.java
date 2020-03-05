@@ -197,29 +197,33 @@ public class OpflowConfig {
                 } else {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
-                componentCfg.put(OpflowConstant.OPFLOW_COMMON_ENABLED, componentNode.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
                 if (CONST.COMPNAME_REQ_EXTRACTOR.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
                         "getRequestIdClassName",
-                        "getRequestIdMethodName"
+                        "getRequestIdMethodName",
+                        "uuidIfNotFound"
                     });
                 }
                 if (CONST.COMPNAME_RESTRICTOR.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        "pauseEnabled",
-                        "pauseTimeout",
-                        "semaphoreEnabled",
-                        "semaphoreLimit",
-                        "semaphoreTimeout"
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED,
+                        OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT,
+                        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED,
+                        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS,
+                        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
                     });
                 }
                 if (CONST.COMPNAME_PUBLISHER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
                         "subscriberName",
                     });
                 }
                 if (CONST.COMPNAME_RPC_MASTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
                         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
                         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE,
@@ -241,27 +245,31 @@ public class OpflowConfig {
                 }
                 if (CONST.COMPNAME_RPC_WATCHER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        "interval"
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_COMMON_INTERVAL
                     });
                 }
                 if (CONST.COMPNAME_SPEED_METER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ACTIVE,
-                        "interval",
-                        "length"
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_COMMON_INTERVAL,
+                        OpflowConstant.OPFLOW_COMMON_LENGTH
                     });
                 }
                 if (CONST.COMPNAME_PROM_EXPORTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        "host",
-                        "ports"
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_COMMON_HOST,
+                        OpflowConstant.OPFLOW_COMMON_PORTS
                     });
                 }
                 if (CONST.COMPNAME_REST_SERVER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        "host",
-                        "ports",
-                        "credentials"
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_COMMON_HOST,
+                        OpflowConstant.OPFLOW_COMMON_PORTS,
+                        OpflowConstant.OPFLOW_COMMON_CREDENTIALS
                     });
                 }
                 transformParameters(componentCfg);
@@ -294,9 +302,9 @@ public class OpflowConfig {
                 Map<String, Object> componentCfg = new HashMap<>();
                 extractEngineParameters(componentCfg, config, componentPath);
                 Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
-                componentCfg.put(OpflowConstant.OPFLOW_COMMON_ENABLED, componentNode.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
                 if (CONST.COMPNAME_RPC_WORKER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
                         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
                         OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
@@ -310,14 +318,16 @@ public class OpflowConfig {
                 }
                 if (CONST.COMPNAME_SUBSCRIBER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
                         "subscriberName",
                         "recyclebinName"
                     });
                 }
                 if (CONST.COMPNAME_PROM_EXPORTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        "host",
-                        "ports"
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_COMMON_HOST,
+                        OpflowConstant.OPFLOW_COMMON_PORTS
                     });
                 }
                 transformParameters(componentCfg);
@@ -383,8 +393,8 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_COMMON_VERBOSE,
         "strictMode",
         OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED,
-        "pauseEnabled",
-        "semaphoreEnabled",
+        OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED,
+        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED,
         OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED,
         OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED,
         
@@ -409,7 +419,7 @@ public class OpflowConfig {
     });
     
     private static final String[] STRING_ARRAY_FIELDS = OpflowCollectionUtil.distinct(new String[] {
-        "credentials",
+        OpflowConstant.OPFLOW_COMMON_CREDENTIALS,
         OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS,
         OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
     });
@@ -420,42 +430,42 @@ public class OpflowConfig {
         OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX,
         OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT,
         OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL,
-        "semaphoreLimit",
-        "length",
+        OpflowConstant.OPFLOW_COMMON_LENGTH,
+        OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL,
+        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS,
         OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT,
         OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
         OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
         "subscriberLimit",
         "redeliveredLimit",
-        OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL,
         "threadPoolSize"
     });
     
-    private static final String[] INTEGER_ARRAY_FIELDS = new String[] { "ports" };
+    private static final String[] INTEGER_ARRAY_FIELDS = new String[] { OpflowConstant.OPFLOW_COMMON_PORTS };
     
-    private static final String[] INTEGER_RANGE_FIELDS = new String[] { "ports" };
+    private static final String[] INTEGER_RANGE_FIELDS = new String[] { OpflowConstant.OPFLOW_COMMON_PORTS };
     
     private static final String[] LONGINT_FIELDS = OpflowCollectionUtil.distinct(new String[] {
         OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
-        "interval",
+        OpflowConstant.OPFLOW_COMMON_INTERVAL,
         OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
-        "pauseTimeout",
-        "semaphoreTimeout"
+        OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT,
+        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
     });
     
     private static void transformParameters(Map<String, Object> params) {
         for(String key: params.keySet()) {
-            if (OpflowUtil.arrayContains(BOOLEAN_FIELDS, key)) {
+            if (OpflowCollectionUtil.arrayContains(BOOLEAN_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     params.put(key, Boolean.parseBoolean(params.get(key).toString()));
                 }
             }
-            if (OpflowUtil.arrayContains(STRING_ARRAY_FIELDS, key)) {
+            if (OpflowCollectionUtil.arrayContains(STRING_ARRAY_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     params.put(key, OpflowStringUtil.splitByComma((String)params.get(key)));
                 }
             }
-            if (OpflowUtil.arrayContains(INTEGER_FIELDS, key)) {
+            if (OpflowCollectionUtil.arrayContains(INTEGER_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     try {
                         params.put(key, Integer.parseInt(params.get(key).toString()));
@@ -468,7 +478,7 @@ public class OpflowConfig {
                     }
                 }
             }
-            if (OpflowUtil.arrayContains(INTEGER_ARRAY_FIELDS, key)) {
+            if (OpflowCollectionUtil.arrayContains(INTEGER_ARRAY_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     String intArrayStr = (String) params.get(key);
                     if (OpflowStringUtil.isIntegerArray(intArrayStr)) {
@@ -476,7 +486,7 @@ public class OpflowConfig {
                     }
                 }
             }
-            if (OpflowUtil.arrayContains(INTEGER_RANGE_FIELDS, key)) {
+            if (OpflowCollectionUtil.arrayContains(INTEGER_RANGE_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     String intRangeStr = (String) params.get(key);
                     if (OpflowStringUtil.isIntegerRange(intRangeStr)) {
@@ -487,7 +497,7 @@ public class OpflowConfig {
                     }
                 }
             }
-            if (OpflowUtil.arrayContains(LONGINT_FIELDS, key)) {
+            if (OpflowCollectionUtil.arrayContains(LONGINT_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     try {
                         params.put(key, Long.parseLong(params.get(key).toString()));

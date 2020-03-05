@@ -32,10 +32,10 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
         // get the host from configuration
-        host = OpflowUtil.getOptionField(kwargs, "host", "0.0.0.0").toString();
+        host = OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_HOST, "0.0.0.0").toString();
         
         // detect the avaiable port
-        port = OpflowUtil.detectFreePort(kwargs, "ports", new Integer[] {
+        port = OpflowUtil.detectFreePort(kwargs, OpflowConstant.OPFLOW_COMMON_PORTS, new Integer[] {
                 9450, 9451, 9452, 9453, 9454, 9455, 9456, 9457, 9458, 9459
         });
         

@@ -7,6 +7,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowMethodNotFoundException;
 import com.devebot.opflow.exception.OpflowTargetNotFoundException;
+import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import com.google.gson.JsonSyntaxException;
@@ -39,7 +40,7 @@ public class OpflowServerlet implements AutoCloseable {
         CONST.COMPNAME_PROM_EXPORTER
     });
 
-    public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
+    public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
     

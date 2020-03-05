@@ -10,6 +10,7 @@ import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
+import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import io.undertow.server.RoutingHandler;
@@ -50,7 +51,7 @@ public class OpflowCommander implements AutoCloseable {
         CONST.COMPNAME_REST_SERVER
     });
 
-    public final static List<String> ALL_BEAN_NAMES = OpflowUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
+    public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
 
     public final static String PARAM_RESERVED_WORKER_ENABLED = "reservedWorkerEnabled";
 
@@ -745,8 +746,8 @@ public class OpflowCommander implements AutoCloseable {
                     if (checkOption(flag, SCOPE_INFO)) {
                         opts.put(CONST.COMPNAME_RPC_WATCHER, OpflowObjectTree.buildMap()
                                 .put(OpflowConstant.OPFLOW_COMMON_ENABLED, rpcWatcher.isEnabled())
-                                .put("interval", rpcWatcher.getInterval())
-                                .put("count", rpcWatcher.getCount())
+                                .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, rpcWatcher.getInterval())
+                                .put(OpflowConstant.OPFLOW_COMMON_COUNT, rpcWatcher.getCount())
                                 .put("congestive", rpcWatcher.isCongestive())
                                 .toMap());
                     }
@@ -758,19 +759,19 @@ public class OpflowCommander implements AutoCloseable {
                                 @Override
                                 public void transform(Map<String, Object> opt2) {
                                     int availablePermits = restrictor.getSemaphorePermits();
-                                    opt2.put("pauseEnabled", restrictor.isPauseEnabled());
-                                    opt2.put("pauseTimeout", restrictor.getPauseTimeout());
+                                    opt2.put(OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED, restrictor.isPauseEnabled());
+                                    opt2.put(OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT, restrictor.getPauseTimeout());
                                     boolean isPaused = restrictor.isPaused();
                                     opt2.put("pauseStatus", isPaused ? "on" : "off");
                                     if (isPaused) {
                                         opt2.put("pauseElapsed", restrictor.getPauseElapsed());
                                         opt2.put("pauseDuration", restrictor.getPauseDuration());
                                     }
-                                    opt2.put("semaphoreLimit", restrictor.getSemaphoreLimit());
+                                    opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS, restrictor.getSemaphoreLimit());
                                     opt2.put("semaphoreUsedPermits", restrictor.getSemaphoreLimit() - availablePermits);
                                     opt2.put("semaphoreFreePermits", availablePermits);
-                                    opt2.put("semaphoreEnabled", restrictor.isSemaphoreEnabled());
-                                    opt2.put("semaphoreTimeout", restrictor.getSemaphoreTimeout());
+                                    opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED, restrictor.isSemaphoreEnabled());
+                                    opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT, restrictor.getSemaphoreTimeout());
                                 }
                             }).toMap());
                         } else {
