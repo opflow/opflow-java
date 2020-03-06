@@ -46,7 +46,7 @@ public class OpflowRpcWorker implements AutoCloseable {
         params = OpflowObjectTree.ensureNonNull(params);
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcWorkerId", componentId);
         
@@ -59,18 +59,14 @@ public class OpflowRpcWorker implements AutoCloseable {
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
 
         brokerParams.put(CONST.COMPONENT_ID, componentId);
-        brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
-        brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, CONST.COMPNAME_RPC_WORKER);
+        brokerParams.put(OpflowConstant.COMP_MEASURER, measurer);
+        brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, OpflowConstant.COMP_RPC_WORKER);
 
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME));
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE));
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE));
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY));
 
-        // Deprecated: support BDD testing script
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY));
-        
         // Use for autoBinding
         if (params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME) instanceof String) {
             dispatchExchangeName = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME);
@@ -148,7 +144,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 .text("RpcWorker[${rpcWorkerId}][${instanceId}].new() end!")
                 .stringify());
 
-        measurer.updateComponentInstance(CONST.COMPNAME_RPC_WORKER, componentId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_RPC_WORKER, componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
@@ -240,7 +236,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineSignature)) {
                         count++;
-                        measurer.countRpcInvocation(CONST.COMPNAME_RPC_WORKER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "process");
+                        measurer.countRpcInvocation(OpflowConstant.COMP_RPC_WORKER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
@@ -356,6 +352,6 @@ public class OpflowRpcWorker implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance(CONST.COMPNAME_RPC_WORKER, componentId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_RPC_WORKER, componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

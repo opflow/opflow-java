@@ -127,6 +127,10 @@ public class OpflowConfig {
             if (handlerNode.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME) == null) {
                 params.put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
             }
+            
+            if (handlerNode.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME) == null) {
+                params.put(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME, opflowNode.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME));
+            }
 
             transformParameters(params);
             return params;
@@ -196,13 +200,13 @@ public class OpflowConfig {
             Map<String, Object> params = new HashMap<>();
 
             // extract the top-level configuration
-            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, CONST.COMPNAME_COMMANDER});
+            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER});
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
             });
 
             // extract the child-level configuration
-            String[] componentPath = new String[] {CONST.FRAMEWORK_ID, CONST.COMPNAME_COMMANDER, ""};
+            String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
             for(String componentName:OpflowCommander.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
@@ -213,7 +217,7 @@ public class OpflowConfig {
                 } else {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
-                if (CONST.COMPNAME_REQ_EXTRACTOR.equals(componentName)) {
+                if (OpflowConstant.COMP_REQ_EXTRACTOR.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         "getRequestIdClassName",
@@ -221,7 +225,7 @@ public class OpflowConfig {
                         "uuidIfNotFound"
                     });
                 }
-                if (CONST.COMPNAME_RESTRICTOR.equals(componentName)) {
+                if (OpflowConstant.COMP_RESTRICTOR.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED,
@@ -231,7 +235,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
                     });
                 }
-                if (CONST.COMPNAME_CONFIGURER.equals(componentName)) {
+                if (OpflowConstant.COMP_CONFIGURER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
@@ -241,7 +245,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
                     });
                 }
-                if (CONST.COMPNAME_PUBLISHER.equals(componentName)) {
+                if (OpflowConstant.COMP_PUBLISHER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
@@ -251,7 +255,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
                     });
                 }
-                if (CONST.COMPNAME_RPC_MASTER.equals(componentName)) {
+                if (OpflowConstant.COMP_RPC_MASTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
@@ -273,13 +277,13 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
                     });
                 }
-                if (CONST.COMPNAME_RPC_WATCHER.equals(componentName)) {
+                if (OpflowConstant.COMP_RPC_WATCHER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_COMMON_INTERVAL
                     });
                 }
-                if (CONST.COMPNAME_SPEED_METER.equals(componentName)) {
+                if (OpflowConstant.COMP_SPEED_METER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ACTIVE,
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
@@ -287,14 +291,14 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_COMMON_LENGTH
                     });
                 }
-                if (CONST.COMPNAME_PROM_EXPORTER.equals(componentName)) {
+                if (OpflowConstant.COMP_PROM_EXPORTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_COMMON_HOST,
                         OpflowConstant.OPFLOW_COMMON_PORTS
                     });
                 }
-                if (CONST.COMPNAME_REST_SERVER.equals(componentName)) {
+                if (OpflowConstant.COMP_REST_SERVER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_COMMON_HOST,
@@ -327,19 +331,19 @@ public class OpflowConfig {
             Map<String, Object> params = new HashMap<>();
 
             // extract the top-level configuration
-            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, CONST.COMPNAME_SERVERLET});
+            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET});
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
             });
 
             // extract the child-level configuration
-            String[] componentPath = new String[] {CONST.FRAMEWORK_ID, CONST.COMPNAME_SERVERLET, ""};
+            String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET, ""};
             for(String componentName:OpflowServerlet.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
                 extractEngineParameters(componentCfg, config, componentPath);
                 Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
-                if (CONST.COMPNAME_RPC_WORKER.equals(componentName)) {
+                if (OpflowConstant.COMP_RPC_WORKER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
@@ -357,7 +361,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY,
                     });
                 }
-                if (CONST.COMPNAME_CONFIGURER.equals(componentName)) {
+                if (OpflowConstant.COMP_CONFIGURER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
@@ -367,7 +371,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
                     });
                 }
-                if (CONST.COMPNAME_SUBSCRIBER.equals(componentName)) {
+                if (OpflowConstant.COMP_SUBSCRIBER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
@@ -378,7 +382,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME
                     });
                 }
-                if (CONST.COMPNAME_PROM_EXPORTER.equals(componentName)) {
+                if (OpflowConstant.COMP_PROM_EXPORTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_COMMON_HOST,
@@ -611,12 +615,12 @@ public class OpflowConfig {
                     }
                     // merge the system properties to the configuration
                     mergeConfiguration(config, filterProperties(System.getProperties(), new String[] {
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, CONST.COMPNAME_COMMANDER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, CONST.COMPNAME_SERVERLET),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, CONST.COMPNAME_PUBLISHER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, CONST.COMPNAME_SUBSCRIBER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, CONST.COMPNAME_RPC_MASTER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, CONST.COMPNAME_RPC_WORKER),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_PUBLISHER),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_SUBSCRIBER),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_RPC_MASTER),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_RPC_WORKER),
                     }));
                 } else {
                     configFile = (configFile != null) ? configFile : DEFAULT_CONFIGURATION_FILE;

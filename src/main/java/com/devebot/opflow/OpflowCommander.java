@@ -37,18 +37,18 @@ public class OpflowCommander implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
 
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
-        CONST.COMPNAME_CONFIGURER,
-        CONST.COMPNAME_PUBLISHER,
-        CONST.COMPNAME_RPC_MASTER
+        OpflowConstant.COMP_CONFIGURER,
+        OpflowConstant.COMP_PUBLISHER,
+        OpflowConstant.COMP_RPC_MASTER
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
-        CONST.COMPNAME_REQ_EXTRACTOR,
-        CONST.COMPNAME_RESTRICTOR,
-        CONST.COMPNAME_RPC_WATCHER,
-        CONST.COMPNAME_SPEED_METER,
-        CONST.COMPNAME_PROM_EXPORTER,
-        CONST.COMPNAME_REST_SERVER
+        OpflowConstant.COMP_REQ_EXTRACTOR,
+        OpflowConstant.COMP_RESTRICTOR,
+        OpflowConstant.COMP_RPC_WATCHER,
+        OpflowConstant.COMP_SPEED_METER,
+        OpflowConstant.COMP_PROM_EXPORTER,
+        OpflowConstant.COMP_REST_SERVER
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
@@ -112,10 +112,10 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}][${instanceId}].new()")
                 .stringify());
         
-        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(CONST.COMPNAME_PROM_EXPORTER));
-        OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter(CONST.COMPNAME_COMMANDER);
+        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(OpflowConstant.COMP_PROM_EXPORTER));
+        OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter(OpflowConstant.COMP_COMMANDER);
         
-        Map<String, Object> speedMeterCfg = (Map<String, Object>) kwargs.get(CONST.COMPNAME_SPEED_METER);
+        Map<String, Object> speedMeterCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_SPEED_METER);
         
         if (speedMeterCfg == null || OpflowUtil.isComponentEnabled(speedMeterCfg)) {
             speedMeter = (new OpflowThroughput.Meter(speedMeterCfg))
@@ -125,7 +125,7 @@ public class OpflowCommander implements AutoCloseable {
             speedMeter = null;
         }
         
-        Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_RESTRICTOR);
+        Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RESTRICTOR);
         
         if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
             restrictor = new OpflowRestrictorMaster(OpflowObjectTree.buildMap(restrictorCfg)
@@ -139,7 +139,7 @@ public class OpflowCommander implements AutoCloseable {
         
         this.init(kwargs);
         
-        measurer.updateComponentInstance(CONST.COMPNAME_COMMANDER, componentId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_COMMANDER, componentId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}][${instanceId}].new() end!")
@@ -153,13 +153,13 @@ public class OpflowCommander implements AutoCloseable {
             reservedWorkerEnabled = true;
         }
 
-        Map<String, Object> reqExtractorCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_REQ_EXTRACTOR);
-        Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_CONFIGURER);
-        Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_RPC_MASTER);
-        Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_PUBLISHER);
-        Map<String, Object> rpcObserverCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_RPC_OBSERVER);
-        Map<String, Object> rpcWatcherCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_RPC_WATCHER);
-        Map<String, Object> restServerCfg = (Map<String, Object>)kwargs.get(CONST.COMPNAME_REST_SERVER);
+        Map<String, Object> reqExtractorCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_REQ_EXTRACTOR);
+        Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_CONFIGURER);
+        Map<String, Object> rpcMasterCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_MASTER);
+        Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_PUBLISHER);
+        Map<String, Object> rpcObserverCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_OBSERVER);
+        Map<String, Object> rpcWatcherCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_WATCHER);
+        Map<String, Object> restServerCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_REST_SERVER);
 
         HashSet<String> checkExchange = new HashSet<>();
 
@@ -204,7 +204,7 @@ public class OpflowCommander implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put(CONST.COMPNAME_MEASURER, measurer);
+                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, configurerCfg).toMap());
             }
@@ -213,8 +213,8 @@ public class OpflowCommander implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put(CONST.COMPNAME_MEASURER, measurer);
-                        opts.put(CONST.COMPNAME_RPC_OBSERVER, rpcObserver);
+                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
+                        opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
                     }
                 }, rpcMasterCfg).toMap());
             }
@@ -223,7 +223,7 @@ public class OpflowCommander implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put(CONST.COMPNAME_MEASURER, measurer);
+                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, publisherCfg).toMap());
             }
@@ -602,12 +602,12 @@ public class OpflowCommander implements AutoCloseable {
         
         @Override
         public Map<String, Object> activateDetachedWorker(boolean state, Map<String, Object> opts) {
-            return activateWorker(CONST.COMPNAME_REMOTE_WORKER, state, opts);
+            return activateWorker(OpflowConstant.COMP_REMOTE_WORKER, state, opts);
         }
         
         @Override
         public Map<String, Object> activateReservedWorker(boolean state, Map<String, Object> opts) {
-            return activateWorker(CONST.COMPNAME_NATIVE_WORKER, state, opts);
+            return activateWorker(OpflowConstant.COMP_NATIVE_WORKER, state, opts);
         }
         
         private Map<String, Object> activateWorker(String type, boolean state, Map<String, Object> opts) {
@@ -629,11 +629,11 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private void activateWorkerForRpcInvocation(RpcInvocationHandler handler, String type, boolean state) {
-            if (CONST.COMPNAME_REMOTE_WORKER.equals(type)) {
+            if (OpflowConstant.COMP_REMOTE_WORKER.equals(type)) {
                 handler.setDetachedWorkerActive(state);
                 return;
             }
-            if (CONST.COMPNAME_NATIVE_WORKER.equals(type)) {
+            if (OpflowConstant.COMP_NATIVE_WORKER.equals(type)) {
                 handler.setReservedWorkerActive(state);
                 return;
             }
@@ -696,14 +696,14 @@ public class OpflowCommander implements AutoCloseable {
             
             root.put(CONST.INSTANCE_ID, OpflowLogTracer.getInstanceId());
             
-            root.put(CONST.COMPNAME_COMMANDER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+            root.put(OpflowConstant.COMP_COMMANDER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     opts.put(CONST.COMPONENT_ID, componentId);
                     
                     // rpcMaster information
                     if (rpcMaster != null) {
-                        opts.put(CONST.COMPNAME_RPC_MASTER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                        opts.put(OpflowConstant.COMP_RPC_MASTER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                             @Override
                             public void transform(Map<String, Object> opt2) {
                                 OpflowEngine engine = rpcMaster.getEngine();
@@ -743,7 +743,7 @@ public class OpflowCommander implements AutoCloseable {
                     
                     // RpcWatcher information
                     if (checkOption(flag, SCOPE_INFO)) {
-                        opts.put(CONST.COMPNAME_RPC_WATCHER, OpflowObjectTree.buildMap()
+                        opts.put(OpflowConstant.COMP_RPC_WATCHER, OpflowObjectTree.buildMap()
                                 .put(OpflowConstant.OPFLOW_COMMON_ENABLED, rpcWatcher.isEnabled())
                                 .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, rpcWatcher.getInterval())
                                 .put(OpflowConstant.OPFLOW_COMMON_COUNT, rpcWatcher.getCount())
@@ -754,7 +754,7 @@ public class OpflowCommander implements AutoCloseable {
                     // restrictor information
                     if (checkOption(flag, SCOPE_INFO)) {
                         if (restrictor != null) {
-                            opts.put(CONST.COMPNAME_RESTRICTOR, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                            opts.put(OpflowConstant.COMP_RESTRICTOR, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                                 @Override
                                 public void transform(Map<String, Object> opt2) {
                                     int availablePermits = restrictor.getSemaphorePermits();
@@ -774,7 +774,7 @@ public class OpflowCommander implements AutoCloseable {
                                 }
                             }).toMap());
                         } else {
-                            opts.put(CONST.COMPNAME_RESTRICTOR, OpflowObjectTree.buildMap()
+                            opts.put(OpflowConstant.COMP_RESTRICTOR, OpflowObjectTree.buildMap()
                                     .put(OpflowConstant.OPFLOW_COMMON_ENABLED, false)
                                     .toMap());
                         }
@@ -804,7 +804,7 @@ public class OpflowCommander implements AutoCloseable {
             // current serverlets
             if (checkOption(flag, SCOPE_INFO)) {
                 if (rpcObserver != null) {
-                    root.put(CONST.COMPNAME_SERVERLET, rpcObserver.summary());
+                    root.put(OpflowConstant.COMP_SERVERLET, rpcObserver.summary());
                 }
             }
 
@@ -819,7 +819,7 @@ public class OpflowCommander implements AutoCloseable {
             
             // update the RPC invocation counters
             if (measurer != null) {
-                OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter(CONST.COMPNAME_COMMANDER);
+                OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter(OpflowConstant.COMP_COMMANDER);
                 if (counter != null) {
                     OpflowObjectTree.merge(metrics, counter.toMap(true, checkOption(flag, SCOPE_MESSAGE_RATE)));
                 }
@@ -1040,7 +1040,7 @@ public class OpflowCommander implements AutoCloseable {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-publish-method] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.METHOD_INVOCATION_FLOW_PUBSUB, routineSignature, "begin");
+                measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_PUBSUB, routineSignature, "begin");
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put(CONST.AMQP_HEADER_ROUTINE_ID, routineId)
                         .put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, routineTimestamp)
@@ -1051,7 +1051,7 @@ public class OpflowCommander implements AutoCloseable {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-dispatch-method] - RpcInvocationHandler.invoke() dispatch the call to the rpcMaster")
                         .stringify());
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, CONST.METHOD_INVOCATION_FLOW_RPC, routineSignature, "begin");
+                measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RPC, routineSignature, "begin");
             }
             
             // rpc switching
@@ -1060,7 +1060,7 @@ public class OpflowCommander implements AutoCloseable {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-retain] - RpcInvocationHandler.invoke() retains the reservedWorker")
                             .stringify());
-                    measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER, routineSignature, "retain");
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER, routineSignature, "retain");
                     return method.invoke(this.reservedWorker, args);
                 }
             }
@@ -1079,18 +1079,18 @@ public class OpflowCommander implements AutoCloseable {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-rescue] - RpcInvocationHandler.invoke() rescues by the reservedWorker")
                             .stringify());
-                    measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER, routineSignature, "rescue");
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER, routineSignature, "rescue");
                     return method.invoke(this.reservedWorker, args);
                 }
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-timeout] - RpcInvocationHandler.invoke() is timeout")
                         .stringify());
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "timeout");
+                measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "timeout");
                 throw new OpflowRequestTimeoutException();
             }
 
             if (rpcResult.isFailed()) {
-                measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "failed");
+                measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "failed");
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-failed] - RpcInvocationHandler.invoke() has failed")
                         .stringify());
@@ -1104,7 +1104,7 @@ public class OpflowCommander implements AutoCloseable {
                     .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-ok] - RpcInvocationHandler.invoke() return the output")
                     .stringify());
 
-            measurer.countRpcInvocation(CONST.COMPNAME_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "ok");
+            measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "ok");
 
             if (method.getReturnType() == void.class) return null;
 
@@ -1226,7 +1226,7 @@ public class OpflowCommander implements AutoCloseable {
     }
 
     public Map<String, Object> getRpcInvocationCounter() {
-        return measurer.getRpcInvocationCounter(CONST.COMPNAME_COMMANDER).toMap();
+        return measurer.getRpcInvocationCounter(OpflowConstant.COMP_COMMANDER).toMap();
     }
 
     public void resetRpcInvocationCounter() {
@@ -1235,6 +1235,6 @@ public class OpflowCommander implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance(CONST.COMPNAME_COMMANDER, componentId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_COMMANDER, componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

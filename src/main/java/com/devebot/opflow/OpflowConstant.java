@@ -24,6 +24,36 @@ public class OpflowConstant {
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW COMPONENTS
+
+    public final static String COMP_ENGINE = "engine";
+    public final static String COMP_COMMANDER = "commander";
+    public final static String COMP_SERVERLET = "serverlet";
+    public final static String COMP_PUBLISHER = "publisher";
+    public final static String COMP_CONFIGURER = "configurer";
+    public final static String COMP_SUBSCRIBER = "subscriber";
+    public final static String COMP_MEASURER = "measurer";
+    public final static String COMP_PROM_EXPORTER = "promExporter";
+    public final static String COMP_RESTRICTOR = "restrictor";
+    public final static String COMP_REQ_EXTRACTOR = "reqExtractor";
+    public final static String COMP_SPEED_METER = "speedMeter";
+    public final static String COMP_RPC_MASTER = "rpcMaster";
+    public final static String COMP_RPC_WORKER = "rpcWorker";
+    public final static String COMP_NATIVE_WORKER = "ReservedWorker";
+    public final static String COMP_REMOTE_WORKER = "DetachedWorker";
+    public final static String COMP_RPC_WATCHER = "rpcWatcher";
+    public final static String COMP_RPC_OBSERVER = "rpcObserver";
+    public final static String COMP_REST_SERVER = "restServer";
+
+    public final static String INFO_SECTION_RUNTIME = "miscellaneous";
+    public final static String INFO_SECTION_SOURCE_CODE = "source-code-info";
+
+    public final static String METHOD_INVOCATION_FLOW_NATIVE = "native";
+    public final static String METHOD_INVOCATION_FLOW_PUBSUB = "pubsub";
+    public final static String METHOD_INVOCATION_FLOW_RPC = "rpc";
+    public final static String METHOD_INVOCATION_FLOW_DETACHED_WORKER = "remote_method";
+    public final static String METHOD_INVOCATION_FLOW_RESERVED_WORKER = "backup_method";
+
     // engine - rabbitMQ
     public final static String OPFLOW_COMMON_APP_ID = "applicationId";
     public final static String OPFLOW_COMMON_INSTANCE_OWNER = "mode";
@@ -117,62 +147,6 @@ public class OpflowConstant {
     public final static String OPFLOW_OUTGOING_EXCHANGE_DURABLE = "outgoingExchangeDurable";
     public final static String OPFLOW_OUTGOING_ROUTING_KEY = "outgoingRoutingKey";
 
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW/AMQP PROTOCOL
-
-    public final String AMQP_PROTOCOL_VERSION;
-    public final String AMQP_HEADER_PROTOCOL_VERSION;
-    public final String AMQP_HEADER_ROUTINE_ID;
-    public final String AMQP_HEADER_ROUTINE_TIMESTAMP;
-    public final String AMQP_HEADER_ROUTINE_SIGNATURE;
-    public final String AMQP_HEADER_ROUTINE_SCOPE;
-    public final String AMQP_HEADER_ROUTINE_TAGS;
-    public final String AMQP_HEADER_PROGRESS_ENABLED;
-    public final String AMQP_HEADER_CONSUMER_ID;
-    public final String AMQP_HEADER_CONSUMER_TAG;
-    public final String AMQP_HEADER_RETURN_STATUS;
-
-    public final boolean LEGACY_HEADER_APPLIED;
-    public final boolean LEGACY_HEADER_ENABLED;
-
-    public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
-    public final static String LEGACY_HEADER_ROUTINE_TIMESTAMP = "requestTime";
-    public final static String LEGACY_HEADER_ROUTINE_SIGNATURE = "routineId";
-    public final static String LEGACY_HEADER_ROUTINE_SCOPE = "messageScope";
-    public final static String LEGACY_HEADER_ROUTINE_TAGS = "requestTags";
-
-    public final boolean LEGACY_ROUTINE_PINGPONG_APPLIED;
-    public final static String OPFLOW_ROUTINE_PINGPONG_ALIAS = "opflow_routine_ping_ball_pong";
-
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW COMPONENTS
-
-    public final String COMPNAME_ENGINE = "engine";
-    public final String COMPNAME_COMMANDER = "commander";
-    public final String COMPNAME_SERVERLET = "serverlet";
-    public final String COMPNAME_PUBLISHER = "publisher";
-    public final String COMPNAME_CONFIGURER = "configurer";
-    public final String COMPNAME_SUBSCRIBER = "subscriber";
-    public final String COMPNAME_MEASURER = "measurer";
-    public final String COMPNAME_PROM_EXPORTER = "promExporter";
-    public final String COMPNAME_RESTRICTOR = "restrictor";
-    public final String COMPNAME_REQ_EXTRACTOR = "reqExtractor";
-    public final String COMPNAME_SPEED_METER = "speedMeter";
-    public final String COMPNAME_RPC_MASTER = "rpcMaster";
-    public final String COMPNAME_RPC_WORKER = "rpcWorker";
-    public final String COMPNAME_NATIVE_WORKER = "ReservedWorker";
-    public final String COMPNAME_REMOTE_WORKER = "DetachedWorker";
-    public final String COMPNAME_RPC_WATCHER = "rpcWatcher";
-    public final String COMPNAME_RPC_OBSERVER = "rpcObserver";
-    public final String COMPNAME_REST_SERVER = "restServer";
-
-    public final static String INFO_SECTION_RUNTIME = "miscellaneous";
-    public final static String INFO_SECTION_SOURCE_CODE = "source-code-info";
-
-    public final String METHOD_INVOCATION_FLOW_NATIVE = "native";
-    public final String METHOD_INVOCATION_FLOW_PUBSUB = "pubsub";
-    public final String METHOD_INVOCATION_FLOW_RPC = "rpc";
-    public final static String METHOD_INVOCATION_FLOW_DETACHED_WORKER = "remote_method";
-    public final static String METHOD_INVOCATION_FLOW_RESERVED_WORKER = "backup_method";
-
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AMQP PARAMETERS
 
     public final static String AMQP_CONARG_URI = "uri";
@@ -200,6 +174,32 @@ public class OpflowConstant {
     public final static String AMQP_PARAM_APP_ID = "appId";
     public final static String AMQP_PARAM_MESSAGE_TTL = "expiration";
     public final static String AMQP_PARAM_REPLY_TO = "replyTo";
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW/AMQP PROTOCOL
+
+    public final String AMQP_PROTOCOL_VERSION;
+    public final String AMQP_HEADER_PROTOCOL_VERSION;
+    public final String AMQP_HEADER_ROUTINE_ID;
+    public final String AMQP_HEADER_ROUTINE_TIMESTAMP;
+    public final String AMQP_HEADER_ROUTINE_SIGNATURE;
+    public final String AMQP_HEADER_ROUTINE_SCOPE;
+    public final String AMQP_HEADER_ROUTINE_TAGS;
+    public final String AMQP_HEADER_PROGRESS_ENABLED;
+    public final String AMQP_HEADER_CONSUMER_ID;
+    public final String AMQP_HEADER_CONSUMER_TAG;
+    public final String AMQP_HEADER_RETURN_STATUS;
+
+    public final boolean LEGACY_HEADER_APPLIED;
+    public final boolean LEGACY_HEADER_ENABLED;
+
+    public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
+    public final static String LEGACY_HEADER_ROUTINE_TIMESTAMP = "requestTime";
+    public final static String LEGACY_HEADER_ROUTINE_SIGNATURE = "routineId";
+    public final static String LEGACY_HEADER_ROUTINE_SCOPE = "messageScope";
+    public final static String LEGACY_HEADER_ROUTINE_TAGS = "requestTags";
+
+    public final boolean LEGACY_ROUTINE_PINGPONG_APPLIED;
+    public final static String OPFLOW_ROUTINE_PINGPONG_ALIAS = "opflow_routine_ping_ball_pong";
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONSTRUCTORS
 

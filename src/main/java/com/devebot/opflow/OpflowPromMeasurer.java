@@ -242,7 +242,7 @@ public abstract class OpflowPromMeasurer {
             if (shadow != null) {
                 shadow.countRpcInvocation(componentType, eventName, routineSignature, status);
             }
-            if (CONST.COMPNAME_COMMANDER.equals(componentType)) {
+            if (OpflowConstant.COMP_COMMANDER.equals(componentType)) {
                 switch (eventName) {
                     case OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER:
                         switch (status) {

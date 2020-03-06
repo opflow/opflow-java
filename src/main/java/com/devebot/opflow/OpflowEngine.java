@@ -109,7 +109,7 @@ public class OpflowEngine implements AutoCloseable {
         params = OpflowObjectTree.ensureNonNull(params);
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, CONST.COMPNAME_MEASURER, OpflowPromMeasurer.NULL);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("engineId", componentId);
         
@@ -129,7 +129,7 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Engine[${engineId}][${instanceId}] - apply the protocol version [${protoVersion}] with AMQP headers: [${headers}]")
                 .stringify());
         
-        owner = CONST.COMPNAME_ENGINE;
+        owner = OpflowConstant.COMP_ENGINE;
         if (params.containsKey(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER)) {
             owner = params.get(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER).toString();
         }
@@ -429,7 +429,7 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Engine[${engineId}][${instanceId}].new() end!")
                 .stringify());
         
-        measurer.updateComponentInstance(CONST.COMPNAME_ENGINE, componentId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_ENGINE, componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     public String getExchangeName() {
@@ -741,7 +741,7 @@ public class OpflowEngine implements AutoCloseable {
                     .stringify());
             ConsumerInfo info = new ConsumerInfo(_connection, !_forceNewConnection, 
                     _channel, !_forceNewChannel, _queueName, _fixedQueue, _consumerId, _consumerTag);
-            if (CONST.COMPNAME_ENGINE.equals(owner)) {
+            if (OpflowConstant.COMP_ENGINE.equals(owner)) {
                 consumerInfos.add(info);
             }
             return info;
@@ -987,7 +987,7 @@ public class OpflowEngine implements AutoCloseable {
             }
         }
         
-        if (CONST.COMPNAME_ENGINE.equals(owner)) {
+        if (OpflowConstant.COMP_ENGINE.equals(owner)) {
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .put("owner", owner)
                     .text("Engine[${engineId}].close() - cancel consumers in [${owner}]")
@@ -1268,6 +1268,6 @@ public class OpflowEngine implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance(CONST.COMPNAME_ENGINE, componentId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_ENGINE, componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

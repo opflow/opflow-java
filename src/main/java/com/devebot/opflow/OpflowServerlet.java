@@ -34,13 +34,13 @@ public class OpflowServerlet implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
 
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[]{
-        CONST.COMPNAME_CONFIGURER,
-        CONST.COMPNAME_RPC_WORKER,
-        CONST.COMPNAME_SUBSCRIBER
+        OpflowConstant.COMP_CONFIGURER,
+        OpflowConstant.COMP_RPC_WORKER,
+        OpflowConstant.COMP_SUBSCRIBER
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[]{
-        CONST.COMPNAME_PROM_EXPORTER
+        OpflowConstant.COMP_PROM_EXPORTER
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
@@ -96,11 +96,11 @@ public class OpflowServerlet implements AutoCloseable {
         }
         listenerMap = listeners;
 
-        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(CONST.COMPNAME_PROM_EXPORTER));
+        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(OpflowConstant.COMP_PROM_EXPORTER));
 
-        Map<String, Object> configurerCfg = (Map<String, Object>) kwargs.get(CONST.COMPNAME_CONFIGURER);
-        Map<String, Object> rpcWorkerCfg = (Map<String, Object>) kwargs.get(CONST.COMPNAME_RPC_WORKER);
-        Map<String, Object> subscriberCfg = (Map<String, Object>) kwargs.get(CONST.COMPNAME_SUBSCRIBER);
+        Map<String, Object> configurerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_CONFIGURER);
+        Map<String, Object> rpcWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_RPC_WORKER);
+        Map<String, Object> subscriberCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_SUBSCRIBER);
 
         HashSet<String> checkExchange = new HashSet<>();
         HashSet<String> checkQueue = new HashSet<>();
@@ -171,7 +171,7 @@ public class OpflowServerlet implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put(CONST.COMPNAME_MEASURER, measurer);
+                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, configurerCfg).toMap());
             }
@@ -189,7 +189,7 @@ public class OpflowServerlet implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put(CONST.COMPNAME_MEASURER, measurer);
+                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, rpcWorkerCfg).toMap());
             }
@@ -207,7 +207,7 @@ public class OpflowServerlet implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put(CONST.COMPNAME_MEASURER, measurer);
+                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, subscriberCfg).toMap());
             }
@@ -228,7 +228,7 @@ public class OpflowServerlet implements AutoCloseable {
                 .stringify());
         }
 
-        measurer.updateComponentInstance(CONST.COMPNAME_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     public final void start() {
@@ -479,7 +479,7 @@ public class OpflowServerlet implements AutoCloseable {
                                 public void transform(Map<String, Object> opts) {
                                     OpflowEngine engine = rpcWorker.getEngine();
                                     opts.put(CONST.COMPONENT_ID, componentId);
-                                    opts.put(CONST.COMPNAME_RPC_WORKER, OpflowObjectTree.buildMap()
+                                    opts.put(OpflowConstant.COMP_RPC_WORKER, OpflowObjectTree.buildMap()
                                         .put(CONST.COMPONENT_ID, rpcWorker.getComponentId())
                                         .put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId())
                                         .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, rpcWorker.getIncomingQueueName())
@@ -785,6 +785,6 @@ public class OpflowServerlet implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance(CONST.COMPNAME_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }
