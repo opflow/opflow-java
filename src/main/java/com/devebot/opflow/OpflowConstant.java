@@ -142,7 +142,7 @@ public class OpflowConstant {
 
     public final boolean LEGACY_ROUTINE_PINGPONG_APPLIED;
     public final static String OPFLOW_ROUTINE_PINGPONG_ALIAS = "opflow_routine_ping_ball_pong";
-    
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW COMPONENTS
 
     public final String COMPNAME_ENGINE = "engine";
@@ -167,10 +167,11 @@ public class OpflowConstant {
     public final static String INFO_SECTION_RUNTIME = "miscellaneous";
     public final static String INFO_SECTION_SOURCE_CODE = "source-code-info";
 
-    public final String RPC_INVOCATION_FLOW_PUBLISHER = "publisher";
-    public final String RPC_INVOCATION_FLOW_RPC_MASTER = "master";
-    public final static String RPC_INVOCATION_FLOW_DETACHED_WORKER = "detached_worker";
-    public final static String RPC_INVOCATION_FLOW_RESERVED_WORKER = "reserved_worker";
+    public final String METHOD_INVOCATION_FLOW_NATIVE = "native";
+    public final String METHOD_INVOCATION_FLOW_PUBSUB = "pubsub";
+    public final String METHOD_INVOCATION_FLOW_RPC = "rpc";
+    public final static String METHOD_INVOCATION_FLOW_DETACHED_WORKER = "remote_method";
+    public final static String METHOD_INVOCATION_FLOW_RESERVED_WORKER = "backup_method";
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AMQP PARAMETERS
 

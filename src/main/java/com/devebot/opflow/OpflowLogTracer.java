@@ -34,7 +34,7 @@ public class OpflowLogTracer {
     private final static String DEFAULT_PARENT_ID_NAME = "_parentId_";
     private final static String DEFAULT_NODE_ID_NAME = "_nodeId_";
     private final static String DEFAULT_NODE_TYPE_NAME = "_nodeType_";
-    
+
     private final static Set<String> ALWAYS_ENABLED;
     private final static int TRACKING_DEPTH;
     private final static boolean KEEP_ORDER;
@@ -98,6 +98,10 @@ public class OpflowLogTracer {
     private String template;
     
     public final static OpflowLogTracer ROOT = new OpflowLogTracer();
+    
+    public static String getInstanceId() {
+        return ROOT.value.toString();
+    }
     
     public OpflowLogTracer() {
         this(null, "instanceId", ENVTOOL.getEnvironVariable("OPFLOW_INSTANCE_ID", OPFLOW_INSTANCE_ID), null);

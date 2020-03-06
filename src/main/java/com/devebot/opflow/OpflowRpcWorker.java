@@ -60,7 +60,7 @@ public class OpflowRpcWorker implements AutoCloseable {
 
         brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
-        brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "rpc_worker");
+        brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, CONST.COMPNAME_RPC_WORKER);
 
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME));
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE));
@@ -148,7 +148,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 .text("RpcWorker[${rpcWorkerId}][${instanceId}].new() end!")
                 .stringify());
 
-        measurer.updateComponentInstance("rpc_worker", componentId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance(CONST.COMPNAME_RPC_WORKER, componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     private OpflowEngine.ConsumerInfo consumerInfo;
@@ -240,7 +240,7 @@ public class OpflowRpcWorker implements AutoCloseable {
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineSignature)) {
                         count++;
-                        measurer.countRpcInvocation("rpc_worker", componentId, routineSignature, "process");
+                        measurer.countRpcInvocation(CONST.COMPNAME_RPC_WORKER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
                         if (nextAction == null || nextAction == OpflowRpcListener.DONE) break;
                     }
@@ -356,6 +356,6 @@ public class OpflowRpcWorker implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance("rpc_worker", componentId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance(CONST.COMPNAME_RPC_WORKER, componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

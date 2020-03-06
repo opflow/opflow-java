@@ -79,7 +79,7 @@ public class OpflowEngine implements AutoCloseable {
     private final String componentId;
     private final OpflowPromMeasurer measurer;
     
-    private String mode;
+    private String owner;
     private ConnectionFactory factory;
     private String producingConnectionId;
     private volatile Connection producingConnection;
@@ -129,9 +129,9 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Engine[${engineId}][${instanceId}] - apply the protocol version [${protoVersion}] with AMQP headers: [${headers}]")
                 .stringify());
         
-        mode = CONST.COMPNAME_ENGINE;
+        owner = CONST.COMPNAME_ENGINE;
         if (params.containsKey(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER)) {
-            mode = params.get(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER).toString();
+            owner = params.get(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER).toString();
         }
         
         try {
@@ -429,7 +429,7 @@ public class OpflowEngine implements AutoCloseable {
                 .text("Engine[${engineId}][${instanceId}].new() end!")
                 .stringify());
         
-        measurer.updateComponentInstance("engine", componentId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance(CONST.COMPNAME_ENGINE, componentId, OpflowPromMeasurer.GaugeAction.INC);
     }
 
     public String getExchangeName() {
@@ -741,7 +741,9 @@ public class OpflowEngine implements AutoCloseable {
                     .stringify());
             ConsumerInfo info = new ConsumerInfo(_connection, !_forceNewConnection, 
                     _channel, !_forceNewChannel, _queueName, _fixedQueue, _consumerId, _consumerTag);
-            if (CONST.COMPNAME_ENGINE.equals(mode)) consumerInfos.add(info);
+            if (CONST.COMPNAME_ENGINE.equals(owner)) {
+                consumerInfos.add(info);
+            }
             return info;
         } catch(IOException exception) {
             if (logConsume.ready(LOG, Level.ERROR)) LOG.error(logConsume
@@ -985,10 +987,10 @@ public class OpflowEngine implements AutoCloseable {
             }
         }
         
-        if (CONST.COMPNAME_ENGINE.equals(mode)) {
+        if (CONST.COMPNAME_ENGINE.equals(owner)) {
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                    .put("mode", mode)
-                    .text("Engine[${engineId}].close() - cancel consumers")
+                    .put("owner", owner)
+                    .text("Engine[${engineId}].close() - cancel consumers in [${owner}]")
                     .stringify());
             for(ConsumerInfo consumerInfo: consumerInfos) {
                 this.cancelConsumer(consumerInfo);
@@ -1101,7 +1103,7 @@ public class OpflowEngine implements AutoCloseable {
                             .put("connectionId", producingConnectionId)
                             .text("Engine[${engineId}]shared producingConnection[${connectionId}] is created")
                             .stringify(true));
-                    measurer.updateEngineConnection(factory, "producing", OpflowPromMeasurer.GaugeAction.INC);
+                    measurer.updateEngineConnection(factory, owner, "producing", OpflowPromMeasurer.GaugeAction.INC);
                 }
             }
         }
@@ -1198,7 +1200,7 @@ public class OpflowEngine implements AutoCloseable {
                             .put("connectionId", consumingConnectionId)
                             .text("Engine[${engineId}] shared consumingConnection[${connectionId}] is created")
                             .stringify(true));
-                    measurer.updateEngineConnection(factory, "consuming", OpflowPromMeasurer.GaugeAction.INC);
+                    measurer.updateEngineConnection(factory, owner, "consuming", OpflowPromMeasurer.GaugeAction.INC);
                 }
             }
         }
@@ -1266,6 +1268,6 @@ public class OpflowEngine implements AutoCloseable {
     
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance("engine", componentId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance(CONST.COMPNAME_ENGINE, componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

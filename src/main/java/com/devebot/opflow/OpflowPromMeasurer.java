@@ -23,15 +23,11 @@ public abstract class OpflowPromMeasurer {
     
     public abstract void updateComponentInstance(String componentType, String componentId, GaugeAction action);
     
-    public abstract void removeComponentInstance(String componentType, String componentId);
+    public abstract void updateEngineConnection(ConnectionFactory factory, String connectionOwner, String connectionType, GaugeAction action);
     
-    public abstract void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action);
+    public abstract void countRpcInvocation(String componentType, String eventName, String routineSignature, String status);
     
-    public abstract void updateActiveChannel(String componentType, String componentId, GaugeAction action);
-    
-    public abstract void countRpcInvocation(String moduleName, String eventName, String routineSignature, String status);
-    
-    public abstract RpcInvocationCounter getRpcInvocationCounter(String moduleName);
+    public abstract RpcInvocationCounter getRpcInvocationCounter(String componentType);
     
     public abstract Map<String, Object> resetRpcInvocationCounter();
     
@@ -230,39 +226,25 @@ public abstract class OpflowPromMeasurer {
         @Override
         public void updateComponentInstance(String componentType, String componentId, GaugeAction action) {
             if (shadow != null) {
-                shadow.removeComponentInstance(componentType, componentId);
+                shadow.updateComponentInstance(componentType, componentId, action);
             }
         }
 
         @Override
-        public void removeComponentInstance(String componentType, String componentId) {
+        public void updateEngineConnection(ConnectionFactory factory, String connectionOwner, String connectionType, GaugeAction action) {
             if (shadow != null) {
-                shadow.removeComponentInstance(componentType, componentId);
+                shadow.updateEngineConnection(factory, connectionOwner, connectionType, action);
             }
         }
 
         @Override
-        public void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action) {
+        public void countRpcInvocation(String componentType, String eventName, String routineSignature, String status) {
             if (shadow != null) {
-                shadow.updateEngineConnection(factory, connectionType, action);
+                shadow.countRpcInvocation(componentType, eventName, routineSignature, status);
             }
-        }
-
-        @Override
-        public void updateActiveChannel(String componentType, String componentId, GaugeAction action) {
-            if (shadow != null) {
-                shadow.updateActiveChannel(componentType, componentId, action);
-            }
-        }
-
-        @Override
-        public void countRpcInvocation(String moduleName, String eventName, String routineSignature, String status) {
-            if (shadow != null) {
-                shadow.countRpcInvocation(moduleName, eventName, routineSignature, status);
-            }
-            if (CONST.COMPNAME_COMMANDER.equals(moduleName)) {
+            if (CONST.COMPNAME_COMMANDER.equals(componentType)) {
                 switch (eventName) {
-                    case OpflowConstant.RPC_INVOCATION_FLOW_RESERVED_WORKER:
+                    case OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER:
                         switch (status) {
                             case "rescue":
                                 counter.incDirectRescue();
@@ -272,7 +254,7 @@ public abstract class OpflowPromMeasurer {
                                 break;
                         }
                         break;
-                    case OpflowConstant.RPC_INVOCATION_FLOW_DETACHED_WORKER:
+                    case OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER:
                         switch (status) {
                             case "ok":
                                 counter.incRemoteSuccess();
@@ -292,7 +274,7 @@ public abstract class OpflowPromMeasurer {
         }
         
         @Override
-        public RpcInvocationCounter getRpcInvocationCounter(String moduleName) {
+        public RpcInvocationCounter getRpcInvocationCounter(String componentType) {
             return counter;
         }
 
@@ -310,15 +292,7 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void removeComponentInstance(String componentType, String componentId) {
-        }
-
-        @Override
-        public void updateEngineConnection(ConnectionFactory factory, String connectionType, GaugeAction action) {
-        }
-
-        @Override
-        public void updateActiveChannel(String componentType, String componentId, GaugeAction action) {
+        public void updateEngineConnection(ConnectionFactory factory, String connectionOwner, String connectionType, GaugeAction action) {
         }
 
         @Override
