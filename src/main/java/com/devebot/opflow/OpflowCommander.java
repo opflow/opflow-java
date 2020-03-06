@@ -100,8 +100,11 @@ public class OpflowCommander implements AutoCloseable {
         if (configLoader != null) {
             kwargs = configLoader.loadConfiguration();
         }
+        
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
-        strictMode = OpflowObjectTree.getOptionValue(kwargs, "strictMode", Boolean.class, Boolean.FALSE);
+        
+        strictMode = OpflowObjectTree.getOptionValue(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.class, Boolean.FALSE);
+        
         componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", componentId);
         

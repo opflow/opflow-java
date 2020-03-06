@@ -47,6 +47,7 @@ public class OpflowServerlet implements AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
 
+    private final boolean strictMode;
     private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
@@ -58,8 +59,6 @@ public class OpflowServerlet implements AutoCloseable {
     private Instantiator instantiator;
 
     private final ListenerDescriptor listenerMap;
-
-    private final Map<String, Object> kwargs;
 
     public OpflowServerlet(ListenerDescriptor listeners, OpflowConfig.Loader loader) throws OpflowBootstrapException {
         this(listeners, loader, null);
@@ -79,9 +78,11 @@ public class OpflowServerlet implements AutoCloseable {
             kwargs = configLoader.loadConfiguration();
         }
 
-        this.kwargs = OpflowObjectTree.ensureNonNull(kwargs);
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
 
-        componentId = OpflowUtil.getOptionField(this.kwargs, CONST.COMPONENT_ID, true);
+        strictMode = OpflowObjectTree.getOptionValue(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.class, Boolean.FALSE);
+
+        componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", componentId);
 
         if (logTracer.ready(LOG, Level.INFO)) {
@@ -97,9 +98,9 @@ public class OpflowServerlet implements AutoCloseable {
 
         measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(CONST.COMPNAME_PROM_EXPORTER));
 
-        Map<String, Object> configurerCfg = (Map<String, Object>) this.kwargs.get(CONST.COMPNAME_CONFIGURER);
-        Map<String, Object> rpcWorkerCfg = (Map<String, Object>) this.kwargs.get(CONST.COMPNAME_RPC_WORKER);
-        Map<String, Object> subscriberCfg = (Map<String, Object>) this.kwargs.get(CONST.COMPNAME_SUBSCRIBER);
+        Map<String, Object> configurerCfg = (Map<String, Object>) kwargs.get(CONST.COMPNAME_CONFIGURER);
+        Map<String, Object> rpcWorkerCfg = (Map<String, Object>) kwargs.get(CONST.COMPNAME_RPC_WORKER);
+        Map<String, Object> subscriberCfg = (Map<String, Object>) kwargs.get(CONST.COMPNAME_SUBSCRIBER);
 
         HashSet<String> checkExchange = new HashSet<>();
         HashSet<String> checkQueue = new HashSet<>();

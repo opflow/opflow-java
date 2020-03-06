@@ -62,6 +62,11 @@ public class OpflowRpcWorker implements AutoCloseable {
         brokerParams.put(CONST.COMPNAME_MEASURER, measurer);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "rpc_worker");
 
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY));
+
         // Deprecated: support BDD testing script
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME));
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY));

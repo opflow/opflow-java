@@ -117,7 +117,11 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
                 OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
                 OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
-                OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT
+                OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
+                OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME,
+                OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE,
+                OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE,
+                OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY,
             });
 
             if (handlerNode.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME) == null) {
@@ -332,7 +336,11 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
                         OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
                         OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
-                        OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT
+                        OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
+                        OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME,
+                        OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE,
+                        OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE,
+                        OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY,
                     });
                 }
                 if (CONST.COMPNAME_CONFIGURER.equals(componentName)) {
@@ -424,7 +432,7 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_COMMON_AUTORUN,
         OpflowConstant.OPFLOW_COMMON_ENABLED,
         OpflowConstant.OPFLOW_COMMON_VERBOSE,
-        "strictMode",
+        OpflowConstant.OPFLOW_COMMON_STRICT,
         OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED,
         OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED,
         OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED,
