@@ -193,8 +193,15 @@ public class OpflowConfig {
         @Override
         public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
-
             Map<String, Object> params = new HashMap<>();
+
+            // extract the top-level configuration
+            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, CONST.COMPNAME_COMMANDER});
+            OpflowUtil.copyParameters(params, componentRoot, new String[] {
+                OpflowConstant.OPFLOW_COMMON_STRICT,
+            });
+
+            // extract the child-level configuration
             String[] componentPath = new String[] {CONST.FRAMEWORK_ID, CONST.COMPNAME_COMMANDER, ""};
             for(String componentName:OpflowCommander.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
@@ -317,8 +324,15 @@ public class OpflowConfig {
         @Override
         public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
-        
             Map<String, Object> params = new HashMap<>();
+
+            // extract the top-level configuration
+            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, CONST.COMPNAME_SERVERLET});
+            OpflowUtil.copyParameters(params, componentRoot, new String[] {
+                OpflowConstant.OPFLOW_COMMON_STRICT,
+            });
+
+            // extract the child-level configuration
             String[] componentPath = new String[] {CONST.FRAMEWORK_ID, CONST.COMPNAME_SERVERLET, ""};
             for(String componentName:OpflowServerlet.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;

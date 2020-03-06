@@ -62,7 +62,8 @@ public class OpflowEngine implements AutoCloseable {
         OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE,
         OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE,
         OpflowConstant.OPFLOW_COMMON_APP_ID,
-        "threadPoolType", "threadPoolSize",
+        "threadPoolType",
+        "threadPoolSize",
     };
     
     public static final String[] SHARED_PARAMETERS = OpflowCollectionUtil.mergeArrays(PARAMETER_NAMES, new String[] {
@@ -499,12 +500,14 @@ public class OpflowEngine implements AutoCloseable {
                         .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
             }
             
-            if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                    .put("engineId", componentId)
-                    .put("appId", appId)
-                    .put("customKey", reqRoutingKey)
-                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish] - Engine[${engineId}][${instanceId}] - produce() is invoked")
-                    .stringify());
+            if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) {
+                LOG.info(reqTracer
+                        .put("engineId", componentId)
+                        .put("appId", appId)
+                        .put("routingKey", reqRoutingKey)
+                        .text("Request[${requestId}][${requestTime}][x-engine-msg-publish] - Engine[${engineId}][${instanceId}] - produce() is invoked")
+                        .stringify());
+            }
             
             Channel _channel = getProducingChannel();
             if (_channel == null || !_channel.isOpen()) {
@@ -512,18 +515,22 @@ public class OpflowEngine implements AutoCloseable {
             }
             _channel.basicPublish(reqExchangeName, reqRoutingKey, propBuilder.build(), body);
         } catch (IOException exception) {
-            if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
-                    .put("exceptionClass", exception.getClass().getName())
-                    .put("exceptionMessage", exception.getMessage())
-                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish-failed] - produce() has failed")
-                    .stringify());
+            if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) {
+                LOG.error(reqTracer
+                        .put("exceptionClass", exception.getClass().getName())
+                        .put("exceptionMessage", exception.getMessage())
+                        .text("Request[${requestId}][${requestTime}][x-engine-msg-publish-failed] - produce() has failed")
+                        .stringify());
+            }
             throw new OpflowOperationException(exception);
         } catch (TimeoutException exception) {
-            if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) LOG.error(reqTracer
-                    .put("exceptionClass", exception.getClass().getName())
-                    .put("exceptionMessage", exception.getMessage())
-                    .text("Request[${requestId}][${requestTime}][x-engine-msg-publish-timeout] - produce() is timeout")
-                    .stringify());
+            if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) {
+                LOG.error(reqTracer
+                        .put("exceptionClass", exception.getClass().getName())
+                        .put("exceptionMessage", exception.getMessage())
+                        .text("Request[${requestId}][${requestTime}][x-engine-msg-publish-timeout] - produce() is timeout")
+                        .stringify());
+            }
             throw new OpflowOperationException(exception);
         }
     }
