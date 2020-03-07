@@ -86,12 +86,6 @@ public class OpflowRpcWorker implements AutoCloseable {
             throw new OpflowBootstrapException("incomingQueueName must not be null");
         }
         
-        responseQueueName = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
-        
-        if (incomingQueueName != null && responseQueueName != null && incomingQueueName.equals(responseQueueName)) {
-            throw new OpflowBootstrapException("incomingQueueName should be different with responseQueueName");
-        }
-        
         if (params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE) instanceof Boolean) {
             incomingQueueAutoDelete = (Boolean) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE);
         } else {
@@ -129,15 +123,20 @@ public class OpflowRpcWorker implements AutoCloseable {
             executor.assertQueue(incomingQueueName);
         }
         
+        responseQueueName = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
+        
+        if (incomingQueueName != null && responseQueueName != null && incomingQueueName.equals(responseQueueName)) {
+            throw new OpflowBootstrapException("incomingQueueName should be different with responseQueueName");
+        }
+        
         if (responseQueueName != null) {
             executor.assertQueue(responseQueueName);
         }
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .put("dispatchName", incomingQueueName)
-                .put("responseName", responseQueueName)
+                .put("queueName", incomingQueueName)
                 .tags("RpcWorker.new() parameters")
-                .text("RpcWorker[${rpcWorkerId}].new() dispatchQueueName: '${dispatchName}', responseQueueName: '${responseName}'")
+                .text("RpcWorker[${rpcWorkerId}].new() queueName: '${queueName}'")
                 .stringify());
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer

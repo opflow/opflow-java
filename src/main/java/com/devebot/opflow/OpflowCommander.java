@@ -767,8 +767,8 @@ public class OpflowCommander implements AutoCloseable {
                                         opt2.put("pauseDuration", restrictor.getPauseDuration());
                                     }
                                     opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS, restrictor.getSemaphoreLimit());
-                                    opt2.put("semaphoreUsedPermits", restrictor.getSemaphoreLimit() - availablePermits);
-                                    opt2.put("semaphoreFreePermits", availablePermits);
+                                    opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_USED_PERMITS, restrictor.getSemaphoreLimit() - availablePermits);
+                                    opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_FREE_PERMITS, availablePermits);
                                     opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED, restrictor.isSemaphoreEnabled());
                                     opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT, restrictor.getSemaphoreTimeout());
                                 }
@@ -790,7 +790,7 @@ public class OpflowCommander implements AutoCloseable {
                                 .put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime))
                                 .toMap());
                     }
-
+                    
                     // git commit information
                     if (checkOption(flag, SCOPE_INFO)) {
                         opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()

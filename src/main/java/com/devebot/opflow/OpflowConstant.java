@@ -170,6 +170,9 @@ public class OpflowConstant {
     public final static String AMQP_CONARG_SERVER_CERT_FILE = "serverCertFile";
     public final static String AMQP_CONARG_TRUST_STORE_FILE = "trustStoreFile";
     public final static String AMQP_CONARG_TRUST_PASSPHRASE = "trustPassphrase";
+    
+    public final static String AMQP_CONARG_SHARED_THREAD_POOL_TYPE = "threadPoolType";
+    public final static String AMQP_CONARG_SHARED_THREAD_POOL_SIZE = "threadPoolSize";
 
     public final static String AMQP_PARAM_APP_ID = "appId";
     public final static String AMQP_PARAM_MESSAGE_TTL = "expiration";

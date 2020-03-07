@@ -61,9 +61,9 @@ public class OpflowEngine implements AutoCloseable {
         OpflowConstant.AMQP_CONARG_SERVER_CERT_FILE,
         OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE,
         OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE,
+        OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE,
+        OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE,
         OpflowConstant.OPFLOW_COMMON_APP_ID,
-        "threadPoolType",
-        "threadPoolSize",
     };
     
     public static final String[] SHARED_PARAMETERS = OpflowCollectionUtil.mergeArrays(PARAMETER_NAMES, new String[] {
@@ -90,7 +90,10 @@ public class OpflowEngine implements AutoCloseable {
     private volatile Channel consumingChannel;
     private volatile BlockedListener consumingBlockedListener;
     private List<ConsumerInfo> consumerInfos = new LinkedList<>();
-    private ExecutorService threadExecutor;
+    
+    private ExecutorService sharedExecutor;
+    private String threadPoolType = null;
+    private Integer threadPoolSize = null;
     
     private final Object producingConnectionLock = new Object();
     private final Object producingChannelLock = new Object();
@@ -136,58 +139,6 @@ public class OpflowEngine implements AutoCloseable {
         
         try {
             factory = new ConnectionFactory();
-            
-            String threadPoolType = null;
-            if (params.get("threadPoolType") instanceof String) {
-                threadPoolType = (String) params.get("threadPoolType");
-            }
-            
-            Integer threadPoolSize = null;
-            if (params.get("threadPoolSize") instanceof Integer) {
-                threadPoolSize = (Integer)params.get("threadPoolSize");
-            }
-            if (threadPoolSize == null || threadPoolSize <= 0) {
-                threadPoolSize = OpflowSysInfo.getNumberOfProcessors();
-            }
-            if (threadPoolSize <= 0) {
-                threadPoolSize = 2;
-            }
-            
-            threadExecutor = null;
-            if (null != threadPoolType) switch (threadPoolType) {
-                case "cached":
-                    threadExecutor = Executors.newCachedThreadPool();
-                    break;
-                case "fixed":
-                    threadExecutor = Executors.newFixedThreadPool(threadPoolSize);
-                    break;
-                case "single":
-                    threadExecutor = Executors.newSingleThreadExecutor();
-                    break;
-                case "single-scheduled":
-                    threadExecutor = Executors.newSingleThreadScheduledExecutor();
-                    break;
-                case "scheduled":
-                    threadExecutor = Executors.newScheduledThreadPool(threadPoolSize);
-                    break;
-                default:
-                    break;
-            }
-            
-            if (threadExecutor != null) {
-                factory.setSharedExecutor(threadExecutor);
-                if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                        .put("threadPoolType", threadPoolType)
-                        .put("threadPoolSize", threadPoolSize)
-                        .text("Engine[${engineId}] use SharedExecutor type: ${threadPoolType} / ${threadPoolSize}")
-                        .stringify());
-            } else {
-                if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                        .put("threadPoolType", threadPoolType)
-                        .put("threadPoolSize", threadPoolSize)
-                        .text("Engine[${engineId}] use default SharedExecutor")
-                        .stringify());
-            }
             
             String uri = (String) params.get(OpflowConstant.AMQP_CONARG_URI);
             if (uri != null && uri.length() > 0) {
@@ -348,6 +299,35 @@ public class OpflowEngine implements AutoCloseable {
                         .stringify());
             }
 
+            threadPoolType = null;
+            threadPoolSize = null;
+            if (params.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE) instanceof String) {
+                threadPoolType = (String) params.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE);
+                if (params.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE) instanceof Integer) {
+                    threadPoolSize = (Integer)params.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE);
+                }
+                if (threadPoolSize == null || threadPoolSize <= 0) {
+                    threadPoolSize = OpflowSysInfo.getNumberOfProcessors();
+                }
+                if (threadPoolSize <= 0) {
+                    threadPoolSize = 2;
+                }
+            }
+            
+            if (threadPoolType != null) {
+                if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                        .put("threadPoolType", threadPoolType)
+                        .put("threadPoolSize", threadPoolSize)
+                        .text("Engine[${engineId}] use SharedExecutor type: ${threadPoolType} / ${threadPoolSize}")
+                        .stringify());
+            } else {
+                if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                        .put("threadPoolType", threadPoolType)
+                        .put("threadPoolSize", threadPoolSize)
+                        .text("Engine[${engineId}] use default SharedExecutor")
+                        .stringify());
+            }
+            
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .put("channelMax", channelMax)
                     .put("frameMax", frameMax)
@@ -934,19 +914,6 @@ public class OpflowEngine implements AutoCloseable {
      */
     @Override
     public void close() {
-        if (threadExecutor != null) {
-            threadExecutor.shutdown();
-            try {
-                if (!threadExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                    threadExecutor.shutdownNow();
-                    threadExecutor.awaitTermination(5, TimeUnit.SECONDS);
-                }
-            } catch (InterruptedException ie) {
-                threadExecutor.shutdownNow();
-            }
-            threadExecutor = null;
-        }
-
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
             .text("Engine[${engineId}].close() - close producingChannel, producingConnection")
             .stringify());
@@ -997,7 +964,20 @@ public class OpflowEngine implements AutoCloseable {
             }
             consumerInfos.clear();
         }
-
+        
+        if (sharedExecutor != null) {
+            sharedExecutor.shutdown();
+            try {
+                if (!sharedExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    sharedExecutor.shutdownNow();
+                    sharedExecutor.awaitTermination(5, TimeUnit.SECONDS);
+                }
+            } catch (InterruptedException ie) {
+                sharedExecutor.shutdownNow();
+            }
+            sharedExecutor = null;
+        }
+        
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
             .text("Engine[${engineId}].close() - close consumingChannel, consumingConnection")
             .stringify());
@@ -1046,6 +1026,32 @@ public class OpflowEngine implements AutoCloseable {
                 return null; // try to connection
             }
         });
+    }
+    
+    private ExecutorService assertSharedExecutor() {
+        sharedExecutor = null;
+        if (null != threadPoolType) {
+            switch (threadPoolType) {
+                case "cached":
+                    sharedExecutor = Executors.newCachedThreadPool();
+                    break;
+                case "fixed":
+                    sharedExecutor = Executors.newFixedThreadPool(threadPoolSize);
+                    break;
+                case "single":
+                    sharedExecutor = Executors.newSingleThreadExecutor();
+                    break;
+                case "single-scheduled":
+                    sharedExecutor = Executors.newSingleThreadScheduledExecutor();
+                    break;
+                case "scheduled":
+                    sharedExecutor = Executors.newScheduledThreadPool(threadPoolSize);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return sharedExecutor;
     }
     
     private String getConnectionId(Connection conn) {
@@ -1153,6 +1159,12 @@ public class OpflowEngine implements AutoCloseable {
         if (consumingConnection == null || !consumingConnection.isOpen()) {
             synchronized (consumingConnectionLock) {
                 if (consumingConnection == null || !consumingConnection.isOpen()) {
+                    if (sharedExecutor == null) {
+                        sharedExecutor = assertSharedExecutor();
+                        if (sharedExecutor != null) {
+                            factory.setSharedExecutor(sharedExecutor);
+                        }
+                    }
                     consumingConnectionId = OpflowUUID.getBase64ID();
                     consumingConnection = factory.newConnection();
                     consumingConnection.setId(consumingConnectionId);

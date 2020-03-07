@@ -497,7 +497,7 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
         OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT,
         OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT,
-        "threadPoolSize"
+        OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE
     });
     
     private static final String[] INTEGER_ARRAY_FIELDS = new String[] { OpflowConstant.OPFLOW_COMMON_PORTS };
