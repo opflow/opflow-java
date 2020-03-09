@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -50,5 +51,9 @@ public class OpflowCollectionUtil {
     
     public static String[] distinct(String[] source) {
         return (new HashSet<String>(Arrays.asList(source))).toArray(new String[0]);
+    }
+    
+    public static Set<String> arrayToSet(String[] source) {
+        return (new HashSet<>(Arrays.asList(source)));
     }
 }

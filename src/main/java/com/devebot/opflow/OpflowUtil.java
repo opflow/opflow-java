@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.regex.Pattern;
 import java.util.LinkedHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -521,6 +523,15 @@ public class OpflowUtil {
         bag = new ArrayList<>(new HashSet<>(bag));
         Collections.reverse(bag);
         return bag;
+    }
+    
+    public static String getMethodSignature(Class clazz, String methodName, Class ... args) {
+        try {
+            Method method = clazz.getMethod(methodName, args);
+            return method.toString();
+        } catch (NoSuchMethodException | SecurityException ex) {
+            return null;
+        }
     }
     
     public static String getMethodSignature(Method method) {

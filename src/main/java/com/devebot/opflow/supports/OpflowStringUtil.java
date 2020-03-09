@@ -1,5 +1,10 @@
 package com.devebot.opflow.supports;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 
@@ -66,6 +71,39 @@ public class OpflowStringUtil {
             return minmax;
         }
         catch (Exception e) {
+            return null;
+        }
+    }
+    
+    public static String fromInputStream(InputStream inputStream) {
+        if (inputStream == null) {
+            return null;
+        }
+        try {
+            return fromReader(new InputStreamReader(inputStream, "UTF-8"), true);
+        }
+        catch (UnsupportedEncodingException e) {
+            return null;
+        }
+    }
+    
+    public static String fromReader(Reader initialReader, boolean closeAtTheEnd) {
+        if (initialReader == null) {
+            return null;
+        }
+        try {
+            char[] arr = new char[4 * 1024];
+            StringBuilder buffer = new StringBuilder();
+            int numCharsRead;
+            while ((numCharsRead = initialReader.read(arr, 0, arr.length)) != -1) {
+                buffer.append(arr, 0, numCharsRead);
+            }
+            if (closeAtTheEnd) {
+                initialReader.close();
+            }
+            return buffer.toString();
+        }
+        catch (IOException ioe) {
             return null;
         }
     }
