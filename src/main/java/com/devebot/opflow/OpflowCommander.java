@@ -630,11 +630,11 @@ public class OpflowCommander implements AutoCloseable {
         
         private void activateWorkerForRpcInvocation(RpcInvocationHandler handler, String type, boolean state) {
             if (OpflowConstant.COMP_REMOTE_WORKER.equals(type)) {
-                handler.setDetachedWorkerActive(state);
+                handler.setRemoteAMQPWorkerActive(state);
                 return;
             }
             if (OpflowConstant.COMP_NATIVE_WORKER.equals(type)) {
-                handler.setReservedWorkerActive(state);
+                handler.setNativeWorkerActive(state);
                 return;
             }
         }
@@ -876,11 +876,11 @@ public class OpflowCommander implements AutoCloseable {
                     public void transform(Map<String, Object> opts) {
                         opts.put("class", entry.getKey());
                         opts.put("methods", val.getMethodNames());
-                        opts.put("isReservedWorkerActive", val.isReservedWorkerActive());
-                        opts.put("isReservedWorkerAvailable", val.isReservedWorkerAvailable());
-                        opts.put("isDetachedWorkerActive", val.isDetachedWorkerActive());
-                        if (val.getReservedWorkerClassName() != null) {
-                            opts.put("reservedWorkerClassName", val.getReservedWorkerClassName());
+                        opts.put("isReservedWorkerActive", val.isNativeWorkerActive());
+                        opts.put("isReservedWorkerAvailable", val.isNativeWorkerAvailable());
+                        opts.put("isDetachedWorkerActive", val.isRemoteAMQPWorkerActive());
+                        if (val.getNativeWorkerClassName() != null) {
+                            opts.put("reservedWorkerClassName", val.getNativeWorkerClassName());
                         }
                     }
                 }).toMap());
@@ -900,18 +900,25 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowPubsubHandler publisher;
         
         private final Class clazz;
-        private final Object reservedWorker;
-        private final boolean reservedWorkerEnabled;
+        private final Object nativeWorker;
+        private final boolean nativeWorkerEnabled;
+        private boolean nativeWorkerActive = true;
         private final Map<String, String> aliasOfMethod = new HashMap<>();
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
         
-        private boolean detachedWorkerActive = true;
-        private boolean reservedWorkerActive = true;
+        private boolean remoteAMQPWorkerActive = true;
         
-        public RpcInvocationHandler(OpflowLogTracer logTracer, OpflowPromMeasurer measurer,
-                OpflowRestrictorMaster restrictor, OpflowReqExtractor reqExtractor, OpflowRpcWatcher rpcWatcher,
-                OpflowRpcMaster rpcMaster, OpflowPubsubHandler publisher,
-                Class clazz, Object reservedWorker, boolean reservedWorkerEnabled
+        public RpcInvocationHandler(
+            OpflowLogTracer logTracer,
+            OpflowPromMeasurer measurer,
+            OpflowRestrictorMaster restrictor,
+            OpflowReqExtractor reqExtractor,
+            OpflowRpcWatcher rpcWatcher,
+            OpflowRpcMaster rpcMaster,
+            OpflowPubsubHandler publisher,
+            Class clazz,
+            Object nativeWorker,
+            boolean nativeWorkerEnabled
         ) {
             this.logTracer = logTracer;
             this.measurer = measurer;
@@ -923,8 +930,9 @@ public class OpflowCommander implements AutoCloseable {
             this.publisher = publisher;
             
             this.clazz = clazz;
-            this.reservedWorker = reservedWorker;
-            this.reservedWorkerEnabled = reservedWorkerEnabled;
+            this.nativeWorker = nativeWorker;
+
+            this.nativeWorkerEnabled = nativeWorkerEnabled;
             for (Method method : this.clazz.getDeclaredMethods()) {
                 String methodSignature = OpflowUtil.getMethodSignature(method);
                 OpflowSourceRoutine routine = OpflowUtil.extractMethodAnnotation(method, OpflowSourceRoutine.class);
@@ -948,34 +956,34 @@ public class OpflowCommander implements AutoCloseable {
             return methodIsAsync.keySet();
         }
 
-        public boolean isDetachedWorkerActive() {
-            return detachedWorkerActive;
+        public boolean isNativeWorkerActive() {
+            return nativeWorkerActive;
         }
 
-        public void setDetachedWorkerActive(boolean detachedWorkerActive) {
-            this.detachedWorkerActive = detachedWorkerActive;
+        public void setNativeWorkerActive(boolean nativeWorkerActive) {
+            this.nativeWorkerActive = nativeWorkerActive;
         }
 
-        public boolean isReservedWorkerActive() {
-            return reservedWorkerActive;
+        public boolean isNativeWorkerAvailable() {
+            return this.nativeWorker != null && this.nativeWorkerEnabled && this.nativeWorkerActive;
         }
 
-        public void setReservedWorkerActive(boolean reservedWorkerActive) {
-            this.reservedWorkerActive = reservedWorkerActive;
-        }
-
-        public boolean isReservedWorkerAvailable() {
-            return this.reservedWorker != null && this.reservedWorkerEnabled && this.reservedWorkerActive;
-        }
-
-        public String getReservedWorkerClassName() {
-            if (this.reservedWorker == null) return null;
-            return this.reservedWorker.getClass().getName();
+        public String getNativeWorkerClassName() {
+            if (this.nativeWorker == null) return null;
+            return this.nativeWorker.getClass().getName();
         }
         
-        public Integer getReservedWorkerHashCode() {
-            if (this.reservedWorker == null) return null;
-            return this.reservedWorker.hashCode();
+        public Integer getNativeWorkerHashCode() {
+            if (this.nativeWorker == null) return null;
+            return this.nativeWorker.hashCode();
+        }
+        
+        public boolean isRemoteAMQPWorkerActive() {
+            return this.remoteAMQPWorkerActive;
+        }
+        
+        public void setRemoteAMQPWorkerActive(boolean remoteWorkerActive) {
+            this.remoteAMQPWorkerActive = remoteWorkerActive;
         }
         
         @Override
@@ -1053,19 +1061,19 @@ public class OpflowCommander implements AutoCloseable {
                         .stringify());
                 measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RPC, routineSignature, "begin");
             }
-            
+
             // rpc switching
-            if (rpcWatcher.isCongestive() || !detachedWorkerActive) {
-                if (this.isReservedWorkerAvailable()) {
+            if (rpcWatcher.isCongestive() || !remoteAMQPWorkerActive) {
+                if (this.isNativeWorkerAvailable()) {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
-                            .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-retain] - RpcInvocationHandler.invoke() retains the reservedWorker")
+                            .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-retain] - RpcInvocationHandler.invoke() retains the nativeWorker")
                             .stringify());
                     measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER, routineSignature, "retain");
-                    return method.invoke(this.reservedWorker, args);
+                    return method.invoke(this.nativeWorker, args);
                 }
             }
 
-            if (!detachedWorkerActive) {
+            if (!remoteAMQPWorkerActive) {
                 throw new OpflowWorkerNotFoundException("both reserved worker and detached worker are deactivated");
             }
 
@@ -1075,12 +1083,12 @@ public class OpflowCommander implements AutoCloseable {
 
             if (rpcResult.isTimeout()) {
                 rpcWatcher.setCongestive(true);
-                if (this.isReservedWorkerAvailable()) {
+                if (this.isNativeWorkerAvailable()) {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
-                            .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-rescue] - RpcInvocationHandler.invoke() rescues by the reservedWorker")
+                            .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-rescue] - RpcInvocationHandler.invoke() rescues by the nativeWorker")
                             .stringify());
                     measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER, routineSignature, "rescue");
-                    return method.invoke(this.reservedWorker, args);
+                    return method.invoke(this.nativeWorker, args);
                 }
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-timeout] - RpcInvocationHandler.invoke() is timeout")
