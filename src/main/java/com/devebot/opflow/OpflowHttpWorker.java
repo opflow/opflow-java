@@ -281,8 +281,15 @@ public class OpflowHttpWorker {
                     }
                 }
             } catch (Exception exception) {
+                exception.getStackTrace();
+                String errorStr = OpflowObjectTree.buildMap(false)
+                    .put("exceptionClass", exception.getClass().getName())
+                    .put("exceptionPayload", OpflowJsonTool.toString(exception))
+                    .put("type", exception.getClass().getName())
+                    .put("message", exception.getMessage())
+                    .toString();
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-                exchange.setStatusCode(500).getResponseSender().send(exception.toString());
+                exchange.setStatusCode(500).getResponseSender().send(errorStr);
             }
         }
     }

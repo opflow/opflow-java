@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowJsonTool;
@@ -21,8 +22,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.regex.Pattern;
 import java.util.LinkedHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -593,6 +592,27 @@ public class OpflowUtil {
     
     public static String extractClassName(Class clazz) {
         return clazz.getName().replace(clazz.getPackage().getName(), "");
+    }
+    
+    public static Throwable rebuildInvokerException(Map<String, Object> errorMap) {
+        Object exceptionName = errorMap.get("exceptionClass");
+        Object exceptionPayload = errorMap.get("exceptionPayload");
+        if (exceptionName != null && exceptionPayload != null) {
+            try {
+                Class exceptionClass = Class.forName(exceptionName.toString());
+                return (Throwable) OpflowJsonTool.toObject(exceptionPayload.toString(), exceptionClass);
+            } catch (ClassNotFoundException ex) {
+                return rebuildFailureException(errorMap);
+            }
+        }
+        return rebuildFailureException(errorMap);
+    }
+    
+    private static Throwable rebuildFailureException(Map<String, Object> errorMap) {
+        if (errorMap.get("message") != null) {
+            return new OpflowRequestFailureException(errorMap.get("message").toString());
+        }
+        return new OpflowRequestFailureException();
     }
     
     public static void sleep(long duration) {

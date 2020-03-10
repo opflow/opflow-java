@@ -39,7 +39,7 @@ public class OpflowHttpMaster {
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
-        restrictor = null; //new OpflowRestrictor.Valve();
+        restrictor = new OpflowRestrictor.Valve();
         
         logTracer = OpflowLogTracer.ROOT.branch("httpMasterId", componentId);
         

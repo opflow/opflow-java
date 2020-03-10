@@ -6,7 +6,6 @@ import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
-import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
@@ -1120,25 +1119,9 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
 
+    @Deprecated
     private static Throwable rebuildInvokerException(Map<String, Object> errorMap) {
-        Object exceptionName = errorMap.get("exceptionClass");
-        Object exceptionPayload = errorMap.get("exceptionPayload");
-        if (exceptionName != null && exceptionPayload != null) {
-            try {
-                Class exceptionClass = Class.forName(exceptionName.toString());
-                return (Throwable) OpflowJsonTool.toObject(exceptionPayload.toString(), exceptionClass);
-            } catch (ClassNotFoundException ex) {
-                return rebuildFailureException(errorMap);
-            }
-        }
-        return rebuildFailureException(errorMap);
-    }
-
-    private static Throwable rebuildFailureException(Map<String, Object> errorMap) {
-        if (errorMap.get("message") != null) {
-            return new OpflowRequestFailureException(errorMap.get("message").toString());
-        }
-        return new OpflowRequestFailureException();
+        return OpflowUtil.rebuildInvokerException(errorMap);
     }
 
     private final Map<String, RpcInvocationHandler> handlers = new LinkedHashMap<>();
