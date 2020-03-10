@@ -6,7 +6,10 @@ import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRestrictionException;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.SocketTimeoutException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -31,6 +34,10 @@ public class OpflowHttpMaster {
     private final OpflowRpcObserver rpcObserver;
     private final OpflowRestrictor.Valve restrictor;
     
+    private long readTimeout;
+    private long writeTimeout;
+    private long callTimeout;
+    
     private final boolean autorun;
     
     public OpflowHttpMaster(Map<String, Object> params) throws OpflowBootstrapException {
@@ -40,6 +47,10 @@ public class OpflowHttpMaster {
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
         restrictor = new OpflowRestrictor.Valve();
+        
+        readTimeout = OpflowObjectTree.getOptionValue(params, "readTimeout", Long.class, 20000l);
+        writeTimeout = OpflowObjectTree.getOptionValue(params, "writeTimeout", Long.class, 20000l);
+        callTimeout = OpflowObjectTree.getOptionValue(params, "callTimeout", Long.class, 180000l);
         
         logTracer = OpflowLogTracer.ROOT.branch("httpMasterId", componentId);
         
@@ -114,6 +125,9 @@ public class OpflowHttpMaster {
         }
         
         OkHttpClient client = new OkHttpClient.Builder()
+            .readTimeout(readTimeout, TimeUnit.MILLISECONDS)
+            .writeTimeout(writeTimeout, TimeUnit.MILLISECONDS)
+            .callTimeout(callTimeout, TimeUnit.MILLISECONDS)
             .build();
         
         Request.Builder reqBuilder = new Request.Builder()
@@ -173,6 +187,40 @@ public class OpflowHttpMaster {
                             .text("Request[${requestId}][${requestTime}][x-http-master-response-failed] - httpMaster[${httpMasterId}][${instanceId}] - statusCode ${statusCode}")
                             .stringify());
                 }
+            }
+        }
+        catch (SocketTimeoutException exception) {
+            session = new Session(
+                params.getRoutineSignature(),
+                params.getRoutineId(),
+                params.getRoutineTimestamp(),
+                Session.STATUS.TIMEOUT,
+                null,
+                null,
+                exception
+            );
+            if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) {
+                LOG.error(reqTracer
+                        .put("exceptionName", exception.getClass().getName())
+                        .text("Request[${requestId}][${requestTime}][x-http-master-response-rwTimeout] - httpMaster[${httpMasterId}][${instanceId}] - readTimeout/writeTimeout")
+                        .stringify());
+            }
+        }
+        catch (InterruptedIOException exception) {
+            session = new Session(
+                params.getRoutineSignature(),
+                params.getRoutineId(),
+                params.getRoutineTimestamp(),
+                Session.STATUS.TIMEOUT,
+                null,
+                null,
+                exception
+            );
+            if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) {
+                LOG.error(reqTracer
+                        .put("exceptionName", exception.getClass().getName())
+                        .text("Request[${requestId}][${requestTime}][x-http-master-response-callTimeout] - httpMaster[${httpMasterId}][${instanceId}] - callTimeout")
+                        .stringify());
             }
         }
         catch (IOException exception) {
