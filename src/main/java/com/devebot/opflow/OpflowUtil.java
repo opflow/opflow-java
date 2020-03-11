@@ -602,13 +602,13 @@ public class OpflowUtil {
                 Class exceptionClass = Class.forName(exceptionName.toString());
                 return (Throwable) OpflowJsonTool.toObject(exceptionPayload.toString(), exceptionClass);
             } catch (ClassNotFoundException ex) {
-                return rebuildFailureException(errorMap);
+                return wrapUnknownException(errorMap);
             }
         }
-        return rebuildFailureException(errorMap);
+        return wrapUnknownException(errorMap);
     }
     
-    private static Throwable rebuildFailureException(Map<String, Object> errorMap) {
+    private static Throwable wrapUnknownException(Map<String, Object> errorMap) {
         if (errorMap.get("message") != null) {
             return new OpflowRequestFailureException(errorMap.get("message").toString());
         }

@@ -32,12 +32,15 @@ public class OpflowHttpMaster {
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowRpcObserver rpcObserver;
+    private final OpflowDiscoveryClient discoveryClient;
     private final OpflowRestrictor.Valve restrictor;
     
     private long readTimeout;
     private long writeTimeout;
     private long callTimeout;
     
+    private OkHttpClient httpClient = null;
+    private final Object httpClientLock = new Object();
     private final boolean autorun;
     private final boolean testException;
     
@@ -47,6 +50,7 @@ public class OpflowHttpMaster {
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
+        discoveryClient = (OpflowDiscoveryClient) OpflowUtil.getOptionField(params, OpflowConstant.COMP_DISCOVERY_CLIENT, null);
         restrictor = new OpflowRestrictor.Valve();
         
         readTimeout = OpflowObjectTree.getOptionValue(params, "readTimeout", Long.class, 20000l);
@@ -74,6 +78,9 @@ public class OpflowHttpMaster {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("httpMaster[${httpMasterId}][${instanceId}].new() end!")
                 .stringify());
+        
+        // assertions
+        assert discoveryClient != null;
         
         if (autorun) {
             this.serve();
@@ -131,14 +138,9 @@ public class OpflowHttpMaster {
                     .stringify());
         }
         
-        OkHttpClient client = new OkHttpClient.Builder()
-            .readTimeout(readTimeout, TimeUnit.MILLISECONDS)
-            .writeTimeout(writeTimeout, TimeUnit.MILLISECONDS)
-            .callTimeout(callTimeout, TimeUnit.MILLISECONDS)
-            .build();
+        OkHttpClient client = assertHttpClient();
         
         Request.Builder reqBuilder = new Request.Builder()
-            .url("http://localhost:17779/routine")
             .header(OpflowHttpWorker.HTTP_HEADER_ROUTINE_ID, params.getRoutineId())
             .header(OpflowHttpWorker.HTTP_HEADER_ROUTINE_TIMESTAMP, params.getRoutineTimestamp())
             .header(OpflowHttpWorker.HTTP_HEADER_ROUTINE_SIGNATURE, params.getRoutineSignature());
@@ -146,6 +148,13 @@ public class OpflowHttpMaster {
         if (params.getRoutineScope() != null) {
             reqBuilder = reqBuilder.header(OpflowHttpWorker.HTTP_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
         }
+        
+        OpflowDiscoveryClient.Info info = discoveryClient.locate();
+        if (info == null || info.getUri() == null) {
+            return Session.asBroken(params.getRoutineSignature(), params.getRoutineId(), params.getRoutineTimestamp());
+        }
+        
+        reqBuilder.url(info.getUri());
         
         if (body != null) {
             RequestBody reqBody = RequestBody.create(body, JSON);
@@ -254,9 +263,24 @@ public class OpflowHttpMaster {
         return session;
     }
     
+    private OkHttpClient assertHttpClient() {
+        if (httpClient == null) {
+            synchronized (httpClientLock) {
+                if (httpClient == null) {
+                    httpClient = new OkHttpClient.Builder()
+                        .readTimeout(readTimeout, TimeUnit.MILLISECONDS)
+                        .writeTimeout(writeTimeout, TimeUnit.MILLISECONDS)
+                        .callTimeout(callTimeout, TimeUnit.MILLISECONDS)
+                        .build();
+                }
+            }
+        }
+        return httpClient;
+    }
+    
     public static class Session {
         
-        public static enum STATUS { OK, CRACKED, FAILED, TIMEOUT }
+        public static enum STATUS { OK, BROKEN, CRACKED, FAILED, TIMEOUT }
         
         private final STATUS status;
         private final String value;
@@ -268,6 +292,10 @@ public class OpflowHttpMaster {
             this.value = value;
             this.error = error;
             this.exception = exception;
+        }
+        
+        public static Session asBroken(String routineSignature, String routineId, String routineTimestamp) {
+            return new Session(routineSignature, routineId, routineTimestamp, STATUS.BROKEN, null, null, null);
         }
         
         public boolean isFailed() {
