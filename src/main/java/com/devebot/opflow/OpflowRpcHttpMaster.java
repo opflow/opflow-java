@@ -141,17 +141,17 @@ public class OpflowRpcHttpMaster {
         OkHttpClient client = assertHttpClient();
         
         Request.Builder reqBuilder = new Request.Builder()
-            .header(OpflowRpcHttpWorker.HTTP_HEADER_ROUTINE_ID, params.getRoutineId())
-            .header(OpflowRpcHttpWorker.HTTP_HEADER_ROUTINE_TIMESTAMP, params.getRoutineTimestamp())
-            .header(OpflowRpcHttpWorker.HTTP_HEADER_ROUTINE_SIGNATURE, params.getRoutineSignature());
+            .header(OpflowConstant.HTTP_HEADER_ROUTINE_ID, params.getRoutineId())
+            .header(OpflowConstant.HTTP_HEADER_ROUTINE_TIMESTAMP, params.getRoutineTimestamp())
+            .header(OpflowConstant.HTTP_HEADER_ROUTINE_SIGNATURE, params.getRoutineSignature());
         
         if (params.getRoutineScope() != null) {
-            reqBuilder = reqBuilder.header(OpflowRpcHttpWorker.HTTP_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
+            reqBuilder = reqBuilder.header(OpflowConstant.HTTP_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
         }
         
         OpflowDiscoveryClient.Info info = discoveryClient.locate();
         if (info == null || info.getUri() == null) {
-            return Session.asBroken(params.getRoutineSignature(), params.getRoutineId(), params.getRoutineTimestamp());
+            return Session.asBroken(params);
         }
         
         reqBuilder.url(info.getUri());
@@ -173,15 +173,7 @@ public class OpflowRpcHttpMaster {
                 throw new IOException(reqTracer.text("Request[${requestId}][${requestTime}] - throw a testing exception").stringify());
             }
             if (response.isSuccessful()) {
-                session = new Session(
-                    params.getRoutineSignature(),
-                    params.getRoutineId(),
-                    params.getRoutineTimestamp(),
-                    Session.STATUS.OK,
-                    response.body().string(),
-                    null,
-                    null
-                );
+                session = Session.asOk(params, response.body().string());
                 if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) {
                     LOG.debug(reqTracer
                             .put("protocol", response.protocol().toString())
@@ -190,15 +182,7 @@ public class OpflowRpcHttpMaster {
                             .stringify());
                 }
             } else {
-                session = new Session(
-                    params.getRoutineSignature(),
-                    params.getRoutineId(),
-                    params.getRoutineTimestamp(),
-                    Session.STATUS.FAILED,
-                    null,
-                    response.body().string(),
-                    null
-                );
+                session = Session.asFailed(params, response.body().string());
                 if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) {
                     LOG.debug(reqTracer
                             .put("protocol", response.protocol().toString())
@@ -209,15 +193,7 @@ public class OpflowRpcHttpMaster {
             }
         }
         catch (SocketTimeoutException exception) {
-            session = new Session(
-                params.getRoutineSignature(),
-                params.getRoutineId(),
-                params.getRoutineTimestamp(),
-                Session.STATUS.TIMEOUT,
-                null,
-                null,
-                exception
-            );
+            session = Session.asTimeout(params, exception);
             if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) {
                 LOG.error(reqTracer
                         .put("exceptionName", exception.getClass().getName())
@@ -226,15 +202,7 @@ public class OpflowRpcHttpMaster {
             }
         }
         catch (InterruptedIOException exception) {
-            session = new Session(
-                params.getRoutineSignature(),
-                params.getRoutineId(),
-                params.getRoutineTimestamp(),
-                Session.STATUS.TIMEOUT,
-                null,
-                null,
-                exception
-            );
+            session = Session.asTimeout(params, exception);
             if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) {
                 LOG.error(reqTracer
                         .put("exceptionName", exception.getClass().getName())
@@ -243,15 +211,7 @@ public class OpflowRpcHttpMaster {
             }
         }
         catch (IOException exception) {
-            session = new Session(
-                params.getRoutineSignature(),
-                params.getRoutineId(),
-                params.getRoutineTimestamp(),
-                Session.STATUS.CRACKED,
-                null,
-                null,
-                exception
-            );
+            session = Session.asCracked(params, exception);
             if (reqTracer != null && reqTracer.ready(LOG, Level.ERROR)) {
                 LOG.error(reqTracer
                         .put("exceptionName", exception.getClass().getName())
@@ -287,15 +247,31 @@ public class OpflowRpcHttpMaster {
         private final String error;
         private final Exception exception;
 
-        public Session(String routineSignature, String routineId, String routineTimestamp, STATUS status, String value, String error, Exception exception) {
+        public Session(OpflowRpcParameter params, STATUS status, String value, String error, Exception exception) {
             this.status = status;
             this.value = value;
             this.error = error;
             this.exception = exception;
         }
         
-        public static Session asBroken(String routineSignature, String routineId, String routineTimestamp) {
-            return new Session(routineSignature, routineId, routineTimestamp, STATUS.BROKEN, null, null, null);
+        public static Session asOk(OpflowRpcParameter params, String value) {
+            return new Session(params, STATUS.OK, value, null, null);
+        }
+        
+        public static Session asBroken(OpflowRpcParameter params) {
+            return new Session(params, STATUS.BROKEN, null, null, null);
+        }
+        
+        public static Session asCracked(OpflowRpcParameter params, Exception exception) {
+            return new Session(params, STATUS.CRACKED, null, null, exception);
+        }
+        
+        public static Session asFailed(OpflowRpcParameter params, String error) {
+            return new Session(params, STATUS.FAILED, null, error, null);
+        }
+        
+        public static Session asTimeout(OpflowRpcParameter params, Exception exception) {
+            return new Session(params, STATUS.TIMEOUT, null, null, exception);
         }
         
         public boolean isFailed() {

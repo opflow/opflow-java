@@ -150,6 +150,13 @@ public class OpflowConstant {
     public final static String OPFLOW_OUTGOING_EXCHANGE_DURABLE = "outgoingExchangeDurable";
     public final static String OPFLOW_OUTGOING_ROUTING_KEY = "outgoingRoutingKey";
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RPC HTTP HEADERS
+
+    public final static String HTTP_HEADER_ROUTINE_ID = "x-oxId";
+    public final static String HTTP_HEADER_ROUTINE_TIMESTAMP = "x-oxTimestamp";
+    public final static String HTTP_HEADER_ROUTINE_SCOPE = "x-oxScope";
+    public final static String HTTP_HEADER_ROUTINE_SIGNATURE = "x-oxSignature";
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AMQP PARAMETERS
 
     public final static String AMQP_CONARG_URI = "uri";
