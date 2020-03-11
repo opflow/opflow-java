@@ -39,6 +39,7 @@ public class OpflowHttpMaster {
     private long callTimeout;
     
     private final boolean autorun;
+    private final boolean testException;
     
     public OpflowHttpMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
@@ -62,6 +63,12 @@ public class OpflowHttpMaster {
             autorun = (Boolean) params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN);
         } else {
             autorun = false;
+        }
+        
+        if (params.get("testException") instanceof Boolean) {
+            testException = (Boolean) params.get("testException");
+        } else {
+            testException = false;
         }
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -153,6 +160,9 @@ public class OpflowHttpMaster {
         
         try {
             Response response = call.execute();
+            if (testException) {
+                throw new IOException(reqTracer.text("Request[${requestId}][${requestTime}] - throw a testing exception").stringify());
+            }
             if (response.isSuccessful()) {
                 session = new Session(
                     params.getRoutineSignature(),
