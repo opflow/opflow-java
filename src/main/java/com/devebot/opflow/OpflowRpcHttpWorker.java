@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author acegik
  */
-public class OpflowHttpWorker {
+public class OpflowRpcHttpWorker {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
     public final static String HTTP_HEADER_ROUTINE_ID = "opflow-" + CONST.AMQP_HEADER_ROUTINE_ID;
@@ -32,7 +32,7 @@ public class OpflowHttpWorker {
     public final static String HTTP_HEADER_ROUTINE_SCOPE = "opflow-" + CONST.AMQP_HEADER_ROUTINE_SCOPE;
     public final static String HTTP_HEADER_ROUTINE_SIGNATURE = "opflow-" + CONST.AMQP_HEADER_ROUTINE_SIGNATURE;
     
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowHttpWorker.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcHttpWorker.class);
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final String componentId;
@@ -46,7 +46,7 @@ public class OpflowHttpWorker {
     private Undertow server;
     private GracefulShutdownHandler shutdownHandler;
 
-    public OpflowHttpWorker(Map<String, Object> kwargs) throws OpflowBootstrapException {
+    public OpflowRpcHttpWorker(Map<String, Object> kwargs) throws OpflowBootstrapException {
         componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         

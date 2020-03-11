@@ -23,9 +23,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author acegik
  */
-public class OpflowHttpMaster {
+public class OpflowRpcHttpMaster {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowHttpMaster.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcHttpMaster.class);
     private final static MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     
     private final String componentId;
@@ -44,7 +44,7 @@ public class OpflowHttpMaster {
     private final boolean autorun;
     private final boolean testException;
     
-    public OpflowHttpMaster(Map<String, Object> params) throws OpflowBootstrapException {
+    public OpflowRpcHttpMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
@@ -141,12 +141,12 @@ public class OpflowHttpMaster {
         OkHttpClient client = assertHttpClient();
         
         Request.Builder reqBuilder = new Request.Builder()
-            .header(OpflowHttpWorker.HTTP_HEADER_ROUTINE_ID, params.getRoutineId())
-            .header(OpflowHttpWorker.HTTP_HEADER_ROUTINE_TIMESTAMP, params.getRoutineTimestamp())
-            .header(OpflowHttpWorker.HTTP_HEADER_ROUTINE_SIGNATURE, params.getRoutineSignature());
+            .header(OpflowRpcHttpWorker.HTTP_HEADER_ROUTINE_ID, params.getRoutineId())
+            .header(OpflowRpcHttpWorker.HTTP_HEADER_ROUTINE_TIMESTAMP, params.getRoutineTimestamp())
+            .header(OpflowRpcHttpWorker.HTTP_HEADER_ROUTINE_SIGNATURE, params.getRoutineSignature());
         
         if (params.getRoutineScope() != null) {
-            reqBuilder = reqBuilder.header(OpflowHttpWorker.HTTP_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
+            reqBuilder = reqBuilder.header(OpflowRpcHttpWorker.HTTP_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
         }
         
         OpflowDiscoveryClient.Info info = discoveryClient.locate();
