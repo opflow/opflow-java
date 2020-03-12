@@ -69,7 +69,9 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_LENGTH = "length";
     public final static String OPFLOW_COMMON_STRICT = "strictMode";
     public final static String OPFLOW_COMMON_HOST = "host";
+    public final static String OPFLOW_COMMON_HOSTNAME = "hostname";
     public final static String OPFLOW_COMMON_PORTS = "ports";
+    public final static String OPFLOW_COMMON_ADDRESS = "address";
     public final static String OPFLOW_COMMON_CREDENTIALS = "credentials";
     public final static String OPFLOW_COMMON_CONGESTIVE = "congestive";
 

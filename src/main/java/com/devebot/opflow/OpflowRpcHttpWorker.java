@@ -35,6 +35,7 @@ public class OpflowRpcHttpWorker {
     private final RoutineHandler routineHandler;
     private final RoutingHandler defaultHandlers;
     private final String host;
+    private final String hostname;
     private final Integer port;
     private final long shutdownTimeout;
     private final Thread shutdownHook;
@@ -46,6 +47,7 @@ public class OpflowRpcHttpWorker {
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         host = OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_HOST, "0.0.0.0").toString();
+        hostname = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_HOSTNAME, false, false);
         port = OpflowUtil.detectFreePort(kwargs, OpflowConstant.OPFLOW_COMMON_PORTS, new Integer[] {
                 8765, 8766, 8767, 8768, 8769, 8770, 8771, 8772, 8773, 8774, 8775, 8776, 8777
         });
@@ -71,9 +73,20 @@ public class OpflowRpcHttpWorker {
     public String getHost() {
         return host;
     }
-
+    
+    public String getHostname() {
+        return hostname;
+    }
+    
     public Integer getPort() {
         return port;
+    }
+    
+    public String getAddress() {
+        if (hostname != null) {
+            return hostname + ":" + String.valueOf(port);
+        }
+        return null;
     }
     
     public Reporter process(final Listener listener) {

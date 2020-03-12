@@ -41,6 +41,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
     private final Integer incomingPrefetchCount;
     
     private final String responseQueueName;
+    private String address = null;
     
     public OpflowRpcAmqpWorker(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
@@ -135,7 +136,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("queueName", incomingQueueName)
-                .tags("RpcWorker.new() parameters")
+                .tags("RpcAmqpWorker.new() parameters")
                 .text("amqpWorker[${amqpWorkerId}].new() queueName: '${queueName}'")
                 .stringify());
         
@@ -219,7 +220,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
                 String routineSignature = OpflowUtil.getRoutineSignature(headers, false);
                 
                 OpflowRpcAmqpResponse response = new OpflowRpcAmqpResponse(channel, properties, componentId, consumerTag, queueName,
-                        routineId, routineTimestamp, routineScope, routineSignature);
+                        routineId, routineTimestamp, routineScope, routineSignature, address);
                 
                 OpflowLogTracer reqTracer = null;
                 if (logProcess.ready(LOG, Level.INFO)) {
@@ -318,6 +319,10 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
 
     public Boolean getIncomingQueueExclusive() {
         return incomingQueueExclusive;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
     
     public class Middleware {

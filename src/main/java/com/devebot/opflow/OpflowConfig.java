@@ -361,6 +361,14 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY,
                     });
                 }
+                if (OpflowConstant.COMP_RPC_HTTP_WORKER.equals(componentName)) {
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        OpflowConstant.OPFLOW_COMMON_HOST,
+                        OpflowConstant.OPFLOW_COMMON_HOSTNAME,
+                        OpflowConstant.OPFLOW_COMMON_PORTS,
+                    });
+                }
                 if (OpflowConstant.COMP_CONFIGURER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,

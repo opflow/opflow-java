@@ -15,18 +15,19 @@ import java.util.Set;
  */
 public class OpflowRpcObserver {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-
     private final static long KEEP_ALIVE_TIMEOUT = 20000;
-
+    
     private long keepAliveTimeout = 2 * KEEP_ALIVE_TIMEOUT;
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
-
-    public void check(String componentId, String version, String payload) {
+    
+    public void check(Map<String, Object> headers) {
+        String componentId = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_CONSUMER_ID, false, true);
         if (componentId != null) {
             OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
             // inform the manifest status
             manifest.touch();
             // update the protocol version
+            String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
             manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
         }
     }
@@ -49,7 +50,7 @@ public class OpflowRpcObserver {
             }
         }
     }
-
+    
     public Collection<OpflowRpcObserver.Manifest> rollup() {
         Set<String> keys = manifests.keySet();
         for (String key: keys) {

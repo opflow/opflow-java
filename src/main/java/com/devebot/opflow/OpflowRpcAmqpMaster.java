@@ -202,7 +202,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                 .put("monitorEnabled", monitorEnabled)
                 .put("monitorInterval", monitorInterval)
                 .put("monitorTimeout", monitorTimeout)
-                .tags("RpcMaster.new() parameters")
+                .tags("RpcAmqpMaster.new() parameters")
                 .text("amqpMaster[${amqpMasterId}].new() parameters")
                 .stringify());
         
@@ -282,9 +282,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                 
                 // collect the information of the workers
                 if (rpcObserver != null) {
-                    String rpcWorkerId = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_CONSUMER_ID, false, true);
-                    String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
-                    rpcObserver.check(rpcWorkerId, version, null);
+                    rpcObserver.check(headers);
                 }
                 
                 return true;
