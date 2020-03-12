@@ -35,7 +35,7 @@ public class OpflowServerlet implements AutoCloseable {
 
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[]{
         OpflowConstant.COMP_CONFIGURER,
-        OpflowConstant.COMP_RPC_WORKER,
+        OpflowConstant.COMP_RPC_AMQP_WORKER,
         OpflowConstant.COMP_SUBSCRIBER
     });
 
@@ -54,7 +54,7 @@ public class OpflowServerlet implements AutoCloseable {
     private final OpflowConfig.Loader configLoader;
 
     private OpflowPubsubHandler configurer;
-    private OpflowRpcWorker rpcWorker;
+    private OpflowRpcAmqpWorker amqpWorker;
     private OpflowPubsubHandler subscriber;
     private Instantiator instantiator;
 
@@ -99,7 +99,7 @@ public class OpflowServerlet implements AutoCloseable {
         measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(OpflowConstant.COMP_PROM_EXPORTER));
 
         Map<String, Object> configurerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_CONFIGURER);
-        Map<String, Object> rpcWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_RPC_WORKER);
+        Map<String, Object> amqpWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_RPC_AMQP_WORKER);
         Map<String, Object> subscriberCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_SUBSCRIBER);
 
         HashSet<String> checkExchange = new HashSet<>();
@@ -120,17 +120,17 @@ public class OpflowServerlet implements AutoCloseable {
             }
         }
 
-        if (OpflowUtil.isComponentEnabled(rpcWorkerCfg)) {
-            if (!OpflowUtil.isAMQPEntrypointNull(rpcWorkerCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY)) {
-                if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(rpcWorkerCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY))) {
-                    throw new OpflowBootstrapException("Duplicated RpcWorker connection parameters (exchangeName-routingKey)");
+        if (OpflowUtil.isComponentEnabled(amqpWorkerCfg)) {
+            if (!OpflowUtil.isAMQPEntrypointNull(amqpWorkerCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY)) {
+                if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(amqpWorkerCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY))) {
+                    throw new OpflowBootstrapException("Duplicated amqpWorker connection parameters (exchangeName-routingKey)");
                 }
             }
-            if (rpcWorkerCfg.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME) != null && !checkQueue.add(rpcWorkerCfg.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME).toString())) {
-                throw new OpflowBootstrapException("RpcWorker[incomingQueueName] must not be duplicated");
+            if (amqpWorkerCfg.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME) != null && !checkQueue.add(amqpWorkerCfg.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME).toString())) {
+                throw new OpflowBootstrapException("amqpWorker[incomingQueueName] must not be duplicated");
             }
-            if (rpcWorkerCfg.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME) != null && !checkQueue.add(rpcWorkerCfg.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME).toString())) {
-                throw new OpflowBootstrapException("RpcWorker[responseQueueName] must not be duplicated");
+            if (amqpWorkerCfg.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME) != null && !checkQueue.add(amqpWorkerCfg.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME).toString())) {
+                throw new OpflowBootstrapException("amqpWorker[responseQueueName] must not be duplicated");
             }
         }
 
@@ -176,22 +176,22 @@ public class OpflowServerlet implements AutoCloseable {
                 }, configurerCfg).toMap());
             }
 
-            if (OpflowUtil.isComponentEnabled(rpcWorkerCfg)) {
-                String rpcWorkerId = OpflowUUID.getBase64ID();
-                rpcWorkerCfg.put(CONST.COMPONENT_ID, rpcWorkerId);
+            if (OpflowUtil.isComponentEnabled(amqpWorkerCfg)) {
+                String amqpWorkerId = OpflowUUID.getBase64ID();
+                amqpWorkerCfg.put(CONST.COMPONENT_ID, amqpWorkerId);
                 if (logTracer.ready(LOG, Level.INFO)) {
                     LOG.info(logTracer
-                        .put("rpcWorkerId", rpcWorkerId)
-                        .text("Serverlet[${serverletId}] creates a new rpcWorker[${rpcWorkerId}]")
+                        .put("amqpWorkerId", amqpWorkerId)
+                        .text("Serverlet[${serverletId}] creates a new amqpWorker[${amqpWorkerId}]")
                         .stringify());
                 }
-                rpcWorker = new OpflowRpcWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                amqpWorker = new OpflowRpcAmqpWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
                         opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
-                }, rpcWorkerCfg).toMap());
+                }, amqpWorkerCfg).toMap());
             }
 
             if (OpflowUtil.isComponentEnabled(subscriberCfg)) {
@@ -212,8 +212,8 @@ public class OpflowServerlet implements AutoCloseable {
                 }, subscriberCfg).toMap());
             }
 
-            if (rpcWorker != null || subscriber != null) {
-                instantiator = new Instantiator(rpcWorker, subscriber, OpflowObjectTree.buildMap(false)
+            if (amqpWorker != null || subscriber != null) {
+                instantiator = new Instantiator(amqpWorker, subscriber, OpflowObjectTree.buildMap(false)
                     .put(CONST.COMPONENT_ID, componentId)
                     .toMap());
             }
@@ -242,10 +242,10 @@ public class OpflowServerlet implements AutoCloseable {
             configurer.subscribe(listenerMap.getConfigurer());
         }
 
-        if (rpcWorker != null) {
-            Map<String, OpflowRpcListener> rpcListeners = listenerMap.getRpcListeners();
-            for (Map.Entry<String, OpflowRpcListener> entry : rpcListeners.entrySet()) {
-                rpcWorker.process(entry.getKey(), entry.getValue());
+        if (amqpWorker != null) {
+            Map<String, OpflowRpcAmqpListener> rpcListeners = listenerMap.getRpcListeners();
+            for (Map.Entry<String, OpflowRpcAmqpListener> entry : rpcListeners.entrySet()) {
+                amqpWorker.process(entry.getKey(), entry.getValue());
             }
         }
 
@@ -303,8 +303,8 @@ public class OpflowServerlet implements AutoCloseable {
         if (configurer != null) {
             configurer.close();
         }
-        if (rpcWorker != null) {
-            rpcWorker.close();
+        if (amqpWorker != null) {
+            amqpWorker.close();
         }
         if (subscriber != null) {
             subscriber.close();
@@ -340,7 +340,7 @@ public class OpflowServerlet implements AutoCloseable {
             return this;
         }
 
-        public DescriptorBuilder addRpcListener(String routineSignature, OpflowRpcListener listener) {
+        public DescriptorBuilder addRpcListener(String routineSignature, OpflowRpcAmqpListener listener) {
             map.rpcListeners.put(routineSignature, listener);
             return this;
         }
@@ -354,7 +354,7 @@ public class OpflowServerlet implements AutoCloseable {
 
         public static final ListenerDescriptor EMPTY = new ListenerDescriptor();
         private OpflowPubsubListener configurer;
-        private Map<String, OpflowRpcListener> rpcListeners = new HashMap<>();
+        private Map<String, OpflowRpcAmqpListener> rpcListeners = new HashMap<>();
         private OpflowPubsubListener subscriber;
 
         private ListenerDescriptor() {
@@ -364,8 +364,8 @@ public class OpflowServerlet implements AutoCloseable {
             return configurer;
         }
 
-        public Map<String, OpflowRpcListener> getRpcListeners() {
-            Map<String, OpflowRpcListener> cloned = new HashMap<>();
+        public Map<String, OpflowRpcAmqpListener> getRpcListeners() {
+            Map<String, OpflowRpcAmqpListener> cloned = new HashMap<>();
             cloned.putAll(rpcListeners);
             return cloned;
         }
@@ -379,8 +379,8 @@ public class OpflowServerlet implements AutoCloseable {
 
         private static final Logger LOG = LoggerFactory.getLogger(Instantiator.class);
         private final OpflowLogTracer logTracer;
-        private final OpflowRpcWorker rpcWorker;
-        private final OpflowRpcListener rpcListener;
+        private final OpflowRpcAmqpWorker amqpWorker;
+        private final OpflowRpcAmqpListener amqpListener;
         private final OpflowPubsubHandler subscriber;
         private final OpflowPubsubListener subListener;
         private final Set<String> routineSignatures = new HashSet<>();
@@ -389,21 +389,21 @@ public class OpflowServerlet implements AutoCloseable {
         private final Map<String, String> methodOfAlias = new HashMap<>();
         private volatile boolean processing = false;
 
-        public Instantiator(OpflowRpcWorker worker, OpflowPubsubHandler subscriber) throws OpflowBootstrapException {
+        public Instantiator(OpflowRpcAmqpWorker worker, OpflowPubsubHandler subscriber) throws OpflowBootstrapException {
             this(worker, subscriber, null);
         }
 
-        public Instantiator(OpflowRpcWorker worker, OpflowPubsubHandler subscriber, Map<String, Object> options) throws OpflowBootstrapException {
-            if (worker == null && subscriber == null) {
-                throw new OpflowBootstrapException("Both of RpcWorker and subscriber must not be null");
+        public Instantiator(OpflowRpcAmqpWorker amqpWorker, OpflowPubsubHandler subscriber, Map<String, Object> options) throws OpflowBootstrapException {
+            if (amqpWorker == null && subscriber == null) {
+                throw new OpflowBootstrapException("Both of amqpWorker and subscriber must not be null");
             }
             options = OpflowObjectTree.ensureNonNull(options);
             final String componentId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
             this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", componentId);
-            this.rpcWorker = worker;
-            this.rpcListener = new OpflowRpcListener() {
+            this.amqpWorker = amqpWorker;
+            this.amqpListener = new OpflowRpcAmqpListener() {
                 @Override
-                public Boolean processMessage(final OpflowMessage message, final OpflowRpcResponse response) throws IOException {
+                public Boolean processMessage(final OpflowMessage message, final OpflowRpcAmqpResponse response) throws IOException {
                     final Map<String, Object> headers = message.getHeaders();
                     final String routineId = response.getRoutineId();
                     final String routineTimestamp = response.getRoutineTimestamp();
@@ -477,12 +477,12 @@ public class OpflowServerlet implements AutoCloseable {
                             returnValue = new OpflowRpcChecker.Pong(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                                 @Override
                                 public void transform(Map<String, Object> opts) {
-                                    OpflowEngine engine = rpcWorker.getEngine();
+                                    OpflowEngine engine = amqpWorker.getEngine();
                                     opts.put(CONST.COMPONENT_ID, componentId);
-                                    opts.put(OpflowConstant.COMP_RPC_WORKER, OpflowObjectTree.buildMap()
-                                        .put(CONST.COMPONENT_ID, rpcWorker.getComponentId())
+                                    opts.put(OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowObjectTree.buildMap()
+                                        .put(CONST.COMPONENT_ID, amqpWorker.getComponentId())
                                         .put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId())
-                                        .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, rpcWorker.getIncomingQueueName())
+                                        .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, amqpWorker.getIncomingQueueName())
                                         .put("request", OpflowObjectTree.buildMap()
                                             .put("routineId", routineId)
                                             .put("routineTimestamp", routineTimestamp)
@@ -629,8 +629,8 @@ public class OpflowServerlet implements AutoCloseable {
 
         public final synchronized void process() {
             if (!processing) {
-                if (rpcWorker != null) {
-                    rpcWorker.process(routineSignatures, rpcListener);
+                if (amqpWorker != null) {
+                    amqpWorker.process(routineSignatures, amqpListener);
                 }
                 if (subscriber != null) {
                     subscriber.subscribe(subListener);
@@ -695,10 +695,10 @@ public class OpflowServerlet implements AutoCloseable {
                         String methodSignature = OpflowUtil.getMethodSignature(method);
                         if (logTracer.ready(LOG, Level.TRACE)) {
                             LOG.trace(logTracer
-                                .put("rpcWorkerId", rpcWorker.getComponentId())
+                                .put("amqpWorkerId", amqpWorker.getComponentId())
                                 .put("methodSignature", methodSignature)
                                 .tags("attach-method-to-RpcWorker-listener")
-                                .text("Attach the method[" + methodSignature + "] to the listener of RpcWorker[${rpcWorkerId}]")
+                                .text("Attach the method[" + methodSignature + "] to the listener of amqpWorker[${amqpWorkerId}]")
                                 .stringify());
                         }
                         if (!routineSignatures.add(methodSignature) && !method.equals(methodRef.get(methodSignature))) {

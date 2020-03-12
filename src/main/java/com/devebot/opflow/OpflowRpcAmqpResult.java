@@ -7,7 +7,7 @@ import java.util.List;
  *
  * @author drupalex
  */
-public class OpflowRpcResult implements Serializable {
+public class OpflowRpcAmqpResult implements Serializable {
     private final String routineId;
     private final String routineSignature;
     private final String consumerTag;
@@ -17,7 +17,7 @@ public class OpflowRpcResult implements Serializable {
     private final boolean completed;
     private final byte[] value;
     
-    public OpflowRpcResult(String routineSignature, String routineId, String consumerTag, 
+    public OpflowRpcAmqpResult(String routineSignature, String routineId, String consumerTag, 
             List<Step> progress, 
             boolean failed, byte[] error, 
             boolean completed, byte[] value) {

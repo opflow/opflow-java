@@ -18,8 +18,8 @@ public class OpflowSingleton {
     private static final Map<String, OpflowCommander> COMMANDERS;
     private static final Map<String, OpflowServerlet> SERVERLETS;
     private static final Map<String, OpflowPubsubHandler> PUBSUB_HANDLERS;
-    private static final Map<String, OpflowRpcMaster> RPC_MASTERS;
-    private static final Map<String, OpflowRpcWorker> RPC_WORKERS;
+    private static final Map<String, OpflowRpcAmqpMaster> RPC_MASTERS;
+    private static final Map<String, OpflowRpcAmqpWorker> RPC_WORKERS;
 
     static {
         if (LOG_TRACER.ready(LOG, Level.DEBUG)) LOG.debug(LOG_TRACER
@@ -44,12 +44,12 @@ public class OpflowSingleton {
         return assertHandler(configFile, OpflowPubsubHandler.class, PUBSUB_HANDLERS);
     }
 
-    public static OpflowRpcMaster assertRpcMaster(String configFile) throws OpflowBootstrapException {
-        return assertHandler(configFile, OpflowRpcMaster.class, RPC_MASTERS);
+    public static OpflowRpcAmqpMaster assertRpcMaster(String configFile) throws OpflowBootstrapException {
+        return assertHandler(configFile, OpflowRpcAmqpMaster.class, RPC_MASTERS);
     }
     
-    public static OpflowRpcWorker assertRpcWorker(String configFile) throws OpflowBootstrapException {
-        return assertHandler(configFile, OpflowRpcWorker.class, RPC_WORKERS);
+    public static OpflowRpcAmqpWorker assertRpcWorker(String configFile) throws OpflowBootstrapException {
+        return assertHandler(configFile, OpflowRpcAmqpWorker.class, RPC_WORKERS);
     }
     
     private static <T> T assertHandler(String configFile, Class<T> clazz, Map<String, T> map) throws OpflowBootstrapException {
@@ -71,10 +71,10 @@ public class OpflowSingleton {
                     if (OpflowPubsubHandler.class.equals(clazz)) {
                         map.put(uniqCode, (T) OpflowBuilder.createPubsubHandler(configFile));
                     }
-                    if (OpflowRpcMaster.class.equals(clazz)) {
+                    if (OpflowRpcAmqpMaster.class.equals(clazz)) {
                         map.put(uniqCode, (T) OpflowBuilder.createRpcMaster(configFile));
                     }
-                    if (OpflowRpcWorker.class.equals(clazz)) {
+                    if (OpflowRpcAmqpWorker.class.equals(clazz)) {
                         map.put(uniqCode, (T) OpflowBuilder.createRpcWorker(configFile));
                     }
                 }

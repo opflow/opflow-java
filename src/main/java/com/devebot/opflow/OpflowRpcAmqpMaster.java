@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowRpcMaster implements AutoCloseable {
+public class OpflowRpcAmqpMaster implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcMaster.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcAmqpMaster.class);
 
     private final static long DELAY_TIMEOUT = 1000;
     private final static int PREFETCH_NUM = 1;
@@ -35,10 +35,10 @@ public class OpflowRpcMaster implements AutoCloseable {
     private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
-    private final OpflowRpcObserver rpcObserver;;
+    private final OpflowRpcObserver rpcObserver;
     private final OpflowRestrictor.Valve restrictor;
     
-    private final Timer timer = new Timer("Timer-" + OpflowRpcMaster.class.getSimpleName(), true);
+    private final Timer timer = new Timer("Timer-" + OpflowRpcAmqpMaster.class.getSimpleName(), true);
     private final ReentrantReadWriteLock taskLock = new ReentrantReadWriteLock();
     private final Lock closeLock = taskLock.writeLock();
     private final Condition closeBarrier = closeLock.newCondition();
@@ -61,7 +61,7 @@ public class OpflowRpcMaster implements AutoCloseable {
     
     private final boolean autorun;
     
-    public OpflowRpcMaster(Map<String, Object> params) throws OpflowBootstrapException {
+    public OpflowRpcAmqpMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
         componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
@@ -69,10 +69,10 @@ public class OpflowRpcMaster implements AutoCloseable {
         rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
         restrictor = new OpflowRestrictor.Valve();
         
-        logTracer = OpflowLogTracer.ROOT.branch("rpcMasterId", componentId);
+        logTracer = OpflowLogTracer.ROOT.branch("amqpMasterId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("RpcMaster[${rpcMasterId}][${instanceId}].new()")
+                .text("amqpMaster[${amqpMasterId}][${instanceId}].new()")
                 .stringify());
         
         Map<String, Object> brokerParams = new HashMap<>();
@@ -80,7 +80,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         
         brokerParams.put(CONST.COMPONENT_ID, componentId);
         brokerParams.put(OpflowConstant.COMP_MEASURER, measurer);
-        brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, OpflowConstant.COMP_RPC_MASTER);
+        brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, OpflowConstant.COMP_RPC_AMQP_MASTER);
         
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME));
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.getOrDefault(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE, "direct"));
@@ -203,13 +203,13 @@ public class OpflowRpcMaster implements AutoCloseable {
                 .put("monitorInterval", monitorInterval)
                 .put("monitorTimeout", monitorTimeout)
                 .tags("RpcMaster.new() parameters")
-                .text("RpcMaster[${rpcMasterId}].new() parameters")
+                .text("amqpMaster[${amqpMasterId}].new() parameters")
                 .stringify());
         
-        measurer.updateComponentInstance(OpflowConstant.COMP_RPC_MASTER, componentId, OpflowPromMeasurer.GaugeAction.INC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_RPC_AMQP_MASTER, componentId, OpflowPromMeasurer.GaugeAction.INC);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("RpcMaster[${rpcMasterId}][${instanceId}].new() end!")
+                .text("amqpMaster[${amqpMasterId}][${instanceId}].new() end!")
                 .stringify());
         
         if (autorun) {
@@ -217,7 +217,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
     }
 
-    private final OpflowConcurrentMap<String, OpflowRpcRequest> tasks = new OpflowConcurrentMap<>();
+    private final OpflowConcurrentMap<String, OpflowRpcAmqpRequest> tasks = new OpflowConcurrentMap<>();
     
     private final Object callbackConsumerLock = new Object();
     private volatile OpflowEngine.ConsumerInfo callbackConsumer;
@@ -266,7 +266,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                         .text("Request[${requestId}][${requestTime}][x-rpc-master-callback-consumed] - task[${correlationId}] receives a result (size: ${bodyLength})")
                         .stringify());
 
-                OpflowRpcRequest task = tasks.get(taskId);
+                OpflowRpcAmqpRequest task = tasks.get(taskId);
                 if (taskId == null || task == null) {
                     if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .put("correlationId", taskId)
@@ -327,38 +327,38 @@ public class OpflowRpcMaster implements AutoCloseable {
         return monitor;
     }
     
-    public OpflowRpcRequest request(String routineSignature, String body) {
+    public OpflowRpcAmqpRequest request(String routineSignature, String body) {
         return request(routineSignature, OpflowUtil.getBytes(body), null, null);
     }
     
-    public OpflowRpcRequest request(String routineSignature, String body, Map<String, Object> options) {
+    public OpflowRpcAmqpRequest request(String routineSignature, String body, Map<String, Object> options) {
         return request(routineSignature, OpflowUtil.getBytes(body), null, options);
     }
     
-    public OpflowRpcRequest request(String routineSignature, String body, final OpflowRpcParameter params) {
+    public OpflowRpcAmqpRequest request(String routineSignature, String body, final OpflowRpcParameter params) {
         return request(routineSignature, OpflowUtil.getBytes(body), params, null);
     }
     
-    public OpflowRpcRequest request(String routineSignature, byte[] body) {
+    public OpflowRpcAmqpRequest request(String routineSignature, byte[] body) {
         return request(routineSignature, body, null, null);
     }
     
-    public OpflowRpcRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params) {
+    public OpflowRpcAmqpRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params) {
         return request(routineSignature, body, params, null);
     }
     
-    public OpflowRpcRequest request(final String routineSignature, final byte[] body, final Map<String, Object> options) {
+    public OpflowRpcAmqpRequest request(final String routineSignature, final byte[] body, final Map<String, Object> options) {
         return request(routineSignature, body, null, options);
     }
     
-    public OpflowRpcRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params, final Map<String, Object> options) {
+    public OpflowRpcAmqpRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params, final Map<String, Object> options) {
         if (restrictor == null) {
             return _request_safe(routineSignature, body, params, options);
         }
         try {
-            return restrictor.filter(new OpflowRestrictor.Action<OpflowRpcRequest>() {
+            return restrictor.filter(new OpflowRestrictor.Action<OpflowRpcAmqpRequest>() {
                 @Override
-                public OpflowRpcRequest process() throws Throwable {
+                public OpflowRpcAmqpRequest process() throws Throwable {
                     return _request_safe(routineSignature, body, params, options);
                 }
             });
@@ -371,7 +371,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
     }
     
-    private OpflowRpcRequest _request_safe(final String routineSignature, byte[] body, OpflowRpcParameter parameter, Map<String, Object> options) {
+    private OpflowRpcAmqpRequest _request_safe(final String routineSignature, byte[] body, OpflowRpcParameter parameter, Map<String, Object> options) {
         final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter(options);
         
         if (routineSignature != null) {
@@ -408,7 +408,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         
         final String taskId = OpflowUUID.getBase64ID();
-        OpflowRpcRequest task = new OpflowRpcRequest(params, new OpflowTimeout.Listener() {
+        OpflowRpcAmqpRequest task = new OpflowRpcAmqpRequest(params, new OpflowTimeout.Listener() {
             private OpflowLogTracer logTask = null;
             
             {
@@ -443,7 +443,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                     }
                     if (logTask != null && logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                             .put("taskListSize", tasks.size())
-                            .text("Request[${requestId}][${requestTime}][x-rpc-master-finished] - RpcMaster[${rpcMasterId}]"
+                            .text("Request[${requestId}][${requestTime}][x-rpc-master-finished] - amqpMaster[${amqpMasterId}]"
                                     + "- tasksize after removing task[${taskId}]: ${taskListSize}")
                             .stringify());
                 } finally {
@@ -472,7 +472,7 @@ public class OpflowRpcMaster implements AutoCloseable {
         if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                 .put("replyTo", consumerInfo.getQueueName())
                 .put("replyToType", consumerInfo.isFixedQueue() ? "static" : "dynamic")
-                .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - RpcMaster[${rpcMasterId}][${instanceId}] - Use ${replyToType} replyTo: ${replyTo}")
+                .text("Request[${requestId}][${requestTime}][x-rpc-master-request] - amqpMaster[${amqpMasterId}][${instanceId}] - Use ${replyToType} replyTo: ${replyTo}")
                 .stringify());
         builder.replyTo(consumerInfo.getQueueName());
 
@@ -480,7 +480,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             builder.expiration(String.valueOf(expiration));
         }
         
-        measurer.countRpcInvocation(OpflowConstant.COMP_RPC_MASTER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "produce");
+        measurer.countRpcInvocation(OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "produce");
         
         engine.produce(body, headers, builder, null, reqTracer);
         
@@ -514,14 +514,14 @@ public class OpflowRpcMaster implements AutoCloseable {
         final OpflowLogTracer localLog = logTracer.copy();
         if (!tasks.isEmpty()) {
             if (localLog.ready(LOG, Level.TRACE)) LOG.trace(localLog
-                    .text("RpcMaster[${rpcMasterId}].close() - schedule the clean jobs")
+                    .text("amqpMaster[${amqpMasterId}].close() - schedule the clean jobs")
                     .stringify());
             // prevent from receiving the callback RPC messages
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
                     if (localLog.ready(LOG, Level.TRACE)) LOG.trace(localLog
-                            .text("RpcMaster[${rpcMasterId}].close() - force cancelCallbackConsumer")
+                            .text("amqpMaster[${amqpMasterId}].close() - force cancelCallbackConsumer")
                             .stringify());
                     cancelCallbackConsumer();
                 }
@@ -531,7 +531,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 @Override
                 public void run() {
                     if (localLog.ready(LOG, Level.TRACE)) LOG.trace(localLog
-                            .text("RpcMaster[${rpcMasterId}].close() - force clear callback list")
+                            .text("amqpMaster[${amqpMasterId}].close() - force clear callback list")
                             .stringify());
                     closeLock.lock();
                     try {
@@ -545,7 +545,7 @@ public class OpflowRpcMaster implements AutoCloseable {
             }, (DELAY_TIMEOUT + DELAY_TIMEOUT));
         } else {
             if (localLog.ready(LOG, Level.TRACE)) LOG.trace(localLog
-                    .text("RpcMaster[${rpcMasterId}].close() - request callback list is empty")
+                    .text("amqpMaster[${amqpMasterId}].close() - request callback list is empty")
                     .stringify());
         }
     }
@@ -568,11 +568,11 @@ public class OpflowRpcMaster implements AutoCloseable {
         }
         closeLock.lock();
         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - obtain the lock")
+                .text("amqpMaster[${amqpMasterId}].close() - obtain the lock")
                 .stringify());
         try {
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - check tasks.isEmpty()? and await...")
+                .text("amqpMaster[${amqpMasterId}].close() - check tasks.isEmpty()? and await...")
                 .stringify());
             
             scheduleClearTasks();
@@ -582,13 +582,13 @@ public class OpflowRpcMaster implements AutoCloseable {
             completeClearTasks();
             
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - cancelCallbackConsumer (for sure)")
+                .text("amqpMaster[${amqpMasterId}].close() - cancelCallbackConsumer (for sure)")
                 .stringify());
             
             cancelCallbackConsumer();
             
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - stop timeoutMonitor")
+                .text("amqpMaster[${amqpMasterId}].close() - stop timeoutMonitor")
                 .stringify());
 
             synchronized (timeoutMonitorLock) {
@@ -599,12 +599,12 @@ public class OpflowRpcMaster implements AutoCloseable {
             }
             
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - close broker/engine")
+                .text("amqpMaster[${amqpMasterId}].close() - close broker/engine")
                 .stringify());
             if (engine != null) engine.close();
         } catch(InterruptedException ex) {
             if (logTracer.ready(LOG, Level.ERROR)) LOG.error(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - an interruption has been raised")
+                .text("amqpMaster[${amqpMasterId}].close() - an interruption has been raised")
                 .stringify());
         } finally {
             closeLock.unlock();
@@ -614,7 +614,7 @@ public class OpflowRpcMaster implements AutoCloseable {
                 }
             }
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
-                .text("RpcMaster[${rpcMasterId}].close() - lock has been released")
+                .text("amqpMaster[${amqpMasterId}].close() - lock has been released")
                 .stringify());
         }
     }
@@ -662,6 +662,6 @@ public class OpflowRpcMaster implements AutoCloseable {
 
     @Override
     protected void finalize() throws Throwable {
-        measurer.updateComponentInstance(OpflowConstant.COMP_RPC_MASTER, componentId, OpflowPromMeasurer.GaugeAction.DEC);
+        measurer.updateComponentInstance(OpflowConstant.COMP_RPC_AMQP_MASTER, componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
 }

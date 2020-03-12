@@ -37,8 +37,8 @@ public class OpflowConstant {
     public final static String COMP_RESTRICTOR = "restrictor";
     public final static String COMP_REQ_EXTRACTOR = "reqExtractor";
     public final static String COMP_SPEED_METER = "speedMeter";
-    public final static String COMP_RPC_MASTER = "rpcMaster";
-    public final static String COMP_RPC_WORKER = "rpcWorker";
+    public final static String COMP_RPC_AMQP_MASTER = "rpcMaster";
+    public final static String COMP_RPC_AMQP_WORKER = "rpcWorker";
     public final static String COMP_RPC_HTTP_MASTER = "httpMaster";
     public final static String COMP_RPC_HTTP_WORKER = "httpWorker";
     public final static String COMP_DISCOVERY_CLIENT = "discoveryClient";

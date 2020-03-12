@@ -18,9 +18,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author drupalex
  */
-public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
+public class OpflowRpcAmqpRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcRequest.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcAmqpRequest.class);
     private final OpflowLogTracer reqTracer;
     private final String routineId;
     private final String routineTimestamp;
@@ -29,7 +29,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
     private final OpflowTimeout.Listener completeListener;
     private long timestamp;
 
-    public OpflowRpcRequest(final OpflowRpcParameter params, final OpflowTimeout.Listener completeListener) {
+    public OpflowRpcAmqpRequest(final OpflowRpcParameter params, final OpflowTimeout.Listener completeListener) {
         this.routineId = params.getRoutineId();
         this.routineSignature = params.getRoutineSignature();
         this.routineTimestamp = params.getRoutineTimestamp();
@@ -48,7 +48,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         checkTimestamp();
     }
     
-    public OpflowRpcRequest(final Map<String, Object> options, final OpflowTimeout.Listener completeListener) {
+    public OpflowRpcAmqpRequest(final Map<String, Object> options, final OpflowTimeout.Listener completeListener) {
         this(new OpflowRpcParameter(options), completeListener);
     }
     
@@ -129,11 +129,11 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         return buff;
     }
     
-    public OpflowRpcResult extractResult() {
+    public OpflowRpcAmqpResult extractResult() {
         return extractResult(true);
     }
     
-    public OpflowRpcResult extractResult(final boolean includeProgress) {
+    public OpflowRpcAmqpResult extractResult(final boolean includeProgress) {
         OpflowLogTracer extractTrail = reqTracer;
         if (extractTrail != null && extractTrail.ready(LOG, Level.TRACE)) LOG.trace(extractTrail
                 .text("Request[${requestId}][${requestTime}][x-rpc-request-extract-result-begin] - extracting result")
@@ -143,7 +143,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
         byte[] error = null;
         boolean completed = false;
         byte[] value = null;
-        List<OpflowRpcResult.Step> steps = new LinkedList<>();
+        List<OpflowRpcAmqpResult.Step> steps = new LinkedList<>();
         while(this.hasNext()) {
             OpflowMessage msg = this.next();
             String status = getStatus(msg);
@@ -157,9 +157,9 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                     if (includeProgress) {
                         try {
                             int percent = OpflowJsonTool.extractFieldAsInt(msg.getBodyAsString(), "percent");
-                            steps.add(new OpflowRpcResult.Step(percent));
+                            steps.add(new OpflowRpcAmqpResult.Step(percent));
                         } catch (OpflowJsonTransformationException jse) {
-                            steps.add(new OpflowRpcResult.Step());
+                            steps.add(new OpflowRpcAmqpResult.Step());
                         }
                     }   break;
                 case "failed":
@@ -180,7 +180,7 @@ public class OpflowRpcRequest implements Iterator, OpflowTimeout.Timeoutable {
                 .text("Request[${requestId}][${requestTime}][x-rpc-request-extract-result-end] - extracting result has completed")
                 .stringify());
         if (!includeProgress) steps = null;
-        return new OpflowRpcResult(routineSignature, routineId, consumerTag, steps, failed, error, completed, value);
+        return new OpflowRpcAmqpResult(routineSignature, routineId, consumerTag, steps, failed, error, completed, value);
     }
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });

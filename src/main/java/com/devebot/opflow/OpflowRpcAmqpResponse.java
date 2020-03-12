@@ -14,9 +14,9 @@ import com.devebot.opflow.exception.OpflowOperationException;
  *
  * @author drupalex
  */
-public class OpflowRpcResponse {
+public class OpflowRpcAmqpResponse {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcResponse.class);
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcAmqpResponse.class);
     private final OpflowLogTracer logTracer;
     private final String componentId;
     private final Channel channel;
@@ -29,7 +29,7 @@ public class OpflowRpcResponse {
     private final String routineSignature;
     private final Boolean progressEnabled;
     
-    public OpflowRpcResponse(Channel channel, AMQP.BasicProperties properties,
+    public OpflowRpcAmqpResponse(Channel channel, AMQP.BasicProperties properties,
             String componentId,
             String consumerTag,
             String replyQueueName,

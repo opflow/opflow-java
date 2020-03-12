@@ -9,36 +9,36 @@ import java.util.Map;
  */
 public class OpflowBuilder {
     
-    public static OpflowRpcMaster createRpcMaster() throws OpflowBootstrapException {
+    public static OpflowRpcAmqpMaster createRpcMaster() throws OpflowBootstrapException {
         return createRpcMaster(null, null, true);
     }
     
-    public static OpflowRpcMaster createRpcMaster(String configFile) throws OpflowBootstrapException {
+    public static OpflowRpcAmqpMaster createRpcMaster(String configFile) throws OpflowBootstrapException {
         return createRpcMaster(null, configFile, true);
     }
     
-    public static OpflowRpcMaster createRpcMaster(Map<String, Object> config) throws OpflowBootstrapException {
+    public static OpflowRpcAmqpMaster createRpcMaster(Map<String, Object> config) throws OpflowBootstrapException {
         return createRpcMaster(config, null, false);
     }
     
-    public static OpflowRpcMaster createRpcMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        return new OpflowRpcMaster((new OpflowConfig.LoaderImplRpcMaster(config, configFile, useDefaultFile)).loadConfiguration());
+    public static OpflowRpcAmqpMaster createRpcMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
+        return new OpflowRpcAmqpMaster((new OpflowConfig.LoaderImplRpcMaster(config, configFile, useDefaultFile)).loadConfiguration());
     }
     
-    public static OpflowRpcWorker createRpcWorker() throws OpflowBootstrapException {
+    public static OpflowRpcAmqpWorker createRpcWorker() throws OpflowBootstrapException {
         return createRpcWorker(null, null, true);
     }
     
-    public static OpflowRpcWorker createRpcWorker(String configFile) throws OpflowBootstrapException {
+    public static OpflowRpcAmqpWorker createRpcWorker(String configFile) throws OpflowBootstrapException {
         return createRpcWorker(null, configFile, true);
     }
     
-    public static OpflowRpcWorker createRpcWorker(Map<String, Object> config) throws OpflowBootstrapException {
+    public static OpflowRpcAmqpWorker createRpcWorker(Map<String, Object> config) throws OpflowBootstrapException {
         return createRpcWorker(config, null, false);
     }
     
-    public static OpflowRpcWorker createRpcWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        return new OpflowRpcWorker((new OpflowConfig.LoaderImplRpcWorker(config, configFile, useDefaultFile)).loadConfiguration());
+    public static OpflowRpcAmqpWorker createRpcWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
+        return new OpflowRpcAmqpWorker((new OpflowConfig.LoaderImplRpcWorker(config, configFile, useDefaultFile)).loadConfiguration());
     }
     
     public static OpflowPubsubHandler createPubsubHandler() throws OpflowBootstrapException {

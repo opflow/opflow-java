@@ -122,15 +122,15 @@ public abstract class OpflowRpcChecker {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         // asserts the rpcMaster Map
-                        if (!opts.containsKey(OpflowConstant.COMP_RPC_MASTER) || !(opts.get(OpflowConstant.COMP_RPC_MASTER) instanceof Map)) {
-                            opts.put(OpflowConstant.COMP_RPC_MASTER, new LinkedHashMap<String, Object>());
+                        if (!opts.containsKey(OpflowConstant.COMP_RPC_AMQP_MASTER) || !(opts.get(OpflowConstant.COMP_RPC_AMQP_MASTER) instanceof Map)) {
+                            opts.put(OpflowConstant.COMP_RPC_AMQP_MASTER, new LinkedHashMap<String, Object>());
                         }
-                        Map<String, Object> rpcMasterMap = (Map<String, Object>) opts.get(OpflowConstant.COMP_RPC_MASTER);
+                        Map<String, Object> amqpMasterMap = (Map<String, Object>) opts.get(OpflowConstant.COMP_RPC_AMQP_MASTER);
                         // asserts the request Map
-                        if (!rpcMasterMap.containsKey("request") || !(rpcMasterMap.get("request") instanceof Map)) {
-                            rpcMasterMap.put("request", new LinkedHashMap<String, Object>());
+                        if (!amqpMasterMap.containsKey("request") || !(amqpMasterMap.get("request") instanceof Map)) {
+                            amqpMasterMap.put("request", new LinkedHashMap<String, Object>());
                         }
-                        Map<String, Object> requestInfo = (Map<String, Object>)rpcMasterMap.get("request");
+                        Map<String, Object> requestInfo = (Map<String, Object>)amqpMasterMap.get("request");
                         // copy the attributes
                         for (String key : REQUEST_ATTRS) {
                             if (processorObj.getParameters().containsKey(key)) {
