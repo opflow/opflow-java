@@ -27,11 +27,6 @@ import org.slf4j.LoggerFactory;
 public class OpflowRpcHttpWorker {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
-    public final static String HTTP_HEADER_ROUTINE_ID = "opflow-" + CONST.AMQP_HEADER_ROUTINE_ID;
-    public final static String HTTP_HEADER_ROUTINE_TIMESTAMP = "opflow-" + CONST.AMQP_HEADER_ROUTINE_TIMESTAMP;
-    public final static String HTTP_HEADER_ROUTINE_SCOPE = "opflow-" + CONST.AMQP_HEADER_ROUTINE_SCOPE;
-    public final static String HTTP_HEADER_ROUTINE_SIGNATURE = "opflow-" + CONST.AMQP_HEADER_ROUTINE_SIGNATURE;
-    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcHttpWorker.class);
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
@@ -243,10 +238,10 @@ public class OpflowRpcHttpWorker {
                 // get the HTTP headers
                 HeaderMap reqHeaders = exchange.getRequestHeaders();
                 
-                String routineId = reqHeaders.getFirst(HTTP_HEADER_ROUTINE_ID);
-                String routineTimestamp = reqHeaders.getFirst(HTTP_HEADER_ROUTINE_TIMESTAMP);
-                String routineScope = reqHeaders.getFirst(HTTP_HEADER_ROUTINE_SCOPE);
-                String routineSignature = reqHeaders.getFirst(HTTP_HEADER_ROUTINE_SIGNATURE);
+                String routineId = reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_ID);
+                String routineTimestamp = reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_TIMESTAMP);
+                String routineScope = reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_SCOPE);
+                String routineSignature = reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_SIGNATURE);
                 
                 OpflowLogTracer reqTracer = null;
                 if (logTracer.ready(LOG, Level.INFO)) {
