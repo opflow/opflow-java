@@ -237,8 +237,8 @@ public class OpflowServerlet implements AutoCloseable {
                 }, subscriberCfg).toMap());
             }
             
-            if (amqpWorker != null || subscriber != null) {
-                instantiator = new Instantiator(amqpWorker, subscriber, OpflowObjectTree.buildMap(false)
+            if (amqpWorker != null || httpWorker != null || subscriber != null) {
+                instantiator = new Instantiator(amqpWorker, httpWorker, subscriber, OpflowObjectTree.buildMap(false)
                     .put(CONST.COMPONENT_ID, componentId)
                     .toMap());
             }
@@ -406,6 +406,8 @@ public class OpflowServerlet implements AutoCloseable {
         private final OpflowLogTracer logTracer;
         private final OpflowRpcAmqpWorker amqpWorker;
         private final OpflowRpcAmqpListener amqpListener;
+        private final OpflowRpcHttpWorker httpWorker;
+        private final OpflowRpcHttpWorker.Listener httpListener;
         private final OpflowPubsubHandler subscriber;
         private final OpflowPubsubListener subListener;
         private final Set<String> routineSignatures = new HashSet<>();
@@ -414,17 +416,18 @@ public class OpflowServerlet implements AutoCloseable {
         private final Map<String, String> methodOfAlias = new HashMap<>();
         private volatile boolean processing = false;
 
-        public Instantiator(OpflowRpcAmqpWorker worker, OpflowPubsubHandler subscriber) throws OpflowBootstrapException {
-            this(worker, subscriber, null);
+        public Instantiator(OpflowRpcAmqpWorker amqpWorker, OpflowRpcHttpWorker httpWorker, OpflowPubsubHandler subscriber) throws OpflowBootstrapException {
+            this(amqpWorker, httpWorker, subscriber, null);
         }
 
-        public Instantiator(OpflowRpcAmqpWorker amqpWorker, OpflowPubsubHandler subscriber, Map<String, Object> options) throws OpflowBootstrapException {
+        public Instantiator(OpflowRpcAmqpWorker amqpWorker, OpflowRpcHttpWorker httpWorker, OpflowPubsubHandler subscriber, Map<String, Object> options) throws OpflowBootstrapException {
             if (amqpWorker == null && subscriber == null) {
                 throw new OpflowBootstrapException("Both of amqpWorker and subscriber must not be null");
             }
             options = OpflowObjectTree.ensureNonNull(options);
             final String componentId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
             this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", componentId);
+            
             this.amqpWorker = amqpWorker;
             this.amqpListener = new OpflowRpcAmqpListener() {
                 @Override
@@ -434,164 +437,28 @@ public class OpflowServerlet implements AutoCloseable {
                     final String routineTimestamp = response.getRoutineTimestamp();
                     final String routineScope = response.getRoutineScope();
                     final String routineSignature = response.getRoutineSignature();
-                    final String methodSignature = methodOfAlias.getOrDefault(routineSignature, routineSignature);
-                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
-                        .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
-                    if (reqTracer.ready(LOG, Level.INFO)) {
-                        LOG.info(reqTracer
-                            .put("methodSignature", methodSignature)
-                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-received]"
-                                + " - Serverlet[${instantiatorId}][${instanceId}] receives a RPC call to the routine[${methodSignature}]")
-                            .stringify());
-                    }
-                    Method method = methodRef.get(methodSignature);
-                    Object target = targetRef.get(methodSignature);
-                    assertMethodNotNull(methodSignature, method, target, reqTracer);
-                    try {
-                        Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
-                        OpflowTargetRoutine routine = OpflowUtil.extractMethodAnnotation(origin, OpflowTargetRoutine.class);;
-                        if (routine != null && routine.enabled() == false) {
-                            throw new UnsupportedOperationException("Method " + origin.toString() + " is disabled");
-                        }
-
-                        String json = message.getBodyAsString();
-                        if (reqTracer.ready(LOG, Level.TRACE)) {
-                            LOG.trace(reqTracer
-                                .put("arguments", json)
-                                .text("Request[${requestId}][${requestTime}] - Method arguments in json string")
-                                .stringify());
-                        }
-                        Object[] args = OpflowJsonTool.toObjectArray(json, method.getParameterTypes());
-
-                        Object returnValue;
-
-                        String pingSignature = OpflowRpcCheckerWorker.getSendMethodName();
-                        if (reqTracer.ready(LOG, Level.TRACE)) {
-                            LOG.trace(reqTracer
-                                .put("routineSignature", routineSignature)
-                                .put("pingSignature", pingSignature)
-                                .text("Request[${requestId}][${requestTime}] - compares the routine[${routineSignature}] with ping[${pingSignature}]")
-                                .stringify());
-                        }
-                        if (pingSignature.equals(routineSignature)) {
-                            if (args.length > 0) {
-                                OpflowRpcChecker.Ping p = (OpflowRpcChecker.Ping) args[0];
-                                if (p.q != null) {
-                                    String q = p.q;
-                                    if (q.equals(getClassNameLabel(IllegalAccessException.class))) {
-                                        throw new IllegalAccessException();
-                                    }
-                                    if (q.equals(getClassNameLabel(IllegalArgumentException.class))) {
-                                        throw new IllegalArgumentException();
-                                    }
-                                    if (q.equals(getClassNameLabel(NoSuchMethodException.class))) {
-                                        throw new NoSuchMethodException();
-                                    }
-                                    if (q.equals(getClassNameLabel(SecurityException.class))) {
-                                        throw new SecurityException();
-                                    }
-                                    if (q.equals(getClassNameLabel(UnsupportedOperationException.class))) {
-                                        throw new UnsupportedOperationException();
-                                    }
-                                    if (q.equals(getClassNameLabel(JsonSyntaxException.class))) {
-                                        OpflowJsonTool.toObject("{opflow}", OpflowRpcChecker.Ping.class);
-                                        throw new Exception();
-                                    }
-                                }
-                            }
-                            returnValue = new OpflowRpcChecker.Pong(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                                @Override
-                                public void transform(Map<String, Object> opts) {
-                                    OpflowEngine engine = amqpWorker.getEngine();
-                                    opts.put(CONST.COMPONENT_ID, componentId);
-                                    opts.put(OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowObjectTree.buildMap()
-                                        .put(CONST.COMPONENT_ID, amqpWorker.getComponentId())
-                                        .put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId())
-                                        .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, amqpWorker.getIncomingQueueName())
-                                        .put("request", OpflowObjectTree.buildMap()
-                                            .put("routineId", routineId)
-                                            .put("routineTimestamp", routineTimestamp)
-                                            .put("replyToQueue", response.getReplyQueueName())
-                                            .put("consumerTag", response.getConsumerTag())
-                                            .toMap())
-                                        .toMap());
-                                    opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
-                                        .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-worker/git-info.json"))
-                                        .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
-                                        .toMap());
-                                }
-                            }).toMap());
-                        } else {
-                            if (reqTracer.ready(LOG, Level.INFO)) {
-                                LOG.info(reqTracer
-                                    .put("targetName", target.getClass().getName())
-                                    .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-processing] - The method from target[${targetName}] is invoked")
-                                    .stringify());
-                            }
-                            returnValue = method.invoke(target, args);
-                        }
-
-                        String result = OpflowJsonTool.toString(returnValue);
-                        if (reqTracer.ready(LOG, Level.TRACE)) {
-                            LOG.trace(reqTracer
-                                .put("return", OpflowUtil.truncate(result))
-                                .text("Request[${requestId}][${requestTime}] - Return the output of the method")
-                                .stringify());
-                        }
-                        response.emitCompleted(result);
-
-                        if (reqTracer.ready(LOG, Level.INFO)) {
-                            LOG.info(reqTracer
-                                .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-completed] - Method call has completed")
-                                .stringify());
-                        }
-                    } catch (JsonSyntaxException error) {
-                        error.getStackTrace();
-                        response.emitFailed(OpflowObjectTree.buildMap(false)
-                            .put("exceptionClass", error.getClass().getName())
-                            .put("exceptionPayload", OpflowJsonTool.toString(error))
-                            .put("type", error.getClass().getName())
-                            .put("message", error.getMessage())
-                            .toString());
-                        // throw error;
-                    } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException ex) {
-                        LOG.error(null, ex); // not expected to happen
-                        ex.getStackTrace();
-                        response.emitFailed(OpflowObjectTree.buildMap(false)
-                            .put("exceptionClass", ex.getClass().getName())
-                            .put("exceptionPayload", OpflowJsonTool.toString(ex))
-                            .put("type", ex.getClass().getName())
-                            .put("message", ex.getMessage())
-                            .toString());
-                    } catch (InvocationTargetException ex) {
-                        Throwable cause = (Exception) ex.getCause();
-                        if (cause == null) {
-                            cause = ex;
-                        }
-                        cause.getStackTrace();
-                        response.emitFailed(OpflowObjectTree.buildMap(false)
-                            .put("exceptionClass", cause.getClass().getName())
-                            .put("exceptionPayload", OpflowJsonTool.toString(cause))
-                            .put("type", cause.getClass().getName())
-                            .put("message", cause.getMessage())
-                            .toString());
-                    } catch (UnsupportedOperationException ex) {
-                        ex.getStackTrace();
-                        response.emitFailed(OpflowObjectTree.buildMap(false)
-                            .put("exceptionClass", ex.getClass().getName())
-                            .put("exceptionPayload", OpflowJsonTool.toString(ex))
-                            .put("type", ex.getClass().getName())
-                            .put("message", ex.getMessage())
-                            .toString());
-                    } catch (Exception ex) {
-                        response.emitFailed(OpflowObjectTree.buildMap(false)
-                            .put("type", ex.getClass().getName())
-                            .put("message", ex.getMessage())
-                            .toString());
-                    }
+                    final String body = message.getBodyAsString();
+                    
+                    Map<String, String> extra = OpflowObjectTree.<String>buildMap()
+                        .put("replyToQueue", response.getReplyQueueName())
+                        .put("consumerTag", response.getConsumerTag())
+                        .toMap();
+                    
+                    RoutineOutput output = invokeRoutine(body, routineSignature, routineScope, routineTimestamp, routineId, componentId, extra);
+                    output.fill(response);
+                    
                     return null;
                 }
             };
+            
+            this.httpWorker = httpWorker;
+            this.httpListener = new OpflowRpcHttpWorker.Listener() {
+                @Override
+                public OpflowRpcHttpWorker.Output processMessage(String body, String routineSignature, String routineScope, String routineTimestamp, String routineId, Map<String, String> extra) {
+                    return null;
+                }
+            };
+            
             this.subscriber = subscriber;
             this.subListener = new OpflowPubsubListener() {
                 @Override
@@ -647,11 +514,210 @@ public class OpflowServerlet implements AutoCloseable {
                     }
                 }
             };
+            
             if (Boolean.TRUE.equals(options.get(OpflowConstant.OPFLOW_COMMON_AUTORUN))) {
                 process();
             }
         }
+        
+        private RoutineOutput invokeRoutine(
+            final String body,
+            final String routineSignature,
+            final String routineScope,
+            final String routineTimestamp,
+            final String routineId,
+            final String componentId,
+            final Map<String, String> extra
+        ) {
+            RoutineOutput output = null;
+            final String methodSignature = methodOfAlias.getOrDefault(routineSignature, routineSignature);
+            final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
+                .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
+            if (reqTracer.ready(LOG, Level.INFO)) {
+                LOG.info(reqTracer
+                    .put("methodSignature", methodSignature)
+                    .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-received]"
+                        + " - Serverlet[${instantiatorId}][${instanceId}] receives a RPC call to the routine[${methodSignature}]")
+                    .stringify());
+            }
+            Method method = methodRef.get(methodSignature);
+            Object target = targetRef.get(methodSignature);
+            assertMethodNotNull(methodSignature, method, target, reqTracer);
+            try {
+                Method origin = target.getClass().getMethod(method.getName(), method.getParameterTypes());
+                OpflowTargetRoutine routine = OpflowUtil.extractMethodAnnotation(origin, OpflowTargetRoutine.class);;
+                if (routine != null && routine.enabled() == false) {
+                    throw new UnsupportedOperationException("Method " + origin.toString() + " is disabled");
+                }
 
+                if (reqTracer.ready(LOG, Level.TRACE)) {
+                    LOG.trace(reqTracer
+                        .put("arguments", body)
+                        .text("Request[${requestId}][${requestTime}] - Method arguments in json string")
+                        .stringify());
+                }
+                Object[] args = OpflowJsonTool.toObjectArray(body, method.getParameterTypes());
+                
+                Object returnValue;
+                
+                String pingSignature = OpflowRpcCheckerWorker.getSendMethodName();
+                if (reqTracer.ready(LOG, Level.TRACE)) {
+                    LOG.trace(reqTracer
+                        .put("routineSignature", routineSignature)
+                        .put("pingSignature", pingSignature)
+                        .text("Request[${requestId}][${requestTime}] - compares the routine[${routineSignature}] with ping[${pingSignature}]")
+                        .stringify());
+                }
+                if (pingSignature.equals(routineSignature)) {
+                    if (args.length > 0) {
+                        OpflowRpcChecker.Ping p = (OpflowRpcChecker.Ping) args[0];
+                        if (p.q != null) {
+                            String q = p.q;
+                            if (q.equals(getClassNameLabel(IllegalAccessException.class))) {
+                                throw new IllegalAccessException();
+                            }
+                            if (q.equals(getClassNameLabel(IllegalArgumentException.class))) {
+                                throw new IllegalArgumentException();
+                            }
+                            if (q.equals(getClassNameLabel(NoSuchMethodException.class))) {
+                                throw new NoSuchMethodException();
+                            }
+                            if (q.equals(getClassNameLabel(SecurityException.class))) {
+                                throw new SecurityException();
+                            }
+                            if (q.equals(getClassNameLabel(UnsupportedOperationException.class))) {
+                                throw new UnsupportedOperationException();
+                            }
+                            if (q.equals(getClassNameLabel(JsonSyntaxException.class))) {
+                                OpflowJsonTool.toObject("{opflow}", OpflowRpcChecker.Ping.class);
+                                throw new Exception();
+                            }
+                        }
+                    }
+                    returnValue = new OpflowRpcChecker.Pong(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                        @Override
+                        public void transform(Map<String, Object> opts) {
+                            OpflowEngine engine = amqpWorker.getEngine();
+                            opts.put(CONST.COMPONENT_ID, componentId);
+                            opts.put(OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowObjectTree.buildMap()
+                                .put(CONST.COMPONENT_ID, amqpWorker.getComponentId())
+                                .put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId())
+                                .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, amqpWorker.getIncomingQueueName())
+                                .put("request", OpflowObjectTree.buildMap()
+                                    .put("routineId", routineId)
+                                    .put("routineTimestamp", routineTimestamp)
+                                    .add(extra)
+                                    .toMap())
+                                .toMap());
+                            opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
+                                .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-worker/git-info.json"))
+                                .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
+                                .toMap());
+                        }
+                    }).toMap());
+                } else {
+                    if (reqTracer.ready(LOG, Level.INFO)) {
+                        LOG.info(reqTracer
+                            .put("targetName", target.getClass().getName())
+                            .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-processing] - The method from target[${targetName}] is invoked")
+                            .stringify());
+                    }
+                    returnValue = method.invoke(target, args);
+                }
+
+                String result = OpflowJsonTool.toString(returnValue);
+                if (reqTracer.ready(LOG, Level.TRACE)) {
+                    LOG.trace(reqTracer
+                        .put("return", OpflowUtil.truncate(result))
+                        .text("Request[${requestId}][${requestTime}] - Return the output of the method")
+                        .stringify());
+                }
+                output = RoutineOutput.asSuccess(result);
+
+                if (reqTracer.ready(LOG, Level.INFO)) {
+                    LOG.info(reqTracer
+                        .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-completed] - Method call has completed")
+                        .stringify());
+                }
+            } catch (JsonSyntaxException error) {
+                error.getStackTrace();
+                output = RoutineOutput.asFailure(OpflowObjectTree.buildMap(false)
+                    .put("exceptionClass", error.getClass().getName())
+                    .put("exceptionPayload", OpflowJsonTool.toString(error))
+                    .put("type", error.getClass().getName())
+                    .put("message", error.getMessage())
+                    .toString());
+                // throw error;
+            } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException ex) {
+                LOG.error(null, ex); // not expected to happen
+                ex.getStackTrace();
+                output = RoutineOutput.asFailure(OpflowObjectTree.buildMap(false)
+                    .put("exceptionClass", ex.getClass().getName())
+                    .put("exceptionPayload", OpflowJsonTool.toString(ex))
+                    .put("type", ex.getClass().getName())
+                    .put("message", ex.getMessage())
+                    .toString());
+            } catch (InvocationTargetException ex) {
+                Throwable cause = (Exception) ex.getCause();
+                if (cause == null) {
+                    cause = ex;
+                }
+                cause.getStackTrace();
+                output = RoutineOutput.asFailure(OpflowObjectTree.buildMap(false)
+                    .put("exceptionClass", cause.getClass().getName())
+                    .put("exceptionPayload", OpflowJsonTool.toString(cause))
+                    .put("type", cause.getClass().getName())
+                    .put("message", cause.getMessage())
+                    .toString());
+            } catch (UnsupportedOperationException ex) {
+                ex.getStackTrace();
+                output = RoutineOutput.asFailure(OpflowObjectTree.buildMap(false)
+                    .put("exceptionClass", ex.getClass().getName())
+                    .put("exceptionPayload", OpflowJsonTool.toString(ex))
+                    .put("type", ex.getClass().getName())
+                    .put("message", ex.getMessage())
+                    .toString());
+            } catch (Exception ex) {
+                output = RoutineOutput.asFailure(OpflowObjectTree.buildMap(false)
+                    .put("type", ex.getClass().getName())
+                    .put("message", ex.getMessage())
+                    .toString());
+            }
+            return output;
+        }
+        
+        private static class RoutineOutput {
+            private boolean failed;
+            private String value;
+            private String error;
+            
+            public static RoutineOutput asSuccess(String value) {
+                RoutineOutput that = new RoutineOutput();
+                that.failed = false;
+                that.value = value;
+                return that;
+            }
+            
+            public static RoutineOutput asFailure(String error) {
+                RoutineOutput that = new RoutineOutput();
+                that.failed = true;
+                that.error = error;
+                return that;
+            }
+            
+            public void fill(OpflowRpcAmqpResponse response) {
+                if (failed) {
+                    response.emitFailed(error);
+                } else {
+                    response.emitCompleted(value);
+                }
+            }
+            
+            public OpflowRpcHttpWorker.Output export() {
+                return null;
+            }
+        }
+        
         public final synchronized void process() {
             if (!processing) {
                 if (amqpWorker != null) {
@@ -663,11 +729,11 @@ public class OpflowServerlet implements AutoCloseable {
                 processing = true;
             }
         }
-
+        
         public void instantiateType(Class type) {
             instantiateType(type, null);
         }
-
+        
         public void instantiateType(Class type, Object target) {
             if (type == null) {
                 throw new OpflowInterceptionException("The [type] parameter must not be null");

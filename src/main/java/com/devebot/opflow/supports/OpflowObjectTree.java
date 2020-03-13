@@ -29,11 +29,18 @@ public class OpflowObjectTree {
             fields.put(key, value);
             return this;
         }
-
+        
+        public Builder add(Map<String, V> source) {
+            if (source != null) {
+                fields.putAll(source);
+            }
+            return this;
+        }
+        
         public Object get(String key) {
             return fields.get(key);
         }
-
+        
         public Map<String, V> toMap() {
             return fields;
         }
