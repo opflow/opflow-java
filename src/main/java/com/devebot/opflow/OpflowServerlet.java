@@ -36,6 +36,7 @@ public class OpflowServerlet implements AutoCloseable {
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[]{
         OpflowConstant.COMP_CONFIGURER,
         OpflowConstant.COMP_RPC_AMQP_WORKER,
+        OpflowConstant.COMP_RPC_HTTP_WORKER,
         OpflowConstant.COMP_SUBSCRIBER
     });
 
@@ -55,6 +56,7 @@ public class OpflowServerlet implements AutoCloseable {
 
     private OpflowPubsubHandler configurer;
     private OpflowRpcAmqpWorker amqpWorker;
+    private OpflowRpcHttpWorker httpWorker;
     private OpflowPubsubHandler subscriber;
     private Instantiator instantiator;
 
@@ -100,6 +102,7 @@ public class OpflowServerlet implements AutoCloseable {
 
         Map<String, Object> configurerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_CONFIGURER);
         Map<String, Object> amqpWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_RPC_AMQP_WORKER);
+        Map<String, Object> httpWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_RPC_HTTP_WORKER);
         Map<String, Object> subscriberCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_SUBSCRIBER);
 
         HashSet<String> checkExchange = new HashSet<>();
@@ -175,7 +178,7 @@ public class OpflowServerlet implements AutoCloseable {
                     }
                 }, configurerCfg).toMap());
             }
-
+            
             if (OpflowUtil.isComponentEnabled(amqpWorkerCfg)) {
                 String amqpWorkerId = OpflowUUID.getBase64ID();
                 amqpWorkerCfg.put(CONST.COMPONENT_ID, amqpWorkerId);
@@ -193,7 +196,29 @@ public class OpflowServerlet implements AutoCloseable {
                     }
                 }, amqpWorkerCfg).toMap());
             }
-
+            
+            if (OpflowUtil.isComponentEnabled(httpWorkerCfg)) {
+                String httpWorkerId = OpflowUUID.getBase64ID();
+                httpWorkerCfg.put(CONST.COMPONENT_ID, httpWorkerId);
+                if (logTracer.ready(LOG, Level.INFO)) {
+                    LOG.info(logTracer
+                        .put("httpWorkerId", httpWorkerId)
+                        .text("Serverlet[${serverletId}] creates a new httpWorker[${httpWorkerId}]")
+                        .stringify());
+                }
+                httpWorker = new OpflowRpcHttpWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put(CONST.COMPONENT_ID, componentId);
+                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
+                    }
+                }, httpWorkerCfg).toMap());
+            }
+            
+            if (amqpWorker != null && httpWorker != null) {
+                amqpWorker.setAddress(httpWorker.getAddress());
+            }
+            
             if (OpflowUtil.isComponentEnabled(subscriberCfg)) {
                 String pubsubHandlerId = OpflowUUID.getBase64ID();
                 subscriberCfg.put("pubsubHandlerId", pubsubHandlerId);
@@ -211,7 +236,7 @@ public class OpflowServerlet implements AutoCloseable {
                     }
                 }, subscriberCfg).toMap());
             }
-
+            
             if (amqpWorker != null || subscriber != null) {
                 instantiator = new Instantiator(amqpWorker, subscriber, OpflowObjectTree.buildMap(false)
                     .put(CONST.COMPONENT_ID, componentId)

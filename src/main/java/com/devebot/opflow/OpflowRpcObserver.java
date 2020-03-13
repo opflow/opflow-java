@@ -29,6 +29,9 @@ public class OpflowRpcObserver {
             // update the protocol version
             String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
             manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
+            // update the http address
+            String address = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_COMMON_ADDRESS, false, true);
+            manifest.address = address;
         }
     }
     
@@ -93,6 +96,7 @@ public class OpflowRpcObserver {
         public final static String STATUS_CUTOFF = "gray";
 
         private String status;
+        private String address;
         private Boolean compatible;
         private final String componentId;
         private final Map<String, Object> information;

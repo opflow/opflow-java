@@ -46,11 +46,24 @@ public class OpflowRpcHttpWorker {
         componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
+        logTracer = OpflowLogTracer.ROOT.branch("httpWorkerId", componentId);
+        
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .text("httpWorker[${httpWorkerId}][${instanceId}].new()")
+                .stringify());
+        
         host = OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_HOST, "0.0.0.0").toString();
         hostname = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_HOSTNAME, false, false);
         port = OpflowUtil.detectFreePort(kwargs, OpflowConstant.OPFLOW_COMMON_PORTS, new Integer[] {
                 8765, 8766, 8767, 8768, 8769, 8770, 8771, 8772, 8773, 8774, 8775, 8776, 8777
         });
+        
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .put("host", host)
+                .put("hostname", hostname)
+                .put("port", port)
+                .text("httpWorker[${httpWorkerId}][${instanceId}] - open the HTTP server on [${host}:${port}] with hostname[${hostname}]")
+                .stringify());
         
         shutdownTimeout = OpflowObjectTree.getOptionValue(kwargs, "shutdownTimeout", Long.class, 1000l);
         
@@ -61,13 +74,15 @@ public class OpflowRpcHttpWorker {
             }
         };
         
-        logTracer = OpflowLogTracer.ROOT.branch("httpWorkerId", componentId);
-        
         routineHandler = new RoutineHandler();
         
         defaultHandlers = new RoutingHandler()
             .post("/routine", new BlockingHandler(routineHandler))
             .setFallbackHandler(new PageNotFoundHandler());
+        
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .text("httpWorker[${httpWorkerId}][${instanceId}].new() end!")
+                .stringify());
     }
 
     public String getHost() {
