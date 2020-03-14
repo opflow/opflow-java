@@ -39,16 +39,16 @@ public class OpflowCommander implements AutoCloseable {
         OpflowConstant.COMP_CONFIGURER,
         OpflowConstant.COMP_PUBLISHER,
         OpflowConstant.COMP_RPC_AMQP_MASTER,
-        OpflowConstant.COMP_RPC_HTTP_MASTER
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
         OpflowConstant.COMP_REQ_EXTRACTOR,
         OpflowConstant.COMP_RESTRICTOR,
+        OpflowConstant.COMP_RPC_HTTP_MASTER,
         OpflowConstant.COMP_RPC_WATCHER,
         OpflowConstant.COMP_SPEED_METER,
         OpflowConstant.COMP_PROM_EXPORTER,
-        OpflowConstant.COMP_REST_SERVER
+        OpflowConstant.COMP_REST_SERVER,
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
@@ -508,7 +508,7 @@ public class OpflowCommander implements AutoCloseable {
 
             if (rpcResult.isFailed()) {
                 Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcResult.getErrorAsString());
-                throw rebuildInvokerException(errorMap);
+                throw OpflowUtil.rebuildInvokerException(errorMap);
             }
 
             Pong pong = OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
@@ -1087,22 +1087,46 @@ public class OpflowCommander implements AutoCloseable {
                         .stringify());
                 measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RPC, routineSignature, "begin");
             }
-
-            // rpc switching
-            if (rpcWatcher.isCongestive() || !remoteAMQPWorkerActive) {
-                if (this.isNativeWorkerAvailable()) {
-                    if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
-                            .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-retain] - RpcInvocationHandler.invoke() retains the nativeWorker")
-                            .stringify());
-                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER, routineSignature, "retain");
-                    return method.invoke(this.nativeWorker, args);
-                }
-            }
-
-            if (!remoteAMQPWorkerActive) {
+            
+            if (!this.isNativeWorkerAvailable() && !isRemoteAMQPWorkerActive()) {
                 throw new OpflowWorkerNotFoundException("both reserved worker and detached worker are deactivated");
             }
+            
+            boolean rescueAMQPWorker = false;
+            if (!rpcWatcher.isCongestive() && isRemoteAMQPWorkerActive()) {
+                OpflowRpcAmqpRequest amqpSession = amqpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
+                        .setProgressEnabled(false));
+                OpflowRpcAmqpResult amqpResult = amqpSession.extractResult(false);
+                
+                if (amqpResult.isCompleted()) {
+                    if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
+                            .put("returnType", method.getReturnType().getName())
+                            .put("returnValue", amqpResult.getValueAsString())
+                            .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-ok] - RpcInvocationHandler.invoke() return the output")
+                            .stringify());
 
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "ok");
+
+                    if (method.getReturnType() == void.class) return null;
+
+                    return OpflowJsonTool.toObject(amqpResult.getValueAsString(), method.getReturnType());
+                }
+                
+                if (amqpResult.isFailed()) {
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "failed");
+                    if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
+                            .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-failed] - RpcInvocationHandler.invoke() has failed")
+                            .stringify());
+                    Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(amqpResult.getErrorAsString());
+                    throw OpflowUtil.rebuildInvokerException(errorMap);
+                }
+                
+                if (amqpResult.isTimeout()) {
+                    rescueAMQPWorker = true;
+                    rpcWatcher.setCongestive(true);
+                }
+            }
+            
             if (isRemoteHTTPWorkerActive()) {
                 OpflowRpcHttpMaster.Session httpSession = httpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
                         .setProgressEnabled(false), null);
@@ -1113,63 +1137,38 @@ public class OpflowCommander implements AutoCloseable {
 
                 if (httpSession.isCracked()) {
                     Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(httpSession.getErrorAsString());
-                    throw rebuildInvokerException(errorMap);
+                    throw OpflowUtil.rebuildInvokerException(errorMap);
                 }
 
                 if (httpSession.isFailed()) {
                     Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(httpSession.getErrorAsString());
-                    throw rebuildInvokerException(errorMap);
+                    throw OpflowUtil.rebuildInvokerException(errorMap);
                 }
 
                 return OpflowJsonTool.toObject(httpSession.getValueAsString(), method.getReturnType());
             }
             
-            OpflowRpcAmqpRequest amqpSession = amqpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
-                    .setProgressEnabled(false));
-            OpflowRpcAmqpResult amqpResult = amqpSession.extractResult(false);
-
-            if (amqpResult.isTimeout()) {
-                rpcWatcher.setCongestive(true);
-                if (this.isNativeWorkerAvailable()) {
+            if (isNativeWorkerAvailable()) {
+                if (rescueAMQPWorker) {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-rescue] - RpcInvocationHandler.invoke() rescues by the nativeWorker")
                             .stringify());
                     measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER, routineSignature, "rescue");
-                    return method.invoke(this.nativeWorker, args);
+                } else {
+                    if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
+                            .text("Request[${requestId}][${requestTime}][x-commander-reserved-worker-retain] - RpcInvocationHandler.invoke() retains the nativeWorker")
+                            .stringify());
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER, routineSignature, "retain");
                 }
+                return method.invoke(this.nativeWorker, args);
+            } else {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-timeout] - RpcInvocationHandler.invoke() is timeout")
                         .stringify());
                 measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "timeout");
                 throw new OpflowRequestTimeoutException();
             }
-
-            if (amqpResult.isFailed()) {
-                measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "failed");
-                if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
-                        .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-failed] - RpcInvocationHandler.invoke() has failed")
-                        .stringify());
-                Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(amqpResult.getErrorAsString());
-                throw rebuildInvokerException(errorMap);
-            }
-
-            if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
-                    .put("returnType", method.getReturnType().getName())
-                    .put("returnValue", amqpResult.getValueAsString())
-                    .text("Request[${requestId}][${requestTime}][x-commander-detached-worker-ok] - RpcInvocationHandler.invoke() return the output")
-                    .stringify());
-
-            measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "ok");
-
-            if (method.getReturnType() == void.class) return null;
-
-            return OpflowJsonTool.toObject(amqpResult.getValueAsString(), method.getReturnType());
         }
-    }
-
-    @Deprecated
-    private static Throwable rebuildInvokerException(Map<String, Object> errorMap) {
-        return OpflowUtil.rebuildInvokerException(errorMap);
     }
 
     private final Map<String, RpcInvocationHandler> handlers = new LinkedHashMap<>();

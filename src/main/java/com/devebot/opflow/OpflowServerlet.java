@@ -36,12 +36,12 @@ public class OpflowServerlet implements AutoCloseable {
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[]{
         OpflowConstant.COMP_CONFIGURER,
         OpflowConstant.COMP_RPC_AMQP_WORKER,
-        OpflowConstant.COMP_RPC_HTTP_WORKER,
         OpflowConstant.COMP_SUBSCRIBER
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[]{
-        OpflowConstant.COMP_PROM_EXPORTER
+        OpflowConstant.COMP_PROM_EXPORTER,
+        OpflowConstant.COMP_RPC_HTTP_WORKER,
     });
 
     public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
