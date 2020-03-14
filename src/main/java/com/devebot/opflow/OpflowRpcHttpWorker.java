@@ -231,28 +231,30 @@ public class OpflowRpcHttpWorker {
     }
     
     public static class Output {
-        private final Object value;
-        private final Exception error;
+        private final boolean failed;
+        private final String value;
+        private final String error;
+        
+        public Output(boolean ok, String text) {
+            this.failed = !ok;
+            if (failed) {
+                this.error = text;
+                this.value = null;
+            } else {
+                this.error = null;
+                this.value = text;
+            }
+        }
         
         public boolean hasError() {
-            return error != null;
+            return failed;
         }
         
-        public Output(Object value) {
-            this.value = value;
-            this.error = null;
-        }
-        
-        public Output(Exception error) {
-            this.value = null;
-            this.error = error;
-        }
-
-        public Object getValue() {
+        public String getValue() {
             return value;
         }
-
-        public Exception getError() {
+        
+        public String getError() {
             return error;
         }
     }
@@ -277,6 +279,10 @@ public class OpflowRpcHttpWorker {
                             .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
                 }
                 
+                if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
+                        .text("Request[${requestId}][${requestTime}][x-rpc-http-worker-request-received] - httpWorker[${httpWorkerId}] receives a new RPC [${routineSignature}]")
+                        .stringify());
+                
                 // get the body
                 String body = OpflowStringUtil.fromInputStream(exchange.getInputStream());
                 
@@ -293,14 +299,14 @@ public class OpflowRpcHttpWorker {
                 }
                 if (output != null) {
                     if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                            .text("Request[${requestId}][${requestTime}][x-rpc-worker-request-finished] - RPC request processing has completed")
+                            .text("Request[${requestId}][${requestTime}][x-rpc-http-worker-request-finished] - RPC request processing has completed")
                             .stringify());
                     if (output.hasError()) {
                         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                        exchange.getResponseSender().send(OpflowJsonTool.toString(result));
+                        exchange.setStatusCode(500).getResponseSender().send(output.getError());
                     } else {
                         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                        exchange.getResponseSender().send(OpflowJsonTool.toString(output.getValue()));
+                        exchange.getResponseSender().send(output.getValue());
                     }
                 }
             } catch (Exception exception) {

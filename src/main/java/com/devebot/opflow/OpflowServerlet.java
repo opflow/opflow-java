@@ -273,6 +273,10 @@ public class OpflowServerlet implements AutoCloseable {
                 amqpWorker.process(entry.getKey(), entry.getValue());
             }
         }
+        
+        if (httpWorker != null) {
+            httpWorker.serve();
+        }
 
         if (subscriber != null && listenerMap.getSubscriber() != null) {
             subscriber.subscribe(listenerMap.getSubscriber());
@@ -330,6 +334,9 @@ public class OpflowServerlet implements AutoCloseable {
         }
         if (amqpWorker != null) {
             amqpWorker.close();
+        }
+        if (httpWorker != null) {
+            httpWorker.close();
         }
         if (subscriber != null) {
             subscriber.close();
@@ -455,7 +462,7 @@ public class OpflowServerlet implements AutoCloseable {
             this.httpListener = new OpflowRpcHttpWorker.Listener() {
                 @Override
                 public OpflowRpcHttpWorker.Output processMessage(String body, String routineSignature, String routineScope, String routineTimestamp, String routineId, Map<String, String> extra) {
-                    return null;
+                    return invokeRoutine(body, routineSignature, routineScope, routineTimestamp, routineId, componentId, extra).export();
                 }
             };
             
@@ -714,7 +721,11 @@ public class OpflowServerlet implements AutoCloseable {
             }
             
             public OpflowRpcHttpWorker.Output export() {
-                return null;
+                if (failed) {
+                    return new OpflowRpcHttpWorker.Output(false, error);
+                } else {
+                    return new OpflowRpcHttpWorker.Output(true, value);
+                }
             }
         }
         
@@ -722,6 +733,9 @@ public class OpflowServerlet implements AutoCloseable {
             if (!processing) {
                 if (amqpWorker != null) {
                     amqpWorker.process(routineSignatures, amqpListener);
+                }
+                if (httpWorker != null) {
+                    httpWorker.process(routineSignatures, httpListener);
                 }
                 if (subscriber != null) {
                     subscriber.subscribe(subListener);
