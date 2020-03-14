@@ -18,6 +18,10 @@ public abstract class OpflowDiscoveryClient {
             return null;
         }
     }
-
+    
+    public boolean available() {
+        return true;
+    }
+    
     public abstract Info locate();
 }

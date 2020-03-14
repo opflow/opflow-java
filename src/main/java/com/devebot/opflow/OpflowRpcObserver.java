@@ -19,6 +19,7 @@ public class OpflowRpcObserver {
     
     private long keepAliveTimeout = 2 * KEEP_ALIVE_TIMEOUT;
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
+    private String latestAddress = null;
     
     public void check(Map<String, Object> headers) {
         String componentId = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_CONSUMER_ID, false, true);
@@ -32,7 +33,15 @@ public class OpflowRpcObserver {
             // update the http address
             String address = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_COMMON_ADDRESS, false, true);
             manifest.address = address;
+            // update the newest components
+            if (address != null) {
+                this.latestAddress = address;
+            }
         }
+    }
+    
+    public String getLatestAddress() {
+        return this.latestAddress;
     }
     
     public boolean containsInfo(String componentId, String name) {

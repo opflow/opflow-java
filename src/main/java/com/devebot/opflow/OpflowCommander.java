@@ -38,7 +38,8 @@ public class OpflowCommander implements AutoCloseable {
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
         OpflowConstant.COMP_CONFIGURER,
         OpflowConstant.COMP_PUBLISHER,
-        OpflowConstant.COMP_RPC_AMQP_MASTER
+        OpflowConstant.COMP_RPC_AMQP_MASTER,
+        OpflowConstant.COMP_RPC_HTTP_MASTER
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
@@ -70,6 +71,7 @@ public class OpflowCommander implements AutoCloseable {
     private boolean reservedWorkerEnabled;
     private OpflowPubsubHandler configurer;
     private OpflowRpcAmqpMaster amqpMaster;
+    private OpflowRpcHttpMaster httpMaster;
     private OpflowPubsubHandler publisher;
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcWatcher rpcWatcher;
@@ -155,6 +157,7 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> reqExtractorCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_REQ_EXTRACTOR);
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_CONFIGURER);
         Map<String, Object> amqpMasterCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_AMQP_MASTER);
+        Map<String, Object> httpMasterCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_HTTP_MASTER);
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_PUBLISHER);
         Map<String, Object> rpcObserverCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_OBSERVER);
         Map<String, Object> rpcWatcherCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_WATCHER);
@@ -216,6 +219,18 @@ public class OpflowCommander implements AutoCloseable {
                         opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
                     }
                 }, amqpMasterCfg).toMap());
+            }
+            if (OpflowUtil.isComponentEnabled(httpMasterCfg)) {
+                OpflowDiscoveryClient discoveryClient= new OpflowDiscoveryNativeAgent(rpcObserver);
+                httpMaster = new OpflowRpcHttpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put(CONST.COMPONENT_ID, componentId);
+                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
+                        opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
+                        opts.put(OpflowConstant.COMP_DISCOVERY_CLIENT, discoveryClient);
+                    }
+                }, httpMasterCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(publisherCfg)) {
                 publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
@@ -896,6 +911,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRpcWatcher rpcWatcher;
         
         private final OpflowRpcAmqpMaster amqpMaster;
+        private final OpflowRpcHttpMaster httpMaster;
         private final OpflowPubsubHandler publisher;
         
         private final Class clazz;
@@ -906,6 +922,7 @@ public class OpflowCommander implements AutoCloseable {
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
         
         private boolean remoteAMQPWorkerActive = true;
+        private boolean remoteHTTPWorkerActive = false;
         
         public RpcInvocationHandler(
             OpflowLogTracer logTracer,
@@ -914,6 +931,7 @@ public class OpflowCommander implements AutoCloseable {
             OpflowReqExtractor reqExtractor,
             OpflowRpcWatcher rpcWatcher,
             OpflowRpcAmqpMaster amqpMaster,
+            OpflowRpcHttpMaster httpMaster,
             OpflowPubsubHandler publisher,
             Class clazz,
             Object nativeWorker,
@@ -926,6 +944,7 @@ public class OpflowCommander implements AutoCloseable {
             this.rpcWatcher = rpcWatcher;
             
             this.amqpMaster = amqpMaster;
+            this.httpMaster = httpMaster;
             this.publisher = publisher;
             
             this.clazz = clazz;
@@ -983,6 +1002,14 @@ public class OpflowCommander implements AutoCloseable {
         
         public void setRemoteAMQPWorkerActive(boolean remoteWorkerActive) {
             this.remoteAMQPWorkerActive = remoteWorkerActive;
+        }
+        
+        public boolean isRemoteHTTPWorkerActive() {
+            return this.remoteHTTPWorkerActive;
+        }
+        
+        public void setRemoteHTTPWorkerActive(boolean remoteWorkerActive) {
+            this.remoteHTTPWorkerActive = remoteWorkerActive;
         }
         
         @Override
@@ -1076,6 +1103,27 @@ public class OpflowCommander implements AutoCloseable {
                 throw new OpflowWorkerNotFoundException("both reserved worker and detached worker are deactivated");
             }
 
+            if (isRemoteHTTPWorkerActive()) {
+                OpflowRpcHttpMaster.Session httpSession = httpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
+                        .setProgressEnabled(false), null);
+
+                if (httpSession.isTimeout()) {
+                    throw new OpflowRequestTimeoutException();
+                }
+
+                if (httpSession.isCracked()) {
+                    Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(httpSession.getErrorAsString());
+                    throw rebuildInvokerException(errorMap);
+                }
+
+                if (httpSession.isFailed()) {
+                    Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(httpSession.getErrorAsString());
+                    throw rebuildInvokerException(errorMap);
+                }
+
+                return OpflowJsonTool.toObject(httpSession.getValueAsString(), method.getReturnType());
+            }
+            
             OpflowRpcAmqpRequest amqpSession = amqpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
                     .setProgressEnabled(false));
             OpflowRpcAmqpResult amqpResult = amqpSession.extractResult(false);
@@ -1139,7 +1187,7 @@ public class OpflowCommander implements AutoCloseable {
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
             handlers.put(clazzName, new RpcInvocationHandler(logTracer, measurer, restrictor, reqExtractor, rpcWatcher, 
-                    amqpMaster, publisher, clazz, bean, reservedWorkerEnabled));
+                    amqpMaster, httpMaster, publisher, clazz, bean, reservedWorkerEnabled));
         } else {
             if (strictMode) {
                 throw new OpflowRpcRegistrationException("Class [" + clazzName + "] has already registered");

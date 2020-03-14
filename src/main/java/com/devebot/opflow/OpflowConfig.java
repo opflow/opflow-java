@@ -277,6 +277,11 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
                     });
                 }
+                if (OpflowConstant.COMP_RPC_HTTP_MASTER.equals(componentName)) {
+                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                        OpflowConstant.OPFLOW_COMMON_ENABLED,
+                    });
+                }
                 if (OpflowConstant.COMP_RPC_WATCHER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
