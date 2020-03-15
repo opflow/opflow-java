@@ -119,7 +119,8 @@ public class OpflowCommander implements AutoCloseable {
         if (speedMeterCfg == null || OpflowUtil.isComponentEnabled(speedMeterCfg)) {
             speedMeter = (new OpflowThroughput.Meter(speedMeterCfg))
                     .register(OpflowPromMeasurer.LABEL_RPC_DIRECT_WORKER, counter.getNativeWorkerInfoSource())
-                    .register(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, counter.getRemoteAMQPWorkerInfoSource());
+                    .register(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, counter.getRemoteAMQPWorkerInfoSource())
+                    .register(OpflowPromMeasurer.LABEL_RPC_REMOTE_HTTP_WORKER, counter.getRemoteHTTPWorkerInfoSource());
         } else {
             speedMeter = null;
         }

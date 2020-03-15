@@ -53,10 +53,10 @@ public abstract class OpflowPromMeasurer {
         private long direct = 0;
         private long directRetain = 0;
         private long directRescue = 0;
-        private long remote = 0;
-        private long remoteSuccess = 0;
-        private long remoteFailure = 0;
-        private long remoteTimeout = 0;
+        private long remoteAMQPTotal = 0;
+        private long remoteAMQPSuccess = 0;
+        private long remoteAMQPFailure = 0;
+        private long remoteAMQPTimeout = 0;
         private long remoteHTTPTotal = 0;
         private long remoteHTTPSuccess = 0;
         private long remoteHTTPFailure = 0;
@@ -77,22 +77,22 @@ public abstract class OpflowPromMeasurer {
             this.directRetain++;
         }
 
-        public synchronized void incRemoteSuccess() {
+        public synchronized void incRemoteAMQPSuccess() {
             this.total++;
-            this.remote++;
-            this.remoteSuccess++;
+            this.remoteAMQPTotal++;
+            this.remoteAMQPSuccess++;
         }
 
-        public synchronized void incRemoteFailure() {
+        public synchronized void incRemoteAMQPFailure() {
             this.total++;
-            this.remote++;
-            this.remoteFailure++;
+            this.remoteAMQPTotal++;
+            this.remoteAMQPFailure++;
         }
 
-        public synchronized void incRemoteTimeout() {
+        public synchronized void incRemoteAMQPTimeout() {
             this.total++;
-            this.remote++;
-            this.remoteTimeout++;
+            this.remoteAMQPTotal++;
+            this.remoteAMQPTimeout++;
         }
         
         public synchronized void incRemoteHTTPSuccess() {
@@ -120,10 +120,10 @@ public abstract class OpflowPromMeasurer {
             that.direct = this.direct;
             that.directRescue = this.directRescue;
             that.directRetain = this.directRetain;
-            that.remote = this.remote;
-            that.remoteSuccess = this.remoteSuccess;
-            that.remoteFailure = this.remoteFailure;
-            that.remoteTimeout = this.remoteTimeout;
+            that.remoteAMQPTotal = this.remoteAMQPTotal;
+            that.remoteAMQPSuccess = this.remoteAMQPSuccess;
+            that.remoteAMQPFailure = this.remoteAMQPFailure;
+            that.remoteAMQPTimeout = this.remoteAMQPTimeout;
             that.remoteHTTPTotal = this.remoteHTTPTotal;
             that.remoteHTTPSuccess = this.remoteHTTPSuccess;
             that.remoteHTTPFailure = this.remoteHTTPFailure;
@@ -137,10 +137,12 @@ public abstract class OpflowPromMeasurer {
             this.direct = 0;
             this.directRescue = 0;
             this.directRetain = 0;
-            this.remote = 0;
-            this.remoteSuccess = 0;
-            this.remoteFailure = 0;
-            this.remoteTimeout = 0;
+            // AMQP workers
+            this.remoteAMQPTotal = 0;
+            this.remoteAMQPSuccess = 0;
+            this.remoteAMQPFailure = 0;
+            this.remoteAMQPTimeout = 0;
+            // HTTP workers
             this.remoteHTTPTotal = 0;
             this.remoteHTTPSuccess = 0;
             this.remoteHTTPFailure = 0;
@@ -176,12 +178,12 @@ public abstract class OpflowPromMeasurer {
                     .put(LABEL_RPC_REMOTE_AMQP_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                         @Override
                         public void transform(Map<String, Object> opts) {
-                            opts.put("total", that.remote);
-                            opts.put("ok", that.remoteSuccess);
-                            opts.put("failed", that.remoteFailure);
-                            opts.put("timeout", that.remoteTimeout);
+                            opts.put("total", that.remoteAMQPTotal);
+                            opts.put("ok", that.remoteAMQPSuccess);
+                            opts.put("failed", that.remoteAMQPFailure);
+                            opts.put("timeout", that.remoteAMQPTimeout);
                             if (verbose) {
-                                double remoteRate = calcMessageRate(that.remote, elapsedTime);
+                                double remoteRate = calcMessageRate(that.remoteAMQPTotal, elapsedTime);
                                 opts.put("rate", formatMessageRate(remoteRate));
                                 opts.put("rateNumber", remoteRate);
                             }
@@ -195,7 +197,7 @@ public abstract class OpflowPromMeasurer {
                             opts.put("failed", that.remoteHTTPFailure);
                             opts.put("timeout", that.remoteHTTPTimeout);
                             if (verbose) {
-                                double remoteRate = calcMessageRate(that.remote, elapsedTime);
+                                double remoteRate = calcMessageRate(that.remoteAMQPTotal, elapsedTime);
                                 opts.put("rate", formatMessageRate(remoteRate));
                                 opts.put("rateNumber", remoteRate);
                             }
@@ -237,7 +239,21 @@ public abstract class OpflowPromMeasurer {
             return new OpflowThroughput.Source() {
                 @Override
                 public long getValue() {
-                    return remote;
+                    return remoteAMQPTotal;
+                }
+
+                @Override
+                public Date getTime() {
+                    return new Date();
+                }
+            };
+        }
+        
+        public OpflowThroughput.Source getRemoteHTTPWorkerInfoSource() {
+            return new OpflowThroughput.Source() {
+                @Override
+                public long getValue() {
+                    return remoteHTTPTotal;
                 }
 
                 @Override
@@ -302,13 +318,13 @@ public abstract class OpflowPromMeasurer {
                     case OpflowConstant.METHOD_INVOCATION_REMOTE_AMQP_WORKER:
                         switch (status) {
                             case "ok":
-                                counter.incRemoteSuccess();
+                                counter.incRemoteAMQPSuccess();
                                 break;
                             case "failed":
-                                counter.incRemoteFailure();
+                                counter.incRemoteAMQPFailure();
                                 break;
                             case "timeout":
-                                counter.incRemoteTimeout();
+                                counter.incRemoteAMQPTimeout();
                                 break;
                         }
                         break;

@@ -280,6 +280,7 @@ public class OpflowRpcHttpWorker {
                 }
                 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
+                        .put("routineSignature", routineSignature)
                         .text("Request[${requestId}][${requestTime}][x-rpc-http-worker-request-received] - httpWorker[${httpWorkerId}] receives a new RPC [${routineSignature}]")
                         .stringify());
                 
