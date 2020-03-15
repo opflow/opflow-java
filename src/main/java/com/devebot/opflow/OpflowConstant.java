@@ -159,6 +159,8 @@ public class OpflowConstant {
     public final static String OPFLOW_OUTGOING_EXCHANGE_DURABLE = "outgoingExchangeDurable";
     public final static String OPFLOW_OUTGOING_ROUTING_KEY = "outgoingRoutingKey";
 
+    public final static String OPFLOW_PROTO_RES_HEADER_WORKER_ID = "o-rpcWorkerId";
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RPC HTTP HEADERS
 
     public final static String HTTP_HEADER_ROUTINE_ID = "x-oxId";

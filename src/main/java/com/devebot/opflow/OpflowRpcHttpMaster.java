@@ -8,6 +8,7 @@ import com.devebot.opflow.supports.OpflowObjectTree;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.SocketTimeoutException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Call;
@@ -191,6 +192,9 @@ public class OpflowRpcHttpMaster {
                             .stringify());
                 }
             }
+            if (rpcObserver != null) {
+                rpcObserver.check(OpflowRpcObserver.Protocol.HTTP, extractHeaders(response));
+            }
         }
         catch (SocketTimeoutException exception) {
             session = Session.asTimeout(params, exception);
@@ -221,6 +225,12 @@ public class OpflowRpcHttpMaster {
         }
         
         return session;
+    }
+    
+    private Map<String, Object> extractHeaders(Response response) {
+        Map<String, Object> options = new HashMap<>();
+        options.put(OpflowConstant.OPFLOW_PROTO_RES_HEADER_WORKER_ID, response.header(OpflowConstant.OPFLOW_PROTO_RES_HEADER_WORKER_ID));
+        return options;
     }
     
     private OkHttpClient assertHttpClient() {

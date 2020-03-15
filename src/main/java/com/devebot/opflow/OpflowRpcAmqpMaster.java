@@ -282,7 +282,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                 
                 // collect the information of the workers
                 if (rpcObserver != null) {
-                    rpcObserver.check(headers);
+                    rpcObserver.check(OpflowRpcObserver.Protocol.AMQP, headers);
                 }
                 
                 return true;

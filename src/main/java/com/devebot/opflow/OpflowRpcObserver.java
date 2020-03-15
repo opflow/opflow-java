@@ -21,22 +21,35 @@ public class OpflowRpcObserver {
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
     private String latestAddress = null;
     
-    public void check(Map<String, Object> headers) {
-        String componentId = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_CONSUMER_ID, false, true);
-        if (componentId != null) {
-            OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
-            // inform the manifest status
-            manifest.touch();
-            // update the protocol version
-            String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
-            manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
-            // update the http address
-            String address = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_COMMON_ADDRESS, false, true);
-            manifest.address = address;
-            // update the newest components
-            if (address != null) {
-                this.latestAddress = address;
-            }
+    public enum Protocol { AMQP, HTTP };
+    
+    public void check(final OpflowRpcObserver.Protocol protocol, final Map<String, Object> headers) {
+        switch (protocol) {
+            case AMQP:
+                String componentId = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_CONSUMER_ID, false, true);
+                if (componentId != null) {
+                    OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
+                    // inform the manifest status
+                    manifest.updatedTimestamp = manifest.updatedAMQPTimestamp = new Date();
+                    // update the protocol version
+                    String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
+                    manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
+                    // update the http address
+                    String address = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_COMMON_ADDRESS, false, true);
+                    manifest.address = address;
+                    // update the newest components
+                    if (address != null) {
+                        this.latestAddress = address;
+                    }
+                }
+                break;
+            case HTTP:
+                String httpWorkerId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_PROTO_RES_HEADER_WORKER_ID, false, true);
+                if (httpWorkerId != null) {
+                    OpflowRpcObserver.Manifest manifest = assertManifest(httpWorkerId);
+                    manifest.updatedTimestamp = manifest.updatedHTTPTimestamp = new Date();
+                }
+                break;
         }
     }
     
@@ -111,6 +124,8 @@ public class OpflowRpcObserver {
         private final Map<String, Object> information;
         private final Date reachedTimestamp;
         private Date updatedTimestamp;
+        private Date updatedAMQPTimestamp;
+        private Date updatedHTTPTimestamp;
 
         @OpflowFieldExclude
         private long keepInTouchDuration;

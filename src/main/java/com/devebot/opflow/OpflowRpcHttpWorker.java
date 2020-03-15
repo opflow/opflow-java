@@ -13,6 +13,7 @@ import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +75,7 @@ public class OpflowRpcHttpWorker {
             }
         };
         
-        routineHandler = new RoutineHandler();
+        routineHandler = new RoutineHandler(componentId);
         
         defaultHandlers = new RoutingHandler()
             .post("/routine", new BlockingHandler(routineHandler))
@@ -260,11 +261,15 @@ public class OpflowRpcHttpWorker {
     }
     
     class RoutineHandler implements HttpHandler {
+        final String componentId;
+        
+        public RoutineHandler(String componentId) {
+            this.componentId = componentId;
+        }
+        
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
-                Map<String, Object> result = OpflowObjectTree.buildMap().toMap();
-                
                 // get the HTTP headers
                 HeaderMap reqHeaders = exchange.getRequestHeaders();
                 
@@ -298,6 +303,10 @@ public class OpflowRpcHttpWorker {
                         break;
                     }
                 }
+                
+                // rendering the output
+                exchange.getResponseHeaders().put(new HttpString(OpflowConstant.OPFLOW_PROTO_RES_HEADER_WORKER_ID), componentId);
+                
                 if (output != null) {
                     if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-rpc-http-worker-request-finished] - RPC request processing has completed")
