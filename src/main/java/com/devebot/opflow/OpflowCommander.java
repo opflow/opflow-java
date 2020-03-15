@@ -241,7 +241,7 @@ public class OpflowCommander implements AutoCloseable {
                 }, publisherCfg).toMap());
             }
 
-            rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), amqpMaster);
+            rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), amqpMaster, httpMaster);
 
             rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowObjectTree.buildMap(rpcWatcherCfg)
                     .put(CONST.COMPONENT_ID, componentId)
@@ -249,9 +249,9 @@ public class OpflowCommander implements AutoCloseable {
 
             rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
 
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, handlers, rpcObserver, rpcWatcher, speedMeter);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, handlers, rpcObserver, rpcWatcher, speedMeter);
 
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, handlers, speedMeter);
+            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, handlers, speedMeter);
 
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
                     .put(CONST.COMPONENT_ID, componentId)
@@ -325,6 +325,7 @@ public class OpflowCommander implements AutoCloseable {
 
         if (publisher != null) publisher.close();
         if (amqpMaster != null) amqpMaster.close();
+        if (httpMaster != null) httpMaster.close();
         if (configurer != null) configurer.close();
 
         if (restrictor != null) {
@@ -458,11 +459,13 @@ public class OpflowCommander implements AutoCloseable {
 
         private final OpflowRestrictor.Valve restrictor;
         private final OpflowRpcAmqpMaster amqpMaster;
+        private final OpflowRpcHttpMaster httpMaster;
         private final OpflowRpcObserver rpcObserver;
 
-        OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcAmqpMaster amqpMaster) throws OpflowBootstrapException {
+        OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcAmqpMaster amqpMaster, OpflowRpcHttpMaster httpMaster) throws OpflowBootstrapException {
             this.restrictor = restrictor;
             this.amqpMaster = amqpMaster;
+            this.httpMaster = httpMaster;
             if (amqpMaster != null) {
                 rpcObserver = amqpMaster.getRpcObserver();
             } else {
@@ -534,6 +537,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowLogTracer logTracer;
         private final OpflowRestrictorMaster restrictor;
         private final OpflowRpcAmqpMaster amqpMaster;
+        private final OpflowRpcHttpMaster httpMaster;
         private final Map<String, RpcInvocationHandler> handlers;
         private final OpflowThroughput.Meter speedMeter;
         
@@ -541,6 +545,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowPromMeasurer measurer,
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcAmqpMaster amqpMaster,
+                OpflowRpcHttpMaster httpMaster,
                 Map<String, RpcInvocationHandler> mappings,
                 OpflowThroughput.Meter speedMeter
         ) {
@@ -548,6 +553,7 @@ public class OpflowCommander implements AutoCloseable {
             this.measurer = measurer;
             this.restrictor = restrictor;
             this.amqpMaster = amqpMaster;
+            this.httpMaster = httpMaster;
             this.handlers = mappings;
             this.speedMeter = speedMeter;
             this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", componentId);
@@ -660,6 +666,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRestrictorMaster restrictor;
         private final OpflowRpcWatcher rpcWatcher;
         private final OpflowRpcAmqpMaster amqpMaster;
+        private final OpflowRpcHttpMaster httpMaster;
         private final Map<String, RpcInvocationHandler> handlers;
         private final OpflowRpcObserver rpcObserver;
         private final OpflowThroughput.Meter speedMeter;
@@ -669,6 +676,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowPromMeasurer measurer,
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcAmqpMaster amqpMaster,
+                OpflowRpcHttpMaster httpMaster,
                 Map<String, RpcInvocationHandler> mappings,
                 OpflowRpcObserver rpcObserver,
                 OpflowRpcWatcher rpcWatcher,
@@ -679,6 +687,7 @@ public class OpflowCommander implements AutoCloseable {
             this.restrictor = restrictor;
             this.rpcWatcher = rpcWatcher;
             this.amqpMaster = amqpMaster;
+            this.httpMaster = httpMaster;
             this.handlers = mappings;
             this.rpcObserver = rpcObserver;
             this.speedMeter = speedMeter;
@@ -774,11 +783,12 @@ public class OpflowCommander implements AutoCloseable {
                                     int availablePermits = restrictor.getSemaphorePermits();
                                     opt2.put(OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED, restrictor.isPauseEnabled());
                                     opt2.put(OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT, restrictor.getPauseTimeout());
-                                    boolean isPaused = restrictor.isPaused();
-                                    opt2.put("pauseStatus", isPaused ? "on" : "off");
-                                    if (isPaused) {
-                                        opt2.put("pauseElapsed", restrictor.getPauseElapsed());
-                                        opt2.put("pauseDuration", restrictor.getPauseDuration());
+                                    if (restrictor.isPaused()) {
+                                        opt2.put(OpflowConstant.OPFLOW_RESTRICT_PAUSE_STATUS, "on");
+                                        opt2.put(OpflowConstant.OPFLOW_RESTRICT_PAUSE_ELAPSED_TIME, restrictor.getPauseElapsed());
+                                        opt2.put(OpflowConstant.OPFLOW_RESTRICT_PAUSE_DURATION, restrictor.getPauseDuration());
+                                    } else {
+                                        opt2.put(OpflowConstant.OPFLOW_RESTRICT_PAUSE_STATUS, "off");
                                     }
                                     opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS, restrictor.getSemaphoreLimit());
                                     opt2.put(OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_USED_PERMITS, restrictor.getSemaphoreLimit() - availablePermits);
@@ -890,12 +900,13 @@ public class OpflowCommander implements AutoCloseable {
                     public void transform(Map<String, Object> opts) {
                         opts.put("class", entry.getKey());
                         opts.put("methods", val.getMethodNames());
-                        opts.put("isReservedWorkerActive", val.isNativeWorkerActive());
-                        opts.put("isReservedWorkerAvailable", val.isNativeWorkerAvailable());
-                        opts.put("isDetachedWorkerActive", val.isRemoteAMQPWorkerActive());
                         if (val.getNativeWorkerClassName() != null) {
-                            opts.put("reservedWorkerClassName", val.getNativeWorkerClassName());
+                            opts.put("nativeWorkerClassName", val.getNativeWorkerClassName());
                         }
+                        opts.put("nativeWorkerActive", val.isNativeWorkerActive());
+                        opts.put("nativeWorkerAvailable", val.isNativeWorkerAvailable());
+                        opts.put("amqpWorkerActive", val.isRemoteAMQPWorkerActive());
+                        opts.put("httpWorkerActive", val.isRemoteHTTPWorkerActive());
                     }
                 }).toMap());
             }

@@ -42,7 +42,7 @@ public class OpflowConstant {
     public final static String COMP_RPC_HTTP_MASTER = "httpMaster";
     public final static String COMP_RPC_HTTP_WORKER = "httpWorker";
     public final static String COMP_DISCOVERY_CLIENT = "discoveryClient";
-    public final static String COMP_NATIVE_WORKER = "ReservedWorker";
+    public final static String COMP_NATIVE_WORKER = "nativeWorker";
     public final static String COMP_REMOTE_AMQP_WORKER = "amqpWorker";
     public final static String COMP_REMOTE_HTTP_WORKER = "httpWorker";
     public final static String COMP_RPC_WATCHER = "rpcWatcher";
@@ -86,6 +86,9 @@ public class OpflowConstant {
 
     public final static String OPFLOW_RESTRICT_PAUSE_ENABLED = "pauseEnabled";
     public final static String OPFLOW_RESTRICT_PAUSE_TIMEOUT = "pauseTimeout";
+    public final static String OPFLOW_RESTRICT_PAUSE_STATUS = "pauseStatus";
+    public final static String OPFLOW_RESTRICT_PAUSE_ELAPSED_TIME = "pauseElapsedTime";
+    public final static String OPFLOW_RESTRICT_PAUSE_DURATION = "pauseDuration";
 
     public final static String OPFLOW_RESTRICT_SEMAPHORE_ENABLED = "semaphoreEnabled";
     public final static String OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT = "semaphoreTimeout";
