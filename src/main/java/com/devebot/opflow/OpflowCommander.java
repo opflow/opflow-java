@@ -456,12 +456,15 @@ public class OpflowCommander implements AutoCloseable {
     private static class OpflowRpcCheckerMaster extends OpflowRpcChecker {
 
         private final static String DEFAULT_BALL_JSON = OpflowJsonTool.toString(new Object[] { new Ping() });
-
+        
         private final OpflowRestrictor.Valve restrictor;
         private final OpflowRpcAmqpMaster amqpMaster;
         private final OpflowRpcHttpMaster httpMaster;
         private final OpflowRpcObserver rpcObserver;
 
+        private enum Protocol { AMQP, HTTP };
+        private Protocol protocol = Protocol.AMQP;
+        
         OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcAmqpMaster amqpMaster, OpflowRpcHttpMaster httpMaster) throws OpflowBootstrapException {
             this.restrictor = restrictor;
             this.amqpMaster = amqpMaster;
@@ -485,27 +488,19 @@ public class OpflowCommander implements AutoCloseable {
                 }
             });
         }
+        
         private Pong _send_safe(final Ping ping) throws Throwable {
             Date startTime = new Date();
+            
             String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
             String routineId = OpflowUUID.getBase64ID();
             String routineTimestamp = OpflowDateTime.toISO8601UTC(startTime);
-            OpflowRpcAmqpRequest rpcRequest = amqpMaster.request(getSendMethodName(), body, (new OpflowRpcParameter(routineId, routineTimestamp))
-                    .setProgressEnabled(false)
-                    .setRoutineScope("internal"));
-            OpflowRpcAmqpResult rpcResult = rpcRequest.extractResult(false);
+            String routineSignature = getSendMethodName();
+            
+            Pong pong = send_over_amqp(routineId, routineTimestamp, routineSignature, body);
+            
             Date endTime = new Date();
-
-            if (rpcResult.isTimeout()) {
-                throw new OpflowRequestTimeoutException("OpflowRpcChecker.send() call is timeout");
-            }
-
-            if (rpcResult.isFailed()) {
-                Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcResult.getErrorAsString());
-                throw OpflowUtil.rebuildInvokerException(errorMap);
-            }
-
-            Pong pong = OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
+            
             // updateInfo the observation result
             if (rpcObserver != null) {
                 Map<String, Object> serverletInfo = pong.getAccumulator();
@@ -527,6 +522,24 @@ public class OpflowCommander implements AutoCloseable {
             pong.getParameters().put("endTime", endTime);
             pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
             return pong;
+        }
+        
+        private Pong send_over_amqp(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
+            OpflowRpcAmqpRequest rpcRequest = amqpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
+                    .setProgressEnabled(false)
+                    .setRoutineScope("internal"));
+            OpflowRpcAmqpResult rpcResult = rpcRequest.extractResult(false);
+
+            if (rpcResult.isTimeout()) {
+                throw new OpflowRequestTimeoutException("OpflowRpcChecker.send() call is timeout");
+            }
+
+            if (rpcResult.isFailed()) {
+                Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcResult.getErrorAsString());
+                throw OpflowUtil.rebuildInvokerException(errorMap);
+            }
+
+            return OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
         }
     }
 

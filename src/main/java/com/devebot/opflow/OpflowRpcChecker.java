@@ -13,7 +13,7 @@ import java.util.Map;
 public abstract class OpflowRpcChecker {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
-    public static final String[] REQUEST_ATTRS = new String[] { "routineId", "startTime", "endTime", "elapsedTime" };
+    private final static String[] REQUEST_ATTRS = new String[] { "routineId", "startTime", "endTime", "elapsedTime" };
     
     @OpflowSourceRoutine(alias = OpflowConstant.OPFLOW_ROUTINE_PINGPONG_ALIAS)
     public abstract Pong send(Ping info) throws Throwable;
@@ -22,16 +22,20 @@ public abstract class OpflowRpcChecker {
     
     public static String getSendMethodName() throws NoSuchMethodException {
         if (sendMethodName == null) {
-            Method method = OpflowRpcChecker.class.getMethod("send", Ping.class);
-            String alias = null;
-            OpflowSourceRoutine routine = OpflowUtil.extractMethodAnnotation(method, OpflowSourceRoutine.class);
-            if (routine != null) {
-                alias = routine.alias();
-            }
-            if (CONST.LEGACY_ROUTINE_PINGPONG_APPLIED || alias == null || alias.isEmpty()) {
-                sendMethodName = method.toString();
-            } else {
-                sendMethodName = alias;
+            synchronized (OpflowRpcChecker.class) {
+                if (sendMethodName == null) {
+                    Method method = OpflowRpcChecker.class.getMethod("send", Ping.class);
+                    String alias = null;
+                    OpflowSourceRoutine routine = OpflowUtil.extractMethodAnnotation(method, OpflowSourceRoutine.class);
+                    if (routine != null) {
+                        alias = routine.alias();
+                    }
+                    if (CONST.LEGACY_ROUTINE_PINGPONG_APPLIED || alias == null || alias.isEmpty()) {
+                        sendMethodName = method.toString();
+                    } else {
+                        sendMethodName = alias;
+                    }
+                }
             }
         }
         return sendMethodName;

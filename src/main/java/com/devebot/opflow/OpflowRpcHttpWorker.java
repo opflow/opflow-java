@@ -85,7 +85,7 @@ public class OpflowRpcHttpWorker {
                 .text("httpWorker[${httpWorkerId}][${instanceId}].new() end!")
                 .stringify());
     }
-
+    
     public String getHost() {
         return host;
     }
