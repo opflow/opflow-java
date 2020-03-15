@@ -6,6 +6,7 @@ import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
@@ -196,9 +197,7 @@ public class OpflowCommander implements AutoCloseable {
                 reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
             }
 
-            if (rpcObserverCfg == null || OpflowUtil.isComponentEnabled(rpcObserverCfg)) {
-                rpcObserver = new OpflowRpcObserver();
-            }
+            rpcObserver = new OpflowRpcObserver();
 
             if (OpflowUtil.isComponentEnabled(configurerCfg)) {
                 configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
@@ -241,7 +240,7 @@ public class OpflowCommander implements AutoCloseable {
                 }, publisherCfg).toMap());
             }
 
-            rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), amqpMaster, httpMaster);
+            rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcObserver, amqpMaster, httpMaster);
 
             rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowObjectTree.buildMap(rpcWatcherCfg)
                     .put(CONST.COMPONENT_ID, componentId)
@@ -461,21 +460,17 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRpcAmqpMaster amqpMaster;
         private final OpflowRpcHttpMaster httpMaster;
         private final OpflowRpcObserver rpcObserver;
-
+        
         private enum Protocol { AMQP, HTTP };
         private Protocol protocol = Protocol.AMQP;
         
-        OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcAmqpMaster amqpMaster, OpflowRpcHttpMaster httpMaster) throws OpflowBootstrapException {
+        OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcObserver rpcObserver, OpflowRpcAmqpMaster amqpMaster, OpflowRpcHttpMaster httpMaster) throws OpflowBootstrapException {
             this.restrictor = restrictor;
+            this.rpcObserver = rpcObserver;
             this.amqpMaster = amqpMaster;
             this.httpMaster = httpMaster;
-            if (amqpMaster != null) {
-                rpcObserver = amqpMaster.getRpcObserver();
-            } else {
-                rpcObserver = null;
-            }
         }
-
+        
         @Override
         public Pong send(final Ping ping) throws Throwable {
             if (this.restrictor == null) {
@@ -490,38 +485,50 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private Pong _send_safe(final Ping ping) throws Throwable {
-            Date startTime = new Date();
-            
-            String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
-            String routineId = OpflowUUID.getBase64ID();
-            String routineTimestamp = OpflowDateTime.toISO8601UTC(startTime);
-            String routineSignature = getSendMethodName();
-            
-            Pong pong = send_over_amqp(routineId, routineTimestamp, routineSignature, body);
-            
-            Date endTime = new Date();
-            
-            // updateInfo the observation result
-            if (rpcObserver != null) {
-                Map<String, Object> serverletInfo = pong.getAccumulator();
-                if (serverletInfo != null) {
-                    String componentId = serverletInfo.getOrDefault(CONST.COMPONENT_ID, "").toString();
-                    if (!componentId.isEmpty()) {
-                        if (!rpcObserver.containsInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE)) {
-                            Object serverletCodeRef = serverletInfo.get(OpflowConstant.INFO_SECTION_SOURCE_CODE);
-                            if (serverletCodeRef != null) {
-                                rpcObserver.updateInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE, serverletCodeRef);
+            try {
+                Date startTime = new Date();
+
+                String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
+                String routineId = OpflowUUID.getBase64ID();
+                String routineTimestamp = OpflowDateTime.toISO8601UTC(startTime);
+                String routineSignature = getSendMethodName();
+
+                Pong pong = send_over_amqp(routineId, routineTimestamp, routineSignature, body);
+
+                Date endTime = new Date();
+
+                rpcObserver.setCongestive(false);
+
+                // updateInfo the observation result
+                if (rpcObserver != null) {
+                    Map<String, Object> serverletInfo = pong.getAccumulator();
+                    if (serverletInfo != null) {
+                        String componentId = serverletInfo.getOrDefault(CONST.COMPONENT_ID, "").toString();
+                        if (!componentId.isEmpty()) {
+                            if (!rpcObserver.containsInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE)) {
+                                Object serverletCodeRef = serverletInfo.get(OpflowConstant.INFO_SECTION_SOURCE_CODE);
+                                if (serverletCodeRef != null) {
+                                    rpcObserver.updateInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE, serverletCodeRef);
+                                }
                             }
                         }
                     }
                 }
+                // append the context of ping
+                pong.getParameters().put("routineId", routineId);
+                pong.getParameters().put("startTime", startTime);
+                pong.getParameters().put("endTime", endTime);
+                pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
+                return pong;
             }
-            // append the context of ping
-            pong.getParameters().put("routineId", routineId);
-            pong.getParameters().put("startTime", startTime);
-            pong.getParameters().put("endTime", endTime);
-            pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
-            return pong;
+            catch (OpflowRequestSuspendException e) {
+                rpcObserver.setCongestive(true);
+                throw e;
+            }
+            catch (Throwable t) {
+                rpcObserver.setCongestive(true);
+                throw t;
+            }
         }
         
         private Pong send_over_amqp(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
@@ -783,7 +790,6 @@ public class OpflowCommander implements AutoCloseable {
                                 .put(OpflowConstant.OPFLOW_COMMON_ENABLED, rpcWatcher.isEnabled())
                                 .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, rpcWatcher.getInterval())
                                 .put(OpflowConstant.OPFLOW_COMMON_COUNT, rpcWatcher.getCount())
-                                .put(OpflowConstant.OPFLOW_COMMON_CONGESTIVE, rpcWatcher.isCongestive())
                                 .toMap());
                     }
                     
@@ -821,6 +827,7 @@ public class OpflowCommander implements AutoCloseable {
                     if (checkOption(flag, SCOPE_INFO)) {
                         Date currentTime = new Date();
                         opts.put(OpflowConstant.INFO_SECTION_RUNTIME, OpflowObjectTree.buildMap()
+                                .put(OpflowConstant.OPFLOW_COMMON_CONGESTIVE, rpcObserver.isCongestive())
                                 .put("threadCount", Thread.activeCount())
                                 .put("startTime", startTime)
                                 .put("currentTime", currentTime)
@@ -932,7 +939,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowPromMeasurer measurer;
         private final OpflowRestrictorMaster restrictor;
         private final OpflowReqExtractor reqExtractor;
-        private final OpflowRpcWatcher rpcWatcher;
+        private final OpflowRpcObserver rpcObserver;
         
         private final OpflowRpcAmqpMaster amqpMaster;
         private final OpflowRpcHttpMaster httpMaster;
@@ -953,7 +960,7 @@ public class OpflowCommander implements AutoCloseable {
             OpflowPromMeasurer measurer,
             OpflowRestrictorMaster restrictor,
             OpflowReqExtractor reqExtractor,
-            OpflowRpcWatcher rpcWatcher,
+            OpflowRpcObserver rpcObserver,
             OpflowRpcAmqpMaster amqpMaster,
             OpflowRpcHttpMaster httpMaster,
             OpflowPubsubHandler publisher,
@@ -965,7 +972,7 @@ public class OpflowCommander implements AutoCloseable {
             this.measurer = measurer;
             this.restrictor = restrictor;
             this.reqExtractor = reqExtractor;
-            this.rpcWatcher = rpcWatcher;
+            this.rpcObserver = rpcObserver;
             
             this.amqpMaster = amqpMaster;
             this.httpMaster = httpMaster;
@@ -1029,7 +1036,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         public boolean isRemoteAMQPWorkerAvailable() {
-            return !rpcWatcher.isCongestive() && isRemoteAMQPWorkerActive();
+            return !rpcObserver.isCongestive() && isRemoteAMQPWorkerActive();
         }
         
         public boolean isRemoteHTTPWorkerActive() {
@@ -1041,7 +1048,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         public boolean isRemoteHTTPWorkerAvailable() {
-            return !rpcWatcher.isCongestive() && isRemoteHTTPWorkerActive();
+            return !rpcObserver.isCongestive() && isRemoteHTTPWorkerActive();
         }
         
         @Override
@@ -1155,7 +1162,7 @@ public class OpflowCommander implements AutoCloseable {
                 
                 if (amqpResult.isTimeout()) {
                     rescueAMQPWorker = true;
-                    rpcWatcher.setCongestive(true);
+                    rpcObserver.setCongestive(true);
                 }
             }
             
@@ -1202,7 +1209,7 @@ public class OpflowCommander implements AutoCloseable {
                 }
                 
                 rescueAMQPWorker = true;
-                rpcWatcher.setCongestive(true);
+                rpcObserver.setCongestive(true);
             }
             
             if (isNativeWorkerAvailable()) {
@@ -1242,7 +1249,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("className", clazzName)
                     .text("getInvocationHandler() InvocationHandler not found, create new one")
                     .stringify());
-            handlers.put(clazzName, new RpcInvocationHandler(logTracer, measurer, restrictor, reqExtractor, rpcWatcher, 
+            handlers.put(clazzName, new RpcInvocationHandler(logTracer, measurer, restrictor, reqExtractor, rpcObserver, 
                     amqpMaster, httpMaster, publisher, clazz, bean, nativeWorkerEnabled));
         } else {
             if (strictMode) {

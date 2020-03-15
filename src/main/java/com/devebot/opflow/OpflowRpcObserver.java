@@ -21,6 +21,8 @@ public class OpflowRpcObserver {
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
     private String latestAddress = null;
     
+    private boolean congestive = false;
+    
     public enum Protocol { AMQP, HTTP };
     
     public void check(final OpflowRpcObserver.Protocol protocol, final Map<String, Object> headers) {
@@ -51,6 +53,14 @@ public class OpflowRpcObserver {
                 }
                 break;
         }
+    }
+    
+    public boolean isCongestive() {
+        return congestive;
+    }
+    
+    public void setCongestive(boolean congestive) {
+        this.congestive = congestive;
     }
     
     public String getLatestAddress() {
@@ -89,17 +99,17 @@ public class OpflowRpcObserver {
         }
         return manifests.values();
     }
-
+    
     public Object summary() {
         return this.rollup();
     }
-
+    
     public void setKeepAliveTimeout(long timeout) {
         if (timeout > 0) {
             this.keepAliveTimeout = KEEP_ALIVE_TIMEOUT + Long.min(KEEP_ALIVE_TIMEOUT, timeout);
         }
     }
-
+    
     private Manifest assertManifest(String componentId) {
         OpflowRpcObserver.Manifest manifest = null;
         if (manifests.containsKey(componentId)) {

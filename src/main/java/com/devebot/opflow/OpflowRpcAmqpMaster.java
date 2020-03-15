@@ -216,12 +216,12 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             this.serve();
         }
     }
-
+    
     private final OpflowConcurrentMap<String, OpflowRpcAmqpRequest> tasks = new OpflowConcurrentMap<>();
     
     private final Object callbackConsumerLock = new Object();
     private volatile OpflowEngine.ConsumerInfo callbackConsumer;
-
+    
     private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean isTransient) {
         final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
@@ -414,7 +414,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                     logTask = reqTracer.branch("taskId", taskId);
                 }
             }
-            
+
             @Override
             public void handleEvent() {
                 Lock eventLock = useDuplexLock ? taskLock.readLock() : closeLock;
@@ -628,10 +628,6 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
     
     public OpflowExecutor getExecutor() {
         return executor;
-    }
-    
-    public OpflowRpcObserver getRpcObserver() {
-        return rpcObserver;
     }
     
     public String getComponentId() {
