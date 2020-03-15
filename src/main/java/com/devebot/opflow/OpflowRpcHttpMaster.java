@@ -274,6 +274,10 @@ public class OpflowRpcHttpMaster {
             return new Session(params, STATUS.TIMEOUT, null, null, exception);
         }
         
+        public boolean isOk() {
+            return status == STATUS.OK;
+        }
+        
         public boolean isFailed() {
             return status == STATUS.FAILED;
         }

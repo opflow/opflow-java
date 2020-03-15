@@ -43,7 +43,8 @@ public class OpflowConstant {
     public final static String COMP_RPC_HTTP_WORKER = "httpWorker";
     public final static String COMP_DISCOVERY_CLIENT = "discoveryClient";
     public final static String COMP_NATIVE_WORKER = "ReservedWorker";
-    public final static String COMP_REMOTE_WORKER = "DetachedWorker";
+    public final static String COMP_REMOTE_AMQP_WORKER = "amqpWorker";
+    public final static String COMP_REMOTE_HTTP_WORKER = "httpWorker";
     public final static String COMP_RPC_WATCHER = "rpcWatcher";
     public final static String COMP_RPC_OBSERVER = "rpcObserver";
     public final static String COMP_REST_SERVER = "restServer";

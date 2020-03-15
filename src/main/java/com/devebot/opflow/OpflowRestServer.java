@@ -291,18 +291,27 @@ public class OpflowRestServer implements AutoCloseable {
 
                         case "activate-remote-worker":
                         case "activate-detached-worker":
-                            boolean state1 = getQueryParam(exchange, "state", Boolean.class, true);
-                            result = taskSubmitter.activateDetachedWorker(state1, OpflowObjectTree.buildMap(false)
+                        case "activate-remote-amqp-worker":
+                            boolean state0 = getQueryParam(exchange, "state", Boolean.class, true);
+                            result = taskSubmitter.activateRemoteAMQPWorker(state0, OpflowObjectTree.buildMap(false)
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
 
+                        case "activate-remote-http-worker":
+                            boolean state1 = getQueryParam(exchange, "state", Boolean.class, true);
+                            result = taskSubmitter.activateRemoteHTTPWorker(state1, OpflowObjectTree.buildMap(false)
+                                    .put("class", getQueryParam(exchange, "class"))
+                                    .toMap());
+                            break;
+                            
                         case "activate-backup-worker":
                         case "activate-direct-worker":
                         case "activate-embedded-worker":
                         case "activate-reserved-worker":
+                        case "activate-native-worker":
                             boolean state2 = getQueryParam(exchange, "state", Boolean.class, true);
-                            result = taskSubmitter.activateReservedWorker(state2, OpflowObjectTree.buildMap(false)
+                            result = taskSubmitter.activateNativeWorker(state2, OpflowObjectTree.buildMap(false)
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
