@@ -150,11 +150,11 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
     private OpflowEngine.ConsumerInfo consumerInfo;
     private List<Middleware> middlewares = new LinkedList<>();
     
-    public OpflowEngine.ConsumerInfo process(final OpflowRpcAmqpListener listener) {
+    public OpflowEngine.ConsumerInfo process(final Listener listener) {
         return process(TRUE, listener);
     }
 
-    public OpflowEngine.ConsumerInfo process(final String routineSignature, final OpflowRpcAmqpListener listener) {
+    public OpflowEngine.ConsumerInfo process(final String routineSignature, final Listener listener) {
         return process(new Checker() {
             @Override
             public boolean match(String originRoutineSignature) {
@@ -163,7 +163,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
         }, listener);
     };
     
-    public OpflowEngine.ConsumerInfo process(final String[] routineSignatures, final OpflowRpcAmqpListener listener) {
+    public OpflowEngine.ConsumerInfo process(final String[] routineSignatures, final Listener listener) {
         return process(new Checker() {
             @Override
             public boolean match(String originRoutineSignature) {
@@ -172,7 +172,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
         }, listener);
     };
     
-    public OpflowEngine.ConsumerInfo process(final Set<String> routineSignatures, final OpflowRpcAmqpListener listener) {
+    public OpflowEngine.ConsumerInfo process(final Set<String> routineSignatures, final Listener listener) {
         return process(new Checker() {
             @Override
             public boolean match(String originRoutineSignature) {
@@ -181,7 +181,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
         }, listener);
     };
     
-    public OpflowEngine.ConsumerInfo process(Checker checker, final OpflowRpcAmqpListener listener) {
+    public OpflowEngine.ConsumerInfo process(Checker checker, final Listener listener) {
         final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logProcess = logTracer.branch("consumerId", _consumerId);
         if (logProcess.ready(LOG, Level.INFO)) LOG.info(logProcess
@@ -238,7 +238,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
                         count++;
                         measurer.countRpcInvocation(OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowConstant.METHOD_INVOCATION_REMOTE_AMQP_WORKER, routineSignature, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
-                        if (nextAction == null || nextAction == OpflowRpcAmqpListener.DONE) break;
+                        if (nextAction == null || nextAction == Listener.DONE) break;
                     }
                 }
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
@@ -327,9 +327,9 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
     
     public class Middleware {
         private final Checker checker;
-        private final OpflowRpcAmqpListener listener;
+        private final Listener listener;
 
-        public Middleware(Checker checker, OpflowRpcAmqpListener listener) {
+        public Middleware(Checker checker, Listener listener) {
             this.checker = checker;
             this.listener = listener;
         }
@@ -338,7 +338,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
             return checker;
         }
 
-        public OpflowRpcAmqpListener getListener() {
+        public Listener getListener() {
             return listener;
         }
     }
@@ -353,6 +353,12 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
             return true;
         }
     };
+    
+    public interface Listener {
+        public static final Boolean DONE = Boolean.FALSE;
+        public static final Boolean NEXT = Boolean.TRUE;
+        public Boolean processMessage(OpflowMessage message, OpflowRpcAmqpResponse response) throws IOException;
+    }
     
     @Override
     protected void finalize() throws Throwable {

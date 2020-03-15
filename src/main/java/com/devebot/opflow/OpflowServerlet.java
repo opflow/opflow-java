@@ -268,8 +268,8 @@ public class OpflowServerlet implements AutoCloseable {
         }
 
         if (amqpWorker != null) {
-            Map<String, OpflowRpcAmqpListener> rpcListeners = listenerMap.getRpcListeners();
-            for (Map.Entry<String, OpflowRpcAmqpListener> entry : rpcListeners.entrySet()) {
+            Map<String, OpflowRpcAmqpWorker.Listener> rpcListeners = listenerMap.getRpcListeners();
+            for (Map.Entry<String, OpflowRpcAmqpWorker.Listener> entry : rpcListeners.entrySet()) {
                 amqpWorker.process(entry.getKey(), entry.getValue());
             }
         }
@@ -372,7 +372,7 @@ public class OpflowServerlet implements AutoCloseable {
             return this;
         }
 
-        public DescriptorBuilder addRpcListener(String routineSignature, OpflowRpcAmqpListener listener) {
+        public DescriptorBuilder addRpcListener(String routineSignature, OpflowRpcAmqpWorker.Listener listener) {
             map.rpcListeners.put(routineSignature, listener);
             return this;
         }
@@ -386,7 +386,7 @@ public class OpflowServerlet implements AutoCloseable {
 
         public static final ListenerDescriptor EMPTY = new ListenerDescriptor();
         private OpflowPubsubListener configurer;
-        private Map<String, OpflowRpcAmqpListener> rpcListeners = new HashMap<>();
+        private Map<String, OpflowRpcAmqpWorker.Listener> rpcListeners = new HashMap<>();
         private OpflowPubsubListener subscriber;
 
         private ListenerDescriptor() {
@@ -396,8 +396,8 @@ public class OpflowServerlet implements AutoCloseable {
             return configurer;
         }
 
-        public Map<String, OpflowRpcAmqpListener> getRpcListeners() {
-            Map<String, OpflowRpcAmqpListener> cloned = new HashMap<>();
+        public Map<String, OpflowRpcAmqpWorker.Listener> getRpcListeners() {
+            Map<String, OpflowRpcAmqpWorker.Listener> cloned = new HashMap<>();
             cloned.putAll(rpcListeners);
             return cloned;
         }
@@ -412,7 +412,7 @@ public class OpflowServerlet implements AutoCloseable {
         private static final Logger LOG = LoggerFactory.getLogger(Instantiator.class);
         private final OpflowLogTracer logTracer;
         private final OpflowRpcAmqpWorker amqpWorker;
-        private final OpflowRpcAmqpListener amqpListener;
+        private final OpflowRpcAmqpWorker.Listener amqpListener;
         private final OpflowRpcHttpWorker httpWorker;
         private final OpflowRpcHttpWorker.Listener httpListener;
         private final OpflowPubsubHandler subscriber;
@@ -436,7 +436,7 @@ public class OpflowServerlet implements AutoCloseable {
             this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", componentId);
             
             this.amqpWorker = amqpWorker;
-            this.amqpListener = new OpflowRpcAmqpListener() {
+            this.amqpListener = new OpflowRpcAmqpWorker.Listener() {
                 @Override
                 public Boolean processMessage(final OpflowMessage message, final OpflowRpcAmqpResponse response) throws IOException {
                     final Map<String, Object> headers = message.getHeaders();
