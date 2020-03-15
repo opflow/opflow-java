@@ -236,7 +236,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
                 for(Middleware middleware : middlewares) {
                     if (middleware.getChecker().match(routineSignature)) {
                         count++;
-                        measurer.countRpcInvocation(OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "process");
+                        measurer.countRpcInvocation(OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowConstant.METHOD_INVOCATION_REMOTE_AMQP_WORKER, routineSignature, "process");
                         Boolean nextAction = middleware.getListener().processMessage(request, response);
                         if (nextAction == null || nextAction == OpflowRpcAmqpListener.DONE) break;
                     }

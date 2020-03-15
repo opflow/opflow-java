@@ -55,8 +55,11 @@ public class OpflowConstant {
     public final static String METHOD_INVOCATION_FLOW_NATIVE = "native";
     public final static String METHOD_INVOCATION_FLOW_PUBSUB = "pubsub";
     public final static String METHOD_INVOCATION_FLOW_RPC = "rpc";
-    public final static String METHOD_INVOCATION_FLOW_DETACHED_WORKER = "remote_method";
-    public final static String METHOD_INVOCATION_FLOW_RESERVED_WORKER = "backup_method";
+    public final static String METHOD_INVOCATION_REMOTE_HTTP_WORKER = "remote_http";
+    public final static String METHOD_INVOCATION_REMOTE_AMQP_WORKER = "remote_amqp";
+    public final static String METHOD_INVOCATION_NATIVE_WORKER = "backup_method";
+
+    public final static String PARAM_NATIVE_WORKER_ENABLED = "nativeWorkerEnabled";
 
     // engine - rabbitMQ
     public final static String OPFLOW_COMMON_APP_ID = "applicationId";

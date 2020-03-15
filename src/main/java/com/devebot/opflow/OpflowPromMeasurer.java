@@ -16,8 +16,9 @@ public abstract class OpflowPromMeasurer {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
     public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
-    public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverDirectWorker";
-    public static final String LABEL_RPC_REMOTE_WORKER = "rpcOverRemoteWorker";
+    public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverNativeWorker";
+    public static final String LABEL_RPC_REMOTE_AMQP_WORKER = "rpcOverRemoteAMQPWorkers";
+    public static final String LABEL_RPC_REMOTE_HTTP_WORKER = "rpcOverRemoteHTTPWorkers";
     
     public static enum GaugeAction { INC, DEC }
     
@@ -56,6 +57,10 @@ public abstract class OpflowPromMeasurer {
         private long remoteSuccess = 0;
         private long remoteFailure = 0;
         private long remoteTimeout = 0;
+        private long remoteHTTPTotal = 0;
+        private long remoteHTTPSuccess = 0;
+        private long remoteHTTPFailure = 0;
+        private long remoteHTTPTimeout = 0;
 
         public RpcInvocationCounter() {
         }
@@ -89,6 +94,24 @@ public abstract class OpflowPromMeasurer {
             this.remote++;
             this.remoteTimeout++;
         }
+        
+        public synchronized void incRemoteHTTPSuccess() {
+            this.total++;
+            this.remoteHTTPTotal++;
+            this.remoteHTTPSuccess++;
+        }
+
+        public synchronized void incRemoteHTTPFailure() {
+            this.total++;
+            this.remoteHTTPTotal++;
+            this.remoteHTTPFailure++;
+        }
+
+        public synchronized void incRemoteHTTPTimeout() {
+            this.total++;
+            this.remoteHTTPTotal++;
+            this.remoteHTTPTimeout++;
+        }
 
         private synchronized RpcInvocationCounter copy() {
             RpcInvocationCounter that = new RpcInvocationCounter();
@@ -101,6 +124,10 @@ public abstract class OpflowPromMeasurer {
             that.remoteSuccess = this.remoteSuccess;
             that.remoteFailure = this.remoteFailure;
             that.remoteTimeout = this.remoteTimeout;
+            that.remoteHTTPTotal = this.remoteHTTPTotal;
+            that.remoteHTTPSuccess = this.remoteHTTPSuccess;
+            that.remoteHTTPFailure = this.remoteHTTPFailure;
+            that.remoteHTTPTimeout = this.remoteHTTPTimeout;
             return that;
         }
 
@@ -114,6 +141,10 @@ public abstract class OpflowPromMeasurer {
             this.remoteSuccess = 0;
             this.remoteFailure = 0;
             this.remoteTimeout = 0;
+            this.remoteHTTPTotal = 0;
+            this.remoteHTTPSuccess = 0;
+            this.remoteHTTPFailure = 0;
+            this.remoteHTTPTimeout = 0;
         }
 
         public Map<String, Object> toMap() {
@@ -142,13 +173,27 @@ public abstract class OpflowPromMeasurer {
             final long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
             return OpflowObjectTree.buildMap()
                     .put(LABEL_RPC_INVOCATION_TOTAL, that.total)
-                    .put(LABEL_RPC_REMOTE_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    .put(LABEL_RPC_REMOTE_AMQP_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                         @Override
                         public void transform(Map<String, Object> opts) {
                             opts.put("total", that.remote);
                             opts.put("ok", that.remoteSuccess);
                             opts.put("failed", that.remoteFailure);
                             opts.put("timeout", that.remoteTimeout);
+                            if (verbose) {
+                                double remoteRate = calcMessageRate(that.remote, elapsedTime);
+                                opts.put("rate", formatMessageRate(remoteRate));
+                                opts.put("rateNumber", remoteRate);
+                            }
+                        }
+                    }).toMap())
+                    .put(LABEL_RPC_REMOTE_HTTP_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                        @Override
+                        public void transform(Map<String, Object> opts) {
+                            opts.put("total", that.remoteHTTPTotal);
+                            opts.put("ok", that.remoteHTTPSuccess);
+                            opts.put("failed", that.remoteHTTPFailure);
+                            opts.put("timeout", that.remoteHTTPTimeout);
                             if (verbose) {
                                 double remoteRate = calcMessageRate(that.remote, elapsedTime);
                                 opts.put("rate", formatMessageRate(remoteRate));
@@ -174,7 +219,7 @@ public abstract class OpflowPromMeasurer {
                     .toMap();
         }
         
-        public OpflowThroughput.Source getDirectWorkerInfoSource() {
+        public OpflowThroughput.Source getNativeWorkerInfoSource() {
             return new OpflowThroughput.Source() {
                 @Override
                 public long getValue() {
@@ -188,7 +233,7 @@ public abstract class OpflowPromMeasurer {
             };
         }
         
-        public OpflowThroughput.Source getRemoteWorkerInfoSource() {
+        public OpflowThroughput.Source getRemoteAMQPWorkerInfoSource() {
             return new OpflowThroughput.Source() {
                 @Override
                 public long getValue() {
@@ -244,7 +289,7 @@ public abstract class OpflowPromMeasurer {
             }
             if (OpflowConstant.COMP_COMMANDER.equals(componentType)) {
                 switch (eventName) {
-                    case OpflowConstant.METHOD_INVOCATION_FLOW_RESERVED_WORKER:
+                    case OpflowConstant.METHOD_INVOCATION_NATIVE_WORKER:
                         switch (status) {
                             case "rescue":
                                 counter.incDirectRescue();
@@ -254,7 +299,7 @@ public abstract class OpflowPromMeasurer {
                                 break;
                         }
                         break;
-                    case OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER:
+                    case OpflowConstant.METHOD_INVOCATION_REMOTE_AMQP_WORKER:
                         switch (status) {
                             case "ok":
                                 counter.incRemoteSuccess();
@@ -264,6 +309,19 @@ public abstract class OpflowPromMeasurer {
                                 break;
                             case "timeout":
                                 counter.incRemoteTimeout();
+                                break;
+                        }
+                        break;
+                    case OpflowConstant.METHOD_INVOCATION_REMOTE_HTTP_WORKER:
+                        switch (status) {
+                            case "ok":
+                                counter.incRemoteHTTPSuccess();
+                                break;
+                            case "failed":
+                                counter.incRemoteHTTPFailure();
+                                break;
+                            case "timeout":
+                                counter.incRemoteHTTPTimeout();
                                 break;
                         }
                         break;

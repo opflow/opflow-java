@@ -478,7 +478,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             builder.expiration(String.valueOf(expiration));
         }
         
-        measurer.countRpcInvocation(OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "produce");
+        measurer.countRpcInvocation(OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.METHOD_INVOCATION_REMOTE_AMQP_WORKER, routineSignature, "produce");
         
         engine.produce(body, headers, builder, null, reqTracer);
         

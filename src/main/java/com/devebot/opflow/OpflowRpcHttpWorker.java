@@ -292,7 +292,7 @@ public class OpflowRpcHttpWorker {
                 for(Middleware middleware : middlewares) {
                     if (middleware.getMatcher().match(routineSignature)) {
                         count++;
-                        measurer.countRpcInvocation(OpflowConstant.COMP_RPC_HTTP_WORKER, OpflowConstant.METHOD_INVOCATION_FLOW_DETACHED_WORKER, routineSignature, "process");
+                        measurer.countRpcInvocation(OpflowConstant.COMP_RPC_HTTP_WORKER, OpflowConstant.METHOD_INVOCATION_REMOTE_AMQP_WORKER, routineSignature, "process");
                         output = middleware.getListener().processMessage(body, routineSignature, routineScope, routineTimestamp, routineId, null);
                         break;
                     }
