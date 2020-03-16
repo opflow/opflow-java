@@ -293,7 +293,7 @@ public class OpflowRpcHttpMaster {
         }
         
         public boolean isCracked() {
-            return status == STATUS.CRACKED;
+            return status == STATUS.BROKEN || status == STATUS.CRACKED;
         }
         
         public boolean isTimeout() {

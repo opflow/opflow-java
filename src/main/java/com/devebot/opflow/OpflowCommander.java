@@ -6,6 +6,7 @@ import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
@@ -485,20 +486,33 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private Pong _send_safe(final Ping ping) throws Throwable {
+            OpflowRpcObserver.Protocol proto = OpflowRpcObserver.Protocol.AMQP;
             try {
                 Date startTime = new Date();
-
+                
                 String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
                 String routineId = OpflowUUID.getBase64ID();
                 String routineTimestamp = OpflowDateTime.toISO8601UTC(startTime);
                 String routineSignature = getSendMethodName();
-
-                Pong pong = send_over_amqp(routineId, routineTimestamp, routineSignature, body);
-
+                
+                Pong pong = null;
+                
+                switch (proto) {
+                    case AMQP:
+                        pong = send_over_amqp(routineId, routineTimestamp, routineSignature, body);
+                        break;
+                    case HTTP:
+                        pong = send_over_http(routineId, routineTimestamp, routineSignature, body);
+                        break;
+                    default:
+                        pong = new Pong();
+                        break;
+                }
+                
                 Date endTime = new Date();
-
-                rpcObserver.setCongestive(false);
-
+                
+                rpcObserver.setCongestive(proto, false);
+                
                 // updateInfo the observation result
                 if (rpcObserver != null) {
                     Map<String, Object> serverletInfo = pong.getAccumulator();
@@ -522,11 +536,11 @@ public class OpflowCommander implements AutoCloseable {
                 return pong;
             }
             catch (OpflowRequestSuspendException e) {
-                rpcObserver.setCongestive(true);
+                rpcObserver.setCongestive(proto, true);
                 throw e;
             }
             catch (Throwable t) {
-                rpcObserver.setCongestive(true);
+                rpcObserver.setCongestive(proto, true);
                 throw t;
             }
         }
@@ -547,6 +561,27 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             return OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
+        }
+        
+        private Pong send_over_http(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
+            OpflowRpcHttpMaster.Session rpcRequest = httpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
+                    .setProgressEnabled(false)
+                    .setRoutineScope("internal"), null);
+            
+            if (rpcRequest.isOk()) {
+                return OpflowJsonTool.toObject(rpcRequest.getValueAsString(), Pong.class);
+            }
+            
+            if (rpcRequest.isCracked()) {
+                throw new OpflowRequestFailureException("OpflowRpcChecker.send() call is cracked");
+            }
+            
+            if (rpcRequest.isTimeout()) {
+                throw new OpflowRequestTimeoutException("OpflowRpcChecker.send() call is timeout");
+            }
+            
+            Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcRequest.getErrorAsString());
+            throw OpflowUtil.rebuildInvokerException(errorMap);
         }
     }
 

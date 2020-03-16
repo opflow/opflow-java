@@ -22,8 +22,10 @@ public class OpflowRpcObserver {
     private String latestAddress = null;
     
     private boolean congestive = false;
+    private boolean congestiveAMQP = false;
+    private boolean congestiveHTTP = false;
     
-    public enum Protocol { AMQP, HTTP };
+    public enum Protocol { AMQP, HTTP, NONE };
     
     public void check(final OpflowRpcObserver.Protocol protocol, final Map<String, Object> headers) {
         switch (protocol) {
@@ -56,11 +58,35 @@ public class OpflowRpcObserver {
     }
     
     public boolean isCongestive() {
-        return congestive;
+        return isCongestive(Protocol.NONE);
     }
     
     public void setCongestive(boolean congestive) {
-        this.congestive = congestive;
+        setCongestive(Protocol.NONE, congestive);
+    }
+    
+    public boolean isCongestive(Protocol protocol) {
+        switch (protocol) {
+            case AMQP:
+                return congestiveAMQP;
+            case HTTP:
+                return congestiveHTTP;
+        }
+        return congestive;
+    }
+    
+    public void setCongestive(Protocol protocol, boolean congestive) {
+        switch (protocol) {
+            case AMQP:
+                this.congestiveAMQP = congestive;
+                break;
+            case HTTP:
+                this.congestiveHTTP = congestive;
+                break;
+            default:
+                this.congestive = congestive;
+                break;
+        }
     }
     
     public String getLatestAddress() {
