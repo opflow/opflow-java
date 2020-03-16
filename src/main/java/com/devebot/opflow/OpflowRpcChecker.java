@@ -13,7 +13,7 @@ import java.util.Map;
 public abstract class OpflowRpcChecker {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
-    private final static String[] REQUEST_ATTRS = new String[] { "routineId", "startTime", "endTime", "elapsedTime" };
+    private final static String[] REQUEST_ATTRS = new String[] { "protocol", "routineId", "startTime", "endTime", "elapsedTime" };
     
     @OpflowSourceRoutine(alias = OpflowConstant.OPFLOW_ROUTINE_PINGPONG_ALIAS)
     public abstract Pong send(Ping info) throws Throwable;

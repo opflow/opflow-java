@@ -462,8 +462,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRpcHttpMaster httpMaster;
         private final OpflowRpcObserver rpcObserver;
         
-        private enum Protocol { AMQP, HTTP };
-        private Protocol protocol = Protocol.AMQP;
+        private OpflowRpcObserver.Protocol protocol = OpflowRpcObserver.Protocol.AMQP;
         
         OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcObserver rpcObserver, OpflowRpcAmqpMaster amqpMaster, OpflowRpcHttpMaster httpMaster) throws OpflowBootstrapException {
             this.restrictor = restrictor;
@@ -485,8 +484,21 @@ public class OpflowCommander implements AutoCloseable {
             });
         }
         
+        private OpflowRpcObserver.Protocol next() {
+            OpflowRpcObserver.Protocol current = protocol;
+            switch (protocol) {
+                case AMQP:
+                    protocol = OpflowRpcObserver.Protocol.HTTP;
+                    break;
+                case HTTP:
+                    protocol = OpflowRpcObserver.Protocol.AMQP;
+                    break;
+            }
+            return current;
+        }
+        
         private Pong _send_safe(final Ping ping) throws Throwable {
-            OpflowRpcObserver.Protocol proto = OpflowRpcObserver.Protocol.AMQP;
+            OpflowRpcObserver.Protocol proto = next();
             try {
                 Date startTime = new Date();
                 
@@ -529,6 +541,7 @@ public class OpflowCommander implements AutoCloseable {
                     }
                 }
                 // append the context of ping
+                pong.getParameters().put("protocol", proto);
                 pong.getParameters().put("routineId", routineId);
                 pong.getParameters().put("startTime", startTime);
                 pong.getParameters().put("endTime", endTime);
@@ -1071,7 +1084,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         public boolean isRemoteAMQPWorkerAvailable() {
-            return !rpcObserver.isCongestive() && isRemoteAMQPWorkerActive();
+            return !rpcObserver.isCongestive(OpflowRpcObserver.Protocol.AMQP) && isRemoteAMQPWorkerActive();
         }
         
         public boolean isRemoteHTTPWorkerActive() {
@@ -1083,7 +1096,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         public boolean isRemoteHTTPWorkerAvailable() {
-            return !rpcObserver.isCongestive() && isRemoteHTTPWorkerActive();
+            return !rpcObserver.isCongestive(OpflowRpcObserver.Protocol.HTTP) && isRemoteHTTPWorkerActive();
         }
         
         @Override
