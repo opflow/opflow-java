@@ -25,19 +25,18 @@ public class OpflowRpcObserver {
     
     private String latestAddress = null;
     
-    private boolean congestive = false;
     private boolean congestiveAMQP = false;
     private boolean congestiveHTTP = false;
     
-    public enum Protocol { AMQP, HTTP, NONE };
+    public enum Protocol { AMQP, HTTP };
     
     public void check(final OpflowRpcObserver.Protocol protocol, final Map<String, Object> headers) {
         switch (protocol) {
             case AMQP:
                 String componentId = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_CONSUMER_ID, false, true);
                 if (componentId != null) {
-                    OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
                     // inform the manifest status
+                    OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
                     manifest.updatedTimestamp = manifest.updatedAMQPTimestamp = new Date();
                     // update the protocol version
                     String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
@@ -46,6 +45,8 @@ public class OpflowRpcObserver {
                     String address = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_COMMON_ADDRESS, false, true);
                     manifest.address = address;
                     // update the newest components
+                    amqpCongestion.put(componentId, new OpflowRpcLocation(OpflowRpcLocation.Protocol.AMQP, componentId, ""));
+                    httpCongestion.put(componentId, new OpflowRpcLocation(OpflowRpcLocation.Protocol.HTTP, componentId, address));
                     if (address != null) {
                         this.latestAddress = address;
                     }
@@ -62,11 +63,7 @@ public class OpflowRpcObserver {
     }
     
     public boolean isCongestive() {
-        return isCongestive(Protocol.NONE);
-    }
-    
-    public void setCongestive(boolean congestive) {
-        setCongestive(Protocol.NONE, congestive);
+        return isCongestive(Protocol.AMQP) && isCongestive(Protocol.HTTP);
     }
     
     public boolean isCongestive(Protocol protocol) {
@@ -76,7 +73,7 @@ public class OpflowRpcObserver {
             case HTTP:
                 return congestiveHTTP;
         }
-        return congestive;
+        return false;
     }
     
     public void setCongestive(Protocol protocol, boolean congestive) {
@@ -87,9 +84,17 @@ public class OpflowRpcObserver {
             case HTTP:
                 this.congestiveHTTP = congestive;
                 break;
+        }
+    }
+    
+    public OpflowRpcLocation getLocation(Protocol protocol) {
+        switch (protocol) {
+            case AMQP:
+                return amqpCongestion.rotate();
+            case HTTP:
+                return httpCongestion.rotate();
             default:
-                this.congestive = congestive;
-                break;
+                return null;
         }
     }
     

@@ -8,9 +8,11 @@ import java.util.HashMap;
  */
 public class OpflowRevolvingMap<K, V> {
     public interface ChangeListener<K, V> {
-        default void onCreated(K key, V object) {}
-        default void onUpdated(K key, V oldObject, V newObject) {}
-        default void onDeleted(K key, V object) {}
+        default void onCreating(K key, V object) {}
+        default V onUpdating(K key, V oldObject, V newObject) {
+            return newObject;
+        }
+        default void onDeleting(K key, V object) {}
     }
 
     private final ChangeListener<K, V> changeListener;
@@ -41,16 +43,17 @@ public class OpflowRevolvingMap<K, V> {
             if (lookupTable.containsKey(key)) {
                 OpflowCircularList.Node<V> node = lookupTable.get(key);
                 V oldObj = node.getRef();
-                node.setRef(obj);
                 if (changeListener != null) {
-                    changeListener.onUpdated(key, oldObj, obj);
+                    node.setRef(changeListener.onUpdating(key, oldObj, obj));
+                } else {
+                    node.setRef(obj);
                 }
             } else {
                 OpflowCircularList.Node<V> node = revolver.createNode(obj);
                 revolver.appendNode(node);
                 lookupTable.put(key, node);
                 if (changeListener != null) {
-                    changeListener.onCreated(key, obj);
+                    changeListener.onCreating(key, obj);
                 }
             }
         }
@@ -62,7 +65,7 @@ public class OpflowRevolvingMap<K, V> {
                 OpflowCircularList.Node<V> node = lookupTable.remove(key);
                 revolver.removeNode(node);
                 if (changeListener != null) {
-                    changeListener.onDeleted(key, node.getRef());
+                    changeListener.onDeleting(key, node.getRef());
                 }
                 return node.getRef();
             }

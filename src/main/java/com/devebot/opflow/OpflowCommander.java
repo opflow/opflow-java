@@ -579,7 +579,7 @@ public class OpflowCommander implements AutoCloseable {
         private Pong send_over_http(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
             OpflowRpcHttpMaster.Session rpcRequest = httpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
                     .setProgressEnabled(false)
-                    .setRoutineScope("internal"));
+                    .setRoutineScope("internal"), null);
             
             if (rpcRequest.isOk()) {
                 return OpflowJsonTool.toObject(rpcRequest.getValueAsString(), Pong.class);
@@ -1210,7 +1210,7 @@ public class OpflowCommander implements AutoCloseable {
                 
                 if (amqpResult.isTimeout()) {
                     rescueAMQPWorker = true;
-                    rpcObserver.setCongestive(true);
+                    rpcObserver.setCongestive(OpflowRpcObserver.Protocol.AMQP, true);
                 }
             }
             
@@ -1218,7 +1218,7 @@ public class OpflowCommander implements AutoCloseable {
                 rescueAMQPWorker = false;
                 
                 OpflowRpcHttpMaster.Session httpSession = httpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
-                        .setProgressEnabled(false));
+                        .setProgressEnabled(false), null);
                 
                 if (httpSession.isOk()) {
                     measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_REMOTE_HTTP_WORKER, routineSignature, "ok");
@@ -1257,7 +1257,7 @@ public class OpflowCommander implements AutoCloseable {
                 }
                 
                 rescueAMQPWorker = true;
-                rpcObserver.setCongestive(true);
+                rpcObserver.setCongestive(OpflowRpcObserver.Protocol.HTTP, true);
             }
             
             if (isNativeWorkerAvailable()) {
