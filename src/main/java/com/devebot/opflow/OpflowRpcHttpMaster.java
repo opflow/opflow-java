@@ -99,15 +99,15 @@ public class OpflowRpcHttpMaster {
         serve();
     }
     
-    public Session request(final String routineSignature, final String body, final OpflowRpcParameter params, final Map<String, Object> options) {
+    public Session request(final String routineSignature, final String body, final OpflowRpcParameter parameter) {
         if (restrictor == null) {
-            return _request_safe(routineSignature, body, params, options);
+            return _request_safe(routineSignature, body, parameter);
         }
         try {
             return restrictor.filter(new OpflowRestrictor.Action<Session>() {
                 @Override
                 public Session process() throws Throwable {
-                    return _request_safe(routineSignature, body, params, options);
+                    return _request_safe(routineSignature, body, parameter);
                 }
             });
         }
@@ -119,8 +119,8 @@ public class OpflowRpcHttpMaster {
         }
     }
     
-    private Session _request_safe(final String routineSignature, final String body, final OpflowRpcParameter parameter, final Map<String, Object> options) {
-        final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter(options);
+    private Session _request_safe(final String routineSignature, final String body, final OpflowRpcParameter parameter) {
+        final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter();
         
         if (routineSignature != null) {
             params.setRoutineSignature(routineSignature);
