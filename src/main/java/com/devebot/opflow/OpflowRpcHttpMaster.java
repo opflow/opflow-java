@@ -100,10 +100,6 @@ public class OpflowRpcHttpMaster {
     }
     
     public Session request(final String routineSignature, final String body, final OpflowRpcParameter params, final Map<String, Object> options) {
-        return request(routineSignature, body != null ? body.getBytes() : null, params, options);
-    }
-    
-    public Session request(final String routineSignature, final byte[] body, final OpflowRpcParameter params, final Map<String, Object> options) {
         if (restrictor == null) {
             return _request_safe(routineSignature, body, params, options);
         }
@@ -123,7 +119,7 @@ public class OpflowRpcHttpMaster {
         }
     }
     
-    private Session _request_safe(final String routineSignature, final byte[] body, final OpflowRpcParameter parameter, final Map<String, Object> options) {
+    private Session _request_safe(final String routineSignature, final String body, final OpflowRpcParameter parameter, final Map<String, Object> options) {
         final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter(options);
         
         if (routineSignature != null) {
