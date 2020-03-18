@@ -3,6 +3,7 @@ package com.devebot.opflow;
 import com.devebot.opflow.annotation.OpflowFieldExclude;
 import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowDateTime;
+import com.devebot.opflow.supports.OpflowRevolvingMap;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -19,6 +20,9 @@ public class OpflowRpcObserver {
     
     private long keepAliveTimeout = 2 * KEEP_ALIVE_TIMEOUT;
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
+    private final OpflowRevolvingMap<String, OpflowRpcLocation> amqpCongestion = new OpflowRevolvingMap<>();
+    private final OpflowRevolvingMap<String, OpflowRpcLocation> httpCongestion = new OpflowRevolvingMap<>();
+    
     private String latestAddress = null;
     
     private boolean congestive = false;
