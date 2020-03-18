@@ -7,7 +7,6 @@ import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
-import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
@@ -499,102 +498,114 @@ public class OpflowCommander implements AutoCloseable {
         
         private Pong _send_safe(final Ping ping) throws Throwable {
             OpflowRpcObserver.Protocol proto = next();
-            try {
-                Date startTime = new Date();
-                
-                String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
-                String routineId = OpflowUUID.getBase64ID();
-                String routineTimestamp = OpflowDateTime.toISO8601UTC(startTime);
-                String routineSignature = getSendMethodName();
-                
-                Pong pong = null;
-                
-                switch (proto) {
-                    case AMQP:
-                        pong = send_over_amqp(routineId, routineTimestamp, routineSignature, body);
-                        break;
-                    case HTTP:
-                        pong = send_over_http(routineId, routineTimestamp, routineSignature, body);
-                        break;
-                    default:
-                        pong = new Pong();
-                        break;
-                }
-                
-                Date endTime = new Date();
-                
-                rpcObserver.setCongestive(proto, false);
-                
-                // updateInfo the observation result
-                if (rpcObserver != null) {
-                    Map<String, Object> serverletInfo = pong.getAccumulator();
-                    if (serverletInfo != null) {
-                        String componentId = serverletInfo.getOrDefault(CONST.COMPONENT_ID, "").toString();
-                        if (!componentId.isEmpty()) {
-                            if (!rpcObserver.containsInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE)) {
-                                Object serverletCodeRef = serverletInfo.get(OpflowConstant.INFO_SECTION_SOURCE_CODE);
-                                if (serverletCodeRef != null) {
-                                    rpcObserver.updateInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE, serverletCodeRef);
-                                }
+            Date startTime = new Date();
+
+            String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
+            String routineId = OpflowUUID.getBase64ID();
+            String routineTimestamp = OpflowDateTime.toISO8601UTC(startTime);
+            String routineSignature = getSendMethodName();
+
+            Pong pong = null;
+
+            switch (proto) {
+                case AMQP:
+                    pong = send_over_amqp(routineId, routineTimestamp, routineSignature, body);
+                    break;
+                case HTTP:
+                    pong = send_over_http(routineId, routineTimestamp, routineSignature, body);
+                    break;
+                default:
+                    pong = new Pong();
+                    break;
+            }
+
+            Date endTime = new Date();
+
+            // updateInfo the observation result
+            if (rpcObserver != null) {
+                Map<String, Object> serverletInfo = pong.getAccumulator();
+                if (serverletInfo != null) {
+                    String componentId = serverletInfo.getOrDefault(CONST.COMPONENT_ID, "").toString();
+                    if (!componentId.isEmpty()) {
+                        if (!rpcObserver.containsInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE)) {
+                            Object serverletCodeRef = serverletInfo.get(OpflowConstant.INFO_SECTION_SOURCE_CODE);
+                            if (serverletCodeRef != null) {
+                                rpcObserver.updateInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE, serverletCodeRef);
                             }
                         }
                     }
                 }
-                // append the context of ping
-                pong.getParameters().put("protocol", proto);
-                pong.getParameters().put("routineId", routineId);
-                pong.getParameters().put("startTime", startTime);
-                pong.getParameters().put("endTime", endTime);
-                pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
-                return pong;
             }
-            catch (OpflowRequestSuspendException e) {
-                rpcObserver.setCongestive(proto, true);
-                throw e;
+            // append the context of ping
+            pong.getParameters().put("protocol", proto);
+            pong.getParameters().put("routineId", routineId);
+            pong.getParameters().put("startTime", startTime);
+            pong.getParameters().put("endTime", endTime);
+            pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
+            return pong;
+        }
+        
+        private Pong send_over_amqp(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
+            try {
+                OpflowRpcAmqpRequest rpcRequest = amqpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
+                        .setProgressEnabled(false)
+                        .setRoutineScope("internal"));
+                OpflowRpcAmqpResult rpcResult = rpcRequest.extractResult(false);
+
+                if (rpcResult.isTimeout()) {
+                    throw new OpflowRequestTimeoutException("OpflowRpcChecker.send() call is timeout");
+                }
+
+                if (rpcResult.isFailed()) {
+                    Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcResult.getErrorAsString());
+                    throw OpflowUtil.rebuildInvokerException(errorMap);
+                }
+
+                rpcObserver.setCongestive(OpflowRpcObserver.Protocol.AMQP, false);
+
+                return OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
             }
             catch (Throwable t) {
-                rpcObserver.setCongestive(proto, true);
+                rpcObserver.setCongestive(OpflowRpcObserver.Protocol.AMQP, true);
                 throw t;
             }
         }
         
-        private Pong send_over_amqp(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
-            OpflowRpcAmqpRequest rpcRequest = amqpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
-                    .setProgressEnabled(false)
-                    .setRoutineScope("internal"));
-            OpflowRpcAmqpResult rpcResult = rpcRequest.extractResult(false);
-
-            if (rpcResult.isTimeout()) {
-                throw new OpflowRequestTimeoutException("OpflowRpcChecker.send() call is timeout");
-            }
-
-            if (rpcResult.isFailed()) {
-                Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcResult.getErrorAsString());
-                throw OpflowUtil.rebuildInvokerException(errorMap);
-            }
-
-            return OpflowJsonTool.toObject(rpcResult.getValueAsString(), Pong.class);
-        }
-        
         private Pong send_over_http(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
-            OpflowRpcHttpMaster.Session rpcRequest = httpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
-                    .setProgressEnabled(false)
-                    .setRoutineScope("internal"), null);
-            
-            if (rpcRequest.isOk()) {
+            OpflowRpcLocation routingInfo = rpcObserver.getLocation(OpflowRpcObserver.Protocol.HTTP, false);
+            if (routingInfo == null) {
+                rpcObserver.setCongestive(OpflowRpcObserver.Protocol.HTTP, true);
+                throw new OpflowWorkerNotFoundException();
+            }
+            try {
+                OpflowRpcHttpMaster.Session rpcRequest = httpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
+                        .setProgressEnabled(false)
+                        .setRoutineScope("internal"), routingInfo);
+
+                if (rpcRequest.isFailed()) {
+                    Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcRequest.getErrorAsString());
+                    throw OpflowUtil.rebuildInvokerException(errorMap);
+                }
+                
+                if (rpcRequest.isCracked()) {
+                    throw new OpflowRequestFailureException("OpflowRpcChecker.send() call is cracked");
+                }
+
+                if (rpcRequest.isTimeout()) {
+                    throw new OpflowRequestTimeoutException("OpflowRpcChecker.send() call is timeout");
+                }
+                
+                if (!rpcRequest.isOk()) {
+                    throw new OpflowRequestFailureException("OpflowRpcChecker.send() is unreasonable");
+                }
+                
+                rpcObserver.setCongestive(OpflowRpcObserver.Protocol.HTTP, false, routingInfo.getComponentId());
                 return OpflowJsonTool.toObject(rpcRequest.getValueAsString(), Pong.class);
             }
-            
-            if (rpcRequest.isCracked()) {
-                throw new OpflowRequestFailureException("OpflowRpcChecker.send() call is cracked");
+            catch (Throwable t) {
+                rpcObserver.setCongestive(OpflowRpcObserver.Protocol.HTTP, true, routingInfo.getComponentId());
+                throw t;
             }
-            
-            if (rpcRequest.isTimeout()) {
-                throw new OpflowRequestTimeoutException("OpflowRpcChecker.send() call is timeout");
-            }
-            
-            Map<String, Object> errorMap = OpflowJsonTool.toObjectMap(rpcRequest.getErrorAsString());
-            throw OpflowUtil.rebuildInvokerException(errorMap);
         }
     }
 
@@ -1214,11 +1225,13 @@ public class OpflowCommander implements AutoCloseable {
                 }
             }
             
-            if (isRemoteHTTPWorkerAvailable()) {
+            OpflowRpcLocation routingInfo = rpcObserver.getLocation(OpflowRpcObserver.Protocol.HTTP);
+            
+            if (isRemoteHTTPWorkerAvailable() && routingInfo != null) {
                 rescueAMQPWorker = false;
                 
                 OpflowRpcHttpMaster.Session httpSession = httpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
-                        .setProgressEnabled(false), null);
+                        .setProgressEnabled(false), routingInfo);
                 
                 if (httpSession.isOk()) {
                     measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_REMOTE_HTTP_WORKER, routineSignature, "ok");
@@ -1257,7 +1270,7 @@ public class OpflowCommander implements AutoCloseable {
                 }
                 
                 rescueAMQPWorker = true;
-                rpcObserver.setCongestive(OpflowRpcObserver.Protocol.HTTP, true);
+                rpcObserver.setCongestive(OpflowRpcObserver.Protocol.HTTP, true, routingInfo.getComponentId());
             }
             
             if (isNativeWorkerAvailable()) {

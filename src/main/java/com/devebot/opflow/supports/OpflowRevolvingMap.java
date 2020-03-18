@@ -28,6 +28,10 @@ public class OpflowRevolvingMap<K, V> {
         this.changeListener = changeListener;
     }
     
+    public int size() {
+        return lookupTable.size();
+    }
+    
     public V get(K key) {
         if (lookupTable.containsKey(key)) {
             OpflowCircularList.Node<V> node = lookupTable.get(key);
