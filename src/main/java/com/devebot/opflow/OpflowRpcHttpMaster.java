@@ -248,7 +248,7 @@ public class OpflowRpcHttpMaster {
     
     private Map<String, Object> extractHeaders(Response response) {
         Map<String, Object> options = new HashMap<>();
-        options.put(OpflowConstant.OPFLOW_PROTO_RES_HEADER_WORKER_ID, response.header(OpflowConstant.OPFLOW_PROTO_RES_HEADER_WORKER_ID));
+        options.put(OpflowConstant.OPFLOW_RES_HEADER_WORKER_ID, response.header(OpflowConstant.OPFLOW_RES_HEADER_WORKER_ID));
         return options;
     }
     

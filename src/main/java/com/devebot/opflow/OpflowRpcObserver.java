@@ -9,6 +9,10 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -18,7 +22,6 @@ public class OpflowRpcObserver {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static long KEEP_ALIVE_TIMEOUT = 20000;
     
-    private long keepAliveTimeout = 2 * KEEP_ALIVE_TIMEOUT;
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
     private final OpflowRevolvingMap.ChangeListener changeListener = new OpflowRevolvingMap.ChangeListener<String, OpflowRpcRoutingInfo>() {
         @Override
@@ -29,15 +32,58 @@ public class OpflowRpcObserver {
     private final OpflowRevolvingMap<String, OpflowRpcRoutingInfo> amqpRoutingMap = new OpflowRevolvingMap<>(changeListener);
     private final OpflowRevolvingMap<String, OpflowRpcRoutingInfo> httpRoutingMap = new OpflowRevolvingMap<>(changeListener);
     
+    private long keepAliveTimeout = 2 * KEEP_ALIVE_TIMEOUT;
     private boolean congestiveAMQP = false;
     private boolean congestiveHTTP = false;
     
     public enum Protocol { AMQP, HTTP };
     
+    private final Object threadExecutorLock = new Object();
+    private ExecutorService threadExecutor = null;
+    
+    public ExecutorService getThreadExecutor() {
+        if (threadExecutor == null) {
+            synchronized (threadExecutorLock) {
+                if (threadExecutor == null) {
+                    threadExecutor = Executors.newCachedThreadPool();
+                }
+            }
+        }
+        return threadExecutor;
+    }
+    
+    public void close() {
+        synchronized (threadExecutorLock) {
+            if (threadExecutor != null) {
+                threadExecutor.shutdown();
+                try {
+                    if (!threadExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                        threadExecutor.shutdownNow();
+                    }
+                } catch (InterruptedException ie) {
+                    threadExecutor.shutdownNow();
+                }
+                finally {
+                    threadExecutor = null;
+                }
+            }
+        }
+    }
+    
     public void check(final OpflowRpcObserver.Protocol protocol, final Map<String, Object> headers) {
+        getThreadExecutor().submit(new Callable() {
+            @Override
+            public Object call() throws Exception {
+                touch(protocol, headers);
+                return null;
+            }
+        });
+    }
+    
+    public void touch(final OpflowRpcObserver.Protocol protocol, final Map<String, Object> headers) {
         String componentId = null;
-        String address = null;
-        String bindKey = null;
+        String httpAddress = null;
+        String amqpPattern = null;
         switch (protocol) {
             case AMQP:
                 componentId = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_CONSUMER_ID, false, true);
@@ -45,32 +91,33 @@ public class OpflowRpcObserver {
                     // inform the manifest status
                     OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
                     manifest.updatedTimestamp = manifest.updatedAMQPTimestamp = new Date();
+                    // update the http address
+                    httpAddress = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_HTTP_ADDRESS, false, true);
+                    if (httpAddress != null) {
+                        manifest.httpAddress = httpAddress;
+                    }
+                    // update the AMQP bindingKey pattern
+                    amqpPattern = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_AMQP_PATTERN, false, true);
+                    if (amqpPattern != null) {
+                        manifest.amqpPattern = amqpPattern;
+                    }
                     // update the protocol version
                     String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
                     manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
-                    // update the http address
-                    address = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_COMMON_ADDRESS, false, true);
-                    if (address != null) {
-                        manifest.address = address;
-                    }
                 }
                 break;
             case HTTP:
-                componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_PROTO_RES_HEADER_WORKER_ID, false, true);
+                componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_WORKER_ID, false, true);
                 if (componentId != null) {
                     OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
                     manifest.updatedTimestamp = manifest.updatedHTTPTimestamp = new Date();
-                    address = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_COMMON_ADDRESS, false, true);
-                    if (address != null) {
-                        manifest.address = address;
-                    }
                 }
                 break;
         }
         // update the newest components
         if (componentId != null) {
-            amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.AMQP, componentId, bindKey));
-            httpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.HTTP, componentId, address));
+            amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.AMQP, componentId, amqpPattern));
+            httpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.HTTP, componentId, httpAddress));
         }
     }
     
@@ -214,7 +261,8 @@ public class OpflowRpcObserver {
         public final static String STATUS_CUTOFF = "gray";
 
         private String status;
-        private String address;
+        private String httpAddress;
+        private String amqpPattern;
         private Boolean compatible;
         private final String componentId;
         private final Map<String, Object> information;

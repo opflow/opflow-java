@@ -325,6 +325,8 @@ public class OpflowCommander implements AutoCloseable {
         if (httpMaster != null) httpMaster.close();
         if (configurer != null) configurer.close();
 
+        if (rpcObserver != null) rpcObserver.close();
+
         if (restrictor != null) {
             restrictor.close();
         }
