@@ -949,17 +949,17 @@ public class OpflowCommander implements AutoCloseable {
                         .toMap());
             } else {
                 Map<String, Object> parentOfQueueInfo;
-                if (metrics.containsKey(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER)) {
-                    parentOfQueueInfo = (Map<String, Object>) metrics.get(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER);
+                Object remoteAmqpWorkerInfo = metrics.get(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER);
+                if (remoteAmqpWorkerInfo instanceof Map) {
+                    parentOfQueueInfo = (Map<String, Object>) remoteAmqpWorkerInfo;
                 } else {
                     parentOfQueueInfo = OpflowObjectTree.buildMap().toMap();
                     metrics.put(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, parentOfQueueInfo);
                 }
-                Map<String, Object> rpcWaitingRequests = OpflowObjectTree.buildMap()
+                parentOfQueueInfo.put("waitingReqTotal", OpflowObjectTree.buildMap()
                         .put("current", amqpMaster.getActiveRequestTotal())
                         .put("top", amqpMaster.getMaxWaitingRequests())
-                        .toMap();
-                parentOfQueueInfo.put("waitingReqTotal", rpcWaitingRequests);
+                        .toMap());
             }
             
             return OpflowObjectTree.buildMap()

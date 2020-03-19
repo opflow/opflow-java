@@ -164,12 +164,10 @@ public class OpflowRpcObserver {
     
     public void updateInfo(String componentId, String name, Object data) {
         if (componentId == null) return;
-        if (manifests.containsKey(componentId)) {
-            OpflowRpcObserver.Manifest manifest = manifests.get(componentId);
-            if (manifest != null) {
-                synchronized (manifest.information) {
-                    manifest.information.put(name, data);
-                }
+        OpflowRpcObserver.Manifest manifest = manifests.get(componentId);
+        if (manifest != null) {
+            synchronized (manifest.information) {
+                manifest.information.put(name, data);
             }
         }
     }
@@ -201,10 +199,8 @@ public class OpflowRpcObserver {
     }
     
     private Manifest assertManifest(String componentId) {
-        OpflowRpcObserver.Manifest manifest = null;
-        if (manifests.containsKey(componentId)) {
-            manifest = manifests.get(componentId);
-        } else {
+        OpflowRpcObserver.Manifest manifest = manifests.get(componentId);
+        if (manifest == null) {
             manifest = new OpflowRpcObserver.Manifest(componentId);
             manifests.put(componentId, manifest);
         }
