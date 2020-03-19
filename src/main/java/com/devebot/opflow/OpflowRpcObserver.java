@@ -20,16 +20,14 @@ public class OpflowRpcObserver {
     
     private long keepAliveTimeout = 2 * KEEP_ALIVE_TIMEOUT;
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
-    private final OpflowRevolvingMap.ChangeListener changeListener = new OpflowRevolvingMap.ChangeListener<String, OpflowRpcLocation>() {
+    private final OpflowRevolvingMap.ChangeListener changeListener = new OpflowRevolvingMap.ChangeListener<String, OpflowRpcRoutingInfo>() {
         @Override
-        public OpflowRpcLocation onUpdating(String key, OpflowRpcLocation o, OpflowRpcLocation n) {
+        public OpflowRpcRoutingInfo onUpdating(String key, OpflowRpcRoutingInfo o, OpflowRpcRoutingInfo n) {
             return o.update(n);
         }
     };
-    private final OpflowRevolvingMap<String, OpflowRpcLocation> amqpCongestion = new OpflowRevolvingMap<>(changeListener);
-    private final OpflowRevolvingMap<String, OpflowRpcLocation> httpCongestion = new OpflowRevolvingMap<>(changeListener);
-    
-    private String latestAddress = null;
+    private final OpflowRevolvingMap<String, OpflowRpcRoutingInfo> amqpRoutingMap = new OpflowRevolvingMap<>(changeListener);
+    private final OpflowRevolvingMap<String, OpflowRpcRoutingInfo> httpRoutingMap = new OpflowRevolvingMap<>(changeListener);
     
     private boolean congestiveAMQP = false;
     private boolean congestiveHTTP = false;
@@ -71,11 +69,8 @@ public class OpflowRpcObserver {
         }
         // update the newest components
         if (componentId != null) {
-            amqpCongestion.put(componentId, new OpflowRpcLocation(OpflowRpcLocation.Protocol.AMQP, componentId, bindKey));
-            httpCongestion.put(componentId, new OpflowRpcLocation(OpflowRpcLocation.Protocol.HTTP, componentId, address));
-        }
-        if (address != null) {
-            this.latestAddress = address;
+            amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.AMQP, componentId, bindKey));
+            httpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.HTTP, componentId, address));
         }
     }
     
@@ -108,49 +103,49 @@ public class OpflowRpcObserver {
         switch (protocol) {
             case AMQP:
                 if (componentId != null) {
-                    amqpCongestion.get(componentId).setCongestive(congestive);
+                    amqpRoutingMap.get(componentId).setCongestive(congestive);
                 }
                 break;
             case HTTP:
                 if (componentId != null) {
-                    httpCongestion.get(componentId).setCongestive(congestive);
+                    httpRoutingMap.get(componentId).setCongestive(congestive);
                 }
                 break;
         }
     }
     
-    public OpflowRpcLocation getLocation(Protocol protocol) {
-        return getLocation(protocol, true);
+    public OpflowRpcRoutingInfo getRoutingInfo(Protocol protocol) {
+        return getRoutingInfo(protocol, true);
     }
     
-    public OpflowRpcLocation getLocation(Protocol protocol, boolean available) {
+    public OpflowRpcRoutingInfo getRoutingInfo(Protocol protocol, boolean available) {
         switch (protocol) {
             case AMQP:
                 if (available) {
                     if (this.congestiveAMQP) {
                         return null;
                     }
-                    return selectGoodRoutingInfo(amqpCongestion);
+                    return selectGoodRoutingInfo(amqpRoutingMap);
                 }
-                return amqpCongestion.rotate();
+                return amqpRoutingMap.rotate();
             case HTTP:
                 if (available) {
                     if (this.congestiveHTTP) {
                         return null;
                     }
-                    return selectGoodRoutingInfo(httpCongestion);
+                    return selectGoodRoutingInfo(httpRoutingMap);
                 }
-                return httpCongestion.rotate();
+                return httpRoutingMap.rotate();
             default:
                 return null;
         }
     }
     
-    private OpflowRpcLocation selectGoodRoutingInfo(OpflowRevolvingMap<String, OpflowRpcLocation> revolver) {
-        OpflowRpcLocation routingInfo = null;
+    private OpflowRpcRoutingInfo selectGoodRoutingInfo(OpflowRevolvingMap<String, OpflowRpcRoutingInfo> revolver) {
+        OpflowRpcRoutingInfo routingInfo = null;
         int size = revolver.size();
         while (size > 0) {
-            OpflowRpcLocation info = revolver.rotate();
+            OpflowRpcRoutingInfo info = revolver.rotate();
             if (!info.isCongestive()) {
                 routingInfo = info;
                 break;
@@ -158,10 +153,6 @@ public class OpflowRpcObserver {
             size--;
         }
         return routingInfo;
-    }
-    
-    public String getLatestAddress() {
-        return this.latestAddress;
     }
     
     public boolean containsInfo(String componentId, String name) {
@@ -183,7 +174,7 @@ public class OpflowRpcObserver {
         }
     }
     
-    public Collection<OpflowRpcObserver.Manifest> rollup() {
+    public void cleanup() {
         Set<String> keys = manifests.keySet();
         for (String key: keys) {
             OpflowRpcObserver.Manifest manifest = manifests.get(key);
@@ -192,15 +183,15 @@ public class OpflowRpcObserver {
             // filter the active manifests
             if (manifest.expired()) {
                 manifests.remove(key);
-                amqpCongestion.remove(key);
-                httpCongestion.remove(key);
+                amqpRoutingMap.remove(key);
+                httpRoutingMap.remove(key);
             }
         }
-        return manifests.values();
     }
     
-    public Object summary() {
-        return this.rollup();
+    public Collection<OpflowRpcObserver.Manifest> summary() {
+        this.cleanup();
+        return manifests.values();
     }
     
     public void setKeepAliveTimeout(long timeout) {

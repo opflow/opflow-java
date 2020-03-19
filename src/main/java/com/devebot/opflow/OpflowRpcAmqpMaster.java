@@ -333,7 +333,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         return request(routineSignature, OpflowUtil.getBytes(body), params, null);
     }
 
-    public OpflowRpcAmqpRequest request(String routineSignature, String body, OpflowRpcLocation routingInfo) {
+    public OpflowRpcAmqpRequest request(String routineSignature, String body, OpflowRpcRoutingInfo routingInfo) {
         return request(routineSignature, OpflowUtil.getBytes(body), null, routingInfo);
     }
     
@@ -345,11 +345,11 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         return request(routineSignature, body, params, null);
     }
     
-    public OpflowRpcAmqpRequest request(String routineSignature, byte[] body, OpflowRpcLocation routingInfo) {
+    public OpflowRpcAmqpRequest request(String routineSignature, byte[] body, OpflowRpcRoutingInfo routingInfo) {
         return request(routineSignature, body, null, routingInfo);
     }
     
-    public OpflowRpcAmqpRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params, final OpflowRpcLocation routingInfo) {
+    public OpflowRpcAmqpRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params, final OpflowRpcRoutingInfo routingInfo) {
         if (restrictor == null) {
             return _request_safe(routineSignature, body, params, routingInfo);
         }
@@ -369,7 +369,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         }
     }
     
-    private OpflowRpcAmqpRequest _request_safe(final String routineSignature, byte[] body, OpflowRpcParameter parameter, OpflowRpcLocation routingInfo) {
+    private OpflowRpcAmqpRequest _request_safe(final String routineSignature, byte[] body, OpflowRpcParameter parameter, OpflowRpcRoutingInfo routingInfo) {
         final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter();
         
         if (routineSignature != null) {

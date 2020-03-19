@@ -570,7 +570,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private Pong send_over_http(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
-            OpflowRpcLocation routingInfo = rpcObserver.getLocation(OpflowRpcObserver.Protocol.HTTP, false);
+            OpflowRpcRoutingInfo routingInfo = rpcObserver.getRoutingInfo(OpflowRpcObserver.Protocol.HTTP, false);
             if (routingInfo == null) {
                 rpcObserver.setCongestive(OpflowRpcObserver.Protocol.HTTP, true);
                 throw new OpflowWorkerNotFoundException();
@@ -1223,7 +1223,7 @@ public class OpflowCommander implements AutoCloseable {
                 }
             }
             
-            OpflowRpcLocation routingInfo = rpcObserver.getLocation(OpflowRpcObserver.Protocol.HTTP);
+            OpflowRpcRoutingInfo routingInfo = rpcObserver.getRoutingInfo(OpflowRpcObserver.Protocol.HTTP);
             
             if (isRemoteHTTPWorkerAvailable() && routingInfo != null) {
                 rescueAMQPWorker = false;

@@ -4,7 +4,7 @@ package com.devebot.opflow;
  *
  * @author acegik
  */
-public class OpflowRpcLocation {
+public class OpflowRpcRoutingInfo {
     private Protocol protocol;
     private String componentId;
     private String address;
@@ -13,11 +13,11 @@ public class OpflowRpcLocation {
     
     public enum Protocol { AMQP, HTTP };
 
-    public OpflowRpcLocation(Protocol protocol, String componentId, String location) {
+    public OpflowRpcRoutingInfo(Protocol protocol, String componentId, String location) {
         this(protocol, componentId, location, null);
     }
     
-    public OpflowRpcLocation(Protocol protocol, String componentId, String location, Boolean congestive) {
+    public OpflowRpcRoutingInfo(Protocol protocol, String componentId, String location, Boolean congestive) {
         this.protocol = protocol;
         this.componentId = componentId;
         switch (protocol) {
@@ -52,7 +52,7 @@ public class OpflowRpcLocation {
         this.congestive = congestive;
     }
     
-    public OpflowRpcLocation update(OpflowRpcLocation n) {
+    public OpflowRpcRoutingInfo update(OpflowRpcRoutingInfo n) {
         if (n != null && n.protocol == this.protocol) {
             if (n.componentId != null) {
                 this.componentId = n.componentId;

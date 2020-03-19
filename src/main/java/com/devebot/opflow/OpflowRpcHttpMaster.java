@@ -96,7 +96,7 @@ public class OpflowRpcHttpMaster {
         serve();
     }
     
-    public Session request(final String routineSignature, final String body, final OpflowRpcParameter parameter, final OpflowRpcLocation location) {
+    public Session request(final String routineSignature, final String body, final OpflowRpcParameter parameter, final OpflowRpcRoutingInfo location) {
         if (restrictor == null) {
             return _request_safe(routineSignature, body, parameter, location);
         }
@@ -116,7 +116,7 @@ public class OpflowRpcHttpMaster {
         }
     }
     
-    private Session _request_safe(final String routineSignature, final String body, final OpflowRpcParameter parameter, final OpflowRpcLocation location) {
+    private Session _request_safe(final String routineSignature, final String body, final OpflowRpcParameter parameter, final OpflowRpcRoutingInfo location) {
         final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter();
         
         if (routineSignature != null) {
@@ -221,17 +221,17 @@ public class OpflowRpcHttpMaster {
         return session;
     }
     
-    private String extractUrl(OpflowRpcLocation routing) {
+    private String extractUrl(OpflowRpcRoutingInfo routingInfo) {
         String url = null;
         
-        if (routing == null) {
+        if (routingInfo == null) {
             if (rpcObserver != null) {
-                routing = rpcObserver.getLocation(OpflowRpcObserver.Protocol.HTTP);
+                routingInfo = rpcObserver.getRoutingInfo(OpflowRpcObserver.Protocol.HTTP);
             }
         }
         
-        if (routing != null) {
-            url = routing.getAddress();
+        if (routingInfo != null) {
+            url = routingInfo.getAddress();
         }
         
         if (url == null) {
