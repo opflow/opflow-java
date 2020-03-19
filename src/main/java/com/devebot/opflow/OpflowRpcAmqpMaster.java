@@ -329,35 +329,35 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         return request(routineSignature, OpflowUtil.getBytes(body), null, null);
     }
     
-    public OpflowRpcAmqpRequest request(String routineSignature, String body, Map<String, Object> options) {
-        return request(routineSignature, OpflowUtil.getBytes(body), null, options);
-    }
-    
-    public OpflowRpcAmqpRequest request(String routineSignature, String body, final OpflowRpcParameter params) {
+    public OpflowRpcAmqpRequest request(String routineSignature, String body, OpflowRpcParameter params) {
         return request(routineSignature, OpflowUtil.getBytes(body), params, null);
+    }
+
+    public OpflowRpcAmqpRequest request(String routineSignature, String body, OpflowRpcLocation routingInfo) {
+        return request(routineSignature, OpflowUtil.getBytes(body), null, routingInfo);
     }
     
     public OpflowRpcAmqpRequest request(String routineSignature, byte[] body) {
         return request(routineSignature, body, null, null);
     }
     
-    public OpflowRpcAmqpRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params) {
+    public OpflowRpcAmqpRequest request(String routineSignature, byte[] body, OpflowRpcParameter params) {
         return request(routineSignature, body, params, null);
     }
     
-    public OpflowRpcAmqpRequest request(final String routineSignature, final byte[] body, final Map<String, Object> options) {
-        return request(routineSignature, body, null, options);
+    public OpflowRpcAmqpRequest request(String routineSignature, byte[] body, OpflowRpcLocation routingInfo) {
+        return request(routineSignature, body, null, routingInfo);
     }
     
-    public OpflowRpcAmqpRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params, final Map<String, Object> options) {
+    public OpflowRpcAmqpRequest request(final String routineSignature, final byte[] body, final OpflowRpcParameter params, final OpflowRpcLocation routingInfo) {
         if (restrictor == null) {
-            return _request_safe(routineSignature, body, params, options);
+            return _request_safe(routineSignature, body, params, routingInfo);
         }
         try {
             return restrictor.filter(new OpflowRestrictor.Action<OpflowRpcAmqpRequest>() {
                 @Override
                 public OpflowRpcAmqpRequest process() throws Throwable {
-                    return _request_safe(routineSignature, body, params, options);
+                    return _request_safe(routineSignature, body, params, routingInfo);
                 }
             });
         }
@@ -369,8 +369,8 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         }
     }
     
-    private OpflowRpcAmqpRequest _request_safe(final String routineSignature, byte[] body, OpflowRpcParameter parameter, Map<String, Object> options) {
-        final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter(options);
+    private OpflowRpcAmqpRequest _request_safe(final String routineSignature, byte[] body, OpflowRpcParameter parameter, OpflowRpcLocation routingInfo) {
+        final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter();
         
         if (routineSignature != null) {
             params.setRoutineSignature(routineSignature);

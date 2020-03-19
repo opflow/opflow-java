@@ -80,9 +80,6 @@ public class OpflowRpcHttpMaster {
                 .text("httpMaster[${httpMasterId}][${instanceId}].new() end!")
                 .stringify());
         
-        // assertions
-        assert discoveryClient != null;
-        
         if (autorun) {
             this.serve();
         }

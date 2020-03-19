@@ -219,14 +219,12 @@ public class OpflowCommander implements AutoCloseable {
                 }, amqpMasterCfg).toMap());
             }
             if (OpflowUtil.isComponentEnabled(httpMasterCfg)) {
-                OpflowDiscoveryClient discoveryClient= new OpflowDiscoveryNativeAgent(rpcObserver);
                 httpMaster = new OpflowRpcHttpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put(CONST.COMPONENT_ID, componentId);
                         opts.put(OpflowConstant.COMP_MEASURER, measurer);
                         opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
-                        opts.put(OpflowConstant.COMP_DISCOVERY_CLIENT, discoveryClient);
                     }
                 }, httpMasterCfg).toMap());
             }
@@ -248,7 +246,7 @@ public class OpflowCommander implements AutoCloseable {
 
             rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
 
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, handlers, rpcObserver, rpcWatcher, speedMeter);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, handlers, speedMeter, rpcObserver, rpcWatcher);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, handlers, speedMeter);
 
@@ -757,19 +755,19 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowRpcAmqpMaster amqpMaster,
                 OpflowRpcHttpMaster httpMaster,
                 Map<String, RpcInvocationHandler> mappings,
+                OpflowThroughput.Meter speedMeter,
                 OpflowRpcObserver rpcObserver,
-                OpflowRpcWatcher rpcWatcher,
-                OpflowThroughput.Meter speedMeter
+                OpflowRpcWatcher rpcWatcher
         ) {
             this.componentId = componentId;
             this.measurer = measurer;
             this.restrictor = restrictor;
-            this.rpcWatcher = rpcWatcher;
             this.amqpMaster = amqpMaster;
             this.httpMaster = httpMaster;
             this.handlers = mappings;
-            this.rpcObserver = rpcObserver;
             this.speedMeter = speedMeter;
+            this.rpcObserver = rpcObserver;
+            this.rpcWatcher = rpcWatcher;
             this.startTime = new Date();
         }
 

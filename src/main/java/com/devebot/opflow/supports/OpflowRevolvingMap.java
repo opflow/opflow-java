@@ -14,7 +14,7 @@ public class OpflowRevolvingMap<K, V> {
         }
         default void onDeleting(K key, V object) {}
     }
-
+    
     private final ChangeListener<K, V> changeListener;
     private final Object changeLock = new Object();
     private final HashMap<K, OpflowCircularList.Node<V>> lookupTable = new HashMap<>();
@@ -23,7 +23,7 @@ public class OpflowRevolvingMap<K, V> {
     public OpflowRevolvingMap() {
         this(null);
     }
-
+    
     public OpflowRevolvingMap(ChangeListener<K, V> changeListener) {
         this.changeListener = changeListener;
     }
