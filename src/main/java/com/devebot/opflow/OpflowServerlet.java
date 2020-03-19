@@ -216,7 +216,7 @@ public class OpflowServerlet implements AutoCloseable {
             }
             
             if (amqpWorker != null && httpWorker != null) {
-                amqpWorker.setAddress(httpWorker.getAddress());
+                amqpWorker.setHttpAddress(httpWorker.getAddress());
             }
             
             if (OpflowUtil.isComponentEnabled(subscriberCfg)) {

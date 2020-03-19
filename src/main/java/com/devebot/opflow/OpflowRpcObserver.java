@@ -3,6 +3,8 @@ package com.devebot.opflow;
 import com.devebot.opflow.annotation.OpflowFieldExclude;
 import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowDateTime;
+import com.devebot.opflow.supports.OpflowEnvTool;
+import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowRevolvingMap;
 import java.util.Collection;
 import java.util.Date;
@@ -13,6 +15,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -20,12 +24,19 @@ import java.util.concurrent.TimeUnit;
  */
 public class OpflowRpcObserver {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+    private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
+    private final static boolean DEBUG = "true".equals(ENVTOOL.getEnvironVariable("OPFLOW_POOR_PERFORMANCE", null));
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcObserver.class);
+    
     private final static long KEEP_ALIVE_TIMEOUT = 20000;
     
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
     private final OpflowRevolvingMap.ChangeListener changeListener = new OpflowRevolvingMap.ChangeListener<String, OpflowRpcRoutingInfo>() {
         @Override
         public OpflowRpcRoutingInfo onUpdating(String key, OpflowRpcRoutingInfo o, OpflowRpcRoutingInfo n) {
+            if (DEBUG && LOG.isDebugEnabled()) {
+                LOG.debug("onUpdating(" + key + ", " + OpflowJsonTool.toString(o) + ", " + OpflowJsonTool.toString(n));
+            }
             return o.update(n);
         }
     };
@@ -116,8 +127,12 @@ public class OpflowRpcObserver {
         }
         // update the newest components
         if (componentId != null) {
-            amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.AMQP, componentId, amqpPattern));
-            httpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.HTTP, componentId, httpAddress));
+            if (amqpPattern != null) {
+                amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.AMQP, componentId, amqpPattern));
+            }
+            if (httpAddress != null) {
+                httpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.HTTP, componentId, httpAddress));
+            }
         }
     }
     
@@ -194,10 +209,18 @@ public class OpflowRpcObserver {
         while (size > 0) {
             OpflowRpcRoutingInfo info = revolver.rotate();
             if (!info.isCongestive()) {
+                if (DEBUG && LOG.isDebugEnabled()) {
+                    LOG.debug("Ok");
+                }
                 routingInfo = info;
                 break;
             }
             size--;
+        }
+        if (routingInfo == null) {
+            if (DEBUG && LOG.isDebugEnabled()) {
+                LOG.debug("Not found");
+            }
         }
         return routingInfo;
     }

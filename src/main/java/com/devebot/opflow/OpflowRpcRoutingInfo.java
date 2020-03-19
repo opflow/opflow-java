@@ -11,6 +11,8 @@ public class OpflowRpcRoutingInfo {
     private String topic;
     private Boolean congestive = null;
     
+    private String url = null;
+    
     public enum Protocol { AMQP, HTTP };
 
     public OpflowRpcRoutingInfo(Protocol protocol, String componentId, String location) {
@@ -23,8 +25,10 @@ public class OpflowRpcRoutingInfo {
         switch (protocol) {
             case AMQP:
                 this.topic = location;
+                break;
             case HTTP:
-                this.address = "http://" + location + "/routine";
+                this.address = location;
+                break;
         }
         this.congestive = congestive;
     }
@@ -34,7 +38,10 @@ public class OpflowRpcRoutingInfo {
     }
 
     public String getAddress() {
-        return this.address;
+        if (this.url == null) {
+            this.url = "http://" + this.address + "/routine";
+        }
+        return this.url;
     }
 
     public String getTopic() {
