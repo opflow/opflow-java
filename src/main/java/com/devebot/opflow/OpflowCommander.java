@@ -540,11 +540,11 @@ public class OpflowCommander implements AutoCloseable {
                 }
             }
             // append the context of ping
-            pong.getParameters().put("protocol", proto);
-            pong.getParameters().put("routineId", routineId);
-            pong.getParameters().put("startTime", startTime);
-            pong.getParameters().put("endTime", endTime);
-            pong.getParameters().put("elapsedTime", endTime.getTime() - startTime.getTime());
+            pong.getParameters().put(OpflowConstant.ROUTINE_ID, routineId);
+            pong.getParameters().put(OpflowConstant.OPFLOW_COMMON_PROTOCOL, proto);
+            pong.getParameters().put(OpflowConstant.OPFLOW_COMMON_START_TIMESTAMP, startTime);
+            pong.getParameters().put(OpflowConstant.OPFLOW_COMMON_END_TIMESTAMP, endTime);
+            pong.getParameters().put(OpflowConstant.OPFLOW_COMMON_ELAPSED_TIME, endTime.getTime() - startTime.getTime());
             return pong;
         }
         
@@ -891,7 +891,7 @@ public class OpflowCommander implements AutoCloseable {
                         opts.put(OpflowConstant.INFO_SECTION_RUNTIME, OpflowObjectTree.buildMap()
                                 .put(OpflowConstant.OPFLOW_COMMON_CONGESTIVE, rpcObserver.isCongestive())
                                 .put("threadCount", Thread.activeCount())
-                                .put("startTime", startTime)
+                                .put(OpflowConstant.OPFLOW_COMMON_START_TIMESTAMP, startTime)
                                 .put("currentTime", currentTime)
                                 .put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime))
                                 .toMap());
@@ -1048,8 +1048,8 @@ public class OpflowCommander implements AutoCloseable {
             
             this.clazz = clazz;
             this.nativeWorker = nativeWorker;
-
             this.nativeWorkerEnabled = nativeWorkerEnabled;
+
             for (Method method : this.clazz.getDeclaredMethods()) {
                 String methodSignature = OpflowUtil.getMethodSignature(method);
                 OpflowSourceRoutine routine = OpflowUtil.extractMethodAnnotation(method, OpflowSourceRoutine.class);

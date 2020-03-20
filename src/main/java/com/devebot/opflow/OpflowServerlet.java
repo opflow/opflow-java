@@ -611,8 +611,8 @@ public class OpflowServerlet implements AutoCloseable {
                                 .put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId())
                                 .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, amqpWorker.getIncomingQueueName())
                                 .put("request", OpflowObjectTree.buildMap()
-                                    .put("routineId", routineId)
-                                    .put("routineTimestamp", routineTimestamp)
+                                    .put(OpflowConstant.ROUTINE_ID, routineId)
+                                    .put(OpflowConstant.ROUTINE_TIMESTAMP, routineTimestamp)
                                     .add(extra)
                                     .toMap())
                                 .toMap());

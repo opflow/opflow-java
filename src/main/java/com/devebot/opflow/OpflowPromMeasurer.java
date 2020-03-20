@@ -216,8 +216,8 @@ public abstract class OpflowPromMeasurer {
                             }
                         }
                     }).toMap())
-                    .put("startTime", that.startTime)
-                    .put("elapsedTime", OpflowDateTime.printElapsedTime(that.startTime, currentTime))
+                    .put(OpflowConstant.OPFLOW_COMMON_START_TIMESTAMP, that.startTime)
+                    .put(OpflowConstant.OPFLOW_COMMON_ELAPSED_TIME, OpflowDateTime.printElapsedTime(that.startTime, currentTime))
                     .toMap();
         }
         

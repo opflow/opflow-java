@@ -24,6 +24,11 @@ public class OpflowConstant {
     public final String REQUEST_ID = "requestId";
     public final String REQUEST_TIME = "requestTime";
 
+    public final static String ROUTINE_ID = "routineId";
+    public final static String ROUTINE_TIMESTAMP = "routineTimestamp";
+    public final static String ROUTINE_SIGNATURE = "routineSignature";
+    public final static String ROUTINE_SCOPE = "routineScope";
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW COMPONENTS
 
     public final static String COMP_ENGINE = "engine";
@@ -78,6 +83,10 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_ADDRESS = "address";
     public final static String OPFLOW_COMMON_CREDENTIALS = "credentials";
     public final static String OPFLOW_COMMON_CONGESTIVE = "congestive";
+    public final static String OPFLOW_COMMON_PROTOCOL = "protocol";
+    public final static String OPFLOW_COMMON_START_TIMESTAMP = "startTime";
+    public final static String OPFLOW_COMMON_END_TIMESTAMP = "endTime";
+    public final static String OPFLOW_COMMON_ELAPSED_TIME = "elapsedTime";
 
     public final static String OPFLOW_RPC_MONITOR_ID = "monitorId";
     public final static String OPFLOW_RPC_MONITOR_ENABLED = "monitorEnabled";
