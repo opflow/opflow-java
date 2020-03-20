@@ -42,7 +42,7 @@ public class OpflowCommander implements AutoCloseable {
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
         OpflowConstant.COMP_CONFIGURER,
         OpflowConstant.COMP_PUBLISHER,
-        OpflowConstant.COMP_RPC_AMQP_MASTER,
+        OpflowConstant.COMP_CFG_AMQP_MASTER,
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
@@ -159,7 +159,7 @@ public class OpflowCommander implements AutoCloseable {
 
         Map<String, Object> reqExtractorCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_REQ_EXTRACTOR);
         Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_CONFIGURER);
-        Map<String, Object> amqpMasterCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_AMQP_MASTER);
+        Map<String, Object> amqpMasterCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_CFG_AMQP_MASTER);
         Map<String, Object> httpMasterCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_HTTP_MASTER);
         Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_PUBLISHER);
         Map<String, Object> rpcObserverCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_OBSERVER);

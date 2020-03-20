@@ -35,7 +35,7 @@ public class OpflowServerlet implements AutoCloseable {
 
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[]{
         OpflowConstant.COMP_CONFIGURER,
-        OpflowConstant.COMP_RPC_AMQP_WORKER,
+        OpflowConstant.COMP_CFG_AMQP_WORKER,
         OpflowConstant.COMP_SUBSCRIBER
     });
 
@@ -101,7 +101,7 @@ public class OpflowServerlet implements AutoCloseable {
         measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(OpflowConstant.COMP_PROM_EXPORTER));
 
         Map<String, Object> configurerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_CONFIGURER);
-        Map<String, Object> amqpWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_RPC_AMQP_WORKER);
+        Map<String, Object> amqpWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_CFG_AMQP_WORKER);
         Map<String, Object> httpWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_RPC_HTTP_WORKER);
         Map<String, Object> subscriberCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_SUBSCRIBER);
 
@@ -615,6 +615,9 @@ public class OpflowServerlet implements AutoCloseable {
                                     .put(OpflowConstant.ROUTINE_TIMESTAMP, routineTimestamp)
                                     .add(extra)
                                     .toMap())
+                                .toMap());
+                            opts.put(OpflowConstant.COMP_RPC_HTTP_WORKER, OpflowObjectTree.buildMap()
+                                .put(CONST.COMPONENT_ID, httpWorker.getComponentId())
                                 .toMap());
                             opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
                                 .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-worker/git-info.json"))

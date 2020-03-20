@@ -255,7 +255,7 @@ public class OpflowConfig {
                         OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
                     });
                 }
-                if (OpflowConstant.COMP_RPC_AMQP_MASTER.equals(componentName)) {
+                if (OpflowConstant.COMP_CFG_AMQP_MASTER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
@@ -348,7 +348,7 @@ public class OpflowConfig {
                 Map<String, Object> componentCfg = new HashMap<>();
                 extractEngineParameters(componentCfg, config, componentPath);
                 Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
-                if (OpflowConstant.COMP_RPC_AMQP_WORKER.equals(componentName)) {
+                if (OpflowConstant.COMP_CFG_AMQP_WORKER.equals(componentName)) {
                     OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                         OpflowConstant.OPFLOW_COMMON_ENABLED,
                         OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
@@ -632,8 +632,8 @@ public class OpflowConfig {
                         OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET),
                         OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_PUBLISHER),
                         OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_SUBSCRIBER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_RPC_AMQP_MASTER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_RPC_AMQP_WORKER),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_MASTER),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_WORKER),
                     }));
                 } else {
                     configFile = (configFile != null) ? configFile : DEFAULT_CONFIGURATION_FILE;
