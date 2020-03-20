@@ -239,7 +239,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
             throw new OpflowOperationException("PubsubHandler supports only single PubsubListener");
         }
         
-        OpflowEngine.ConsumerInfo consumer = engine.consume(new OpflowListener() {
+        OpflowEngine.ConsumerInfo consumer = engine.consume(new OpflowEngine.Listener() {
             @Override
             public boolean processMessage(
                     byte[] content,

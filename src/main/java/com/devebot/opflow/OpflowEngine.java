@@ -515,7 +515,7 @@ public class OpflowEngine implements AutoCloseable {
         }
     }
     
-    public ConsumerInfo consume(final OpflowListener listener, final Map<String, Object> options) {
+    public ConsumerInfo consume(final OpflowEngine.Listener listener, final Map<String, Object> options) {
         final Map<String, Object> opts = OpflowObjectTree.ensureNonNull(options);
         final String _consumerId = OpflowUtil.getOptionField(opts, OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, true);
         final OpflowLogTracer logConsume = logTracer.branch("consumerId", _consumerId);
@@ -1281,6 +1281,16 @@ public class OpflowEngine implements AutoCloseable {
     @Override
     protected void finalize() throws Throwable {
         measurer.updateComponentInstance(OpflowConstant.COMP_ENGINE, componentId, OpflowPromMeasurer.GaugeAction.DEC);
+    }
+    
+    public interface Listener {
+        public boolean processMessage(
+                byte[] content,
+                AMQP.BasicProperties properties,
+                String queueName,
+                Channel channel,
+                String consumerTag,
+                Map<String, String> extras) throws IOException;
     }
     
     public static class Message {

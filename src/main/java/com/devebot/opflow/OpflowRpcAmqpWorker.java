@@ -193,7 +193,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
             middlewares.add(new Middleware(checker, listener));
         }
         if (consumerInfo != null) return consumerInfo;
-        consumerInfo = engine.consume(new OpflowListener() {
+        consumerInfo = engine.consume(new OpflowEngine.Listener() {
             @Override
             public boolean processMessage(
                     byte[] body,

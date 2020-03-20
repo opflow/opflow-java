@@ -229,7 +229,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                 .put("isTransient", isTransient)
                 .text("initCallbackConsumer() is invoked (isTransient: ${isTransient})")
                 .stringify());
-        return engine.consume(new OpflowListener() {
+        return engine.consume(new OpflowEngine.Listener() {
             @Override
             public boolean processMessage(
                     byte[] content,
