@@ -82,12 +82,12 @@ paths:
       responses:
         200:
           description: "Ok"
-  /exec/activate-detached-worker:
+  /exec/activate-native-worker:
     get:
       tags:
       - "Operation"
-      summary: "Switch on/off the using of detached worker(s)"
-      description: "Switch on/off the using of detached worker(s)"
+      summary: "Switch on/off the using of embedded worker"
+      description: "Switch on/off the using of embedded worker"
       produces:
       - "application/json"
       parameters:
@@ -105,12 +105,35 @@ paths:
       responses:
         200:
           description: "Ok"
-  /exec/activate-embedded-worker:
+  /exec/activate-remote-amqp-worker:
     get:
       tags:
       - "Operation"
-      summary: "Switch on/off the using of embedded worker"
-      description: "Switch on/off the using of embedded worker"
+      summary: "Switch on/off the using of remote AMQP-based worker(s)"
+      description: "Switch on/off the using of remote AMQP-based worker(s)"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "state"
+        in: "query"
+        description: "The state of the worker's state"
+        required: true
+        type: "boolean"
+        default: false
+      - name: "class"
+        in: "query"
+        description: "The name of class will be affected"
+        required: false
+        type: "string"
+      responses:
+        200:
+          description: "Ok"
+  /exec/activate-remote-http-worker:
+    get:
+      tags:
+      - "Operation"
+      summary: "Switch on/off the using of remote HTTP-based worker(s)"
+      description: "Switch on/off the using of remote HTTP-based worker(s)"
       produces:
       - "application/json"
       parameters:

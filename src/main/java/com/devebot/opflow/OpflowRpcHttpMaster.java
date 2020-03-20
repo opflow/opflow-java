@@ -80,9 +80,6 @@ public class OpflowRpcHttpMaster {
                 .text("httpMaster[${httpMasterId}][${instanceId}].new() end!")
                 .stringify());
         
-        // assertions
-        assert discoveryClient != null;
-        
         if (autorun) {
             this.serve();
         }
@@ -99,15 +96,15 @@ public class OpflowRpcHttpMaster {
         serve();
     }
     
-    public Session request(final String routineSignature, final String body, final OpflowRpcParameter parameter) {
+    public Session request(final String routineSignature, final String body, final OpflowRpcParameter parameter, final OpflowRpcRoutingInfo location) {
         if (restrictor == null) {
-            return _request_safe(routineSignature, body, parameter);
+            return _request_safe(routineSignature, body, parameter, location);
         }
         try {
             return restrictor.filter(new OpflowRestrictor.Action<Session>() {
                 @Override
                 public Session process() throws Throwable {
-                    return _request_safe(routineSignature, body, parameter);
+                    return _request_safe(routineSignature, body, parameter, location);
                 }
             });
         }
@@ -119,7 +116,7 @@ public class OpflowRpcHttpMaster {
         }
     }
     
-    private Session _request_safe(final String routineSignature, final String body, final OpflowRpcParameter parameter) {
+    private Session _request_safe(final String routineSignature, final String body, final OpflowRpcParameter parameter, final OpflowRpcRoutingInfo location) {
         final OpflowRpcParameter params = (parameter != null) ? parameter : new OpflowRpcParameter();
         
         if (routineSignature != null) {
@@ -146,12 +143,13 @@ public class OpflowRpcHttpMaster {
             reqBuilder = reqBuilder.header(OpflowConstant.HTTP_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
         }
         
-        OpflowDiscoveryClient.Info info = discoveryClient.locate();
-        if (info == null || info.getUri() == null) {
+        String url = extractUrl(location);
+        
+        if (url == null) {
             return Session.asBroken(params);
         }
         
-        reqBuilder.url(info.getUri());
+        reqBuilder.url(url);
         
         if (body != null) {
             RequestBody reqBody = RequestBody.create(body, JSON);
@@ -223,9 +221,34 @@ public class OpflowRpcHttpMaster {
         return session;
     }
     
+    private String extractUrl(OpflowRpcRoutingInfo routingInfo) {
+        String url = null;
+        
+        if (routingInfo == null) {
+            if (rpcObserver != null) {
+                routingInfo = rpcObserver.getRoutingInfo(OpflowRpcObserver.Protocol.HTTP);
+            }
+        }
+        
+        if (routingInfo != null) {
+            url = routingInfo.getAddress();
+        }
+        
+        if (url == null) {
+            if (discoveryClient != null) {
+                OpflowDiscoveryClient.Info info = discoveryClient.locate();
+                if (info != null) {
+                    url = info.getUri();
+                }
+            }
+        }
+        
+        return url;
+    }
+    
     private Map<String, Object> extractHeaders(Response response) {
         Map<String, Object> options = new HashMap<>();
-        options.put(OpflowConstant.OPFLOW_PROTO_RES_HEADER_WORKER_ID, response.header(OpflowConstant.OPFLOW_PROTO_RES_HEADER_WORKER_ID));
+        options.put(OpflowConstant.OPFLOW_RES_HEADER_WORKER_ID, response.header(OpflowConstant.OPFLOW_RES_HEADER_WORKER_ID));
         return options;
     }
     

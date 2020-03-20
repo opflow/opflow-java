@@ -197,7 +197,7 @@ public abstract class OpflowPromMeasurer {
                             opts.put("failed", that.remoteHTTPFailure);
                             opts.put("timeout", that.remoteHTTPTimeout);
                             if (verbose) {
-                                double remoteRate = calcMessageRate(that.remoteAMQPTotal, elapsedTime);
+                                double remoteRate = calcMessageRate(that.remoteHTTPTotal, elapsedTime);
                                 opts.put("rate", formatMessageRate(remoteRate));
                                 opts.put("rateNumber", remoteRate);
                             }
