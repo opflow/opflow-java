@@ -438,7 +438,7 @@ public class OpflowServerlet implements AutoCloseable {
             this.amqpWorker = amqpWorker;
             this.amqpListener = new OpflowRpcAmqpWorker.Listener() {
                 @Override
-                public Boolean processMessage(final OpflowMessage message, final OpflowRpcAmqpResponse response) throws IOException {
+                public Boolean processMessage(final OpflowEngine.Message message, final OpflowRpcAmqpResponse response) throws IOException {
                     final Map<String, Object> headers = message.getHeaders();
                     final String routineId = response.getRoutineId();
                     final String routineTimestamp = response.getRoutineTimestamp();
@@ -469,7 +469,7 @@ public class OpflowServerlet implements AutoCloseable {
             this.subscriber = subscriber;
             this.subListener = new OpflowPubsubListener() {
                 @Override
-                public void processMessage(OpflowMessage message) throws IOException {
+                public void processMessage(OpflowEngine.Message message) throws IOException {
                     final Map<String, Object> headers = message.getHeaders();
                     final String routineId = OpflowUtil.getRoutineId(headers);
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);

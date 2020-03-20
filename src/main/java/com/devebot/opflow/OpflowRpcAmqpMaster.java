@@ -277,7 +277,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                         .put("correlationId", taskId)
                         .text("Request[${requestId}][${requestTime}][x-rpc-master-callback-finished] - push message to task[${correlationId}] and return")
                         .stringify());
-                    task.push(new OpflowMessage(content, headers));
+                    task.push(new OpflowEngine.Message(content, headers));
                 }
                 
                 // collect the information of the workers

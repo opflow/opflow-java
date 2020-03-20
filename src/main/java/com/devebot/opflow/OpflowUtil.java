@@ -79,11 +79,6 @@ public class OpflowUtil {
     }
     
     @Deprecated
-    public static <T> T jsonMessageToObject(OpflowMessage message, Class<T> type) {
-        return OpflowJsonTool.toObject(message.getBodyAsString(), type);
-    }
-    
-    @Deprecated
     public static Object[] jsonStringToArray(String arrayString, Class[] types) {
         return OpflowJsonTool.toObjectArray(arrayString, types);
     }

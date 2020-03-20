@@ -204,7 +204,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
                     Map<String, String> extras
             ) throws IOException {
                 Map<String, Object> headers = properties.getHeaders();
-                OpflowMessage request = new OpflowMessage(body, headers);
+                OpflowEngine.Message request = new OpflowEngine.Message(body, headers);
                 
                 if (extras == null) {
                     extras = new HashMap<>();
@@ -358,7 +358,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
     public interface Listener {
         public static final Boolean DONE = Boolean.FALSE;
         public static final Boolean NEXT = Boolean.TRUE;
-        public Boolean processMessage(OpflowMessage message, OpflowRpcAmqpResponse response) throws IOException;
+        public Boolean processMessage(OpflowEngine.Message message, OpflowRpcAmqpResponse response) throws IOException;
     }
     
     @Override

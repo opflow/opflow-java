@@ -1282,4 +1282,36 @@ public class OpflowEngine implements AutoCloseable {
     protected void finalize() throws Throwable {
         measurer.updateComponentInstance(OpflowConstant.COMP_ENGINE, componentId, OpflowPromMeasurer.GaugeAction.DEC);
     }
+    
+    public static class Message {
+
+        private final byte[] body;
+        private final Map<String, Object> headers;
+
+        public final static Message EMPTY = new Message();
+        public final static Message ERROR = new Message(null, OpflowObjectTree.buildMap(false).put("status", "failed").toMap());
+
+        private Message() {
+            body = null;
+            headers = null;
+        }
+
+        public Message(byte[] body, Map<String, Object> headers) {
+            this.body = body;
+            this.headers = headers;
+        }
+
+        public byte[] getBody() {
+            return body;
+        }
+
+        public String getBodyAsString() {
+            if (body == null) return null;
+            return OpflowUtil.getString(body);
+        }
+
+        public Map<String, Object> getHeaders() {
+            return headers;
+        }
+    }
 }

@@ -77,18 +77,18 @@ public class OpflowRpcAmqpRequest implements Iterator, OpflowTimeout.Timeoutable
     
     @Override
     public void raiseTimeout() {
-        this.push(OpflowMessage.ERROR);
+        this.push(OpflowEngine.Message.ERROR);
     }
     
-    private final BlockingQueue<OpflowMessage> list = new LinkedBlockingQueue<>();
-    private OpflowMessage current = null;
+    private final BlockingQueue<OpflowEngine.Message> list = new LinkedBlockingQueue<>();
+    private OpflowEngine.Message current = null;
     
     @Override
     public boolean hasNext() {
         try {
             this.current = list.take();
-            if (this.current == OpflowMessage.EMPTY) return false;
-            if (this.current == OpflowMessage.ERROR) return false;
+            if (this.current == OpflowEngine.Message.EMPTY) return false;
+            if (this.current == OpflowEngine.Message.ERROR) return false;
             return true;
         } catch (InterruptedException ie) {
             return false;
@@ -96,13 +96,13 @@ public class OpflowRpcAmqpRequest implements Iterator, OpflowTimeout.Timeoutable
     }
 
     @Override
-    public OpflowMessage next() {
-        OpflowMessage result = this.current;
+    public OpflowEngine.Message next() {
+        OpflowEngine.Message result = this.current;
         this.current = null;
         return result;
     }
     
-    public void push(OpflowMessage message) {
+    public void push(OpflowEngine.Message message) {
         list.add(message);
         checkTimestamp();
         if(isDone(message)) {
@@ -113,7 +113,7 @@ public class OpflowRpcAmqpRequest implements Iterator, OpflowTimeout.Timeoutable
             if (pushTrail != null && pushTrail.ready(LOG, Level.DEBUG)) LOG.debug(pushTrail
                     .text("Request[${requestId}][${requestTime}][x-rpc-request-finished] has completed/failed message")
                     .stringify());
-            list.add(OpflowMessage.EMPTY);
+            list.add(OpflowEngine.Message.EMPTY);
             if (completeListener != null) {
                 if (pushTrail != null && pushTrail.ready(LOG, Level.DEBUG)) LOG.debug(pushTrail
                         .text("Request[${requestId}][${requestTime}][x-rpc-request-callback] raises completeListener (completed)")
@@ -123,8 +123,8 @@ public class OpflowRpcAmqpRequest implements Iterator, OpflowTimeout.Timeoutable
         }
     }
     
-    public List<OpflowMessage> iterateResult() {
-        List<OpflowMessage> buff = new LinkedList<>();
+    public List<OpflowEngine.Message> iterateResult() {
+        List<OpflowEngine.Message> buff = new LinkedList<>();
         while(this.hasNext()) buff.add(this.next());
         return buff;
     }
@@ -145,7 +145,7 @@ public class OpflowRpcAmqpRequest implements Iterator, OpflowTimeout.Timeoutable
         byte[] value = null;
         List<OpflowRpcAmqpResult.Step> steps = new LinkedList<>();
         while(this.hasNext()) {
-            OpflowMessage msg = this.next();
+            OpflowEngine.Message msg = this.next();
             String status = getStatus(msg);
             if (extractTrail != null && extractTrail.ready(LOG, Level.TRACE)) LOG.trace(extractTrail
                     .put("status", status)
@@ -185,7 +185,7 @@ public class OpflowRpcAmqpRequest implements Iterator, OpflowTimeout.Timeoutable
     
     private static final List<String> STATUS = Arrays.asList(new String[] { "failed", "completed" });
     
-    private boolean isDone(OpflowMessage message) {
+    private boolean isDone(OpflowEngine.Message message) {
         String status = getStatus(message);
         if (status == null) return false;
         return STATUS.indexOf(status) >= 0;
@@ -195,11 +195,11 @@ public class OpflowRpcAmqpRequest implements Iterator, OpflowTimeout.Timeoutable
         timestamp = (new Date()).getTime();
     }
     
-    private static String getStatus(OpflowMessage message) {
+    private static String getStatus(OpflowEngine.Message message) {
         return getMessageField(message, CONST.AMQP_HEADER_RETURN_STATUS);
     }
     
-    private static String getMessageField(OpflowMessage message, String fieldName) {
+    private static String getMessageField(OpflowEngine.Message message, String fieldName) {
         if (message == null || fieldName == null) return null;
         Map<String, Object> info = message.getHeaders();
         if (info != null) {

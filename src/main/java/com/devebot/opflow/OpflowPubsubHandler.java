@@ -260,7 +260,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}].subscribe() receives a new request")
                         .stringify());
                 try {
-                    listener.processMessage(new OpflowMessage(content, headers));
+                    listener.processMessage(new OpflowEngine.Message(content, headers));
                     if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                             .text("Request[${requestId}][${requestTime}] - subscribe() request processing has completed")
                             .stringify());
