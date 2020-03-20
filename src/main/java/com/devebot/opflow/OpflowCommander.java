@@ -806,7 +806,7 @@ public class OpflowCommander implements AutoCloseable {
                 public void transform(Map<String, Object> opts) {
                     opts.put(CONST.COMPONENT_ID, componentId);
                     
-                    // RPC Master information
+                    // RPC AMQP Master information
                     if (amqpMaster != null) {
                         opts.put(OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                             @Override
@@ -837,6 +837,21 @@ public class OpflowCommander implements AutoCloseable {
                                 if (checkOption(flag, SCOPE_INFO)) {
                                     opt2.put("transport", CONST.getProtocolInfo());
                                 }
+                            }
+                        }).toMap());
+                    }
+                    
+                    // RPC HTTP Master information
+                    if (httpMaster != null) {
+                        opts.put(OpflowConstant.COMP_RPC_HTTP_MASTER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                            @Override
+                            public void transform(Map<String, Object> opt2) {
+                                opt2.put(CONST.COMPONENT_ID, httpMaster.getComponentId());
+                                opt2.put("request", OpflowObjectTree.buildMap()
+                                        .put(OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, httpMaster.getReadTimeout())
+                                        .put(OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, httpMaster.getWriteTimeout())
+                                        .put(OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, httpMaster.getCallTimeout())
+                                        .toMap());
                             }
                         }).toMap());
                     }

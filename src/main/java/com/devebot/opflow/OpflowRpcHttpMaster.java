@@ -54,9 +54,9 @@ public class OpflowRpcHttpMaster {
         discoveryClient = (OpflowDiscoveryClient) OpflowUtil.getOptionField(params, OpflowConstant.COMP_DISCOVERY_CLIENT, null);
         restrictor = new OpflowRestrictor.Valve();
         
-        readTimeout = OpflowObjectTree.getOptionValue(params, "readTimeout", Long.class, 20000l);
-        writeTimeout = OpflowObjectTree.getOptionValue(params, "writeTimeout", Long.class, 20000l);
-        callTimeout = OpflowObjectTree.getOptionValue(params, "callTimeout", Long.class, 180000l);
+        readTimeout = OpflowObjectTree.getOptionValue(params, OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, Long.class, 20000l);
+        writeTimeout = OpflowObjectTree.getOptionValue(params, OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, Long.class, 20000l);
+        callTimeout = OpflowObjectTree.getOptionValue(params, OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, Long.class, 180000l);
         
         logTracer = OpflowLogTracer.ROOT.branch("httpMasterId", componentId);
         
@@ -83,6 +83,22 @@ public class OpflowRpcHttpMaster {
         if (autorun) {
             this.serve();
         }
+    }
+
+    public String getComponentId() {
+        return componentId;
+    }
+
+    public long getReadTimeout() {
+        return readTimeout;
+    }
+
+    public long getWriteTimeout() {
+        return writeTimeout;
+    }
+
+    public long getCallTimeout() {
+        return callTimeout;
     }
     
     public final void serve() {

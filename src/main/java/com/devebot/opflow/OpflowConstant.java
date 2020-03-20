@@ -179,6 +179,10 @@ public class OpflowConstant {
     public final static String HTTP_HEADER_ROUTINE_SCOPE = "x-oxScope";
     public final static String HTTP_HEADER_ROUTINE_SIGNATURE = "x-oxSignature";
 
+    public final static String HTTP_MASTER_PARAM_PULL_TIMEOUT = "readTimeout";
+    public final static String HTTP_MASTER_PARAM_PUSH_TIMEOUT = "writeTimeout";
+    public final static String HTTP_MASTER_PARAM_CALL_TIMEOUT = "callTimeout";
+    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AMQP PARAMETERS
 
     public final static String AMQP_CONARG_URI = "uri";
