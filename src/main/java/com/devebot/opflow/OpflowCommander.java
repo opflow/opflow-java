@@ -830,13 +830,10 @@ public class OpflowCommander implements AutoCloseable {
                                     opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE, amqpMaster.getResponseQueueExclusive());
                                 }
 
-                                opt2.put("request", OpflowObjectTree.buildMap()
+                                opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
                                         .put(OpflowConstant.AMQP_PARAM_MESSAGE_TTL, amqpMaster.getExpiration())
+                                        .put("headers", CONST.getProtocolInfo(), checkOption(flag, SCOPE_INFO))
                                         .toMap());
-
-                                if (checkOption(flag, SCOPE_INFO)) {
-                                    opt2.put("transport", CONST.getProtocolInfo());
-                                }
                             }
                         }).toMap());
                     }
@@ -847,10 +844,10 @@ public class OpflowCommander implements AutoCloseable {
                             @Override
                             public void transform(Map<String, Object> opt2) {
                                 opt2.put(CONST.COMPONENT_ID, httpMaster.getComponentId());
-                                opt2.put("request", OpflowObjectTree.buildMap()
-                                        .put(OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, httpMaster.getReadTimeout())
-                                        .put(OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, httpMaster.getWriteTimeout())
+                                opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
                                         .put(OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, httpMaster.getCallTimeout())
+                                        .put(OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, httpMaster.getWriteTimeout())
+                                        .put(OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, httpMaster.getReadTimeout())
                                         .toMap());
                             }
                         }).toMap());
@@ -863,11 +860,13 @@ public class OpflowCommander implements AutoCloseable {
                     
                     // RpcWatcher information
                     if (checkOption(flag, SCOPE_INFO)) {
-                        opts.put(OpflowConstant.COMP_RPC_WATCHER, OpflowObjectTree.buildMap()
-                                .put(OpflowConstant.OPFLOW_COMMON_ENABLED, rpcWatcher.isEnabled())
-                                .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, rpcWatcher.getInterval())
-                                .put(OpflowConstant.OPFLOW_COMMON_COUNT, rpcWatcher.getCount())
-                                .toMap());
+                        if (rpcWatcher != null) {
+                            opts.put(OpflowConstant.COMP_RPC_WATCHER, OpflowObjectTree.buildMap()
+                                    .put(OpflowConstant.OPFLOW_COMMON_ENABLED, rpcWatcher.isEnabled())
+                                    .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, rpcWatcher.getInterval())
+                                    .put(OpflowConstant.OPFLOW_COMMON_COUNT, rpcWatcher.getCount())
+                                    .toMap());
+                        }
                     }
                     
                     // restrictor information
@@ -907,8 +906,8 @@ public class OpflowCommander implements AutoCloseable {
                                 .put(OpflowConstant.OPFLOW_COMMON_CONGESTIVE, rpcObserver.isCongestive())
                                 .put("threadCount", Thread.activeCount())
                                 .put(OpflowConstant.OPFLOW_COMMON_START_TIMESTAMP, startTime)
-                                .put("currentTime", currentTime)
-                                .put("uptime", OpflowDateTime.printElapsedTime(startTime, currentTime))
+                                .put(OpflowConstant.OPFLOW_COMMON_CURRENT_TIMESTAMP, currentTime)
+                                .put(OpflowConstant.OPFLOW_COMMON_UPTIME, OpflowDateTime.printElapsedTime(startTime, currentTime))
                                 .toMap());
                     }
                     
@@ -958,28 +957,30 @@ public class OpflowCommander implements AutoCloseable {
             }
             
             // size of the callback queue
-            if (KEEP_LOGIC_CLEARLY) {
-                OpflowObjectTree.merge(metrics, OpflowObjectTree.buildMap()
-                        .put(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, OpflowObjectTree.buildMap()
-                                .put("waitingReqTotal", OpflowObjectTree.buildMap()
-                                        .put("current", amqpMaster.getActiveRequestTotal())
-                                        .put("top", amqpMaster.getMaxWaitingRequests())
-                                        .toMap())
-                                .toMap())
-                        .toMap());
-            } else {
-                Map<String, Object> parentOfQueueInfo;
-                Object remoteAmqpWorkerInfo = metrics.get(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER);
-                if (remoteAmqpWorkerInfo instanceof Map) {
-                    parentOfQueueInfo = (Map<String, Object>) remoteAmqpWorkerInfo;
+            if (amqpMaster != null) {
+                if (KEEP_LOGIC_CLEARLY) {
+                    OpflowObjectTree.merge(metrics, OpflowObjectTree.buildMap()
+                            .put(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, OpflowObjectTree.buildMap()
+                                    .put("waitingReqTotal", OpflowObjectTree.buildMap()
+                                            .put("current", amqpMaster.getActiveRequestTotal())
+                                            .put("top", amqpMaster.getMaxWaitingRequests())
+                                            .toMap())
+                                    .toMap())
+                            .toMap());
                 } else {
-                    parentOfQueueInfo = OpflowObjectTree.buildMap().toMap();
-                    metrics.put(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, parentOfQueueInfo);
+                    Map<String, Object> parentOfQueueInfo;
+                    Object remoteAmqpWorkerInfo = metrics.get(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER);
+                    if (remoteAmqpWorkerInfo instanceof Map) {
+                        parentOfQueueInfo = (Map<String, Object>) remoteAmqpWorkerInfo;
+                    } else {
+                        parentOfQueueInfo = OpflowObjectTree.buildMap().toMap();
+                        metrics.put(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, parentOfQueueInfo);
+                    }
+                    parentOfQueueInfo.put("waitingReqTotal", OpflowObjectTree.buildMap()
+                            .put("current", amqpMaster.getActiveRequestTotal())
+                            .put("top", amqpMaster.getMaxWaitingRequests())
+                            .toMap());
                 }
-                parentOfQueueInfo.put("waitingReqTotal", OpflowObjectTree.buildMap()
-                        .put("current", amqpMaster.getActiveRequestTotal())
-                        .put("top", amqpMaster.getMaxWaitingRequests())
-                        .toMap());
             }
             
             return OpflowObjectTree.buildMap()

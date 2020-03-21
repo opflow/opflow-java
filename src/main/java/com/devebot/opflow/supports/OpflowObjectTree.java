@@ -26,7 +26,13 @@ public class OpflowObjectTree {
         }
         
         public Builder put(String key, V value) {
-            fields.put(key, value);
+            return put(key, value, true);
+        }
+        
+        public Builder put(String key, V value, boolean when) {
+            if (when) {
+                fields.put(key, value);
+            }
             return this;
         }
         

@@ -90,9 +90,12 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_CREDENTIALS = "credentials";
     public final static String OPFLOW_COMMON_CONGESTIVE = "congestive";
     public final static String OPFLOW_COMMON_PROTOCOL = "protocol";
+    public final static String OPFLOW_COMMON_CURRENT_TIMESTAMP = "currentTime";
     public final static String OPFLOW_COMMON_START_TIMESTAMP = "startTime";
     public final static String OPFLOW_COMMON_END_TIMESTAMP = "endTime";
     public final static String OPFLOW_COMMON_ELAPSED_TIME = "elapsedTime";
+    public final static String OPFLOW_COMMON_UPTIME = "uptime";
+    public final static String OPFLOW_COMMON_CHANNEL = "connection";
 
     public final static String OPFLOW_RPC_MONITOR_ID = "monitorId";
     public final static String OPFLOW_RPC_MONITOR_ENABLED = "monitorEnabled";
