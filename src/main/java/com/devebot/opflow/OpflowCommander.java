@@ -115,10 +115,10 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}][${instanceId}].new()")
                 .stringify());
         
-        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(OpflowConstant.COMP_PROM_EXPORTER));
+        measurer = OpflowPromMeasurer.getInstance(OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PROM_EXPORTER));
         OpflowPromMeasurer.RpcInvocationCounter counter = measurer.getRpcInvocationCounter(OpflowConstant.COMP_COMMANDER);
         
-        Map<String, Object> speedMeterCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_SPEED_METER);
+        Map<String, Object> speedMeterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SPEED_METER);
         
         if (speedMeterCfg == null || OpflowUtil.isComponentEnabled(speedMeterCfg)) {
             speedMeter = (new OpflowThroughput.Meter(speedMeterCfg))
@@ -129,7 +129,7 @@ public class OpflowCommander implements AutoCloseable {
             speedMeter = null;
         }
         
-        Map<String, Object> restrictorCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RESTRICTOR);
+        Map<String, Object> restrictorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RESTRICTOR);
         
         if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
             restrictor = new OpflowRestrictorMaster(OpflowObjectTree.buildMap(restrictorCfg)
@@ -157,14 +157,14 @@ public class OpflowCommander implements AutoCloseable {
             nativeWorkerEnabled = true;
         }
 
-        Map<String, Object> reqExtractorCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_REQ_EXTRACTOR);
-        Map<String, Object> configurerCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_CONFIGURER);
-        Map<String, Object> amqpMasterCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_CFG_AMQP_MASTER);
-        Map<String, Object> httpMasterCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_HTTP_MASTER);
-        Map<String, Object> publisherCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_PUBLISHER);
-        Map<String, Object> rpcObserverCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_OBSERVER);
-        Map<String, Object> rpcWatcherCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_RPC_WATCHER);
-        Map<String, Object> restServerCfg = (Map<String, Object>)kwargs.get(OpflowConstant.COMP_REST_SERVER);
+        Map<String, Object> reqExtractorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR);
+        Map<String, Object> configurerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CONFIGURER);
+        Map<String, Object> amqpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CFG_AMQP_MASTER, OpflowConstant.COMP_RPC_AMQP_MASTER);
+        Map<String, Object> httpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_MASTER);
+        Map<String, Object> publisherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PUBLISHER);
+        Map<String, Object> rpcObserverCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_OBSERVER);
+        Map<String, Object> rpcWatcherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_WATCHER);
+        Map<String, Object> restServerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REST_SERVER);
 
         HashSet<String> checkExchange = new HashSet<>();
 

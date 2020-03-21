@@ -430,6 +430,36 @@ public class OpflowUtil {
         return (value == null) ? defval : value;
     }
     
+    public static Map<String, Object> getChildMap(Map<String, Object> kwargs, String fieldName) {
+        if (kwargs == null) {
+            return null;
+        }
+        if (fieldName == null) {
+            return kwargs;
+        }
+        Object childObject = kwargs.get(fieldName);
+        if (childObject instanceof Map) {
+            return (Map<String, Object>) childObject;
+        }
+        return null;
+    }
+    
+    public static Map<String, Object> getChildMap(Map<String, Object> kwargs, String ... fieldNames) {
+        if (kwargs == null) {
+            return null;
+        }
+        if (fieldNames == null) {
+            return kwargs;
+        }
+        for (String fieldName : fieldNames) {
+            Map<String, Object> childMap = getChildMap(kwargs, fieldName);
+            if (childMap != null) {
+                return childMap;
+            }
+        }
+        return null;
+    }
+    
     public static Integer detectFreePort(Map<String, Object> kwargs, String fieldName, Integer[] defaultPorts) {
         Integer[] ports;
         Object portsObj = OpflowUtil.getOptionField(kwargs, fieldName, null);

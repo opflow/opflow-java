@@ -217,99 +217,102 @@ public class OpflowConfig {
                 } else {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
-                if (OpflowConstant.COMP_REQ_EXTRACTOR.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        "getRequestIdClassName",
-                        "getRequestIdMethodName",
-                        "uuidIfNotFound"
-                    });
-                }
-                if (OpflowConstant.COMP_RESTRICTOR.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED,
-                        OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT,
-                        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED,
-                        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS,
-                        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
-                    });
-                }
-                if (OpflowConstant.COMP_CONFIGURER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
-                        OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                        OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
-                    });
-                }
-                if (OpflowConstant.COMP_PUBLISHER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
-                        OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                        OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
-                    });
-                }
-                if (OpflowConstant.COMP_CFG_AMQP_MASTER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
-                        OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
-                        OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE,
-                        OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE,
-                        OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
-                        OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
-                        OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
-                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
-                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX,
-                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
-                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE,
-                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE,
-                        OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
-                        OpflowConstant.OPFLOW_RPC_MONITOR_ID,
-                        OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED,
-                        OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL,
-                        OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
-                    });
-                }
-                if (OpflowConstant.COMP_RPC_HTTP_MASTER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                    });
-                }
-                if (OpflowConstant.COMP_RPC_WATCHER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_COMMON_INTERVAL
-                    });
-                }
-                if (OpflowConstant.COMP_SPEED_METER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ACTIVE,
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_COMMON_INTERVAL,
-                        OpflowConstant.OPFLOW_COMMON_LENGTH
-                    });
-                }
-                if (OpflowConstant.COMP_PROM_EXPORTER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_COMMON_HOST,
-                        OpflowConstant.OPFLOW_COMMON_PORTS
-                    });
-                }
-                if (OpflowConstant.COMP_REST_SERVER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_COMMON_HOST,
-                        OpflowConstant.OPFLOW_COMMON_PORTS,
-                        OpflowConstant.OPFLOW_COMMON_CREDENTIALS
-                    });
+                switch (componentName) {
+                    case OpflowConstant.COMP_REQ_EXTRACTOR:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            "getRequestIdClassName",
+                            "getRequestIdMethodName",
+                            "uuidIfNotFound"
+                        });
+                        break;
+                    case OpflowConstant.COMP_RESTRICTOR:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED,
+                            OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT,
+                            OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED,
+                            OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS,
+                            OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
+                        });
+                        break;
+                    case OpflowConstant.COMP_CONFIGURER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                            OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
+                            OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
+                        });
+                        break;
+                    case OpflowConstant.COMP_PUBLISHER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                            OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
+                            OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
+                        });
+                        break;
+                    case OpflowConstant.COMP_CFG_AMQP_MASTER:
+                    case OpflowConstant.COMP_RPC_AMQP_MASTER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
+                            OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
+                            OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE,
+                            OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE,
+                            OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
+                            OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
+                            OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
+                            OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
+                            OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX,
+                            OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
+                            OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE,
+                            OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE,
+                            OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
+                            OpflowConstant.OPFLOW_RPC_MONITOR_ID,
+                            OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED,
+                            OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL,
+                            OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
+                        });
+                        break;
+                    case OpflowConstant.COMP_RPC_HTTP_MASTER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        });
+                        break;
+                    case OpflowConstant.COMP_RPC_WATCHER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_COMMON_INTERVAL
+                        });
+                        break;
+                    case OpflowConstant.COMP_SPEED_METER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ACTIVE,
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_COMMON_INTERVAL,
+                            OpflowConstant.OPFLOW_COMMON_LENGTH
+                        });
+                        break;
+                    case OpflowConstant.COMP_PROM_EXPORTER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_COMMON_HOST,
+                            OpflowConstant.OPFLOW_COMMON_PORTS
+                        });
+                        break;
+                    case OpflowConstant.COMP_REST_SERVER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_COMMON_HOST,
+                            OpflowConstant.OPFLOW_COMMON_PORTS,
+                            OpflowConstant.OPFLOW_COMMON_CREDENTIALS
+                        });
+                        break;
                 }
                 transformParameters(componentCfg);
                 params.put(componentName, componentCfg);
@@ -348,59 +351,62 @@ public class OpflowConfig {
                 Map<String, Object> componentCfg = new HashMap<>();
                 extractEngineParameters(componentCfg, config, componentPath);
                 Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
-                if (OpflowConstant.COMP_CFG_AMQP_WORKER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
-                        OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
-                        OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
-                        OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
-                        OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
-                        OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
-                        OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
-                        OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
-                        OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
-                        OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME,
-                        OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE,
-                        OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE,
-                        OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY,
-                    });
-                }
-                if (OpflowConstant.COMP_RPC_HTTP_WORKER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_COMMON_HOST,
-                        OpflowConstant.OPFLOW_COMMON_HOSTNAME,
-                        OpflowConstant.OPFLOW_COMMON_PORTS,
-                    });
-                }
-                if (OpflowConstant.COMP_CONFIGURER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
-                        OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                        OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
-                    });
-                }
-                if (OpflowConstant.COMP_SUBSCRIBER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
-                        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
-                        OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                        OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
-                        OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME
-                    });
-                }
-                if (OpflowConstant.COMP_PROM_EXPORTER.equals(componentName)) {
-                    OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                        OpflowConstant.OPFLOW_COMMON_ENABLED,
-                        OpflowConstant.OPFLOW_COMMON_HOST,
-                        OpflowConstant.OPFLOW_COMMON_PORTS
-                    });
+                switch (componentName) {
+                    case OpflowConstant.COMP_CFG_AMQP_WORKER:
+                    case OpflowConstant.COMP_RPC_AMQP_WORKER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
+                            OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
+                            OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
+                            OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
+                            OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
+                            OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
+                            OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
+                            OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
+                            OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
+                            OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME,
+                            OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE,
+                            OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE,
+                            OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY,
+                        });
+                        break;
+                    case OpflowConstant.COMP_RPC_HTTP_WORKER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_COMMON_HOST,
+                            OpflowConstant.OPFLOW_COMMON_HOSTNAME,
+                            OpflowConstant.OPFLOW_COMMON_PORTS,
+                        });
+                        break;
+                    case OpflowConstant.COMP_CONFIGURER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                            OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
+                            OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
+                        });
+                        break;
+                    case OpflowConstant.COMP_SUBSCRIBER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                            OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
+                            OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
+                            OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME
+                        });
+                        break;
+                    case OpflowConstant.COMP_PROM_EXPORTER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_COMMON_HOST,
+                            OpflowConstant.OPFLOW_COMMON_PORTS
+                        });
+                        break;
                 }
                 transformParameters(componentCfg);
                 params.put(componentName, componentCfg);
@@ -632,6 +638,8 @@ public class OpflowConfig {
                         OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET),
                         OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_PUBLISHER),
                         OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_SUBSCRIBER),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_RPC_AMQP_MASTER),
+                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_RPC_AMQP_WORKER),
                         OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_MASTER),
                         OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_WORKER),
                     }));

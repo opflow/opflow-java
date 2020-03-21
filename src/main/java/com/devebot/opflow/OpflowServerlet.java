@@ -98,12 +98,12 @@ public class OpflowServerlet implements AutoCloseable {
         }
         listenerMap = listeners;
 
-        measurer = OpflowPromMeasurer.getInstance((Map<String, Object>) kwargs.get(OpflowConstant.COMP_PROM_EXPORTER));
+        measurer = OpflowPromMeasurer.getInstance(OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PROM_EXPORTER));
 
-        Map<String, Object> configurerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_CONFIGURER);
-        Map<String, Object> amqpWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_CFG_AMQP_WORKER);
-        Map<String, Object> httpWorkerCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_RPC_HTTP_WORKER);
-        Map<String, Object> subscriberCfg = (Map<String, Object>) kwargs.get(OpflowConstant.COMP_SUBSCRIBER);
+        Map<String, Object> configurerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CONFIGURER);
+        Map<String, Object> amqpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
+        Map<String, Object> httpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_WORKER);
+        Map<String, Object> subscriberCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SUBSCRIBER);
 
         HashSet<String> checkExchange = new HashSet<>();
         HashSet<String> checkQueue = new HashSet<>();
