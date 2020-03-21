@@ -204,6 +204,9 @@ public class OpflowConfig {
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
             });
+            
+            // rename the components
+            renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_MASTER, OpflowConstant.COMP_RPC_AMQP_MASTER);
 
             // extract the child-level configuration
             String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
@@ -256,7 +259,6 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
                         });
                         break;
-                    case OpflowConstant.COMP_CFG_AMQP_MASTER:
                     case OpflowConstant.COMP_RPC_AMQP_MASTER:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
@@ -343,16 +345,23 @@ public class OpflowConfig {
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
             });
-
+            
+            // rename the components
+            renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
+            
             // extract the child-level configuration
             String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET, ""};
             for(String componentName:OpflowServerlet.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
-                extractEngineParameters(componentCfg, config, componentPath);
-                Map<String, Object> componentNode = getChildMapByPath(config, componentPath);
+                Map<String, Object> componentNode;
+                if (OpflowServerlet.SERVICE_BEAN_NAMES.contains(componentName)) {
+                    extractEngineParameters(componentCfg, config, componentPath);
+                    componentNode = getChildMapByPath(config, componentPath);
+                } else {
+                    componentNode = getChildMapByPath(config, componentPath, false);
+                }
                 switch (componentName) {
-                    case OpflowConstant.COMP_CFG_AMQP_WORKER:
                     case OpflowConstant.COMP_RPC_AMQP_WORKER:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
@@ -414,6 +423,28 @@ public class OpflowConfig {
 
             return params;
         }
+    }
+    
+    private static void renameField(Map<String, Object> source, String oldName, String newName) {
+        if (!source.containsKey(oldName)) {
+            return;
+        }
+        Map<String, Object> oldMap = assertChildMap(source, oldName);
+        Map<String, Object> newMap = assertChildMap(source, newName);
+        mergeConfiguration(newMap, oldMap);
+        source.remove(oldName);
+    }
+    
+    private static Map<String, Object> assertChildMap(Map<String, Object> source, String oldName) {
+        Map<String, Object> oldMap;
+        Object oldObject = source.get(oldName);
+        if (oldObject instanceof Map) {
+            oldMap = (Map<String, Object>) oldObject;
+        } else {
+            oldMap = new HashMap<>();
+            source.put(oldName, oldMap);
+        }
+        return oldMap;
     }
     
     private static Object traverseMapByPath(Map<String, Object> source, String[] path) {

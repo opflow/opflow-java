@@ -35,7 +35,7 @@ public class OpflowServerlet implements AutoCloseable {
 
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[]{
         OpflowConstant.COMP_CONFIGURER,
-        OpflowConstant.COMP_CFG_AMQP_WORKER,
+        OpflowConstant.COMP_RPC_AMQP_WORKER,
         OpflowConstant.COMP_SUBSCRIBER
     });
 
@@ -101,7 +101,7 @@ public class OpflowServerlet implements AutoCloseable {
         measurer = OpflowPromMeasurer.getInstance(OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PROM_EXPORTER));
 
         Map<String, Object> configurerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CONFIGURER);
-        Map<String, Object> amqpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
+        Map<String, Object> amqpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowConstant.COMP_CFG_AMQP_WORKER);
         Map<String, Object> httpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_WORKER);
         Map<String, Object> subscriberCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SUBSCRIBER);
 

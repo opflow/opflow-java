@@ -157,6 +157,9 @@ public class OpflowUtil {
     }
     
     public static void copyParameters(Map<String, Object> target, Map<String, Object> source, String[] keys) {
+        if (source == null || keys == null) {
+            return;
+        }
         for(String field: keys) {
             if (source.containsKey(field)) {
                 target.put(field, source.get(field));
