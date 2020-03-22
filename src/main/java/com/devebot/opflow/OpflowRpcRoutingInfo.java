@@ -5,21 +5,19 @@ package com.devebot.opflow;
  * @author acegik
  */
 public class OpflowRpcRoutingInfo {
-    private Protocol protocol;
+    private OpflowConstant.Protocol protocol;
     private String componentId;
     private String address;
     private String topic;
     private Boolean congestive = null;
     
     private String url = null;
-    
-    public enum Protocol { AMQP, HTTP };
 
-    public OpflowRpcRoutingInfo(Protocol protocol, String componentId, String location) {
+    public OpflowRpcRoutingInfo(OpflowConstant.Protocol protocol, String componentId, String location) {
         this(protocol, componentId, location, null);
     }
     
-    public OpflowRpcRoutingInfo(Protocol protocol, String componentId, String location, Boolean congestive) {
+    public OpflowRpcRoutingInfo(OpflowConstant.Protocol protocol, String componentId, String location, Boolean congestive) {
         this.protocol = protocol;
         this.componentId = componentId;
         switch (protocol) {

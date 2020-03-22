@@ -203,7 +203,7 @@ public class OpflowRpcHttpMaster {
                 }
             }
             if (rpcObserver != null) {
-                rpcObserver.check(OpflowRpcObserver.Protocol.HTTP, extractHeaders(response));
+                rpcObserver.check(OpflowConstant.Protocol.HTTP, extractHeaders(response));
             }
         }
         catch (SocketTimeoutException exception) {
@@ -242,7 +242,7 @@ public class OpflowRpcHttpMaster {
         
         if (routingInfo == null) {
             if (rpcObserver != null) {
-                routingInfo = rpcObserver.getRoutingInfo(OpflowRpcObserver.Protocol.HTTP);
+                routingInfo = rpcObserver.getRoutingInfo(OpflowConstant.Protocol.HTTP);
             }
         }
         

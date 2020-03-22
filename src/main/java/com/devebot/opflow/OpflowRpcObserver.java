@@ -47,8 +47,6 @@ public class OpflowRpcObserver {
     private boolean congestiveAMQP = false;
     private boolean congestiveHTTP = false;
     
-    public enum Protocol { AMQP, HTTP };
-    
     private final Object threadExecutorLock = new Object();
     private ExecutorService threadExecutor = null;
     
@@ -81,7 +79,7 @@ public class OpflowRpcObserver {
         }
     }
     
-    public void check(final OpflowRpcObserver.Protocol protocol, final Map<String, Object> headers) {
+    public void check(final OpflowConstant.Protocol protocol, final Map<String, Object> headers) {
         getThreadExecutor().submit(new Callable() {
             @Override
             public Object call() throws Exception {
@@ -91,7 +89,7 @@ public class OpflowRpcObserver {
         });
     }
     
-    public void touch(final OpflowRpcObserver.Protocol protocol, final Map<String, Object> headers) {
+    public void touch(final OpflowConstant.Protocol protocol, final Map<String, Object> headers) {
         String componentId = null;
         String httpAddress = null;
         String amqpPattern = null;
@@ -128,19 +126,19 @@ public class OpflowRpcObserver {
         // update the newest components
         if (componentId != null) {
             if (amqpPattern != null) {
-                amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.AMQP, componentId, amqpPattern));
+                amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowConstant.Protocol.AMQP, componentId, amqpPattern));
             }
             if (httpAddress != null) {
-                httpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowRpcRoutingInfo.Protocol.HTTP, componentId, httpAddress));
+                httpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowConstant.Protocol.HTTP, componentId, httpAddress));
             }
         }
     }
     
     public boolean isCongestive() {
-        return isCongestive(Protocol.AMQP) && isCongestive(Protocol.HTTP);
+        return isCongestive(OpflowConstant.Protocol.AMQP) && isCongestive(OpflowConstant.Protocol.HTTP);
     }
     
-    public boolean isCongestive(Protocol protocol) {
+    public boolean isCongestive(OpflowConstant.Protocol protocol) {
         switch (protocol) {
             case AMQP:
                 return congestiveAMQP;
@@ -150,7 +148,7 @@ public class OpflowRpcObserver {
         return false;
     }
     
-    public void setCongestive(Protocol protocol, boolean congestive) {
+    public void setCongestive(OpflowConstant.Protocol protocol, boolean congestive) {
         switch (protocol) {
             case AMQP:
                 this.congestiveAMQP = congestive;
@@ -161,7 +159,7 @@ public class OpflowRpcObserver {
         }
     }
     
-    public void setCongestive(Protocol protocol, boolean congestive, String componentId) {
+    public void setCongestive(OpflowConstant.Protocol protocol, boolean congestive, String componentId) {
         switch (protocol) {
             case AMQP:
                 if (componentId != null) {
@@ -176,11 +174,11 @@ public class OpflowRpcObserver {
         }
     }
     
-    public OpflowRpcRoutingInfo getRoutingInfo(Protocol protocol) {
+    public OpflowRpcRoutingInfo getRoutingInfo(OpflowConstant.Protocol protocol) {
         return getRoutingInfo(protocol, true);
     }
     
-    public OpflowRpcRoutingInfo getRoutingInfo(Protocol protocol, boolean available) {
+    public OpflowRpcRoutingInfo getRoutingInfo(OpflowConstant.Protocol protocol, boolean available) {
         switch (protocol) {
             case AMQP:
                 if (available) {
