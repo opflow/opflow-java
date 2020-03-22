@@ -62,6 +62,10 @@ public abstract class OpflowPromMeasurer {
         private long remoteHTTPFailure = 0;
         private long remoteHTTPTimeout = 0;
 
+        private boolean nativeWorkerEnabled = false;
+        private boolean remoteAMQPWorkerEnabled = false;
+        private boolean remoteHTTPWorkerEnabled = false;
+        
         public RpcInvocationCounter() {
         }
 
@@ -173,49 +177,61 @@ public abstract class OpflowPromMeasurer {
             final RpcInvocationCounter that = cloned ? this.copy() : this;
             final Date currentTime = new Date();
             final long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
-            return OpflowObjectTree.buildMap()
-                    .put(LABEL_RPC_INVOCATION_TOTAL, that.total)
-                    .put(LABEL_RPC_REMOTE_AMQP_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                        @Override
-                        public void transform(Map<String, Object> opts) {
-                            opts.put("total", that.remoteAMQPTotal);
-                            opts.put("ok", that.remoteAMQPSuccess);
-                            opts.put("failed", that.remoteAMQPFailure);
-                            opts.put("timeout", that.remoteAMQPTimeout);
-                            if (verbose) {
-                                double remoteRate = calcMessageRate(that.remoteAMQPTotal, elapsedTime);
-                                opts.put("rate", formatMessageRate(remoteRate));
-                                opts.put("rateNumber", remoteRate);
-                            }
+            
+            OpflowObjectTree.Builder builder = OpflowObjectTree.buildMap()
+                    .put(LABEL_RPC_INVOCATION_TOTAL, that.total);
+            
+            if (remoteAMQPWorkerEnabled) {
+                builder.put(LABEL_RPC_REMOTE_AMQP_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("total", that.remoteAMQPTotal);
+                        opts.put("ok", that.remoteAMQPSuccess);
+                        opts.put("failed", that.remoteAMQPFailure);
+                        opts.put("timeout", that.remoteAMQPTimeout);
+                        if (verbose) {
+                            double remoteRate = calcMessageRate(that.remoteAMQPTotal, elapsedTime);
+                            opts.put("rate", formatMessageRate(remoteRate));
+                            opts.put("rateNumber", remoteRate);
                         }
-                    }).toMap())
-                    .put(LABEL_RPC_REMOTE_HTTP_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                        @Override
-                        public void transform(Map<String, Object> opts) {
-                            opts.put("total", that.remoteHTTPTotal);
-                            opts.put("ok", that.remoteHTTPSuccess);
-                            opts.put("failed", that.remoteHTTPFailure);
-                            opts.put("timeout", that.remoteHTTPTimeout);
-                            if (verbose) {
-                                double remoteRate = calcMessageRate(that.remoteHTTPTotal, elapsedTime);
-                                opts.put("rate", formatMessageRate(remoteRate));
-                                opts.put("rateNumber", remoteRate);
-                            }
+                    }
+                }).toMap());
+            }
+            
+            if (remoteHTTPWorkerEnabled) {
+                builder.put(LABEL_RPC_REMOTE_HTTP_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("total", that.remoteHTTPTotal);
+                        opts.put("ok", that.remoteHTTPSuccess);
+                        opts.put("failed", that.remoteHTTPFailure);
+                        opts.put("timeout", that.remoteHTTPTimeout);
+                        if (verbose) {
+                            double remoteRate = calcMessageRate(that.remoteHTTPTotal, elapsedTime);
+                            opts.put("rate", formatMessageRate(remoteRate));
+                            opts.put("rateNumber", remoteRate);
                         }
-                    }).toMap())
-                    .put(LABEL_RPC_DIRECT_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                        @Override
-                        public void transform(Map<String, Object> opts) {
-                            opts.put("total", that.direct);
-                            opts.put("rescue", that.directRescue);
-                            opts.put("retain", that.directRetain);
-                            if (verbose) {
-                                double directRate = calcMessageRate(that.direct, elapsedTime);
-                                opts.put("rate", formatMessageRate(directRate));
-                                opts.put("rateNumber", directRate);
-                            }
+                    }
+                }).toMap());
+            }
+            
+            if (nativeWorkerEnabled) {
+                builder.put(LABEL_RPC_DIRECT_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("total", that.direct);
+                        opts.put("rescue", that.directRescue);
+                        opts.put("retain", that.directRetain);
+                        if (verbose) {
+                            double directRate = calcMessageRate(that.direct, elapsedTime);
+                            opts.put("rate", formatMessageRate(directRate));
+                            opts.put("rateNumber", directRate);
                         }
-                    }).toMap())
+                    }
+                }).toMap());
+            }
+            
+            return builder
                     .put(OpflowConstant.OPFLOW_COMMON_START_TIMESTAMP, that.startTime)
                     .put(OpflowConstant.OPFLOW_COMMON_ELAPSED_TIME, OpflowDateTime.printElapsedTime(that.startTime, currentTime))
                     .toMap();
@@ -261,6 +277,18 @@ public abstract class OpflowPromMeasurer {
                     return new Date();
                 }
             };
+        }
+
+        public void setNativeWorkerEnabled(boolean nativeWorkerEnabled) {
+            this.nativeWorkerEnabled = nativeWorkerEnabled;
+        }
+
+        public void setRemoteAMQPWorkerEnabled(boolean remoteAMQPWorkerEnabled) {
+            this.remoteAMQPWorkerEnabled = remoteAMQPWorkerEnabled;
+        }
+
+        public void setRemoteHTTPWorkerEnabled(boolean remoteHTTPWorkerEnabled) {
+            this.remoteHTTPWorkerEnabled = remoteHTTPWorkerEnabled;
         }
     }
     

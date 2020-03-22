@@ -122,10 +122,7 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> speedMeterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SPEED_METER);
         
         if (speedMeterCfg == null || OpflowUtil.isComponentEnabled(speedMeterCfg)) {
-            speedMeter = (new OpflowThroughput.Meter(speedMeterCfg))
-                    .register(OpflowPromMeasurer.LABEL_RPC_DIRECT_WORKER, counter.getNativeWorkerInfoSource())
-                    .register(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, counter.getRemoteAMQPWorkerInfoSource())
-                    .register(OpflowPromMeasurer.LABEL_RPC_REMOTE_HTTP_WORKER, counter.getRemoteHTTPWorkerInfoSource());
+            speedMeter = (new OpflowThroughput.Meter(speedMeterCfg));
         } else {
             speedMeter = null;
         }
@@ -142,20 +139,17 @@ public class OpflowCommander implements AutoCloseable {
             restrictor.block();
         }
         
-        this.init(kwargs);
-        
-        measurer.updateComponentInstance(OpflowConstant.COMP_COMMANDER, componentId, OpflowPromMeasurer.GaugeAction.INC);
-        
-        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}][${instanceId}].new() end!")
-                .stringify());
-    }
-    
-    private void init(Map<String, Object> kwargs) throws OpflowBootstrapException {
         if (kwargs.get(OpflowConstant.PARAM_NATIVE_WORKER_ENABLED) instanceof Boolean) {
             nativeWorkerEnabled = (Boolean) kwargs.get(OpflowConstant.PARAM_NATIVE_WORKER_ENABLED);
         } else {
             nativeWorkerEnabled = true;
+        }
+        
+        if (nativeWorkerEnabled) {
+            counter.setNativeWorkerEnabled(true);
+            if (speedMeter != null) {
+                speedMeter.register(OpflowPromMeasurer.LABEL_RPC_DIRECT_WORKER, counter.getNativeWorkerInfoSource());
+            }
         }
 
         Map<String, Object> reqExtractorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR);
@@ -221,6 +215,10 @@ public class OpflowCommander implements AutoCloseable {
                         opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
                     }
                 }, amqpMasterCfg).toMap());
+                counter.setRemoteAMQPWorkerEnabled(true);
+                if (speedMeter != null) {
+                    speedMeter.register(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, counter.getRemoteAMQPWorkerInfoSource());
+                }
             }
             if (OpflowUtil.isComponentEnabled(httpMasterCfg)) {
                 httpMaster = new OpflowRpcHttpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
@@ -231,6 +229,10 @@ public class OpflowCommander implements AutoCloseable {
                         opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
                     }
                 }, httpMasterCfg).toMap());
+                counter.setRemoteHTTPWorkerEnabled(true);
+                if (speedMeter != null) {
+                    speedMeter.register(OpflowPromMeasurer.LABEL_RPC_REMOTE_HTTP_WORKER, counter.getRemoteHTTPWorkerInfoSource());
+                }
             }
             if (OpflowUtil.isComponentEnabled(publisherCfg)) {
                 publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
@@ -262,6 +264,12 @@ public class OpflowCommander implements AutoCloseable {
             this.close();
             throw exception;
         }
+        
+        measurer.updateComponentInstance(OpflowConstant.COMP_COMMANDER, componentId, OpflowPromMeasurer.GaugeAction.INC);
+        
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .text("Commander[${commanderId}][${instanceId}].new() end!")
+                .stringify());
     }
     
     public RoutingHandler getDefaultHandlers() {
@@ -1132,7 +1140,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         public boolean isRemoteAMQPWorkerAvailable() {
-            return !rpcObserver.isCongestive(OpflowConstant.Protocol.AMQP) && isRemoteAMQPWorkerActive();
+            return  amqpMaster != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.AMQP) && isRemoteAMQPWorkerActive();
         }
         
         public boolean isRemoteHTTPWorkerActive() {
@@ -1144,7 +1152,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         public boolean isRemoteHTTPWorkerAvailable() {
-            return !rpcObserver.isCongestive(OpflowConstant.Protocol.HTTP) && isRemoteHTTPWorkerActive();
+            return httpMaster != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.HTTP) && isRemoteHTTPWorkerActive();
         }
         
         @Override
