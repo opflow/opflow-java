@@ -6,6 +6,7 @@ import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.devebot.opflow.exception.OpflowRemoteMasterDisabledException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
@@ -243,11 +244,12 @@ public class OpflowCommander implements AutoCloseable {
 
             rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcObserver, amqpMaster, httpMaster);
 
-            rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowObjectTree.buildMap(rpcWatcherCfg)
-                    .put(CONST.COMPONENT_ID, componentId)
-                    .toMap());
-
-            rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
+            if (isRemoteRpcAvailable()) {
+                rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowObjectTree.buildMap(rpcWatcherCfg)
+                        .put(CONST.COMPONENT_ID, componentId)
+                        .toMap());
+                rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
+            }
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, handlers, speedMeter, rpcObserver, rpcWatcher);
 
@@ -339,6 +341,10 @@ public class OpflowCommander implements AutoCloseable {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}][${instanceId}].close() end!")
                 .stringify());
+    }
+    
+    private boolean isRemoteRpcAvailable() {
+        return amqpMaster != null || httpMaster != null;
     }
     
     private static class OpflowRestrictorMaster extends OpflowRestrictable.Runner implements AutoCloseable {
@@ -549,6 +555,9 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private Pong send_over_amqp(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
+            if (amqpMaster == null) {
+                throw new OpflowRemoteMasterDisabledException("The AMQP Master is disabled");
+            }
             try {
                 OpflowRpcAmqpRequest rpcRequest = amqpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
                         .setProgressEnabled(false)
@@ -575,6 +584,9 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private Pong send_over_http(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
+            if (httpMaster == null) {
+                throw new OpflowRemoteMasterDisabledException("The HTTP Master is disabled");
+            }
             OpflowRpcRoutingInfo routingInfo = rpcObserver.getRoutingInfo(OpflowConstant.Protocol.HTTP, false);
             if (routingInfo == null) {
                 rpcObserver.setCongestive(OpflowConstant.Protocol.HTTP, true);
@@ -1033,7 +1045,7 @@ public class OpflowCommander implements AutoCloseable {
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
 
         private boolean remoteAMQPWorkerActive = true;
-        private boolean remoteHTTPWorkerActive = false;
+        private boolean remoteHTTPWorkerActive = true;
         
         private final int[] masterFlags;
         
