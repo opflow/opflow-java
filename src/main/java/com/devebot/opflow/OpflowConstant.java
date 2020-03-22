@@ -11,6 +11,8 @@ import java.util.Map;
 public class OpflowConstant {
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
 
+    public enum Protocol { AMQP, HTTP };
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW
 
     public final String FRAMEWORK_ID = "opflow";

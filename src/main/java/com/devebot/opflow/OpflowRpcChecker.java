@@ -14,8 +14,8 @@ public abstract class OpflowRpcChecker {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
     private final static String[] REQUEST_ATTRS = new String[] {
-        OpflowConstant.ROUTINE_ID,
         OpflowConstant.OPFLOW_COMMON_PROTOCOL,
+        OpflowConstant.ROUTINE_ID,
         OpflowConstant.OPFLOW_COMMON_START_TIMESTAMP,
         OpflowConstant.OPFLOW_COMMON_END_TIMESTAMP,
         OpflowConstant.OPFLOW_COMMON_ELAPSED_TIME,
@@ -128,28 +128,28 @@ public abstract class OpflowRpcChecker {
             
             Map<String, Object> commanderInfo = (Map<String, Object>)commanderMap.get(OpflowConstant.COMP_COMMANDER);
             if (commanderInfo != null && processorObj != null) {
-                builder.put(OpflowConstant.COMP_COMMANDER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                    @Override
-                    public void transform(Map<String, Object> opts) {
-                        // asserts the rpcMaster Map
-                        if (!(opts.get(OpflowConstant.COMP_RPC_AMQP_MASTER) instanceof Map)) {
-                            opts.put(OpflowConstant.COMP_RPC_AMQP_MASTER, new LinkedHashMap<String, Object>());
-                        }
-                        Map<String, Object> amqpMasterMap = (Map<String, Object>) opts.get(OpflowConstant.COMP_RPC_AMQP_MASTER);
-                        // asserts the request Map
-                        if (!(amqpMasterMap.get("request") instanceof Map)) {
-                            amqpMasterMap.put("request", new LinkedHashMap<String, Object>());
-                        }
-                        Map<String, Object> requestInfo = (Map<String, Object>)amqpMasterMap.get("request");
-                        // copy the attributes
-                        for (String key : REQUEST_ATTRS) {
-                            Object attr = processorObj.getParameters().get(key);
-                            if (attr != null) {
-                                requestInfo.put(key, attr);
-                            }
+                // determines the protocol
+                String protoStr = processorObj.getParameters().getOrDefault(OpflowConstant.OPFLOW_COMMON_PROTOCOL, "NONE").toString();
+                // asserts the rpcMaster Map
+                Map<String, Object> rpcMasterMap = null;
+                if ("AMQP".equals(protoStr)) {
+                    rpcMasterMap = OpflowObjectTree.assertChildMap(commanderInfo, OpflowConstant.COMP_RPC_AMQP_MASTER);
+                }
+                if ("HTTP".equals(protoStr)) {
+                    rpcMasterMap = OpflowObjectTree.assertChildMap(commanderInfo, OpflowConstant.COMP_RPC_HTTP_MASTER);
+                }
+                // asserts the request Map
+                if (rpcMasterMap != null) {
+                    Map<String, Object> requestInfo = OpflowObjectTree.assertChildMap(rpcMasterMap, "request");
+                    // copy the attributes
+                    for (String key : REQUEST_ATTRS) {
+                        Object attr = processorObj.getParameters().get(key);
+                        if (attr != null) {
+                            requestInfo.put(key, attr);
                         }
                     }
-                }, commanderInfo).toMap());
+                }
+                builder.put(OpflowConstant.COMP_COMMANDER, commanderInfo);
             }
             
             switch (status) {

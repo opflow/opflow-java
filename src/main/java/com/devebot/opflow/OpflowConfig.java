@@ -429,22 +429,10 @@ public class OpflowConfig {
         if (!source.containsKey(oldName)) {
             return;
         }
-        Map<String, Object> oldMap = assertChildMap(source, oldName);
-        Map<String, Object> newMap = assertChildMap(source, newName);
+        Map<String, Object> oldMap = OpflowObjectTree.assertChildMap(source, oldName);
+        Map<String, Object> newMap = OpflowObjectTree.assertChildMap(source, newName);
         mergeConfiguration(newMap, oldMap);
         source.remove(oldName);
-    }
-    
-    private static Map<String, Object> assertChildMap(Map<String, Object> source, String oldName) {
-        Map<String, Object> oldMap;
-        Object oldObject = source.get(oldName);
-        if (oldObject instanceof Map) {
-            oldMap = (Map<String, Object>) oldObject;
-        } else {
-            oldMap = new HashMap<>();
-            source.put(oldName, oldMap);
-        }
-        return oldMap;
     }
     
     private static Object traverseMapByPath(Map<String, Object> source, String[] path) {

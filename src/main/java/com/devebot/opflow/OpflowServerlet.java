@@ -422,7 +422,7 @@ public class OpflowServerlet implements AutoCloseable {
         private final Map<String, Object> targetRef = new HashMap<>();
         private final Map<String, String> methodOfAlias = new HashMap<>();
         private volatile boolean processing = false;
-
+        
         public Instantiator(OpflowRpcAmqpWorker amqpWorker, OpflowRpcHttpWorker httpWorker, OpflowPubsubHandler subscriber) throws OpflowBootstrapException {
             this(amqpWorker, httpWorker, subscriber, null);
         }
@@ -451,7 +451,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .put("consumerTag", response.getConsumerTag())
                         .toMap();
                     
-                    RoutineOutput output = invokeRoutine(body, routineSignature, routineScope, routineTimestamp, routineId, componentId, extra);
+                    RoutineOutput output = invokeRoutine(OpflowConstant.Protocol.AMQP, body, routineSignature, routineScope, routineTimestamp, routineId, componentId, extra);
                     output.fill(response);
                     
                     return null;
@@ -462,7 +462,7 @@ public class OpflowServerlet implements AutoCloseable {
             this.httpListener = new OpflowRpcHttpWorker.Listener() {
                 @Override
                 public OpflowRpcHttpWorker.Output processMessage(String body, String routineSignature, String routineScope, String routineTimestamp, String routineId, Map<String, String> extra) {
-                    return invokeRoutine(body, routineSignature, routineScope, routineTimestamp, routineId, componentId, extra).export();
+                    return invokeRoutine(OpflowConstant.Protocol.HTTP, body, routineSignature, routineScope, routineTimestamp, routineId, componentId, extra).export();
                 }
             };
             
@@ -528,6 +528,7 @@ public class OpflowServerlet implements AutoCloseable {
         }
         
         private RoutineOutput invokeRoutine(
+            final OpflowConstant.Protocol protocol,
             final String body,
             final String routineSignature,
             final String routineScope,
@@ -604,20 +605,22 @@ public class OpflowServerlet implements AutoCloseable {
                     returnValue = new OpflowRpcChecker.Pong(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                         @Override
                         public void transform(Map<String, Object> opts) {
+                            Map<String, Object> requestInfo = OpflowObjectTree.buildMap()
+                                    .put(OpflowConstant.ROUTINE_ID, routineId)
+                                    .put(OpflowConstant.ROUTINE_TIMESTAMP, routineTimestamp)
+                                    .add(extra)
+                                    .toMap();
                             OpflowEngine engine = amqpWorker.getEngine();
                             opts.put(CONST.COMPONENT_ID, componentId);
                             opts.put(OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowObjectTree.buildMap()
                                 .put(CONST.COMPONENT_ID, amqpWorker.getComponentId())
                                 .put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId())
                                 .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, amqpWorker.getIncomingQueueName())
-                                .put("request", OpflowObjectTree.buildMap()
-                                    .put(OpflowConstant.ROUTINE_ID, routineId)
-                                    .put(OpflowConstant.ROUTINE_TIMESTAMP, routineTimestamp)
-                                    .add(extra)
-                                    .toMap())
+                                .put("request", requestInfo, protocol == OpflowConstant.Protocol.AMQP)
                                 .toMap());
                             opts.put(OpflowConstant.COMP_RPC_HTTP_WORKER, OpflowObjectTree.buildMap()
                                 .put(CONST.COMPONENT_ID, httpWorker.getComponentId())
+                                .put("request", requestInfo, protocol == OpflowConstant.Protocol.HTTP)
                                 .toMap());
                             opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
                                 .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-worker/git-info.json"))

@@ -104,6 +104,18 @@ public class OpflowObjectTree {
         return (opts == null) ? new HashMap<String, Object>() : opts;
     }
     
+    public static Map<String, Object> assertChildMap(Map<String, Object> map, String childName) {
+        Map<String, Object> childMap;
+        Object childObj = map.get(childName);
+        if (childObj instanceof Map) {
+            childMap = (Map<String, Object>) childObj;
+        } else {
+            childMap = new LinkedHashMap<>();
+            map.put(childName, childMap);
+        }
+        return childMap;
+    }
+    
     public static Map<String, Object> merge(Map<String, Object> target, Map<String, Object> source) {
         if (target == null) target = new HashMap<>();
         if (source == null) return target;
