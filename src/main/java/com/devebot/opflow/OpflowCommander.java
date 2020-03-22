@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -972,7 +973,11 @@ public class OpflowCommander implements AutoCloseable {
             // current serverlets
             if (checkOption(flag, SCOPE_INFO)) {
                 if (rpcObserver != null && isRemoteRpcAvailable()) {
-                    root.put(OpflowConstant.COMP_SERVERLET, rpcObserver.summary());
+                    Collection<OpflowRpcObserver.Manifest> serverlets = rpcObserver.summary();
+                    root.put(OpflowConstant.COMP_SERVERLET, OpflowObjectTree.buildMap()
+                            .put("total", serverlets.size())
+                            .put("details", serverlets)
+                            .toMap());
                 }
             }
 
