@@ -41,7 +41,11 @@ public abstract class OpflowPromMeasurer {
     public static OpflowPromMeasurer getInstance(Map<String, Object> kwargs) throws OpflowOperationException {
         if (OpflowUtil.isComponentEnabled(kwargs)) {
             if (!instance.hasShadow()) {
-                instance.setShadow(new OpflowPromExporter(kwargs));
+                synchronized (OpflowPromMeasurer.class) {
+                    if (!instance.hasShadow()) {
+                        instance.setShadow(new OpflowPromExporter(kwargs));
+                    }
+                }
             }
         }
         return instance;
@@ -121,13 +125,16 @@ public abstract class OpflowPromMeasurer {
             RpcInvocationCounter that = new RpcInvocationCounter();
             that.startTime = this.startTime;
             that.total = this.total;
+            // Native worker
             that.direct = this.direct;
             that.directRescue = this.directRescue;
             that.directRetain = this.directRetain;
+            // AMQP workers
             that.remoteAMQPTotal = this.remoteAMQPTotal;
             that.remoteAMQPSuccess = this.remoteAMQPSuccess;
             that.remoteAMQPFailure = this.remoteAMQPFailure;
             that.remoteAMQPTimeout = this.remoteAMQPTimeout;
+            // HTTP workers
             that.remoteHTTPTotal = this.remoteHTTPTotal;
             that.remoteHTTPSuccess = this.remoteHTTPSuccess;
             that.remoteHTTPFailure = this.remoteHTTPFailure;
@@ -138,6 +145,7 @@ public abstract class OpflowPromMeasurer {
         public synchronized void reset() {
             this.startTime = new Date();
             this.total = 0;
+            // Native worker
             this.direct = 0;
             this.directRescue = 0;
             this.directRetain = 0;

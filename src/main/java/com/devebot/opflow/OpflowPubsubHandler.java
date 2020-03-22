@@ -373,12 +373,28 @@ public class OpflowPubsubHandler implements AutoCloseable {
         }
     }
 
+    public OpflowEngine getEngine() {
+        return engine;
+    }
+
     public OpflowExecutor getExecutor() {
         return executor;
     }
 
+    public String getComponentId() {
+        return componentId;
+    }
+
+    public int getPrefetchCount() {
+        return prefetchCount;
+    }
+
     public String getSubscriberName() {
         return subscriberName;
+    }
+
+    public int getSubscriberLimit() {
+        return subscriberLimit;
     }
 
     public String getRecyclebinName() {

@@ -253,9 +253,10 @@ public class OpflowCommander implements AutoCloseable {
                 rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
             }
 
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, handlers, speedMeter, rpcObserver, rpcWatcher);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
+                    rpcObserver, rpcWatcher);
 
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, handlers, speedMeter);
+            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter);
 
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
                     .put(CONST.COMPONENT_ID, componentId)
@@ -640,6 +641,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRestrictorMaster restrictor;
         private final OpflowRpcAmqpMaster amqpMaster;
         private final OpflowRpcHttpMaster httpMaster;
+        private final OpflowPubsubHandler publisher;
         private final Map<String, RpcInvocationHandler> handlers;
         private final OpflowThroughput.Meter speedMeter;
         
@@ -648,6 +650,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcAmqpMaster amqpMaster,
                 OpflowRpcHttpMaster httpMaster,
+                OpflowPubsubHandler publisher,
                 Map<String, RpcInvocationHandler> mappings,
                 OpflowThroughput.Meter speedMeter
         ) {
@@ -656,6 +659,7 @@ public class OpflowCommander implements AutoCloseable {
             this.restrictor = restrictor;
             this.amqpMaster = amqpMaster;
             this.httpMaster = httpMaster;
+            this.publisher = publisher;
             this.handlers = mappings;
             this.speedMeter = speedMeter;
             this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", componentId);
@@ -769,6 +773,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowRpcWatcher rpcWatcher;
         private final OpflowRpcAmqpMaster amqpMaster;
         private final OpflowRpcHttpMaster httpMaster;
+        private final OpflowPubsubHandler publisher;
         private final Map<String, RpcInvocationHandler> handlers;
         private final OpflowRpcObserver rpcObserver;
         private final OpflowThroughput.Meter speedMeter;
@@ -779,6 +784,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowRestrictorMaster restrictor,
                 OpflowRpcAmqpMaster amqpMaster,
                 OpflowRpcHttpMaster httpMaster,
+                OpflowPubsubHandler publisher,
                 Map<String, RpcInvocationHandler> mappings,
                 OpflowThroughput.Meter speedMeter,
                 OpflowRpcObserver rpcObserver,
@@ -789,6 +795,7 @@ public class OpflowCommander implements AutoCloseable {
             this.restrictor = restrictor;
             this.amqpMaster = amqpMaster;
             this.httpMaster = httpMaster;
+            this.publisher = publisher;
             this.handlers = mappings;
             this.speedMeter = speedMeter;
             this.rpcObserver = rpcObserver;
@@ -825,6 +832,27 @@ public class OpflowCommander implements AutoCloseable {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     opts.put(CONST.COMPONENT_ID, componentId);
+                    
+                    // Publisher information
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        if (publisher != null) {
+                            opts.put(OpflowConstant.COMP_PUBLISHER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                                @Override
+                                public void transform(Map<String, Object> opt2) {
+                                    OpflowEngine engine = publisher.getEngine();
+                                    opt2.put(CONST.COMPONENT_ID, publisher.getComponentId());
+                                    opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME, engine.getExchangeName());
+                                    opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE, engine.getExchangeType());
+                                    opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE, engine.getExchangeDurable());
+                                    opt2.put(OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY, engine.getRoutingKey());
+                                }
+                            }).toMap());
+                        } else {
+                            opts.put(OpflowConstant.COMP_PUBLISHER, OpflowObjectTree.buildMap()
+                                    .put(OpflowConstant.OPFLOW_COMMON_ENABLED, false)
+                                    .toMap());
+                        }
+                    }
                     
                     // RPC AMQP Master information
                     if (amqpMaster != null) {
@@ -878,17 +906,6 @@ public class OpflowCommander implements AutoCloseable {
                         opts.put("mappings", renderRpcInvocationHandlers(handlers));
                     }
                     
-                    // RpcWatcher information
-                    if (checkOption(flag, SCOPE_INFO)) {
-                        if (rpcWatcher != null) {
-                            opts.put(OpflowConstant.COMP_RPC_WATCHER, OpflowObjectTree.buildMap()
-                                    .put(OpflowConstant.OPFLOW_COMMON_ENABLED, rpcWatcher.isEnabled())
-                                    .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, rpcWatcher.getInterval())
-                                    .put(OpflowConstant.OPFLOW_COMMON_COUNT, rpcWatcher.getCount())
-                                    .toMap());
-                        }
-                    }
-                    
                     // restrictor information
                     if (checkOption(flag, SCOPE_INFO)) {
                         if (restrictor != null) {
@@ -919,6 +936,17 @@ public class OpflowCommander implements AutoCloseable {
                         }
                     }
                     
+                    // RpcWatcher information
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        if (rpcWatcher != null) {
+                            opts.put(OpflowConstant.COMP_RPC_WATCHER, OpflowObjectTree.buildMap()
+                                    .put(OpflowConstant.OPFLOW_COMMON_ENABLED, rpcWatcher.isEnabled())
+                                    .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, rpcWatcher.getInterval())
+                                    .put(OpflowConstant.OPFLOW_COMMON_COUNT, rpcWatcher.getCount())
+                                    .toMap());
+                        }
+                    }
+                    
                     // start-time & uptime
                     if (checkOption(flag, SCOPE_INFO)) {
                         Date currentTime = new Date();
@@ -943,7 +971,7 @@ public class OpflowCommander implements AutoCloseable {
 
             // current serverlets
             if (checkOption(flag, SCOPE_INFO)) {
-                if (rpcObserver != null) {
+                if (rpcObserver != null && isRemoteRpcAvailable()) {
                     root.put(OpflowConstant.COMP_SERVERLET, rpcObserver.summary());
                 }
             }
@@ -1004,9 +1032,13 @@ public class OpflowCommander implements AutoCloseable {
             }
             
             return OpflowObjectTree.buildMap()
-                    .put("metadata", speedMeter.getMetadata())
                     .put("metrics", metrics)
+                    .put("metadata", speedMeter.getMetadata())
                     .toMap();
+        }
+        
+        private boolean isRemoteRpcAvailable() {
+            return this.amqpMaster != null || this.httpMaster != null;
         }
         
         protected static List<Map<String, Object>> renderRpcInvocationHandlers(Map<String, RpcInvocationHandler> handlers) {
