@@ -69,8 +69,8 @@
             <version>${amqp-client.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
+            <groupId>com.devebot.opflow</groupId>
+            <artifactId>opflow-shade-gson</artifactId>
             <version>${gson.version}</version>
         </dependency>
         <dependency>
