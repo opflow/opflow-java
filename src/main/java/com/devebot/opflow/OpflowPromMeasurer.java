@@ -16,6 +16,7 @@ public abstract class OpflowPromMeasurer {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     
     public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
+    public static final String LABEL_RPC_PUBLISHER = "rpcOverPublisher";
     public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverNativeWorker";
     public static final String LABEL_RPC_REMOTE_AMQP_WORKER = "rpcOverRemoteAMQPWorkers";
     public static final String LABEL_RPC_REMOTE_HTTP_WORKER = "rpcOverRemoteHTTPWorkers";
@@ -54,18 +55,24 @@ public abstract class OpflowPromMeasurer {
     public static class RpcInvocationCounter {
         private Date startTime = new Date();
         private long total = 0;
+        // Publisher
+        private long publishingTotal = 0;
+        // Native worker
         private long direct = 0;
         private long directRetain = 0;
         private long directRescue = 0;
+        // AMQP workers
         private long remoteAMQPTotal = 0;
         private long remoteAMQPSuccess = 0;
         private long remoteAMQPFailure = 0;
         private long remoteAMQPTimeout = 0;
+        // HTTP workers
         private long remoteHTTPTotal = 0;
         private long remoteHTTPSuccess = 0;
         private long remoteHTTPFailure = 0;
         private long remoteHTTPTimeout = 0;
 
+        private boolean publisherEnabled = false;
         private boolean nativeWorkerEnabled = false;
         private boolean remoteAMQPWorkerEnabled = false;
         private boolean remoteHTTPWorkerEnabled = false;
@@ -73,6 +80,11 @@ public abstract class OpflowPromMeasurer {
         public RpcInvocationCounter() {
         }
 
+        public synchronized void incPublishingOk() {
+            this.total++;
+            this.publishingTotal++;
+        }
+        
         public synchronized void incDirectRescue() {
             this.total++;
             this.direct++;
@@ -125,6 +137,8 @@ public abstract class OpflowPromMeasurer {
             RpcInvocationCounter that = new RpcInvocationCounter();
             that.startTime = this.startTime;
             that.total = this.total;
+            // Publisher
+            that.publishingTotal = this.publishingTotal;
             // Native worker
             that.direct = this.direct;
             that.directRescue = this.directRescue;
@@ -145,6 +159,8 @@ public abstract class OpflowPromMeasurer {
         public synchronized void reset() {
             this.startTime = new Date();
             this.total = 0;
+            // Publisher
+            this.publishingTotal = 0;
             // Native worker
             this.direct = 0;
             this.directRescue = 0;
@@ -188,6 +204,20 @@ public abstract class OpflowPromMeasurer {
             
             OpflowObjectTree.Builder builder = OpflowObjectTree.buildMap()
                     .put(LABEL_RPC_INVOCATION_TOTAL, that.total);
+            
+            if (publisherEnabled) {
+                builder.put(LABEL_RPC_PUBLISHER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put("total", that.publishingTotal);
+                        if (verbose) {
+                            double remoteRate = calcMessageRate(that.publishingTotal, elapsedTime);
+                            opts.put("rate", formatMessageRate(remoteRate));
+                            opts.put("rateNumber", remoteRate);
+                        }
+                    }
+                }).toMap());
+            }
             
             if (remoteAMQPWorkerEnabled) {
                 builder.put(LABEL_RPC_REMOTE_AMQP_WORKER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
@@ -245,6 +275,20 @@ public abstract class OpflowPromMeasurer {
                     .toMap();
         }
         
+        public OpflowThroughput.Source getPublisherInfoSource() {
+            return new OpflowThroughput.Source() {
+                @Override
+                public long getValue() {
+                    return publishingTotal;
+                }
+
+                @Override
+                public Date getTime() {
+                    return new Date();
+                }
+            };
+        }
+        
         public OpflowThroughput.Source getNativeWorkerInfoSource() {
             return new OpflowThroughput.Source() {
                 @Override
@@ -287,16 +331,20 @@ public abstract class OpflowPromMeasurer {
             };
         }
 
-        public void setNativeWorkerEnabled(boolean nativeWorkerEnabled) {
-            this.nativeWorkerEnabled = nativeWorkerEnabled;
+        public void setPublisherEnabled(boolean enabled) {
+            this.publisherEnabled = enabled;
         }
 
-        public void setRemoteAMQPWorkerEnabled(boolean remoteAMQPWorkerEnabled) {
-            this.remoteAMQPWorkerEnabled = remoteAMQPWorkerEnabled;
+        public void setNativeWorkerEnabled(boolean enabled) {
+            this.nativeWorkerEnabled = enabled;
         }
 
-        public void setRemoteHTTPWorkerEnabled(boolean remoteHTTPWorkerEnabled) {
-            this.remoteHTTPWorkerEnabled = remoteHTTPWorkerEnabled;
+        public void setRemoteAMQPWorkerEnabled(boolean enabled) {
+            this.remoteAMQPWorkerEnabled = enabled;
+        }
+
+        public void setRemoteHTTPWorkerEnabled(boolean enabled) {
+            this.remoteHTTPWorkerEnabled = enabled;
         }
     }
     
@@ -341,6 +389,13 @@ public abstract class OpflowPromMeasurer {
             }
             if (OpflowConstant.COMP_COMMANDER.equals(componentType)) {
                 switch (eventName) {
+                    case OpflowConstant.METHOD_INVOCATION_FLOW_PUBSUB:
+                        switch (status) {
+                            case "begin":
+                                counter.incPublishingOk();
+                                break;
+                        }
+                        break;
                     case OpflowConstant.METHOD_INVOCATION_NATIVE_WORKER:
                         switch (status) {
                             case "rescue":

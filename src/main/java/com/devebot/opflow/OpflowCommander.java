@@ -243,6 +243,10 @@ public class OpflowCommander implements AutoCloseable {
                         opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, publisherCfg).toMap());
+                counter.setPublisherEnabled(true);
+                if (speedMeter != null) {
+                    speedMeter.register(OpflowPromMeasurer.LABEL_RPC_PUBLISHER, counter.getPublisherInfoSource());
+                }
             }
 
             rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcObserver, amqpMaster, httpMaster);
