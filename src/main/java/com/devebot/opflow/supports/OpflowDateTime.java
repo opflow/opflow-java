@@ -53,26 +53,46 @@ public class OpflowDateTime {
     
     private static String printElapsedTime(Period period) {
         boolean middle = false;
+        boolean small = true;
         List<String> strs = new ArrayList<>();
-        if (period.getYears() > 0) {
-            strs.add(period.getYears() + " year(s)");
+        int years = period.getYears();
+        if (years > 0) {
+            strs.add(years + " year(s)");
             middle = true;
+            small = false;
         }
-        if (middle || period.getMonths() > 0) {
-            strs.add(period.getMonths() + " month(s)");
+        int months = period.getMonths();
+        if (middle || months > 0) {
+            strs.add(months + " month(s)");
             middle = true;
+            small = false;
         }
-        if (middle || period.getDays() > 0) {
-            strs.add(period.getDays() + " day(s)");
+        int days = period.getDays();
+        if (middle || days > 0) {
+            strs.add(days + " day(s)");
+            small = false;
         }
-        if (middle || period.getHours() > 0) {
-            strs.add(period.getHours() + " hour(s)");
+        int hours = period.getHours();
+        if (middle || hours > 0) {
+            strs.add(hours + " hour(s)");
+            small = false;
         }
-        if (middle || period.getMinutes() > 0) {
-            strs.add(period.getMinutes() + " minute(s)");
+        int minutes = period.getMinutes();
+        if (middle ||  minutes > 0) {
+            strs.add(minutes + " minute(s)");
+            if (minutes > 1) {
+                small = false;
+            }
         }
-        if (middle || period.getSeconds() > 0) {
-            strs.add(period.getSeconds() + " second(s)");
+        int seconds = period.getSeconds();
+        if (middle || seconds > 0) {
+            strs.add(seconds + " second(s)");
+        }
+        if (small) {
+            int millis = period.getMillis();
+            if (middle || millis > 0) {
+                strs.add(millis + " millisecond(s)");
+            }
         }
         if (strs.isEmpty()) {
             return "0";

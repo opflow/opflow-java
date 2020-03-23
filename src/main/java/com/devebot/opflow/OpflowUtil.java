@@ -6,7 +6,6 @@ import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowNetTool;
-import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowStringUtil;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
@@ -14,14 +13,12 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.regex.Pattern;
-import java.util.LinkedHashMap;
 
 /**
  *
@@ -56,76 +53,6 @@ public class OpflowUtil {
         public boolean isMute() {
             return IS_PING_LOGGING_OMITTED && isInternalOplog;
         }
-    }
-    
-    @Deprecated
-    public static String jsonObjectToString(Object jsonObj) {
-        return OpflowJsonTool.toString(jsonObj);
-    }
-    
-    @Deprecated
-    public static <T> T jsonStringToObject(String json, Class<T> type) {
-        return OpflowJsonTool.toObject(json, type);
-    }
-    
-    @Deprecated
-    public static String jsonMapToString(Map<String, Object> jsonMap) {
-        return OpflowJsonTool.toString(jsonMap);
-    }
-    
-    @Deprecated
-    public static Map<String, Object> jsonStringToMap(String json) {
-        return OpflowJsonTool.toObjectMap(json);
-    }
-    
-    @Deprecated
-    public static Object[] jsonStringToArray(String arrayString, Class[] types) {
-        return OpflowJsonTool.toObjectArray(arrayString, types);
-    }
-    
-    @Deprecated
-    public static <T> T jsonExtractField(String json, String fieldName, Class<T> type) {
-        return OpflowJsonTool.extractField(json, fieldName, type);
-    }
-    
-    @Deprecated
-    public static int jsonExtractFieldAsInt(String json, String fieldName) {
-        return OpflowJsonTool.extractFieldAsInt(json, fieldName);
-    }
-    
-    @Deprecated
-    public static String toISO8601UTC(Date date) {
-        return OpflowDateTime.toISO8601UTC(date);
-    }
-    
-    @Deprecated
-    public static Date fromISO8601UTC(String dateStr) {
-        return OpflowDateTime.fromISO8601UTC(dateStr);
-    }
-    
-    @Deprecated
-    public static String getCurrentTimeString() {
-        return OpflowDateTime.getCurrentTimeString();
-    }
-    
-    @Deprecated
-    public static long getCurrentTime() {
-        return OpflowDateTime.getCurrentTime();
-    }
-
-    @Deprecated
-    public static String getUUID() {
-        return OpflowUUID.getUUID();
-    }
-    
-    @Deprecated
-    public static String getLogID() {
-        return OpflowUUID.getBase64ID();
-    }
-    
-    @Deprecated
-    public static String getLogID(String uuid) {
-        return OpflowUUID.getBase64ID(uuid);
     }
     
     public static byte[] getBytes(String data) {
@@ -165,98 +92,6 @@ public class OpflowUtil {
                 target.put(field, source.get(field));
             }
         }
-    }
-    
-    @Deprecated
-    public interface MapListener {
-        public void transform(Map<String, Object> opts);
-    }
-    
-    @Deprecated
-    public static class MapBuilder {
-        private final Map<String, Object> fields;
-
-        public MapBuilder() {
-            this(null);
-        }
-        
-        public MapBuilder(Map<String, Object> source) {
-            fields = OpflowObjectTree.ensureNonNull(source);
-        }
-        
-        public MapBuilder put(String key, Object value) {
-            fields.put(key, value);
-            return this;
-        }
-
-        public Object get(String key) {
-            return fields.get(key);
-        }
-
-        public Map<String, Object> toMap() {
-            return fields;
-        }
-        
-        @Override
-        public String toString() {
-            return toString(false);
-        }
-        
-        public String toString(boolean pretty) {
-            return OpflowJsonTool.toString(fields, pretty);
-        }
-    }
-    
-    @Deprecated
-    public static MapBuilder buildMap() {
-        return buildMap(null, null, false);
-    }
-    
-    @Deprecated
-    public static MapBuilder buildMap(MapListener listener) {
-        return buildMap(listener, null, false);
-    }
-    
-    @Deprecated
-    public static MapBuilder buildMap(Map<String, Object> defaultOpts) {
-        return buildMap(null, defaultOpts, false);
-    }
-    
-    @Deprecated
-    public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts) {
-        return buildMap(listener, defaultOpts, false);
-    }
-    
-    @Deprecated
-    public static MapBuilder buildMap(MapListener listener, Map<String, Object> defaultOpts, boolean orderKeep) {
-        Map<String, Object> source = orderKeep ? new LinkedHashMap<String, Object>() : new HashMap<String, Object>();
-        if (defaultOpts != null) {
-            source.putAll(defaultOpts);
-        }
-        if (listener != null) {
-            listener.transform(source);
-        }
-        return new MapBuilder(source);
-    }
-    
-    @Deprecated
-    public static MapBuilder buildOrderedMap() {
-        return buildMap(null, null, true);
-    }
-    
-    @Deprecated
-    public static MapBuilder buildOrderedMap(MapListener listener) {
-        return buildMap(listener, null, true);
-    }
-    
-    @Deprecated
-    public static MapBuilder buildOrderedMap(Map<String, Object> defaultOpts) {
-        return buildMap(null, defaultOpts, true);
-    }
-    
-    @Deprecated
-    public static MapBuilder buildOrderedMap(MapListener listener, Map<String, Object> defaultOpts) {
-        return buildMap(listener, defaultOpts, true);
     }
     
     public static String getRoutineId(Map<String, Object> headers) {
@@ -488,16 +323,6 @@ public class OpflowUtil {
             }
         }
         return OpflowNetTool.detectFreePort(defaultPorts);
-    }
-    
-    @Deprecated
-    public static String getSystemProperty(String key, String def) {
-        return OpflowEnvTool.instance.getSystemProperty(key, def);
-    }
-    
-    @Deprecated
-    public static String getEnvironVariable(String key, String def) {
-        return OpflowEnvTool.instance.getEnvironVariable(key, def);
     }
     
     public static URL getResource(String location) {
