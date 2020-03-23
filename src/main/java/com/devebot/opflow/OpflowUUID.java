@@ -3,12 +3,13 @@ package com.devebot.opflow;
 import com.devebot.opflow.supports.OpflowEnvTool;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import javax.xml.bind.DatatypeConverter;
 
 /**
  *
@@ -19,12 +20,14 @@ public class OpflowUUID {
     private static final boolean UUID_FORMAT_BASE64;
     private static final boolean UUID_AUTOSTART_GENERATOR;
     private static final Generator UUID_GENERATOR;
+    private static final Encoder ENCODER;
     
     static {
         UUID_PRE_GENERATED = !"false".equals(getEnvProperty("OPFLOW_UUID_PRE_GENERATED", null));;
         UUID_FORMAT_BASE64 = !"false".equals(getEnvProperty("OPFLOW_UUID_FORMAT_BASE64", null));
         UUID_AUTOSTART_GENERATOR = !"false".equals(getEnvProperty("OPFLOW_UUID_GENERATOR_AUTORUN", null));
         UUID_GENERATOR = new Generator();
+        ENCODER = Base64.getUrlEncoder();
     }
     
     public static String getUUID() {
@@ -65,10 +68,14 @@ public class OpflowUUID {
                 .putLong(uuid.getLeastSignificantBits())
                 .array();
         // Encode to Base64 and remove trailing ==
-        return DatatypeConverter.printBase64Binary(src)
-                .replace('/', '-')
-                .substring(0, 22);
+        return ENCODER.encodeToString(src).substring(0, 22);
     }
+    
+    /*
+    private static String ENCODER_encodeToString(byte[] src) {
+        return javax.xml.bind.DatatypeConverter.printBase64Binary(src).replace('/', '-');
+    }
+    */
     
     private static class Generator implements AutoCloseable {
         private Timer timer;
