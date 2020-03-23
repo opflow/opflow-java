@@ -79,8 +79,8 @@
             <version>${joda-time.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
+            <groupId>com.devebot.opflow</groupId>
+            <artifactId>opflow-shade-yaml</artifactId>
             <version>${snakeyaml.version}</version>
         </dependency>
         <dependency>

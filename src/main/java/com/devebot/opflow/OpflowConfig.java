@@ -7,6 +7,10 @@ import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowStringUtil;
+import com.devebot.shaded.org.yaml.snakeyaml.Yaml;
+import com.devebot.shaded.org.yaml.snakeyaml.error.MarkedYAMLException;
+import com.devebot.shaded.org.yaml.snakeyaml.parser.ParserException;
+import com.devebot.shaded.org.yaml.snakeyaml.scanner.ScannerException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -22,10 +26,6 @@ import java.util.Properties;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.error.MarkedYAMLException;
-import org.yaml.snakeyaml.parser.ParserException;
-import org.yaml.snakeyaml.scanner.ScannerException;
 
 /**
  *
