@@ -46,7 +46,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
-        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", componentId);
         
         restrictor = new OpflowRestrictor.Valve();

@@ -47,7 +47,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
     public OpflowRpcAmqpWorker(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
-        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("amqpWorkerId", componentId);

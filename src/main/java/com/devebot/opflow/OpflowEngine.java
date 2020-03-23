@@ -111,7 +111,7 @@ public class OpflowEngine implements AutoCloseable {
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
-        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("engineId", componentId);
@@ -517,7 +517,7 @@ public class OpflowEngine implements AutoCloseable {
     
     public ConsumerInfo consume(final OpflowEngine.Listener listener, final Map<String, Object> options) {
         final Map<String, Object> opts = OpflowObjectTree.ensureNonNull(options);
-        final String _consumerId = OpflowUtil.getOptionField(opts, OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, true);
+        final String _consumerId = OpflowUtil.getStringField(opts, OpflowConstant.OPFLOW_CONSUMING_CONSUMER_ID, true);
         final OpflowLogTracer logConsume = logTracer.branch("consumerId", _consumerId);
         
         if (logConsume.ready(LOG, Level.INFO)) LOG.info(logConsume

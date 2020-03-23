@@ -110,7 +110,7 @@ public class OpflowCommander implements AutoCloseable {
         
         strictMode = OpflowObjectTree.getOptionValue(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.class, Boolean.FALSE);
         
-        componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -375,7 +375,7 @@ public class OpflowCommander implements AutoCloseable {
         public OpflowRestrictorMaster(Map<String, Object> options) {
             options = OpflowObjectTree.ensureNonNull(options);
 
-            componentId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
+            componentId = OpflowUtil.getStringField(options, CONST.COMPONENT_ID, true);
             logTracer = OpflowLogTracer.ROOT.branch("restrictorId", componentId);
 
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer

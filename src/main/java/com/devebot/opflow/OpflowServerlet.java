@@ -84,7 +84,7 @@ public class OpflowServerlet implements AutoCloseable {
 
         strictMode = OpflowObjectTree.getOptionValue(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.class, Boolean.FALSE);
 
-        componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", componentId);
 
         if (logTracer.ready(LOG, Level.INFO)) {
@@ -432,7 +432,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Both of amqpWorker and subscriber must not be null");
             }
             options = OpflowObjectTree.ensureNonNull(options);
-            final String componentId = OpflowUtil.getOptionField(options, CONST.COMPONENT_ID, true);
+            final String componentId = OpflowUtil.getStringField(options, CONST.COMPONENT_ID, true);
             this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", componentId);
             
             this.amqpWorker = amqpWorker;

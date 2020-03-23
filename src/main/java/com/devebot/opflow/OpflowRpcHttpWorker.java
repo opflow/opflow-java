@@ -44,7 +44,7 @@ public class OpflowRpcHttpWorker {
     private GracefulShutdownHandler shutdownHandler;
 
     public OpflowRpcHttpWorker(Map<String, Object> kwargs) throws OpflowBootstrapException {
-        componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("httpWorkerId", componentId);

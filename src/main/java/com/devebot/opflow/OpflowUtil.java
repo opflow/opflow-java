@@ -46,7 +46,7 @@ public class OpflowUtil {
         }
         
         public OmitInternalOplogs(Map<String, Object> options) {
-            this(getOptionField(options, CONST.AMQP_HEADER_ROUTINE_SCOPE, false));
+            this(getStringField(options, CONST.AMQP_HEADER_ROUTINE_SCOPE, false, false));
         }
         
         @Override
@@ -239,6 +239,10 @@ public class OpflowUtil {
         }
     }
     
+    public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
+        return getStringField(options, fieldName, uuidIfNotFound, false);
+    }
+    
     public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound, boolean assigned) {
         if (options == null) return null;
         Object value = options.get(fieldName);
@@ -255,11 +259,6 @@ public class OpflowUtil {
     public static void setStringField(Map<String, Object> options, String fieldName, String value) {
         if (options == null) return;
         options.put(fieldName, value);
-    }
-    
-    public static String getOptionField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
-        Object value = getOptionField(options, fieldName, uuidIfNotFound ? OpflowUUID.getBase64ID() : null);
-        return value != null ? value.toString() : null;
     }
     
     public static Object getOptionField(Map<String, Object> options, String fieldName, Object defval) {

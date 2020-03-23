@@ -66,7 +66,7 @@ public class OpflowRestServer implements AutoCloseable {
             Map<String, Object> kwargs) throws OpflowBootstrapException {
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
-        componentId = OpflowUtil.getOptionField(kwargs, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
         enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_ENABLED, null), Boolean.class);
         host = OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_HOST, "0.0.0.0").toString();
         port = OpflowUtil.detectFreePort(kwargs, OpflowConstant.OPFLOW_COMMON_PORTS, new Integer[] {

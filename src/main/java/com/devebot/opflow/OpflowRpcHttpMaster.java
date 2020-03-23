@@ -48,7 +48,7 @@ public class OpflowRpcHttpMaster {
     public OpflowRpcHttpMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
-        componentId = OpflowUtil.getOptionField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
         discoveryClient = (OpflowDiscoveryClient) OpflowUtil.getOptionField(params, OpflowConstant.COMP_DISCOVERY_CLIENT, null);
