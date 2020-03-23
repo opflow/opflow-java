@@ -2,6 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
+import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowJsonTool;
@@ -239,17 +240,29 @@ public class OpflowUtil {
         }
     }
     
+    public static String getStringField(Map<String, Object> options, String fieldName) {
+        return getStringField(options, fieldName, null, false, false);
+    }
+    
+    public static String getStringField(Map<String, Object> options, String fieldName, String defValue) {
+        return getStringField(options, fieldName, defValue, false, false);
+    }
+    
     public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
-        return getStringField(options, fieldName, uuidIfNotFound, false);
+        return getStringField(options, fieldName, null, uuidIfNotFound, false);
     }
     
     public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound, boolean assigned) {
+        return getStringField(options, fieldName, null, uuidIfNotFound, assigned);
+    }
+    
+    public static String getStringField(Map<String, Object> options, String fieldName, String defValue, boolean uuidIfNotFound, boolean assigned) {
         if (options == null) return null;
         Object value = options.get(fieldName);
         if (value != null) {
             return value.toString();
         }
-        String valueStr = uuidIfNotFound ? OpflowUUID.getBase64ID() : null;
+        String valueStr = uuidIfNotFound ? OpflowUUID.getBase64ID() : defValue;
         if (assigned) {
             options.put(fieldName, valueStr);
         }
@@ -259,6 +272,14 @@ public class OpflowUtil {
     public static void setStringField(Map<String, Object> options, String fieldName, String value) {
         if (options == null) return;
         options.put(fieldName, value);
+    }
+    
+    public static Boolean getBooleanField(Map<String, Object> options, String fieldName, Boolean defValue) {
+        return OpflowConverter.convert(OpflowUtil.getOptionField(options, fieldName, defValue), Boolean.class);
+    }
+    
+    public static Long getLongField(Map<String, Object> options, String fieldName, Long defValue) {
+        return OpflowConverter.convert(OpflowUtil.getOptionField(options, fieldName, defValue), Long.class);
     }
     
     public static Object getOptionField(Map<String, Object> options, String fieldName, Object defval) {

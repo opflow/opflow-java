@@ -92,6 +92,7 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_CREDENTIALS = "credentials";
     public final static String OPFLOW_COMMON_CONGESTIVE = "congestive";
     public final static String OPFLOW_COMMON_PROTOCOL = "protocol";
+    public final static String OPFLOW_COMMON_THREAD_COUNT = "threadCount";
     public final static String OPFLOW_COMMON_CURRENT_TIMESTAMP = "currentTime";
     public final static String OPFLOW_COMMON_START_TIMESTAMP = "startTime";
     public final static String OPFLOW_COMMON_END_TIMESTAMP = "endTime";

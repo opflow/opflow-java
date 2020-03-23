@@ -738,7 +738,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private Map<String, Object> activateWorker(String type, boolean state, Map<String, Object> opts) {
-            String clazz = (String) OpflowUtil.getOptionField(opts, "class", null);
+            String clazz = OpflowUtil.getStringField(opts, "class");
             for(final Map.Entry<String, RpcInvocationHandler> entry : handlers.entrySet()) {
                 final String key = entry.getKey();
                 final RpcInvocationHandler handler = entry.getValue();
@@ -956,8 +956,7 @@ public class OpflowCommander implements AutoCloseable {
                     if (checkOption(flag, SCOPE_INFO)) {
                         Date currentTime = new Date();
                         opts.put(OpflowConstant.INFO_SECTION_RUNTIME, OpflowObjectTree.buildMap()
-                                .put(OpflowConstant.OPFLOW_COMMON_CONGESTIVE, (rpcObserver != null) ? rpcObserver.isCongestive() : "N/A")
-                                .put("threadCount", Thread.activeCount())
+                                .put(OpflowConstant.OPFLOW_COMMON_THREAD_COUNT, Thread.activeCount())
                                 .put(OpflowConstant.OPFLOW_COMMON_START_TIMESTAMP, startTime)
                                 .put(OpflowConstant.OPFLOW_COMMON_CURRENT_TIMESTAMP, currentTime)
                                 .put(OpflowConstant.OPFLOW_COMMON_UPTIME, OpflowDateTime.printElapsedTime(startTime, currentTime))
@@ -979,6 +978,7 @@ public class OpflowCommander implements AutoCloseable {
                 if (rpcObserver != null && isRemoteRpcAvailable()) {
                     Collection<OpflowRpcObserver.Manifest> serverlets = rpcObserver.summary();
                     root.put(OpflowConstant.COMP_SERVERLET, OpflowObjectTree.buildMap()
+                            .put(OpflowConstant.OPFLOW_COMMON_CONGESTIVE, rpcObserver.isCongestive())
                             .put("total", serverlets.size())
                             .put("details", serverlets)
                             .toMap());
@@ -1181,7 +1181,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         public boolean isRemoteAMQPWorkerAvailable() {
-            return  amqpMaster != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.AMQP) && isRemoteAMQPWorkerActive();
+            return amqpMaster != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.AMQP) && isRemoteAMQPWorkerActive();
         }
         
         public boolean isRemoteHTTPWorkerActive() {
@@ -1279,7 +1279,7 @@ public class OpflowCommander implements AutoCloseable {
             boolean unfinished = true;
             
             for (int flag : masterFlags) {
-                if ((flag & FLAG_AMQP) != FLAG_AMQP) {
+                if (flag == FLAG_AMQP) {
                     if (isRemoteAMQPWorkerAvailable()) {
                         unfinished = false;
 
@@ -1321,7 +1321,7 @@ public class OpflowCommander implements AutoCloseable {
                     }
                 }
 
-                if ((flag & FLAG_HTTP) != FLAG_HTTP) {
+                if (flag == FLAG_HTTP) {
                     OpflowRpcRoutingInfo routingInfo = rpcObserver.getRoutingInfo(OpflowConstant.Protocol.HTTP);
                     if (isRemoteHTTPWorkerAvailable() && routingInfo != null) {
                         unfinished = false;

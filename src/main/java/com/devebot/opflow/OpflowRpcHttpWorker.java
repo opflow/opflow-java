@@ -53,7 +53,7 @@ public class OpflowRpcHttpWorker {
                 .text("httpWorker[${httpWorkerId}][${instanceId}].new()")
                 .stringify());
         
-        host = OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_HOST, "0.0.0.0").toString();
+        host = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_HOST, "0.0.0.0");
         hostname = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_HOSTNAME, false, false);
         port = OpflowUtil.detectFreePort(kwargs, OpflowConstant.OPFLOW_COMMON_PORTS, new Integer[] {
                 8765, 8766, 8767, 8768, 8769, 8770, 8771, 8772, 8773, 8774, 8775, 8776, 8777

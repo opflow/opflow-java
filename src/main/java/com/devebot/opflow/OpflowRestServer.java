@@ -67,8 +67,8 @@ public class OpflowRestServer implements AutoCloseable {
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
         componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
-        enabled = OpflowConverter.convert(OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_ENABLED, null), Boolean.class);
-        host = OpflowUtil.getOptionField(kwargs, OpflowConstant.OPFLOW_COMMON_HOST, "0.0.0.0").toString();
+        enabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_ENABLED, null);
+        host = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_HOST, "0.0.0.0");
         port = OpflowUtil.detectFreePort(kwargs, OpflowConstant.OPFLOW_COMMON_PORTS, new Integer[] {
                 8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
         });
