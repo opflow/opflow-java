@@ -1067,7 +1067,7 @@ public class OpflowCommander implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("class", entry.getKey());
-                        opts.put("methods", val.getMethodNames());
+                        opts.put("methods", val.getMethodInfos());
                         if (val.getNativeWorkerClassName() != null) {
                             opts.put("nativeWorkerClassName", val.getNativeWorkerClassName());
                         }
@@ -1160,6 +1160,19 @@ public class OpflowCommander implements AutoCloseable {
 
         public Set<String> getMethodNames() {
             return methodIsAsync.keySet();
+        }
+        
+        public Set<Map<String, Object>> getMethodInfos() {
+            Set<Map<String, Object>> infos = new HashSet<>();
+            Set<String> methodNames = methodIsAsync.keySet();
+            for (String methodName : methodNames) {
+                infos.add(OpflowObjectTree.buildMap()
+                    .put("method", methodName)
+                    .put("alias", aliasOfMethod.get(methodName))
+                    .put("async", methodIsAsync.get(methodName))
+                    .toMap());
+            }
+            return infos;
         }
 
         public boolean isPublisherActive() {
