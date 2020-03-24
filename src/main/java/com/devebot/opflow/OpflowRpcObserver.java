@@ -123,7 +123,7 @@ public class OpflowRpcObserver {
                 }
                 break;
         }
-        // update the newest components
+        // update the routingMap
         if (componentId != null) {
             if (amqpPattern != null) {
                 amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowConstant.Protocol.AMQP, componentId, amqpPattern));

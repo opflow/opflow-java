@@ -112,6 +112,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             expiration = 0;
         }
         
+        // Response queue section
         String responseQueuePattern = null;
         if (params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX) instanceof String) {
             responseQueuePattern = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX);
@@ -161,6 +162,17 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             executor.assertQueue(responseQueueName, responseQueueDurable, responseQueueExclusive, responseQueueAutoDelete);
         }
         
+        // Auto-binding section
+        String _dispatchQueueName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
+        if (_dispatchQueueName != null) {
+            Boolean _dispatchQueueDurable = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE, null);
+            Boolean _dispatchQueueExclusive = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE, null);
+            Boolean _dispatchQueueAutoDelete = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE, null);
+            executor.assertQueue(_dispatchQueueName, _dispatchQueueDurable, _dispatchQueueExclusive, _dispatchQueueAutoDelete);
+            executor.bindExchange(engine.getExchangeName(), engine.getRoutingKey(), _dispatchQueueName);
+        }
+        
+        // RPC Monitor section
         if (params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED) instanceof Boolean) {
             monitorEnabled = (Boolean) params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED);
         } else {
@@ -185,6 +197,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             monitorTimeout = 0;
         }
         
+        // Autorun section
         if (params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN) instanceof Boolean) {
             autorun = (Boolean) params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN);
         } else {

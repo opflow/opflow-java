@@ -179,4 +179,26 @@ public class OpflowExecutor {
             throw new OpflowOperationException(exception);
         }
     }
+    
+    public void bindExchange(final String exchangeName, final String routingKey, final String queueName) {
+        bindExchange(exchangeName, new String[] { routingKey }, queueName);
+    }
+    
+    public void bindExchange(final String exchangeName, final String[] bindingKeys, final String queueName) {
+        try {
+            engine.acquireChannel(new OpflowEngine.Operator() {
+                @Override
+                public Object handleEvent(Channel channel) throws IOException {
+                    channel.exchangeDeclarePassive(exchangeName);
+                    channel.queueDeclarePassive(queueName);
+                    for (String bindingKey : bindingKeys) {
+                        channel.queueBind(queueName, exchangeName, bindingKey);
+                    }
+                    return null;
+                }
+            });
+        } catch (IOException | TimeoutException exception) {
+            throw new OpflowOperationException(exception);
+        }
+    }
 }
