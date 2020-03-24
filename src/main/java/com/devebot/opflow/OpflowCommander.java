@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowCommander implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-
+    
     private final static int FLAG_AMQP = 1;
     private final static int FLAG_HTTP = 2;
     
@@ -46,7 +46,7 @@ public class OpflowCommander implements AutoCloseable {
         OpflowConstant.COMP_PUBLISHER,
         OpflowConstant.COMP_RPC_AMQP_MASTER,
     });
-
+    
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
         OpflowConstant.COMP_REQ_EXTRACTOR,
         OpflowConstant.COMP_RESTRICTOR,
@@ -56,12 +56,15 @@ public class OpflowCommander implements AutoCloseable {
         OpflowConstant.COMP_PROM_EXPORTER,
         OpflowConstant.COMP_REST_SERVER,
     });
-
+    
     public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
-
+    
     public final static boolean KEEP_LOGIC_CLEARLY = false;
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowCommander.class);
+    
+    private final Object runningLock = new Object();
+    private volatile boolean runningActive = false;
     
     private final boolean strictMode;
     private final String componentId;
@@ -69,7 +72,7 @@ public class OpflowCommander implements AutoCloseable {
     private final OpflowPromMeasurer measurer;
     private final OpflowThroughput.Meter speedMeter;
     private final OpflowConfig.Loader configLoader;
-
+    
     private OpflowRestrictorMaster restrictor;
     
     private boolean nativeWorkerEnabled;
@@ -273,6 +276,13 @@ public class OpflowCommander implements AutoCloseable {
         
         measurer.updateComponentInstance(OpflowConstant.COMP_COMMANDER, componentId, OpflowPromMeasurer.GaugeAction.INC);
         
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                close();
+            }
+        });
+        
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Commander[${commanderId}][${instanceId}].new() end!")
                 .stringify());
@@ -294,67 +304,83 @@ public class OpflowCommander implements AutoCloseable {
     }
     
     public final void serve(RoutingHandler httpHandlers) {
-        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}].serve() begin")
-                .stringify());
-        
-        OpflowUUID.start();
-        
-        if (rpcWatcher != null) {
-            rpcWatcher.start();
-        }
-        if (restServer != null) {
-            if (httpHandlers == null) {
-                restServer.serve();
+        synchronized (runningLock) {
+            if (!runningActive) {
+                runningActive = true;
             } else {
-                restServer.serve(httpHandlers);
+                return;
             }
+
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                    .text("Commander[${commanderId}].serve() begin")
+                    .stringify());
+
+            OpflowUUID.start();
+
+            if (rpcWatcher != null) {
+                rpcWatcher.start();
+            }
+            if (restServer != null) {
+                if (httpHandlers == null) {
+                    restServer.serve();
+                } else {
+                    restServer.serve(httpHandlers);
+                }
+            }
+            if (restrictor != null) {
+                restrictor.unblock();
+            }
+            if (speedMeter != null) {
+                speedMeter.start();
+            }
+
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                    .text("Commander[${commanderId}].serve() end")
+                    .stringify());
         }
-        if (restrictor != null) {
-            restrictor.unblock();
-        }
-        if (speedMeter != null) {
-            speedMeter.start();
-        }
-        
-        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}].serve() end")
-                .stringify());
     }
     
     @Override
     public final void close() {
-        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}][${instanceId}].close()")
-                .stringify());
+        synchronized (runningLock) {
+            if (runningActive) {
+                runningActive = false;
+            } else {
+                return;
+            }
 
-        if (restrictor != null) {
-            restrictor.block();
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                    .text("Commander[${commanderId}][${instanceId}].close()")
+                    .stringify());
+
+            if (restrictor != null) {
+                restrictor.block();
+            }
+
+            if (speedMeter != null) {
+                speedMeter.close();
+            }
+
+            if (restServer != null) restServer.close();
+            if (rpcWatcher != null) rpcWatcher.close();
+
+            if (publisher != null) publisher.close();
+            if (amqpMaster != null) amqpMaster.close();
+            if (httpMaster != null) httpMaster.close();
+            if (configurer != null) configurer.close();
+
+            if (rpcObserver != null) rpcObserver.close();
+
+            if (restrictor != null) {
+                restrictor.close();
+            }
+
+            OpflowUUID.release();
+
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                    .text("Commander[${commanderId}][${instanceId}].close() end!")
+                    .stringify());
         }
-
-        if (speedMeter != null) {
-            speedMeter.close();
-        }
-
-        if (restServer != null) restServer.close();
-        if (rpcWatcher != null) rpcWatcher.close();
-
-        if (publisher != null) publisher.close();
-        if (amqpMaster != null) amqpMaster.close();
-        if (httpMaster != null) httpMaster.close();
-        if (configurer != null) configurer.close();
-
-        if (rpcObserver != null) rpcObserver.close();
-
-        if (restrictor != null) {
-            restrictor.close();
-        }
-
-        OpflowUUID.release();
-
-        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}][${instanceId}].close() end!")
-                .stringify());
     }
     
     private boolean isRemoteRpcAvailable() {
