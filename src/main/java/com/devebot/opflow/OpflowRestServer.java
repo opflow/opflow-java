@@ -289,6 +289,13 @@ public class OpflowRestServer implements AutoCloseable {
                             result = taskSubmitter.reset();
                             break;
 
+                        case "activate-publisher":
+                            boolean state_ = getQueryParam(exchange, "state", Boolean.class, true);
+                            result = taskSubmitter.activatePublisher(state_, OpflowObjectTree.buildMap(false)
+                                    .put("class", getQueryParam(exchange, "class"))
+                                    .toMap());
+                            break;
+
                         case "activate-remote-worker":
                         case "activate-detached-worker":
                         case "activate-remote-amqp-worker":

@@ -723,6 +723,11 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         @Override
+        public Map<String, Object> activatePublisher(boolean state, Map<String, Object> opts) {
+            return activateWorker(OpflowConstant.COMP_PUBLISHER, state, opts);
+        }
+        
+        @Override
         public Map<String, Object> activateRemoteAMQPWorker(boolean state, Map<String, Object> opts) {
             return activateWorker(OpflowConstant.COMP_REMOTE_AMQP_WORKER, state, opts);
         }
@@ -756,6 +761,10 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         private void activateWorkerForRpcInvocation(RpcInvocationHandler handler, String type, boolean state) {
+            if (OpflowConstant.COMP_PUBLISHER.equals(type)) {
+                handler.setPublisherActive(state);
+                return;
+            }
             if (OpflowConstant.COMP_REMOTE_AMQP_WORKER.equals(type)) {
                 handler.setRemoteAMQPWorkerActive(state);
                 return;
@@ -1062,12 +1071,14 @@ public class OpflowCommander implements AutoCloseable {
                         if (val.getNativeWorkerClassName() != null) {
                             opts.put("nativeWorkerClassName", val.getNativeWorkerClassName());
                         }
-                        opts.put("nativeWorkerActive", val.isNativeWorkerActive());
-                        opts.put("nativeWorkerAvailable", val.isNativeWorkerAvailable());
+                        opts.put("publisherActive", val.isPublisherActive());
+                        opts.put("publisherAvailable", val.isPublisherAvailable());
                         opts.put("amqpWorkerActive", val.isRemoteAMQPWorkerActive());
                         opts.put("amqpWorkerAvailable", val.isRemoteAMQPWorkerAvailable());
                         opts.put("httpWorkerActive", val.isRemoteHTTPWorkerActive());
                         opts.put("httpWorkerAvailable", val.isRemoteHTTPWorkerAvailable());
+                        opts.put("nativeWorkerActive", val.isNativeWorkerActive());
+                        opts.put("nativeWorkerAvailable", val.isNativeWorkerAvailable());
                     }
                 }).toMap());
             }
@@ -1093,6 +1104,7 @@ public class OpflowCommander implements AutoCloseable {
         private final Map<String, String> aliasOfMethod = new HashMap<>();
         private final Map<String, Boolean> methodIsAsync = new HashMap<>();
 
+        private boolean publisherActive = true;
         private boolean remoteAMQPWorkerActive = true;
         private boolean remoteHTTPWorkerActive = true;
         
@@ -1150,12 +1162,24 @@ public class OpflowCommander implements AutoCloseable {
             return methodIsAsync.keySet();
         }
 
+        public boolean isPublisherActive() {
+            return publisherActive;
+        }
+
+        public void setPublisherActive(boolean active) {
+            this.publisherActive = active;
+        }
+        
+        public boolean isPublisherAvailable() {
+            return this.publisher != null && this.publisherActive;
+        }
+
         public boolean isNativeWorkerActive() {
             return nativeWorkerActive;
         }
 
-        public void setNativeWorkerActive(boolean nativeWorkerActive) {
-            this.nativeWorkerActive = nativeWorkerActive;
+        public void setNativeWorkerActive(boolean active) {
+            this.nativeWorkerActive = active;
         }
 
         public boolean isNativeWorkerAvailable() {
@@ -1176,8 +1200,8 @@ public class OpflowCommander implements AutoCloseable {
             return this.remoteAMQPWorkerActive;
         }
         
-        public void setRemoteAMQPWorkerActive(boolean remoteWorkerActive) {
-            this.remoteAMQPWorkerActive = remoteWorkerActive;
+        public void setRemoteAMQPWorkerActive(boolean active) {
+            this.remoteAMQPWorkerActive = active;
         }
         
         public boolean isRemoteAMQPWorkerAvailable() {
@@ -1188,8 +1212,8 @@ public class OpflowCommander implements AutoCloseable {
             return this.remoteHTTPWorkerActive;
         }
         
-        public void setRemoteHTTPWorkerActive(boolean remoteWorkerActive) {
-            this.remoteHTTPWorkerActive = remoteWorkerActive;
+        public void setRemoteHTTPWorkerActive(boolean active) {
+            this.remoteHTTPWorkerActive = active;
         }
         
         public boolean isRemoteHTTPWorkerAvailable() {
@@ -1254,7 +1278,7 @@ public class OpflowCommander implements AutoCloseable {
                     .text("Request[${requestId}][${requestTime}] - RpcInvocationHandler.invoke() details")
                     .stringify());
 
-            if (this.publisher != null && isAsync && void.class.equals(method.getReturnType())) {
+            if (this.publisher != null && this.publisherActive && isAsync && void.class.equals(method.getReturnType())) {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-publish-method] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
