@@ -122,9 +122,10 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
         executor = new OpflowExecutor(engine);
         
         if (incomingQueueName != null) {
-            executor.assertQueue(incomingQueueName);
+            executor.assertQueue(incomingQueueName, incomingQueueDurable, incomingQueueExclusive, incomingQueueAutoDelete);
         }
         
+        // responseQueue - Deprecated
         responseQueueName = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
         
         if (incomingQueueName != null && responseQueueName != null && incomingQueueName.equals(responseQueueName)) {
@@ -310,16 +311,16 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
         return incomingQueueName;
     }
 
-    public Boolean getIncomingQueueAutoDelete() {
-        return incomingQueueAutoDelete;
-    }
-
     public Boolean getIncomingQueueDurable() {
         return incomingQueueDurable;
     }
 
     public Boolean getIncomingQueueExclusive() {
         return incomingQueueExclusive;
+    }
+
+    public Boolean getIncomingQueueAutoDelete() {
+        return incomingQueueAutoDelete;
     }
 
     public void setHttpAddress(String address) {
