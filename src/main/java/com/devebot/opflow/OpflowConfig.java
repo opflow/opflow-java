@@ -242,16 +242,6 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
                         });
                         break;
-                    case OpflowConstant.COMP_CONFIGURER:
-                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                            OpflowConstant.OPFLOW_COMMON_ENABLED,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
-                            OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                            OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
-                        });
-                        break;
                     case OpflowConstant.COMP_PUBLISHER:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
@@ -392,16 +382,6 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_COMMON_HOST,
                             OpflowConstant.OPFLOW_COMMON_HOSTNAME,
                             OpflowConstant.OPFLOW_COMMON_PORTS,
-                        });
-                        break;
-                    case OpflowConstant.COMP_CONFIGURER:
-                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                            OpflowConstant.OPFLOW_COMMON_ENABLED,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
-                            OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                            OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
                         });
                         break;
                     case OpflowConstant.COMP_SUBSCRIBER:

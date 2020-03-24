@@ -29,7 +29,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcAmqpMaster.class);
 
     private final static long DELAY_TIMEOUT = 1000;
-    private final static int PREFETCH_NUM = 4;
+    private final static int PREFETCH_NUM = 1;
     private final static int CONSUMER_MAX = 1;
     
     private final String componentId;

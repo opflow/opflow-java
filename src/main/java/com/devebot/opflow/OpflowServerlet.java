@@ -34,7 +34,6 @@ public class OpflowServerlet implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
 
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[]{
-        OpflowConstant.COMP_CONFIGURER,
         OpflowConstant.COMP_RPC_AMQP_WORKER,
         OpflowConstant.COMP_SUBSCRIBER
     });
@@ -54,7 +53,6 @@ public class OpflowServerlet implements AutoCloseable {
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
 
-    private OpflowPubsubHandler configurer;
     private OpflowRpcAmqpWorker amqpWorker;
     private OpflowRpcHttpWorker httpWorker;
     private OpflowPubsubHandler subscriber;
@@ -100,7 +98,6 @@ public class OpflowServerlet implements AutoCloseable {
 
         measurer = OpflowPromMeasurer.getInstance(OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PROM_EXPORTER));
 
-        Map<String, Object> configurerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CONFIGURER);
         Map<String, Object> amqpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowConstant.COMP_CFG_AMQP_WORKER);
         Map<String, Object> httpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_WORKER);
         Map<String, Object> subscriberCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SUBSCRIBER);
@@ -108,20 +105,6 @@ public class OpflowServerlet implements AutoCloseable {
         HashSet<String> checkExchange = new HashSet<>();
         HashSet<String> checkQueue = new HashSet<>();
         HashSet<String> checkRecyclebin = new HashSet<>();
-
-        if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-            if (!OpflowUtil.isAMQPEntrypointNull(configurerCfg)) {
-                if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(configurerCfg))) {
-                    throw new OpflowBootstrapException("Duplicated Configurer connection parameters (exchangeName-routingKey)");
-                }
-            }
-            if (configurerCfg.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME) != null && !checkQueue.add(configurerCfg.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME).toString())) {
-                throw new OpflowBootstrapException("Configurer[subscriberName] must not be duplicated");
-            }
-            if (configurerCfg.get(OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME) != null) {
-                checkRecyclebin.add(configurerCfg.get(OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME).toString());
-            }
-        }
 
         if (OpflowUtil.isComponentEnabled(amqpWorkerCfg)) {
             if (!OpflowUtil.isAMQPEntrypointNull(amqpWorkerCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY)) {
@@ -161,24 +144,6 @@ public class OpflowServerlet implements AutoCloseable {
         }
 
         try {
-            if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-                String pubsubHandlerId = OpflowUUID.getBase64ID();
-                configurerCfg.put(CONST.COMPONENT_ID, pubsubHandlerId);
-                if (logTracer.ready(LOG, Level.INFO)) {
-                    LOG.info(logTracer
-                        .put("pubsubHandlerId", pubsubHandlerId)
-                        .text("Serverlet[${serverletId}] creates a new configurer[${pubsubHandlerId}]")
-                        .stringify());
-                }
-                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                    @Override
-                    public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
-                    }
-                }, configurerCfg).toMap());
-            }
-            
             if (OpflowUtil.isComponentEnabled(amqpWorkerCfg)) {
                 String amqpWorkerId = OpflowUUID.getBase64ID();
                 amqpWorkerCfg.put(CONST.COMPONENT_ID, amqpWorkerId);
@@ -263,10 +228,6 @@ public class OpflowServerlet implements AutoCloseable {
                 .stringify());
         }
 
-        if (configurer != null && listenerMap.getConfigurer() != null) {
-            configurer.subscribe(listenerMap.getConfigurer());
-        }
-
         if (amqpWorker != null) {
             Map<String, OpflowRpcAmqpWorker.Listener> rpcListeners = listenerMap.getRpcListeners();
             for (Map.Entry<String, OpflowRpcAmqpWorker.Listener> entry : rpcListeners.entrySet()) {
@@ -329,9 +290,6 @@ public class OpflowServerlet implements AutoCloseable {
                 .stringify());
         }
 
-        if (configurer != null) {
-            configurer.close();
-        }
         if (amqpWorker != null) {
             amqpWorker.close();
         }
@@ -362,11 +320,6 @@ public class OpflowServerlet implements AutoCloseable {
 
         private ListenerDescriptor map = new ListenerDescriptor();
 
-        public DescriptorBuilder setConfigurer(OpflowPubsubListener configurer) {
-            map.configurer = configurer;
-            return this;
-        }
-
         public DescriptorBuilder setSubscriber(OpflowPubsubListener subscriber) {
             map.subscriber = subscriber;
             return this;
@@ -385,15 +338,10 @@ public class OpflowServerlet implements AutoCloseable {
     public static class ListenerDescriptor {
 
         public static final ListenerDescriptor EMPTY = new ListenerDescriptor();
-        private OpflowPubsubListener configurer;
         private Map<String, OpflowRpcAmqpWorker.Listener> rpcListeners = new HashMap<>();
         private OpflowPubsubListener subscriber;
 
         private ListenerDescriptor() {
-        }
-
-        public OpflowPubsubListener getConfigurer() {
-            return configurer;
         }
 
         public Map<String, OpflowRpcAmqpWorker.Listener> getRpcListeners() {

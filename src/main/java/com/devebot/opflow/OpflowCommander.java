@@ -42,7 +42,6 @@ public class OpflowCommander implements AutoCloseable {
     private final static int FLAG_HTTP = 2;
     
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
-        OpflowConstant.COMP_CONFIGURER,
         OpflowConstant.COMP_PUBLISHER,
         OpflowConstant.COMP_RPC_AMQP_MASTER,
     });
@@ -73,7 +72,6 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRestrictorMaster restrictor;
     
     private boolean nativeWorkerEnabled;
-    private OpflowPubsubHandler configurer;
     private OpflowRpcAmqpMaster amqpMaster;
     private OpflowRpcHttpMaster httpMaster;
     private OpflowPubsubHandler publisher;
@@ -154,7 +152,6 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         Map<String, Object> reqExtractorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR);
-        Map<String, Object> configurerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CONFIGURER);
         Map<String, Object> amqpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.COMP_CFG_AMQP_MASTER);
         Map<String, Object> httpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_MASTER);
         Map<String, Object> publisherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PUBLISHER);
@@ -163,15 +160,6 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> restServerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REST_SERVER);
 
         HashSet<String> checkExchange = new HashSet<>();
-
-        if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-            if (OpflowUtil.isAMQPEntrypointNull(configurerCfg)) {
-                throw new OpflowBootstrapException("Invalid Configurer connection parameters");
-            }
-            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(configurerCfg))) {
-                throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
-            }
-        }
 
         if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(amqpMasterCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY)) {
@@ -198,15 +186,6 @@ public class OpflowCommander implements AutoCloseable {
 
             rpcObserver = new OpflowRpcObserver();
 
-            if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                    @Override
-                    public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
-                    }
-                }, configurerCfg).toMap());
-            }
             if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
                 amqpMaster = new OpflowRpcAmqpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
@@ -342,7 +321,6 @@ public class OpflowCommander implements AutoCloseable {
         if (publisher != null) publisher.close();
         if (amqpMaster != null) amqpMaster.close();
         if (httpMaster != null) httpMaster.close();
-        if (configurer != null) configurer.close();
 
         if (rpcObserver != null) rpcObserver.close();
 
