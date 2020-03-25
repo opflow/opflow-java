@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Map;
 
 /**
@@ -8,6 +9,10 @@ import java.util.Map;
  * @author drupalex
  */
 public class OpflowBuilder {
+    
+    public static OpflowCommander createBroker() throws OpflowBootstrapException {
+        return new OpflowCommander(OpflowObjectTree.buildMap().toMap());
+    }
     
     public static OpflowCommander createCommander() throws OpflowBootstrapException {
         return createCommander(null, null, true);

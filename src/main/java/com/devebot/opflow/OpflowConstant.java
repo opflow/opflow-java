@@ -286,7 +286,7 @@ public class OpflowConstant {
         LEGACY_ROUTINE_PINGPONG_APPLIED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_PINGPONG", null));
     }
 
-    public Map<String, String> getProtocolInfo() {
+    public Map<String, String> getAMQPHeaderInfo() {
         Map<String, String> info = new LinkedHashMap<>();
         info.put("AMQP_PROTOCOL_VERSION", AMQP_PROTOCOL_VERSION);
         info.put("AMQP_HEADER_ROUTINE_ID", AMQP_HEADER_ROUTINE_ID);
@@ -300,6 +300,15 @@ public class OpflowConstant {
             info.put("LEGACY_HEADER_ROUTINE_SIGNATURE", LEGACY_HEADER_ROUTINE_SIGNATURE);
             info.put("LEGACY_HEADER_ROUTINE_SCOPE", LEGACY_HEADER_ROUTINE_SCOPE);
         }
+        return info;
+    }
+
+    public Map<String, String> getHTTPHeaderInfo() {
+        Map<String, String> info = new LinkedHashMap<>();
+        info.put("HTTP_HEADER_ROUTINE_ID", HTTP_HEADER_ROUTINE_ID);
+        info.put("HTTP_HEADER_ROUTINE_TIMESTAMP", HTTP_HEADER_ROUTINE_TIMESTAMP);
+        info.put("HTTP_HEADER_ROUTINE_SIGNATURE", HTTP_HEADER_ROUTINE_SIGNATURE);
+        info.put("HTTP_HEADER_ROUTINE_SCOPE", HTTP_HEADER_ROUTINE_SCOPE);
         return info;
     }
 

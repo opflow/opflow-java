@@ -861,14 +861,14 @@ public class OpflowCommander implements AutoCloseable {
 
                                 opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME, amqpMaster.getResponseQueueName());
                                 if (checkOption(flag, SCOPE_INFO)) {
-                                    opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE, amqpMaster.getResponseQueueAutoDelete());
                                     opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE, amqpMaster.getResponseQueueDurable());
                                     opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE, amqpMaster.getResponseQueueExclusive());
+                                    opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE, amqpMaster.getResponseQueueAutoDelete());
                                 }
 
                                 opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
                                         .put(OpflowConstant.AMQP_PARAM_MESSAGE_TTL, amqpMaster.getExpiration())
-                                        .put("headers", CONST.getProtocolInfo(), checkOption(flag, SCOPE_INFO))
+                                        .put("headers", CONST.getAMQPHeaderInfo(), checkOption(flag, SCOPE_INFO))
                                         .toMap());
                             }
                         }).toMap());
@@ -884,6 +884,7 @@ public class OpflowCommander implements AutoCloseable {
                                         .put(OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, httpMaster.getCallTimeout())
                                         .put(OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, httpMaster.getWriteTimeout())
                                         .put(OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, httpMaster.getReadTimeout())
+                                        .put("headers", CONST.getHTTPHeaderInfo(), checkOption(flag, SCOPE_INFO))
                                         .toMap());
                             }
                         }).toMap());
@@ -1287,7 +1288,7 @@ public class OpflowCommander implements AutoCloseable {
                 throw new OpflowWorkerNotFoundException("all of workers are deactivated");
             }
             
-            boolean unfinished = true;
+            boolean unfinished = false;
             
             for (int flag : masterFlags) {
                 if (flag == FLAG_AMQP) {
