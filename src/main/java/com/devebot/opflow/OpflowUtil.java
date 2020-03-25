@@ -292,6 +292,14 @@ public class OpflowUtil {
         options.put(fieldName, value);
     }
     
+    public static String[] getStringArray(Map<String, Object> options, String fieldName, String[] defArray) {
+        Object value = options.get(fieldName);
+        if (value instanceof String[]) {
+            return (String[]) value;
+        }
+        return defArray;
+    }
+    
     public static Boolean getBooleanField(Map<String, Object> options, String fieldName, Boolean defValue) {
         return getPrimitiveField(options, fieldName, null, defValue, Boolean.class, false);
     }

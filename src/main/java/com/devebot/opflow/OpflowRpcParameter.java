@@ -48,10 +48,7 @@ public class OpflowRpcParameter implements Customizer {
         this.routineScope = OpflowUtil.getRoutineScope(headers);
         this.progressEnabled = OpflowUtil.getProgressEnabled(headers);
 
-        if (headers.get("timeout") instanceof Long) {
-            this.routineTTL = (Long) headers.get("timeout");
-        }
-
+        this.routineTTL = OpflowUtil.getLongField(headers, "timeout", null);
         this.callbackTransient = "forked".equals((String)headers.get("mode"));
 
         this.isInternalOplog = determineInternalOplog();

@@ -70,53 +70,20 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY));
 
         // Use for autoBinding
-        if (params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME) instanceof String) {
-            dispatchExchangeName = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME);
-        } else {
-            dispatchExchangeName = null;
-        }
+        dispatchExchangeName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME);
+        dispatchRoutingKey = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY);
         
-        if (params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY) instanceof String) {
-            dispatchRoutingKey = (String) params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY);
-        } else {
-            dispatchRoutingKey = null;
-        }
-        
-        incomingQueueName = (String) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
-        
+        // Incoming Queue parameters
+        incomingQueueName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
         if (incomingQueueName == null) {
             throw new OpflowBootstrapException("incomingQueueName must not be null");
         }
         
-        if (params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE) instanceof Boolean) {
-            incomingQueueAutoDelete = (Boolean) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE);
-        } else {
-            incomingQueueAutoDelete = null;
-        }
-        
-        if (params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE) instanceof Boolean) {
-            incomingQueueDurable = (Boolean) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE);
-        } else {
-            incomingQueueDurable = null;
-        }
-        
-        if (params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE) instanceof Boolean) {
-            incomingQueueExclusive = (Boolean) params.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE);
-        } else {
-            incomingQueueExclusive = null;
-        }
-        
-        if (params.get(OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS) instanceof String[]) {
-            incomingBindingKeys = (String[])params.get(OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS);
-        } else {
-            incomingBindingKeys = null;
-        }
-        
-        if (params.get(OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT) instanceof Integer) {
-            incomingPrefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT);
-        } else {
-            incomingPrefetchCount = null;
-        }
+        incomingQueueDurable = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE, null);
+        incomingQueueExclusive = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE, null);
+        incomingQueueAutoDelete = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE, null);
+        incomingBindingKeys = OpflowUtil.getStringArray(params, OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS, null);
+        incomingPrefetchCount = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT, null);
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);

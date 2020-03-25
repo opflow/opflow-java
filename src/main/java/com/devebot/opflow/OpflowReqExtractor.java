@@ -31,17 +31,9 @@ public class OpflowReqExtractor {
         if (kwargs == null) {
             init(null, null);
         } else {
-            if (kwargs.get("uuidIfNotFound") instanceof Boolean) {
-                uuidIfNotFound = (Boolean) kwargs.get("uuidIfNotFound");
-            }
-            String className = null;
-            if (kwargs.get("getRequestIdClassName") instanceof String) {
-                className = (String) kwargs.get("getRequestIdClassName");
-            }
-            String methodName = null;
-            if (kwargs.get("getRequestIdMethodName") instanceof String) {
-                methodName = (String) kwargs.get("getRequestIdMethodName");
-            }
+            uuidIfNotFound = OpflowUtil.getBooleanField(kwargs, "uuidIfNotFound", true);
+            String className = OpflowUtil.getStringField(kwargs, "getRequestIdClassName");
+            String methodName = OpflowUtil.getStringField(kwargs, "getRequestIdMethodName");
             init(className, methodName);
         }
     }

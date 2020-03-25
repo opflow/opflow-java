@@ -138,11 +138,7 @@ public class OpflowCommander implements AutoCloseable {
             restrictor.block();
         }
         
-        if (kwargs.get(OpflowConstant.PARAM_NATIVE_WORKER_ENABLED) instanceof Boolean) {
-            nativeWorkerEnabled = (Boolean) kwargs.get(OpflowConstant.PARAM_NATIVE_WORKER_ENABLED);
-        } else {
-            nativeWorkerEnabled = true;
-        }
+        nativeWorkerEnabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.PARAM_NATIVE_WORKER_ENABLED, Boolean.TRUE);
         
         if (nativeWorkerEnabled) {
             counter.setNativeWorkerEnabled(true);
