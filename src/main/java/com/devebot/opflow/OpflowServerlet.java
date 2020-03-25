@@ -39,6 +39,7 @@ public class OpflowServerlet implements AutoCloseable {
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[]{
+        OpflowConstant.COMP_DISCOVERY_CLIENT,
         OpflowConstant.COMP_PROM_EXPORTER,
         OpflowConstant.COMP_RPC_HTTP_WORKER,
     });
@@ -52,6 +53,7 @@ public class OpflowServerlet implements AutoCloseable {
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
+    private OpflowDiscoveryWorker discoveryWorker;
 
     private OpflowRpcAmqpWorker amqpWorker;
     private OpflowRpcHttpWorker httpWorker;
@@ -98,6 +100,12 @@ public class OpflowServerlet implements AutoCloseable {
 
         measurer = OpflowPromMeasurer.getInstance(OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PROM_EXPORTER));
 
+        Map<String, Object> discoveryClientCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_DISCOVERY_CLIENT);
+        
+        if (OpflowUtil.isComponentExplicitEnabled(discoveryClientCfg)) {
+            discoveryWorker = new OpflowDiscoveryWorker(componentId, 5L);
+        }
+        
         Map<String, Object> amqpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowConstant.COMP_CFG_AMQP_WORKER);
         Map<String, Object> httpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_WORKER);
         Map<String, Object> subscriberCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SUBSCRIBER);
@@ -179,6 +187,11 @@ public class OpflowServerlet implements AutoCloseable {
                     }
                 }, httpWorkerCfg).toMap());
             }
+
+            if (httpWorker != null && discoveryWorker != null) {
+                discoveryWorker.setName(httpWorker.getHostname());
+                discoveryWorker.setPort(httpWorker.getPort());
+            }
             
             if (amqpWorker != null && httpWorker != null) {
                 amqpWorker.setHttpAddress(httpWorker.getAddress());
@@ -219,6 +232,13 @@ public class OpflowServerlet implements AutoCloseable {
         }
 
         measurer.updateComponentInstance(OpflowConstant.COMP_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.INC);
+        
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                close();
+            }
+        });
     }
 
     public final void start() {
@@ -227,7 +247,12 @@ public class OpflowServerlet implements AutoCloseable {
                 .text("Serverlet[${serverletId}][${instanceId}].start()")
                 .stringify());
         }
-
+        
+        if (discoveryWorker != null) {
+            discoveryWorker.register();
+            discoveryWorker.start();
+        }
+        
         if (amqpWorker != null) {
             Map<String, OpflowRpcAmqpWorker.Listener> rpcListeners = listenerMap.getRpcListeners();
             for (Map.Entry<String, OpflowRpcAmqpWorker.Listener> entry : rpcListeners.entrySet()) {
@@ -290,6 +315,10 @@ public class OpflowServerlet implements AutoCloseable {
                 .stringify());
         }
 
+        if (discoveryWorker != null) {
+            discoveryWorker.close();
+        }
+        
         if (amqpWorker != null) {
             amqpWorker.close();
         }

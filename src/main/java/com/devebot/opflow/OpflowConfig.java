@@ -358,6 +358,11 @@ public class OpflowConfig {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
                 switch (componentName) {
+                    case OpflowConstant.COMP_DISCOVERY_CLIENT:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                        });
+                        break;
                     case OpflowConstant.COMP_RPC_AMQP_WORKER:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
