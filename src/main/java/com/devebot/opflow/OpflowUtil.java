@@ -241,28 +241,46 @@ public class OpflowUtil {
     }
     
     public static String getStringField(Map<String, Object> options, String fieldName) {
-        return getStringField(options, fieldName, null, false, false);
+        return getStringField(options, fieldName, null, null, false, false);
     }
     
     public static String getStringField(Map<String, Object> options, String fieldName, String defValue) {
-        return getStringField(options, fieldName, defValue, false, false);
+        return getStringField(options, fieldName, null, defValue, false, false);
     }
     
     public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound) {
-        return getStringField(options, fieldName, null, uuidIfNotFound, false);
+        return getStringField(options, fieldName, null, null, uuidIfNotFound, false);
     }
     
     public static String getStringField(Map<String, Object> options, String fieldName, boolean uuidIfNotFound, boolean assigned) {
-        return getStringField(options, fieldName, null, uuidIfNotFound, assigned);
+        return getStringField(options, fieldName, null, null, uuidIfNotFound, assigned);
     }
     
     public static String getStringField(Map<String, Object> options, String fieldName, String defValue, boolean uuidIfNotFound, boolean assigned) {
-        if (options == null) return null;
+        return getStringField(options, fieldName, null, defValue, uuidIfNotFound, assigned);
+    }
+    
+    public static String getStringField(Map<String, Object> options, String fieldName, String[] otherNames, String defValue, boolean uuidIfNotFound, boolean assigned) {
+        if (options == null || fieldName == null) {
+            return null;
+        }
         Object value = options.get(fieldName);
         if (value != null) {
             return value.toString();
         }
-        String valueStr = uuidIfNotFound ? OpflowUUID.getBase64ID() : defValue;
+        if (otherNames != null) {
+            for (String otherName : otherNames) {
+                value = options.get(otherName);
+                if (value != null) {
+                    String valueStr = value.toString();
+                    if (assigned) {
+                        options.put(fieldName, valueStr);
+                    }
+                    return valueStr;
+                }
+            }
+        }
+        String valueStr = (defValue != null) ? defValue : (uuidIfNotFound ? OpflowUUID.getBase64ID() : null);
         if (assigned) {
             options.put(fieldName, valueStr);
         }
@@ -275,11 +293,66 @@ public class OpflowUtil {
     }
     
     public static Boolean getBooleanField(Map<String, Object> options, String fieldName, Boolean defValue) {
-        return OpflowConverter.convert(OpflowUtil.getOptionField(options, fieldName, defValue), Boolean.class);
+        return getPrimitiveField(options, fieldName, null, defValue, Boolean.class, false);
+    }
+    
+    public static Boolean getBooleanField(Map<String, Object> options, String fieldName, String[] otherNames, Boolean defValue, boolean assigned) {
+        return getPrimitiveField(options, fieldName, otherNames, defValue, Boolean.class, assigned);
+    }
+    
+    public static Integer getIntegerField(Map<String, Object> options, String fieldName, Integer defValue) {
+        return getPrimitiveField(options, fieldName, null, defValue, Integer.class, false);
+    }
+    
+    public static Integer getIntegerField(Map<String, Object> options, String fieldName, String[] otherNames, Integer defValue, boolean assigned) {
+        return getPrimitiveField(options, fieldName, otherNames, defValue, Integer.class, assigned);
     }
     
     public static Long getLongField(Map<String, Object> options, String fieldName, Long defValue) {
-        return OpflowConverter.convert(OpflowUtil.getOptionField(options, fieldName, defValue), Long.class);
+        return getPrimitiveField(options, fieldName, null, defValue, Long.class, false);
+    }
+    
+    public static Long getLongField(Map<String, Object> options, String fieldName, String[] otherNames, Long defValue, boolean assigned) {
+        return getPrimitiveField(options, fieldName, otherNames, defValue, Long.class, assigned);
+    }
+    
+    private static <T> T getPrimitiveField(Map<String, Object> options, String fieldName, String[] otherNames, T defValue, Class<T> type, boolean assigned) {
+        if (options == null || fieldName == null) {
+            return null;
+        }
+        T value = assertPrimitiveValue(options, fieldName, fieldName, type, assigned);
+        if (value != null) {
+            return value;
+        }
+        if (otherNames != null) {
+            for (String otherName : otherNames) {
+                value = assertPrimitiveValue(options, otherName, fieldName, type, assigned);
+                if (value != null) {
+                    return value;
+                }
+            }
+        }
+        if (assigned) {
+            if (defValue != null) {
+                options.put(fieldName, defValue);
+            }
+        }
+        return defValue;
+    }
+    
+    private static <T> T assertPrimitiveValue(Map<String, Object> options, String sourceName, String targetName, Class<T> type, boolean assigned) {
+        Object value = options.get(sourceName);
+        if (type.isInstance(value)) {
+            return (T) value;
+        }
+        if (value != null) {
+            T output = OpflowConverter.convert(value.toString(), type);
+            if (assigned) {
+                options.put(targetName, output);
+            }
+            return output;
+        }
+        return null;
     }
     
     public static Object getOptionField(Map<String, Object> options, String fieldName, Object defval) {
