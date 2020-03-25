@@ -99,6 +99,10 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_UPTIME = "uptime";
     public final static String OPFLOW_COMMON_CHANNEL = "connection";
 
+    public final static String OPFLOW_REQ_EXTRACTOR_CLASS_NAME = "getRequestIdClassName";
+    public final static String OPFLOW_REQ_EXTRACTOR_METHOD_NAME = "getRequestIdMethodName";
+    public final static String OPFLOW_REQ_EXTRACTOR_AUTO_UUID = "uuidIfNotFound";
+    
     public final static String OPFLOW_RPC_MONITOR_ID = "monitorId";
     public final static String OPFLOW_RPC_MONITOR_ENABLED = "monitorEnabled";
     public final static String OPFLOW_RPC_MONITOR_INTERVAL = "monitorInterval";

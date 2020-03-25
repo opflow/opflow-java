@@ -72,10 +72,10 @@ public class OpflowSingleton {
                         map.put(uniqCode, (T) OpflowBuilder.createPubsubHandler(configFile));
                     }
                     if (OpflowRpcAmqpMaster.class.equals(clazz)) {
-                        map.put(uniqCode, (T) OpflowBuilder.createRpcMaster(configFile));
+                        map.put(uniqCode, (T) OpflowBuilder.createAmqpMaster(configFile));
                     }
                     if (OpflowRpcAmqpWorker.class.equals(clazz)) {
-                        map.put(uniqCode, (T) OpflowBuilder.createRpcWorker(configFile));
+                        map.put(uniqCode, (T) OpflowBuilder.createAmqpWorker(configFile));
                     }
                 }
             }

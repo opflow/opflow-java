@@ -227,9 +227,9 @@ public class OpflowConfig {
                     case OpflowConstant.COMP_REQ_EXTRACTOR:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
-                            "getRequestIdClassName",
-                            "getRequestIdMethodName",
-                            "uuidIfNotFound"
+                            OpflowConstant.OPFLOW_REQ_EXTRACTOR_CLASS_NAME,
+                            OpflowConstant.OPFLOW_REQ_EXTRACTOR_METHOD_NAME,
+                            OpflowConstant.OPFLOW_REQ_EXTRACTOR_AUTO_UUID
                         });
                         break;
                     case OpflowConstant.COMP_RESTRICTOR:
