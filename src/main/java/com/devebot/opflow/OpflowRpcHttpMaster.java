@@ -64,17 +64,8 @@ public class OpflowRpcHttpMaster {
                 .text("httpMaster[${httpMasterId}][${instanceId}].new()")
                 .stringify());
         
-        if (params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN) instanceof Boolean) {
-            autorun = (Boolean) params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN);
-        } else {
-            autorun = false;
-        }
-        
-        if (params.get("testException") instanceof Boolean) {
-            testException = (Boolean) params.get("testException");
-        } else {
-            testException = false;
-        }
+        autorun = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_COMMON_AUTORUN, Boolean.FALSE);
+        testException = OpflowUtil.getBooleanField(params, "testException", Boolean.FALSE);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("httpMaster[${httpMasterId}][${instanceId}].new() end!")

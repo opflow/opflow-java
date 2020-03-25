@@ -67,8 +67,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, params.get(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE));
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY));
         
-        subscriberName = (String) params.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME);
-        recyclebinName = (String) params.get(OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME);
+        subscriberName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME);
+        recyclebinName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME);
         
         if (subscriberName != null && recyclebinName != null && subscriberName.equals(recyclebinName)) {
             throw new OpflowBootstrapException("subscriberName should be different with recyclebinName");
@@ -101,30 +101,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
             executor.assertQueue(recyclebinName);
         }
         
-        if (params.get(OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS) instanceof String[]) {
-            bindingKeys = (String[])params.get(OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS);
-        }
+        bindingKeys = OpflowUtil.getStringArray(params, OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS, null);
         
-        if (params.get(OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT) instanceof Integer) {
-            prefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT);
-            if (prefetchCount < 0) prefetchCount = 0;
-        }
+        prefetchCount = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT, 0);
+        if (prefetchCount < 0) prefetchCount = 0;
         
-        if (params.get(OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT) instanceof Integer) {
-            subscriberLimit = (Integer) params.get(OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT);
-            if (subscriberLimit < 0) subscriberLimit = 0;
-        }
+        subscriberLimit = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT, 0);
+        if (subscriberLimit < 0) subscriberLimit = 0;
         
-        if (params.get(OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT) instanceof Integer) {
-            redeliveredLimit = (Integer) params.get(OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT);
-            if (redeliveredLimit < 0) redeliveredLimit = 0;
-        }
+        redeliveredLimit = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT, 0);
+        if (redeliveredLimit < 0) redeliveredLimit = 0;
         
-        if (params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN) instanceof Boolean) {
-            autorun = (Boolean) params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN);
-        } else {
-            autorun = false;
-        }
+        autorun = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_COMMON_AUTORUN, Boolean.FALSE);
         
         if (autorun) {
             this.serve();

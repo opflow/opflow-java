@@ -42,7 +42,6 @@ public class OpflowCommander implements AutoCloseable {
     private final static int FLAG_HTTP = 2;
     
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[] {
-        OpflowConstant.COMP_CONFIGURER,
         OpflowConstant.COMP_PUBLISHER,
         OpflowConstant.COMP_RPC_AMQP_MASTER,
     });
@@ -76,7 +75,6 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRestrictorMaster restrictor;
     
     private boolean nativeWorkerEnabled;
-    private OpflowPubsubHandler configurer;
     private OpflowRpcAmqpMaster amqpMaster;
     private OpflowRpcHttpMaster httpMaster;
     private OpflowPubsubHandler publisher;
@@ -143,11 +141,7 @@ public class OpflowCommander implements AutoCloseable {
             restrictor.block();
         }
         
-        if (kwargs.get(OpflowConstant.PARAM_NATIVE_WORKER_ENABLED) instanceof Boolean) {
-            nativeWorkerEnabled = (Boolean) kwargs.get(OpflowConstant.PARAM_NATIVE_WORKER_ENABLED);
-        } else {
-            nativeWorkerEnabled = true;
-        }
+        nativeWorkerEnabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.PARAM_NATIVE_WORKER_ENABLED, Boolean.TRUE);
         
         if (nativeWorkerEnabled) {
             counter.setNativeWorkerEnabled(true);
@@ -157,7 +151,6 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         Map<String, Object> reqExtractorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR);
-        Map<String, Object> configurerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CONFIGURER);
         Map<String, Object> amqpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.COMP_CFG_AMQP_MASTER);
         Map<String, Object> httpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_MASTER);
         Map<String, Object> publisherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PUBLISHER);
@@ -166,15 +159,6 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> restServerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REST_SERVER);
 
         HashSet<String> checkExchange = new HashSet<>();
-
-        if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-            if (OpflowUtil.isAMQPEntrypointNull(configurerCfg)) {
-                throw new OpflowBootstrapException("Invalid Configurer connection parameters");
-            }
-            if (!checkExchange.add(OpflowUtil.getAMQPEntrypointCode(configurerCfg))) {
-                throw new OpflowBootstrapException("Duplicated Configurer connection parameters");
-            }
-        }
 
         if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
             if (OpflowUtil.isAMQPEntrypointNull(amqpMasterCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY)) {
@@ -201,15 +185,6 @@ public class OpflowCommander implements AutoCloseable {
 
             rpcObserver = new OpflowRpcObserver();
 
-            if (OpflowUtil.isComponentEnabled(configurerCfg)) {
-                configurer = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                    @Override
-                    public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
-                        opts.put(OpflowConstant.COMP_MEASURER, measurer);
-                    }
-                }, configurerCfg).toMap());
-            }
             if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
                 amqpMaster = new OpflowRpcAmqpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
@@ -367,7 +342,6 @@ public class OpflowCommander implements AutoCloseable {
             if (publisher != null) publisher.close();
             if (amqpMaster != null) amqpMaster.close();
             if (httpMaster != null) httpMaster.close();
-            if (configurer != null) configurer.close();
 
             if (rpcObserver != null) rpcObserver.close();
 
@@ -1093,7 +1067,7 @@ public class OpflowCommander implements AutoCloseable {
                     @Override
                     public void transform(Map<String, Object> opts) {
                         opts.put("class", entry.getKey());
-                        opts.put("methods", val.getMethodNames());
+                        opts.put("methods", val.getMethodInfos());
                         if (val.getNativeWorkerClassName() != null) {
                             opts.put("nativeWorkerClassName", val.getNativeWorkerClassName());
                         }
@@ -1186,6 +1160,19 @@ public class OpflowCommander implements AutoCloseable {
 
         public Set<String> getMethodNames() {
             return methodIsAsync.keySet();
+        }
+        
+        public Set<Map<String, Object>> getMethodInfos() {
+            Set<Map<String, Object>> infos = new HashSet<>();
+            Set<String> methodNames = methodIsAsync.keySet();
+            for (String methodName : methodNames) {
+                infos.add(OpflowObjectTree.buildMap()
+                    .put("method", methodName)
+                    .put("alias", aliasOfMethod.get(methodName))
+                    .put("async", methodIsAsync.get(methodName))
+                    .toMap());
+            }
+            return infos;
         }
 
         public boolean isPublisherActive() {

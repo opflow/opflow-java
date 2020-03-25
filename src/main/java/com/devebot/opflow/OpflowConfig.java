@@ -73,6 +73,9 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
                 OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
                 OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
+                OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
+                OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
+                OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
                 OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
                 OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX,
                 OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
@@ -114,9 +117,9 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
                 OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
                 OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
-                OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
                 OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
                 OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
+                OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
                 OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
                 OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME,
                 OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE,
@@ -224,9 +227,9 @@ public class OpflowConfig {
                     case OpflowConstant.COMP_REQ_EXTRACTOR:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
-                            "getRequestIdClassName",
-                            "getRequestIdMethodName",
-                            "uuidIfNotFound"
+                            OpflowConstant.OPFLOW_REQ_EXTRACTOR_CLASS_NAME,
+                            OpflowConstant.OPFLOW_REQ_EXTRACTOR_METHOD_NAME,
+                            OpflowConstant.OPFLOW_REQ_EXTRACTOR_AUTO_UUID
                         });
                         break;
                     case OpflowConstant.COMP_RESTRICTOR:
@@ -237,16 +240,6 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED,
                             OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS,
                             OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
-                        });
-                        break;
-                    case OpflowConstant.COMP_CONFIGURER:
-                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                            OpflowConstant.OPFLOW_COMMON_ENABLED,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
-                            OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                            OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
                         });
                         break;
                     case OpflowConstant.COMP_PUBLISHER:
@@ -269,6 +262,9 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
                             OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
                             OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
+                            OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
+                            OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
+                            OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
                             OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
                             OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX,
                             OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
@@ -370,9 +366,9 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
                             OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
                             OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
-                            OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
                             OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
                             OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
+                            OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
                             OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
                             OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME,
                             OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE,
@@ -386,16 +382,6 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_COMMON_HOST,
                             OpflowConstant.OPFLOW_COMMON_HOSTNAME,
                             OpflowConstant.OPFLOW_COMMON_PORTS,
-                        });
-                        break;
-                    case OpflowConstant.COMP_CONFIGURER:
-                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
-                            OpflowConstant.OPFLOW_COMMON_ENABLED,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
-                            OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
-                            OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                            OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME
                         });
                         break;
                     case OpflowConstant.COMP_SUBSCRIBER:

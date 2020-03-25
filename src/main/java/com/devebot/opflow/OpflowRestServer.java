@@ -73,12 +73,7 @@ public class OpflowRestServer implements AutoCloseable {
         port = OpflowUtil.detectFreePort(kwargs, OpflowConstant.OPFLOW_COMMON_PORTS, new Integer[] {
                 8989, 8990, 8991, 8992, 8993, 8994, 8995, 8996, 8997, 8998, 8999
         });
-        
-        if (kwargs.get(OpflowConstant.OPFLOW_COMMON_CREDENTIALS) instanceof String[]) {
-            credentials = (String[])kwargs.get(OpflowConstant.OPFLOW_COMMON_CREDENTIALS);
-        } else {
-            credentials = null;
-        }
+        credentials = OpflowUtil.getStringArray(kwargs, OpflowConstant.OPFLOW_COMMON_CREDENTIALS, null);
         
         shutdownTimeout = OpflowObjectTree.getOptionValue(kwargs, "shutdownTimeout", Long.class, 1000l);
         

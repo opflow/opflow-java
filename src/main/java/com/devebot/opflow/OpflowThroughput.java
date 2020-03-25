@@ -190,22 +190,16 @@ public class OpflowThroughput {
         public Meter(Map<String, Object> kwargs) {
             kwargs = OpflowObjectTree.ensureNonNull(kwargs);
             // load [active] value from the config, false by default
-            if (kwargs.get(OpflowConstant.OPFLOW_COMMON_ACTIVE) instanceof Boolean) {
-                active = (Boolean) kwargs.get(OpflowConstant.OPFLOW_COMMON_ACTIVE);
-            }
+            active = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_ACTIVE, Boolean.FALSE);
             // updating interval
-            if (kwargs.get(OpflowConstant.OPFLOW_COMMON_INTERVAL) instanceof Long) {
-                long _interval = (Long) kwargs.get(OpflowConstant.OPFLOW_COMMON_INTERVAL);
-                if (_interval > 0) {
-                    interval = _interval;
-                }
+            Long _interval = OpflowUtil.getLongField(kwargs, OpflowConstant.OPFLOW_COMMON_INTERVAL, null);
+            if (_interval != null && _interval > 0) {
+                interval = _interval;
             }
             // customize the tail length
-            if (kwargs.get(OpflowConstant.OPFLOW_COMMON_LENGTH) instanceof Integer) {
-                int _length = (Integer) kwargs.get(OpflowConstant.OPFLOW_COMMON_LENGTH);
-                if (_length > 0 && _length <= 10) {
-                    length = _length;
-                }
+            Integer _length = OpflowUtil.getIntegerField(kwargs, OpflowConstant.OPFLOW_COMMON_LENGTH, null);
+            if (_length != null && _length > 0 && _length <= 10) {
+                length = _length;
             }
         }
 

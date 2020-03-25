@@ -106,17 +106,11 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             }
         });
         
-        if (params.get(OpflowConstant.AMQP_PARAM_MESSAGE_TTL) instanceof Long) {
-            expiration = (Long) params.get(OpflowConstant.AMQP_PARAM_MESSAGE_TTL);
-        } else {
-            expiration = 0;
-        }
+        // Message TTL option
+        expiration = OpflowUtil.getLongField(params, OpflowConstant.AMQP_PARAM_MESSAGE_TTL, 0l);
         
-        String responseQueuePattern = null;
-        if (params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX) instanceof String) {
-            responseQueuePattern = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX);
-        }
-        
+        // Response queue options
+        String responseQueuePattern = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX);
         String responseQueueSuffix = null;
         if (responseQueuePattern != null && responseQueuePattern.length() > 0) {
             if (responseQueuePattern.equals("~")) {
@@ -126,70 +120,40 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             }
         }
         
-        String _responseQueueName = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
+        String _responseQueueName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
         if (_responseQueueName != null) {
             responseQueueName = responseQueueSuffix != null ? _responseQueueName + '_' + responseQueueSuffix : _responseQueueName;
         } else {
             responseQueueName = null;
         }
         
-        if (params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE) instanceof Boolean) {
-            responseQueueDurable = (Boolean) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE);
-        } else {
-            responseQueueDurable = responseQueueSuffix != null ? false : null;
-        }
-        
-        if (params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE) instanceof Boolean) {
-            responseQueueExclusive = (Boolean) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE);
-        } else {
-            responseQueueExclusive = responseQueueSuffix != null ? true : null;
-        }
-        
-        if (params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE) instanceof Boolean) {
-            responseQueueAutoDelete = (Boolean) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE);
-        } else {
-            responseQueueAutoDelete = responseQueueSuffix != null ? true : null;
-        }
-        
-        if (params.get(OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT) instanceof Integer) {
-            responsePrefetchCount = (Integer) params.get(OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT);
-        } else {
-            responsePrefetchCount = PREFETCH_NUM;
-        }
+        responseQueueDurable = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE, responseQueueSuffix != null ? false : null);
+        responseQueueExclusive = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE, responseQueueSuffix != null ? true : null);
+        responseQueueAutoDelete = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE, responseQueueSuffix != null ? true : null);
+        responsePrefetchCount = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT, PREFETCH_NUM);
         
         if (responseQueueName != null) {
             executor.assertQueue(responseQueueName, responseQueueDurable, responseQueueExclusive, responseQueueAutoDelete);
         }
         
-        if (params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED) instanceof Boolean) {
-            monitorEnabled = (Boolean) params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED);
-        } else {
-            monitorEnabled = true;
+        // Auto-binding section
+        String _dispatchQueueName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
+        if (_dispatchQueueName != null) {
+            Boolean _dispatchQueueDurable = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE, null);
+            Boolean _dispatchQueueExclusive = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE, null);
+            Boolean _dispatchQueueAutoDelete = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE, null);
+            executor.assertQueue(_dispatchQueueName, _dispatchQueueDurable, _dispatchQueueExclusive, _dispatchQueueAutoDelete);
+            executor.bindExchange(engine.getExchangeName(), engine.getRoutingKey(), _dispatchQueueName);
         }
         
-        if (params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ID) instanceof String) {
-            monitorId = (String) params.get(OpflowConstant.OPFLOW_RPC_MONITOR_ID);
-        } else {
-            monitorId = componentId;
-        }
+        // RPC Monitor section
+        monitorEnabled = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED, true);
+        monitorId = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_RPC_MONITOR_ID, componentId);
+        monitorInterval = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL, 14000); // can run 2-3 times in 30s
+        monitorTimeout = OpflowUtil.getLongField(params, OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT, 0l);
         
-        if (params.get(OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL) instanceof Integer) {
-            monitorInterval = (Integer) params.get(OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL);
-        } else {
-            monitorInterval = 14000; // can run 2-3 times in 30s
-        }
-        
-        if (params.get(OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT) instanceof Long) {
-            monitorTimeout = (Long) params.get(OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT);
-        } else {
-            monitorTimeout = 0;
-        }
-        
-        if (params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN) instanceof Boolean) {
-            autorun = (Boolean) params.get(OpflowConstant.OPFLOW_COMMON_AUTORUN);
-        } else {
-            autorun = false;
-        }
+        // Autorun section
+        autorun = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_COMMON_AUTORUN, Boolean.FALSE);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("autorun", autorun)

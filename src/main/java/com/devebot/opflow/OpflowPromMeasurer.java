@@ -54,23 +54,23 @@ public abstract class OpflowPromMeasurer {
     
     public static class RpcInvocationCounter {
         private Date startTime = new Date();
-        private long total = 0;
+        private volatile long total = 0;
         // Publisher
-        private long publishingTotal = 0;
+        private volatile long publishingTotal = 0;
         // Native worker
-        private long direct = 0;
-        private long directRetain = 0;
-        private long directRescue = 0;
+        private volatile long direct = 0;
+        private volatile long directRetain = 0;
+        private volatile long directRescue = 0;
         // AMQP workers
-        private long remoteAMQPTotal = 0;
-        private long remoteAMQPSuccess = 0;
-        private long remoteAMQPFailure = 0;
-        private long remoteAMQPTimeout = 0;
+        private volatile long remoteAMQPTotal = 0;
+        private volatile long remoteAMQPSuccess = 0;
+        private volatile long remoteAMQPFailure = 0;
+        private volatile long remoteAMQPTimeout = 0;
         // HTTP workers
-        private long remoteHTTPTotal = 0;
-        private long remoteHTTPSuccess = 0;
-        private long remoteHTTPFailure = 0;
-        private long remoteHTTPTimeout = 0;
+        private volatile long remoteHTTPTotal = 0;
+        private volatile long remoteHTTPSuccess = 0;
+        private volatile long remoteHTTPFailure = 0;
+        private volatile long remoteHTTPTimeout = 0;
 
         private boolean publisherEnabled = false;
         private boolean nativeWorkerEnabled = false;
