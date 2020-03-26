@@ -340,6 +340,7 @@ public class OpflowConfig {
             Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET});
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
+                OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
             });
             
             // rename the components

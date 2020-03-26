@@ -9,6 +9,7 @@ import com.orbitz.consul.NotRegisteredException;
 import com.orbitz.consul.model.agent.ImmutableRegistration;
 import com.orbitz.consul.model.agent.Registration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -45,6 +46,8 @@ public class OpflowDiscoveryWorker {
     
     private String address;
     private Integer port;
+    private String version;
+    private String[] tags;
     
     public OpflowDiscoveryWorker(String serviceName, String serviceId, Map<String, Object> kwargs) throws OpflowBootstrapException {
         this.serviceName = serviceName;
@@ -83,6 +86,7 @@ public class OpflowDiscoveryWorker {
                 .stringify());
         }
         
+        // Build the connection
         Consul.Builder builder = Consul.builder();
         
         String[] agentHosts = OpflowUtil.getStringArray(kwargs, OpflowConstant.OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS, null);
@@ -122,6 +126,14 @@ public class OpflowDiscoveryWorker {
         this.port = port;
         return this;
     }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public void setTags(String[] tags) {
+        this.tags = tags;
+    }
     
     public boolean isActive() {
         return active;
@@ -133,6 +145,11 @@ public class OpflowDiscoveryWorker {
     
     public synchronized void start() {
         if (!this.running) {
+            if (logTracer.ready(LOG, Level.INFO)) {
+                LOG.info(logTracer
+                    .text("DiscoveryWorker[${discoveryWorkerId}] start a Service Check Timer")
+                    .stringify());
+            }
             // register the service
             this.register();
             // create the timer
@@ -160,11 +177,22 @@ public class OpflowDiscoveryWorker {
             this.timer.scheduleAtFixedRate(this.timerTask, 0, this.checkInterval);
             // turned-on
             this.running = true;
+        } else {
+            if (logTracer.ready(LOG, Level.TRACE)) {
+                LOG.trace(logTracer
+                    .text("DiscoveryWorker[${discoveryWorkerId}] Service Check Timer has already started")
+                    .stringify());
+            }
         }
     }
 
     public synchronized void close() {
         if (running) {
+            if (logTracer.ready(LOG, Level.INFO)) {
+                LOG.info(logTracer
+                    .text("DiscoveryWorker[${discoveryWorkerId}] stop the Service Check Timer")
+                    .stringify());
+            }
             // cancel the task
             timerTask.cancel();
             timerTask = null;
@@ -176,6 +204,12 @@ public class OpflowDiscoveryWorker {
             deregister();
             // turned-off
             running = false;
+        } else {
+            if (logTracer.ready(LOG, Level.TRACE)) {
+                LOG.trace(logTracer
+                    .text("DiscoveryWorker[${discoveryWorkerId}] Service Check Timer has already stopped")
+                    .stringify());
+            }
         }
     }
     
@@ -187,7 +221,8 @@ public class OpflowDiscoveryWorker {
         if (serviceName == null || serviceId == null) return;
         ImmutableRegistration.Builder builder = ImmutableRegistration.builder()
             .id(serviceId)
-            .name(serviceName);
+            .name(serviceName)
+            .check(Registration.RegCheck.ttl(checkTTL));
         
         if (address != null) {
             builder = builder.address(address);
@@ -197,9 +232,14 @@ public class OpflowDiscoveryWorker {
             builder = builder.port(port);
         }
         
-        builder = builder.check(Registration.RegCheck.ttl(checkTTL))
-            .tags(Collections.singletonList("opflow-worker"))
-            .meta(Collections.singletonMap("version", "1.0"));
+        if (version != null) {
+            builder = builder.meta(Collections.singletonMap("version", version));
+        }
+        
+        if (tags != null && tags.length > 0) {
+            builder = builder.tags(Arrays.asList(tags));
+        }
+        
         Registration service = builder.build();
         
         if (logTracer.ready(LOG, Level.INFO)) {
