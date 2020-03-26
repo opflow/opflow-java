@@ -213,7 +213,7 @@ public class OpflowConfig {
 
             // extract the child-level configuration
             String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
-            for(String componentName:OpflowCommander.ALL_BEAN_NAMES) {
+            for(String componentName : OpflowCommander.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
                 Map<String, Object> componentNode;
@@ -347,7 +347,7 @@ public class OpflowConfig {
             
             // extract the child-level configuration
             String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET, ""};
-            for(String componentName:OpflowServerlet.ALL_BEAN_NAMES) {
+            for(String componentName : OpflowServerlet.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
                 Map<String, Object> componentNode;

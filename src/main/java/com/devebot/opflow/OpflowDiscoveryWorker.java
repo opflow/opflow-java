@@ -1,11 +1,13 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.supports.OpflowObjectTree;
 import com.orbitz.consul.AgentClient;
 import com.orbitz.consul.Consul;
 import com.orbitz.consul.NotRegisteredException;
 import com.orbitz.consul.model.agent.ImmutableRegistration;
 import com.orbitz.consul.model.agent.Registration;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -14,60 +16,49 @@ import java.util.TimerTask;
  * @author acegik
  */
 public class OpflowDiscoveryWorker {
+    private final static long DEFAULT_CHECK_INTERVAL = 2000L; // 2000 milliseconds
+    private final static long DEFAULT_CHECK_TTL = 5L; // 5 seconds
+    
     private final Consul client;
     private final Object agentClientLock = new Object();
     private AgentClient agentClient = null;
     
-    private long interval = 1000L;
     private Timer timer;
     private TimerTask timerTask;
     private volatile boolean running = false;
     private volatile boolean active = true;
     private final Object lock = new Object();
     
-    private final String id;
-    private final long ttl;
-    private String name;
+    private final String serviceId;
+    private final long checkInterval;
+    private final long checkTTL;
+    private String serviceName;
+    private String address;
     private Integer port;
     
-    public OpflowDiscoveryWorker(String id, long ttl) {
-        this.id = id;
-        this.ttl = ttl;
+    public OpflowDiscoveryWorker(String serviceName, String id, Map<String, Object> kwargs) {
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
+        
+        this.serviceName = serviceName;
+        this.serviceId = id;
+        this.checkInterval = OpflowUtil.getLongField(kwargs, "checkInterval", DEFAULT_CHECK_INTERVAL);
+        this.checkTTL = OpflowUtil.getLongField(kwargs, "checkTTL", DEFAULT_CHECK_TTL);
+        
         client = Consul.builder().build();
     }
     
-    private AgentClient getAgentClient() {
-        if (agentClient == null) {
-            synchronized (agentClientLock) {
-                agentClient = client.agentClient();
-            }
-        }
-        return agentClient;
-    }
-    
-    public void register() {
-        if (name == null || port == null) return;
-        Registration service = ImmutableRegistration.builder()
-            .id(id)
-            .name(name)
-            .port(port)
-            .check(Registration.RegCheck.ttl(ttl))
-            .tags(Collections.singletonList("opflow-worker"))
-            .meta(Collections.singletonMap("version", "1.0"))
-            .build();
-        getAgentClient().register(service);
-    }
-    
-    public void beat() throws NotRegisteredException {
-        getAgentClient().pass(id);
+    public void setServiceName(String name) {
+        this.serviceName = name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public OpflowDiscoveryWorker setAddress(String address) {
+        this.address = address;
+        return this;
     }
 
-    public void setPort(Integer port) {
+    public OpflowDiscoveryWorker setPort(Integer port) {
         this.port = port;
+        return this;
     }
     
     public boolean isActive() {
@@ -80,6 +71,7 @@ public class OpflowDiscoveryWorker {
     
     public synchronized void start() {
         if (!this.running) {
+            this.register();
             if (this.timer == null) {
                 this.timer = new Timer("Timer-" + OpflowUtil.extractClassName(OpflowDiscoveryWorker.class), true);
             }
@@ -89,7 +81,6 @@ public class OpflowDiscoveryWorker {
                     public void run() {
                         if (isActive()) {
                             synchronized (lock) {
-                                System.out.println("heartbeat!");
                                 try {
                                     beat();
                                 } catch (NotRegisteredException ex) {
@@ -100,7 +91,7 @@ public class OpflowDiscoveryWorker {
                     }
                 };
             }
-            this.timer.scheduleAtFixedRate(this.timerTask, 0, this.interval);
+            this.timer.scheduleAtFixedRate(this.timerTask, 0, this.checkInterval);
             this.running = true;
         }
     }
@@ -112,8 +103,48 @@ public class OpflowDiscoveryWorker {
             timer.cancel();
             timer.purge();
             timer = null;
+            deregister();
             running = false;
         }
-        getAgentClient().deregister(id);
+    }
+    
+    private void beat() throws NotRegisteredException {
+        getAgentClient().pass(serviceId);
+    }
+    
+    private void register() {
+        if (serviceName == null || serviceId == null) return;
+        ImmutableRegistration.Builder builder = ImmutableRegistration.builder()
+            .id(serviceId)
+            .name(serviceName);
+        
+        if (address != null) {
+            builder = builder.address(address);
+        }
+        
+        if (port != null) {
+            builder = builder.port(port);
+        }
+        
+        builder = builder.check(Registration.RegCheck.ttl(checkTTL))
+            .tags(Collections.singletonList("opflow-worker"))
+            .meta(Collections.singletonMap("version", "1.0"));
+        Registration service = builder.build();
+        getAgentClient().register(service);
+    }
+    
+    private void deregister() {
+        getAgentClient().deregister(serviceId);
+    }
+    
+    private AgentClient getAgentClient() {
+        if (agentClient == null) {
+            synchronized (agentClientLock) {
+                if (agentClient == null) {
+                    agentClient = client.agentClient();
+                }
+            }
+        }
+        return agentClient;
     }
 }
