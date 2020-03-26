@@ -2,15 +2,10 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
-import com.google.common.net.HostAndPort;
-import com.orbitz.consul.AgentClient;
-import com.orbitz.consul.Consul;
 import com.orbitz.consul.NotRegisteredException;
 import com.orbitz.consul.model.agent.ImmutableRegistration;
 import com.orbitz.consul.model.agent.Registration;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Timer;
@@ -22,16 +17,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author acegik
  */
-public class OpflowDiscoveryWorker {
+public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowDiscoveryWorker.class);
     
     private final static long DEFAULT_CHECK_INTERVAL = 2000L; // 2000 milliseconds
     private final static long DEFAULT_CHECK_TTL = 5000L; // 5000 milliseconds
     
     private final OpflowLogTracer logTracer;
-    private final Consul client;
-    private final Object agentClientLock = new Object();
-    private AgentClient agentClient = null;
     
     private Timer timer;
     private TimerTask timerTask;
@@ -50,6 +42,7 @@ public class OpflowDiscoveryWorker {
     private String[] tags;
     
     public OpflowDiscoveryWorker(String serviceName, String serviceId, Map<String, Object> kwargs) throws OpflowBootstrapException {
+        super(kwargs);
         this.serviceName = serviceName;
         this.serviceId = serviceId;
         this.logTracer = OpflowLogTracer.ROOT.branch("discoveryWorkerId", serviceId);
@@ -84,30 +77,6 @@ public class OpflowDiscoveryWorker {
                 .put("checkTTL", checkTTL)
                 .text("DiscoveryWorker[${discoveryWorkerId}][${instanceId}].new() - checking interval [${checkInterval}](ms) and ttl [${checkTTL}](s)")
                 .stringify());
-        }
-        
-        // Build the connection
-        Consul.Builder builder = Consul.builder();
-        
-        String[] agentHosts = OpflowUtil.getStringArray(kwargs, OpflowConstant.OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS, null);
-        
-        if (agentHosts != null && agentHosts.length > 0) {
-            if (agentHosts.length == 1) {
-                builder = builder.withHostAndPort(HostAndPort.fromString(agentHosts[0]));
-            } else {
-                Collection<HostAndPort> hostAndPorts = new ArrayList<>(agentHosts.length);
-                for (String agentHost : agentHosts) {
-                    hostAndPorts.add(HostAndPort.fromString(agentHost));
-                }
-                builder = builder.withMultipleHostAndPort(hostAndPorts, 1000);
-            }
-        }
-        
-        try {
-            client = builder.build();
-        }
-        catch (Exception e) {
-            throw new OpflowBootstrapException(e);
         }
         
         if (logTracer.ready(LOG, Level.INFO)) {
@@ -263,16 +232,5 @@ public class OpflowDiscoveryWorker {
                 .stringify());
         }
         getAgentClient().deregister(serviceId);
-    }
-    
-    private AgentClient getAgentClient() {
-        if (agentClient == null) {
-            synchronized (agentClientLock) {
-                if (agentClient == null) {
-                    agentClient = client.agentClient();
-                }
-            }
-        }
-        return agentClient;
     }
 }
