@@ -361,6 +361,7 @@ public class OpflowConfig {
                     case OpflowConstant.COMP_DISCOVERY_CLIENT:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS,
                             OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL,
                             OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_TTL,
                         });
@@ -510,6 +511,7 @@ public class OpflowConfig {
     
     private static final String[] STRING_ARRAY_FIELDS = OpflowCollectionUtil.distinct(new String[] {
         OpflowConstant.OPFLOW_COMMON_CREDENTIALS,
+        OpflowConstant.OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS,
         OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS,
         OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
     });

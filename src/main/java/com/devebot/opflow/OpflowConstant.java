@@ -101,6 +101,7 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_UPTIME = "uptime";
     public final static String OPFLOW_COMMON_CHANNEL = "connection";
 
+    public final static String OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS = "hostAndPorts";
     public final static String OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL = "checkInterval";
     public final static String OPFLOW_DISCOVERY_CLIENT_CHECK_TTL = "checkTTL";
     
