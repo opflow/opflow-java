@@ -78,6 +78,7 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_INSTANCE_OWNER = "mode";
     public final static String OPFLOW_COMMON_ACTIVE = "active";
     public final static String OPFLOW_COMMON_AUTORUN = "autorun";
+    public final static String OPFLOW_COMMON_AUTO_SHUTDOWN = "autoShutdown";
     public final static String OPFLOW_COMMON_ENABLED = "enabled";
     public final static String OPFLOW_COMMON_VERBOSE = "verbose";
     public final static String OPFLOW_COMMON_INTERVAL = "interval";
