@@ -19,9 +19,10 @@ public abstract class OpflowDiscoveryClient {
         }
     }
     
-    public boolean available() {
-        return true;
+    public interface Locator {
+        default boolean available() {
+            return true;
+        }
+        Info locate();
     }
-    
-    public abstract Info locate();
 }

@@ -60,6 +60,7 @@ public class OpflowConstant {
     public final static String COMP_RPC_WATCHER = "rpcWatcher";
     public final static String COMP_RPC_OBSERVER = "rpcObserver";
     public final static String COMP_REST_SERVER = "restServer";
+    public final static String COMP_SERVICE_LOCATOR = "serviceLocator";
 
     public final static String INFO_SECTION_RUNTIME = "miscellaneous";
     public final static String INFO_SECTION_SOURCE_CODE = "source-code-info";
