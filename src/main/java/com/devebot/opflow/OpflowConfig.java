@@ -361,6 +361,8 @@ public class OpflowConfig {
                     case OpflowConstant.COMP_DISCOVERY_CLIENT:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL,
+                            OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_TTL,
                         });
                         break;
                     case OpflowConstant.COMP_RPC_AMQP_WORKER:
@@ -538,7 +540,9 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_COMMON_INTERVAL,
         OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
         OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT,
-        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
+        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT,
+        OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL,
+        OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_TTL,
     });
     
     private static void transformParameters(Map<String, Object> params) {

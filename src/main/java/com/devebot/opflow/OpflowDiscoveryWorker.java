@@ -1,7 +1,6 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
-import com.devebot.opflow.supports.OpflowObjectTree;
 import com.orbitz.consul.AgentClient;
 import com.orbitz.consul.Consul;
 import com.orbitz.consul.NotRegisteredException;
@@ -22,7 +21,7 @@ public class OpflowDiscoveryWorker {
     private final static Logger LOG = LoggerFactory.getLogger(OpflowDiscoveryWorker.class);
     
     private final static long DEFAULT_CHECK_INTERVAL = 2000L; // 2000 milliseconds
-    private final static long DEFAULT_CHECK_TTL = 5L; // 5 seconds
+    private final static long DEFAULT_CHECK_TTL = 5000L; // 5000 milliseconds
     
     private final OpflowLogTracer logTracer;
     private final Consul client;
@@ -54,8 +53,31 @@ public class OpflowDiscoveryWorker {
                 .stringify());
         }
         
-        this.checkInterval = OpflowUtil.getLongField(kwargs, "checkInterval", DEFAULT_CHECK_INTERVAL);
-        this.checkTTL = OpflowUtil.getLongField(kwargs, "checkTTL", DEFAULT_CHECK_TTL);
+        long _checkInterval = OpflowUtil.getLongField(kwargs, OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL, DEFAULT_CHECK_INTERVAL);
+        long _checkTTL = OpflowUtil.getLongField(kwargs, OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_TTL, DEFAULT_CHECK_TTL);
+        
+        if (_checkInterval <= 1000) {
+            _checkInterval = 1000;
+        }
+        
+        if (_checkTTL <= 1050) {
+            _checkTTL = 1050;
+        }
+        
+        if (_checkTTL < _checkInterval + 50) {
+            _checkTTL = 2 * _checkInterval;
+        }
+        
+        this.checkInterval = _checkInterval;
+        this.checkTTL = (_checkTTL + 999l) / 1000l;
+        
+        if (logTracer.ready(LOG, Level.DEBUG)) {
+            LOG.debug(logTracer
+                .put("checkInterval", checkInterval)
+                .put("checkTTL", checkTTL)
+                .text("DiscoveryWorker[${discoveryWorkerId}][${instanceId}].new() - checking interval [${checkInterval}](ms) and ttl [${checkTTL}](s)")
+                .stringify());
+        }
         
         client = Consul.builder().build();
         

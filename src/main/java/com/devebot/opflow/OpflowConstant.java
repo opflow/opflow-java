@@ -101,6 +101,9 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_UPTIME = "uptime";
     public final static String OPFLOW_COMMON_CHANNEL = "connection";
 
+    public final static String OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL = "checkInterval";
+    public final static String OPFLOW_DISCOVERY_CLIENT_CHECK_TTL = "checkTTL";
+    
     public final static String OPFLOW_REQ_EXTRACTOR_CLASS_NAME = "getRequestIdClassName";
     public final static String OPFLOW_REQ_EXTRACTOR_METHOD_NAME = "getRequestIdMethodName";
     public final static String OPFLOW_REQ_EXTRACTOR_AUTO_UUID = "uuidIfNotFound";
