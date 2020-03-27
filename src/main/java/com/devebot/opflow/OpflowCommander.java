@@ -194,13 +194,18 @@ public class OpflowCommander implements AutoCloseable {
             if (reqExtractorCfg == null || OpflowUtil.isComponentEnabled(reqExtractorCfg)) {
                 reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
             }
-
-            rpcObserver = new OpflowRpcObserver();
+            
+            rpcObserver = new OpflowRpcObserver(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                @Override
+                public void transform(Map<String, Object> opts) {
+                    opts.put(CONST.COMPONENT_ID, componentId);
+                }
+            }, rpcObserverCfg).toMap());
             
             if (discoveryMaster != null) {
                 discoveryMaster.subscribe(rpcObserver.getServiceUpdater());
             }
-
+            
             if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
                 amqpMaster = new OpflowRpcAmqpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override

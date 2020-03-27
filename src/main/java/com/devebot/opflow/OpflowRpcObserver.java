@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.annotation.OpflowFieldExclude;
 import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowDateTime;
@@ -31,6 +32,8 @@ public class OpflowRpcObserver {
     
     private final static long KEEP_ALIVE_TIMEOUT = 20000;
     
+    private final String componentId;
+    private final OpflowLogTracer logTracer;
     private final OpflowDiscoveryMaster.ServiceHealthHook serviceUpdater;
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
     private final OpflowRevolvingMap.ChangeListener changeListener = new OpflowRevolvingMap.ChangeListener<String, OpflowRpcRoutingInfo>() {
@@ -52,21 +55,45 @@ public class OpflowRpcObserver {
     private final Object threadExecutorLock = new Object();
     private ExecutorService threadExecutor = null;
 
-    public OpflowRpcObserver() {
+    public OpflowRpcObserver(Map<String, Object> kwargs) {
+        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
+        
+        logTracer = OpflowLogTracer.ROOT.branch("rpcCounselorId", componentId);
+        
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .text("RpcCounselor[${rpcCounselorId}][${instanceId}].new()")
+                .stringify());
+        
         serviceUpdater = new OpflowDiscoveryMaster.ServiceHealthHook() {
             @Override
             public void onChange(Map<String, OpflowRpcRoutingInfo> serviceInfo) {
                 if (serviceInfo != null) {
                     Set<String> httpRoutingKey = new HashSet<>(httpRoutingMap.keySet());
+                    OpflowLogTracer eventTracer = null;
+                    if (logTracer.ready(LOG, Level.TRACE)) {
+                        eventTracer = logTracer.copy();
+                    }
+                    if (eventTracer != null && eventTracer.ready(LOG, Level.TRACE)) LOG.trace(eventTracer
+                            .put("serviceIds", httpRoutingKey)
+                            .text("RpcCounselor[${rpcCounselorId}] current services: ${serviceIds}")
+                            .stringify());
                     for (Map.Entry<String, OpflowRpcRoutingInfo> entry : serviceInfo.entrySet()) {
                         String componentId = entry.getKey();
                         httpRoutingMap.put(componentId, entry.getValue());
                         httpRoutingKey.remove(componentId);
                     }
+                    if (eventTracer != null && eventTracer.ready(LOG, Level.TRACE)) LOG.trace(eventTracer
+                            .put("serviceIds", httpRoutingKey)
+                            .text("RpcCounselor[${rpcCounselorId}] removed services: ${serviceIds}")
+                            .stringify());
                     httpRoutingMap.removeAll(httpRoutingKey);
                 }
             }
         };
+        
+        if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                .text("RpcCounselor[${rpcCounselorId}][${instanceId}].new() end!")
+                .stringify());
     }
 
     public OpflowDiscoveryMaster.ServiceHealthHook getServiceUpdater() {
