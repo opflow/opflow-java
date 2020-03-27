@@ -71,6 +71,7 @@ public class OpflowCommander implements AutoCloseable {
     private final OpflowPromMeasurer measurer;
     private final OpflowThroughput.Meter speedMeter;
     private final OpflowConfig.Loader configLoader;
+    private OpflowDiscoveryMaster discoveryMaster;
     
     private OpflowRestrictorMaster restrictor;
     
@@ -149,7 +150,13 @@ public class OpflowCommander implements AutoCloseable {
                 speedMeter.register(OpflowPromMeasurer.LABEL_RPC_DIRECT_WORKER, counter.getNativeWorkerInfoSource());
             }
         }
-
+        
+        Map<String, Object> discoveryClientCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_DISCOVERY_CLIENT);
+        
+        if (OpflowUtil.isComponentExplicitEnabled(discoveryClientCfg)) {
+            discoveryMaster = new OpflowDiscoveryMaster(componentId, discoveryClientCfg);
+        }
+        
         Map<String, Object> reqExtractorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR);
         Map<String, Object> amqpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.COMP_CFG_AMQP_MASTER);
         Map<String, Object> httpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_MASTER);

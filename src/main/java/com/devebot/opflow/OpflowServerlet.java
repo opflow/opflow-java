@@ -39,6 +39,7 @@ public class OpflowServerlet implements AutoCloseable {
     });
 
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[]{
+        OpflowConstant.COMP_DISCOVERY_CLIENT,
         OpflowConstant.COMP_PROM_EXPORTER,
         OpflowConstant.COMP_RPC_HTTP_WORKER,
     });
@@ -49,9 +50,11 @@ public class OpflowServerlet implements AutoCloseable {
 
     private final boolean strictMode;
     private final String componentId;
+    private final String serviceName;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
+    private OpflowDiscoveryWorker discoveryWorker;
 
     private OpflowRpcAmqpWorker amqpWorker;
     private OpflowRpcHttpWorker httpWorker;
@@ -82,6 +85,7 @@ public class OpflowServerlet implements AutoCloseable {
 
         strictMode = OpflowObjectTree.getOptionValue(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.class, Boolean.FALSE);
 
+        serviceName = getServiceName(kwargs);
         componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", componentId);
 
@@ -98,6 +102,12 @@ public class OpflowServerlet implements AutoCloseable {
 
         measurer = OpflowPromMeasurer.getInstance(OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PROM_EXPORTER));
 
+        Map<String, Object> discoveryClientCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_DISCOVERY_CLIENT);
+        
+        if (OpflowUtil.isComponentExplicitEnabled(discoveryClientCfg)) {
+            discoveryWorker = new OpflowDiscoveryWorker(serviceName, componentId, discoveryClientCfg);
+        }
+        
         Map<String, Object> amqpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowConstant.COMP_CFG_AMQP_WORKER);
         Map<String, Object> httpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_WORKER);
         Map<String, Object> subscriberCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SUBSCRIBER);
@@ -179,6 +189,11 @@ public class OpflowServerlet implements AutoCloseable {
                     }
                 }, httpWorkerCfg).toMap());
             }
+
+            if (httpWorker != null && discoveryWorker != null) {
+                discoveryWorker.setAddress(httpWorker.getHostname());
+                discoveryWorker.setPort(httpWorker.getPort());
+            }
             
             if (amqpWorker != null && httpWorker != null) {
                 amqpWorker.setHttpAddress(httpWorker.getAddress());
@@ -219,6 +234,13 @@ public class OpflowServerlet implements AutoCloseable {
         }
 
         measurer.updateComponentInstance(OpflowConstant.COMP_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.INC);
+        
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                close();
+            }
+        });
     }
 
     public final void start() {
@@ -227,7 +249,11 @@ public class OpflowServerlet implements AutoCloseable {
                 .text("Serverlet[${serverletId}][${instanceId}].start()")
                 .stringify());
         }
-
+        
+        if (discoveryWorker != null) {
+            discoveryWorker.start();
+        }
+        
         if (amqpWorker != null) {
             Map<String, OpflowRpcAmqpWorker.Listener> rpcListeners = listenerMap.getRpcListeners();
             for (Map.Entry<String, OpflowRpcAmqpWorker.Listener> entry : rpcListeners.entrySet()) {
@@ -290,6 +316,10 @@ public class OpflowServerlet implements AutoCloseable {
                 .stringify());
         }
 
+        if (discoveryWorker != null) {
+            discoveryWorker.close();
+        }
+        
         if (amqpWorker != null) {
             amqpWorker.close();
         }
@@ -571,7 +601,7 @@ public class OpflowServerlet implements AutoCloseable {
                                 .put("request", requestInfo, protocol == OpflowConstant.Protocol.HTTP)
                                 .toMap());
                             opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
-                                .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-worker/git-info.json"))
+                                .put("server", getGitInfo())
                                 .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
                                 .toMap());
                         }
@@ -842,6 +872,25 @@ public class OpflowServerlet implements AutoCloseable {
         return "throw-" + OpflowUtil.getClassSimpleName(clazz);
     }
 
+    private static String getServiceName(Map<String, Object> kwargs) {
+        // load the serviceName from the configuration file
+        String serviceName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_SERVICE_NAME);
+        if (serviceName != null) {
+            return serviceName;
+        }
+        // use the project name as the serviceName
+        // TODO: ...
+        // use the appId with the suffix [worker]
+        // TODO: ...
+        // use the git commit-id
+        serviceName = OpflowUtil.getStringField(getGitInfo(), "git.commit.id");
+        return serviceName;
+    }
+    
+    private static Map<String, Object> getGitInfo() {
+        return OpflowSysInfo.getGitInfo("META-INF/scm/service-worker/git-info.json");
+    }
+    
     @Override
     protected void finalize() throws Throwable {
         measurer.updateComponentInstance(OpflowConstant.COMP_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.DEC);

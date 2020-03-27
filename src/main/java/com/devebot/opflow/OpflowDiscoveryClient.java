@@ -1,5 +1,12 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.google.common.net.HostAndPort;
+import com.orbitz.consul.AgentClient;
+import com.orbitz.consul.Consul;
+import com.orbitz.consul.HealthClient;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -7,21 +14,82 @@ import java.util.Map;
  * @author acegik
  */
 public abstract class OpflowDiscoveryClient {
-    public interface Info {
-        String getUri();
+
+    private final String[] agentHosts;
+    
+    private final Object connectionLock = new Object();
+    private Consul connection;
+
+    private final Object agentClientLock = new Object();
+    private AgentClient agentClient = null;
+    
+    private final Object healthClientLock = new Object();
+    private HealthClient healthClient = null;
+    
+    public OpflowDiscoveryClient(Map<String, Object> kwargs) throws OpflowBootstrapException {
+        agentHosts = OpflowUtil.getStringArray(kwargs, OpflowConstant.OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS, null);
         
-        default String getVersion() {
-            return null;
+        try {
+            connection = createConnection();
         }
-        
-        default Map<String, Object> getOptions() {
-            return null;
+        catch (Exception e) {
+            throw new OpflowBootstrapException(e);
         }
     }
     
-    public boolean available() {
-        return true;
+    protected AgentClient getAgentClient() {
+        if (agentClient == null) {
+            synchronized (agentClientLock) {
+                if (agentClient == null) {
+                    agentClient = getConnection().agentClient();
+                }
+            }
+        }
+        return agentClient;
     }
     
-    public abstract Info locate();
+    protected HealthClient getHealthClient() {
+        if (healthClient == null) {
+            synchronized (healthClientLock) {
+                if (healthClient == null) {
+                    healthClient = getConnection().healthClient();
+                }
+            }
+        }
+        return healthClient;
+    }
+    
+    protected Consul getConnection() {
+        if (connection == null) {
+            synchronized (connectionLock) {
+                if (connection == null) {
+                    try {
+                        connection = createConnection();
+                    }
+                    catch (RuntimeException e) {
+                        throw e;
+                    }
+                }
+            }
+        }
+        return connection;
+    }
+    
+    private Consul createConnection() {
+        Consul.Builder builder = Consul.builder();
+        
+        if (agentHosts != null && agentHosts.length > 0) {
+            if (agentHosts.length == 1) {
+                builder = builder.withHostAndPort(HostAndPort.fromString(agentHosts[0]));
+            } else {
+                Collection<HostAndPort> hostAndPorts = new ArrayList<>(agentHosts.length);
+                for (String agentHost : agentHosts) {
+                    hostAndPorts.add(HostAndPort.fromString(agentHost));
+                }
+                builder = builder.withMultipleHostAndPort(hostAndPorts, 1000);
+            }
+        }
+        
+        return builder.build();
+    }
 }

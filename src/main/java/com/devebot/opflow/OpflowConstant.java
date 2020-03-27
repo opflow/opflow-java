@@ -60,6 +60,7 @@ public class OpflowConstant {
     public final static String COMP_RPC_WATCHER = "rpcWatcher";
     public final static String COMP_RPC_OBSERVER = "rpcObserver";
     public final static String COMP_REST_SERVER = "restServer";
+    public final static String COMP_SERVICE_LOCATOR = "serviceLocator";
 
     public final static String INFO_SECTION_RUNTIME = "miscellaneous";
     public final static String INFO_SECTION_SOURCE_CODE = "source-code-info";
@@ -85,6 +86,7 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_COUNT = "count";
     public final static String OPFLOW_COMMON_LENGTH = "length";
     public final static String OPFLOW_COMMON_STRICT = "strictMode";
+    public final static String OPFLOW_COMMON_SERVICE_NAME = "name";
     public final static String OPFLOW_COMMON_HOST = "host";
     public final static String OPFLOW_COMMON_HOSTNAME = "hostname";
     public final static String OPFLOW_COMMON_PORTS = "ports";
@@ -100,6 +102,10 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_UPTIME = "uptime";
     public final static String OPFLOW_COMMON_CHANNEL = "connection";
 
+    public final static String OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS = "hostAndPorts";
+    public final static String OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL = "checkInterval";
+    public final static String OPFLOW_DISCOVERY_CLIENT_CHECK_TTL = "checkTTL";
+    
     public final static String OPFLOW_REQ_EXTRACTOR_CLASS_NAME = "getRequestIdClassName";
     public final static String OPFLOW_REQ_EXTRACTOR_METHOD_NAME = "getRequestIdMethodName";
     public final static String OPFLOW_REQ_EXTRACTOR_AUTO_UUID = "uuidIfNotFound";

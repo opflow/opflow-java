@@ -517,6 +517,10 @@ public class OpflowUtil {
         return cfg != null && !Boolean.FALSE.equals(cfg.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
     }
     
+    public static boolean isComponentExplicitEnabled(Map<String, Object> cfg) {
+        return cfg != null && Boolean.TRUE.equals(cfg.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
+    }
+    
     public static boolean isAMQPEntrypointNull(Map<String, Object> cfg) {
         return isAMQPEntrypointNull(cfg,  OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME, OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY);
     }

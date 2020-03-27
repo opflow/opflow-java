@@ -213,7 +213,7 @@ public class OpflowConfig {
 
             // extract the child-level configuration
             String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
-            for(String componentName:OpflowCommander.ALL_BEAN_NAMES) {
+            for(String componentName : OpflowCommander.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
                 Map<String, Object> componentNode;
@@ -340,6 +340,7 @@ public class OpflowConfig {
             Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET});
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
+                OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
             });
             
             // rename the components
@@ -347,7 +348,7 @@ public class OpflowConfig {
             
             // extract the child-level configuration
             String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET, ""};
-            for(String componentName:OpflowServerlet.ALL_BEAN_NAMES) {
+            for(String componentName : OpflowServerlet.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
                 Map<String, Object> componentNode;
@@ -358,6 +359,14 @@ public class OpflowConfig {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
                 switch (componentName) {
+                    case OpflowConstant.COMP_DISCOVERY_CLIENT:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS,
+                            OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL,
+                            OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_TTL,
+                        });
+                        break;
                     case OpflowConstant.COMP_RPC_AMQP_WORKER:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
@@ -503,6 +512,7 @@ public class OpflowConfig {
     
     private static final String[] STRING_ARRAY_FIELDS = OpflowCollectionUtil.distinct(new String[] {
         OpflowConstant.OPFLOW_COMMON_CREDENTIALS,
+        OpflowConstant.OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS,
         OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS,
         OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
     });
@@ -533,7 +543,9 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_COMMON_INTERVAL,
         OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
         OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT,
-        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT
+        OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT,
+        OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL,
+        OpflowConstant.OPFLOW_DISCOVERY_CLIENT_CHECK_TTL,
     });
     
     private static void transformParameters(Map<String, Object> params) {
