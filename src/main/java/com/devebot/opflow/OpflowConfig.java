@@ -206,6 +206,8 @@ public class OpflowConfig {
             Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER});
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
+                OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
+                OpflowConstant.OPFLOW_COMMON_TARGET_NAME,
             });
             
             // rename the components
@@ -224,6 +226,12 @@ public class OpflowConfig {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
                 switch (componentName) {
+                    case OpflowConstant.COMP_DISCOVERY_CLIENT:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS,
+                        });
+                        break;
                     case OpflowConstant.COMP_REQ_EXTRACTOR:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,

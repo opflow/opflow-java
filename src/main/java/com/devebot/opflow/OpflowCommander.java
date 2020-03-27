@@ -47,6 +47,7 @@ public class OpflowCommander implements AutoCloseable {
     });
     
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
+        OpflowConstant.COMP_DISCOVERY_CLIENT,
         OpflowConstant.COMP_REQ_EXTRACTOR,
         OpflowConstant.COMP_RESTRICTOR,
         OpflowConstant.COMP_RPC_HTTP_MASTER,
@@ -66,12 +67,14 @@ public class OpflowCommander implements AutoCloseable {
     private volatile boolean runningActive = false;
     
     private final boolean strictMode;
+    private final String serviceName;
+    private final String targetName;
     private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowThroughput.Meter speedMeter;
     private final OpflowConfig.Loader configLoader;
-    private OpflowDiscoveryMaster discoveryMaster;
+    private final OpflowDiscoveryMaster discoveryMaster;
     
     private OpflowRestrictorMaster restrictor;
     
@@ -112,6 +115,8 @@ public class OpflowCommander implements AutoCloseable {
         
         strictMode = OpflowObjectTree.getOptionValue(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.class, Boolean.FALSE);
         
+        serviceName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_SERVICE_NAME);
+        targetName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_TARGET_NAME);
         componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", componentId);
         
@@ -155,6 +160,8 @@ public class OpflowCommander implements AutoCloseable {
         
         if (OpflowUtil.isComponentExplicitEnabled(discoveryClientCfg)) {
             discoveryMaster = new OpflowDiscoveryMaster(componentId, discoveryClientCfg);
+        } else {
+            discoveryMaster = null;
         }
         
         Map<String, Object> reqExtractorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR);
@@ -244,7 +251,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
-                    rpcObserver, rpcWatcher);
+                    discoveryMaster, rpcObserver, rpcWatcher, targetName);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter);
 
@@ -791,13 +798,15 @@ public class OpflowCommander implements AutoCloseable {
         private final String componentId;
         private final OpflowPromMeasurer measurer;
         private final OpflowRestrictorMaster restrictor;
-        private final OpflowRpcWatcher rpcWatcher;
         private final OpflowRpcAmqpMaster amqpMaster;
         private final OpflowRpcHttpMaster httpMaster;
         private final OpflowPubsubHandler publisher;
         private final Map<String, RpcInvocationHandler> handlers;
-        private final OpflowRpcObserver rpcObserver;
         private final OpflowThroughput.Meter speedMeter;
+        private final OpflowDiscoveryMaster discoveryMaster;
+        private final OpflowRpcObserver rpcObserver;
+        private final OpflowRpcWatcher rpcWatcher;
+        private final String targetName;
         private final Date startTime;
 
         public OpflowInfoCollectorMaster(String componentId,
@@ -808,8 +817,10 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowPubsubHandler publisher,
                 Map<String, RpcInvocationHandler> mappings,
                 OpflowThroughput.Meter speedMeter,
+                OpflowDiscoveryMaster discoveryMaster,
                 OpflowRpcObserver rpcObserver,
-                OpflowRpcWatcher rpcWatcher
+                OpflowRpcWatcher rpcWatcher,
+                String targetName
         ) {
             this.componentId = componentId;
             this.measurer = measurer;
@@ -819,8 +830,10 @@ public class OpflowCommander implements AutoCloseable {
             this.publisher = publisher;
             this.handlers = mappings;
             this.speedMeter = speedMeter;
+            this.discoveryMaster = discoveryMaster;
             this.rpcObserver = rpcObserver;
             this.rpcWatcher = rpcWatcher;
+            this.targetName = targetName;
             this.startTime = new Date();
         }
 
@@ -853,6 +866,26 @@ public class OpflowCommander implements AutoCloseable {
                 @Override
                 public void transform(Map<String, Object> opts) {
                     opts.put(CONST.COMPONENT_ID, componentId);
+                    
+                    // DiscoveryClient information
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        if (discoveryMaster != null) {
+                            opts.put(OpflowConstant.COMP_DISCOVERY_CLIENT, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                                @Override
+                                public void transform(Map<String, Object> opt2) {
+                                    opt2.put(CONST.COMPONENT_ID, discoveryMaster.getComponentId());
+                                    opt2.put("targetServiceName", targetName);
+                                    if (targetName != null) {
+                                        opt2.put("services", discoveryMaster.getService(targetName));
+                                    }
+                                }
+                            }).toMap());
+                        } else {
+                            opts.put(OpflowConstant.COMP_DISCOVERY_CLIENT, OpflowObjectTree.buildMap()
+                                    .put(OpflowConstant.OPFLOW_COMMON_ENABLED, false)
+                                    .toMap());
+                        }
+                    }
                     
                     // Publisher information
                     if (checkOption(flag, SCOPE_INFO)) {
