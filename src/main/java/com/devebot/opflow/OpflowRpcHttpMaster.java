@@ -33,7 +33,7 @@ public class OpflowRpcHttpMaster {
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
     private final OpflowRpcObserver rpcObserver;
-    private final OpflowDiscoveryClient.Locator serviceLocator;
+    private final Locator serviceLocator;
     private final OpflowRestrictor.Valve restrictor;
     
     private long readTimeout;
@@ -51,7 +51,7 @@ public class OpflowRpcHttpMaster {
         componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
-        serviceLocator = (OpflowDiscoveryClient.Locator) OpflowUtil.getOptionField(params, OpflowConstant.COMP_SERVICE_LOCATOR, null);
+        serviceLocator = (Locator) OpflowUtil.getOptionField(params, OpflowConstant.COMP_SERVICE_LOCATOR, null);
         restrictor = new OpflowRestrictor.Valve();
         
         readTimeout = OpflowObjectTree.getOptionValue(params, OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, Long.class, 20000l);
@@ -243,7 +243,7 @@ public class OpflowRpcHttpMaster {
         
         if (url == null) {
             if (serviceLocator != null) {
-                OpflowDiscoveryClient.Info info = serviceLocator.locate();
+                ServiceInfo info = serviceLocator.locate();
                 if (info != null) {
                     url = info.getUri();
                 }
@@ -336,6 +336,25 @@ public class OpflowRpcHttpMaster {
         
         public Exception getException() {
             return this.exception;
+        }
+    }
+    
+    public interface Locator {
+        default boolean available() {
+            return true;
+        }
+        ServiceInfo locate();
+    }
+    
+    public interface ServiceInfo {
+        String getUri();
+        
+        default String getVersion() {
+            return null;
+        }
+        
+        default Map<String, Object> getOptions() {
+            return null;
         }
     }
 }

@@ -4,6 +4,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.google.common.net.HostAndPort;
 import com.orbitz.consul.AgentClient;
 import com.orbitz.consul.Consul;
+import com.orbitz.consul.HealthClient;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -21,6 +22,9 @@ public abstract class OpflowDiscoveryClient {
 
     private final Object agentClientLock = new Object();
     private AgentClient agentClient = null;
+    
+    private final Object healthClientLock = new Object();
+    private HealthClient healthClient = null;
     
     public OpflowDiscoveryClient(Map<String, Object> kwargs) throws OpflowBootstrapException {
         agentHosts = OpflowUtil.getStringArray(kwargs, OpflowConstant.OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS, null);
@@ -42,6 +46,17 @@ public abstract class OpflowDiscoveryClient {
             }
         }
         return agentClient;
+    }
+    
+    protected HealthClient getHealthClient() {
+        if (healthClient == null) {
+            synchronized (healthClientLock) {
+                if (healthClient == null) {
+                    healthClient = getConnection().healthClient();
+                }
+            }
+        }
+        return healthClient;
     }
     
     protected Consul getConnection() {
@@ -76,24 +91,5 @@ public abstract class OpflowDiscoveryClient {
         }
         
         return builder.build();
-    }
-    
-    public interface Info {
-        String getUri();
-        
-        default String getVersion() {
-            return null;
-        }
-        
-        default Map<String, Object> getOptions() {
-            return null;
-        }
-    }
-    
-    public interface Locator {
-        default boolean available() {
-            return true;
-        }
-        Info locate();
     }
 }
