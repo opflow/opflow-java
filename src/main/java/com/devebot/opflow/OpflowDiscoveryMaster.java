@@ -7,9 +7,11 @@ import com.orbitz.consul.cache.ServiceHealthCache;
 import com.orbitz.consul.cache.ServiceHealthKey;
 import com.orbitz.consul.model.health.Service;
 import com.orbitz.consul.model.health.ServiceHealth;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +27,7 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
     private final OpflowLogTracer logTracer;
     
     private ServiceHealthCache svHealth;
+    private ServiceHealthHook subscriber;
     
     public OpflowDiscoveryMaster(String componentId, String serviceName, Map<String, Object> kwargs) throws OpflowBootstrapException {
         super(kwargs);
@@ -45,13 +48,23 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
                 .stringify());
         }
     }
-
+    
     public void serve() {
         synchronized (this) {
             if (svHealth == null) {
                 svHealth = ServiceHealthCache.newCache(getHealthClient(), serviceName);
                 svHealth.addListener((Map<ServiceHealthKey, ServiceHealth> newValues) -> {
-                    // TODO: update the services
+                    if (subscriber != null) {
+                        Map<String, OpflowRpcRoutingInfo> serviceInfo = new LinkedHashMap<>();
+                        Set<ServiceHealthKey> keys = newValues.keySet();
+                        for (ServiceHealthKey key : keys) {
+                            String componentId = key.getServiceId();
+                            String hostAndPort = key.getHost() + ":" + key.getPort();
+                            OpflowRpcRoutingInfo routingInfo = new OpflowRpcRoutingInfo(OpflowConstant.Protocol.HTTP, componentId, hostAndPort);
+                            serviceInfo.put(componentId, routingInfo);
+                        }
+                        subscriber.onChange(serviceInfo);
+                    }
                 });
             }
         }
@@ -65,6 +78,10 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
                 svHealth = null;
             }
         }
+    }
+    
+    public void subscribe(ServiceHealthHook subscriber) {
+        this.subscriber = subscriber;
     }
     
     public String getComponentId() {
@@ -84,5 +101,9 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
             }
         }
         return result;
+    }
+    
+    public interface ServiceHealthHook {
+        void onChange(Map<String, OpflowRpcRoutingInfo> serviceInfo);
     }
 }

@@ -1,6 +1,7 @@
 package com.devebot.opflow.supports;
 
 import java.util.HashMap;
+import java.util.Set;
 
 /**
  *
@@ -30,6 +31,10 @@ public class OpflowRevolvingMap<K, V> {
     
     public int size() {
         return lookupTable.size();
+    }
+    
+    public Set<K> keySet() {
+        return lookupTable.keySet();
     }
     
     public V get(K key) {
@@ -65,19 +70,31 @@ public class OpflowRevolvingMap<K, V> {
     
     public V remove(K key) {
         synchronized (changeLock) {
-            if (lookupTable.containsKey(key)) {
-                OpflowCircularList.Node<V> node = lookupTable.remove(key);
-                revolver.removeNode(node);
-                if (changeListener != null) {
-                    changeListener.onDeleting(key, node.getRef());
-                }
-                return node.getRef();
+            return _remove(key);
+        }
+    }
+    
+    public void removeAll(Set<K> keys) {
+        synchronized (changeLock) {
+            for (K key : keys) {
+                _remove(key);
             }
         }
-        return null;
     }
     
     public V rotate() {
         return revolver.nextRef();
+    }
+    
+    private V _remove(K key) {
+        if (lookupTable.containsKey(key)) {
+            OpflowCircularList.Node<V> node = lookupTable.remove(key);
+            revolver.removeNode(node);
+            if (changeListener != null) {
+                changeListener.onDeleting(key, node.getRef());
+            }
+            return node.getRef();
+        }
+        return null;
     }
 }

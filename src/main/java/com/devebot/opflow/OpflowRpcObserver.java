@@ -8,6 +8,7 @@ import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowRevolvingMap;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -30,7 +31,7 @@ public class OpflowRpcObserver {
     
     private final static long KEEP_ALIVE_TIMEOUT = 20000;
     
-    private final OpflowDiscoveryMaster discoveryMaster;
+    private final OpflowDiscoveryMaster.ServiceHealthHook serviceUpdater;
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
     private final OpflowRevolvingMap.ChangeListener changeListener = new OpflowRevolvingMap.ChangeListener<String, OpflowRpcRoutingInfo>() {
         @Override
@@ -51,8 +52,25 @@ public class OpflowRpcObserver {
     private final Object threadExecutorLock = new Object();
     private ExecutorService threadExecutor = null;
 
-    public OpflowRpcObserver(OpflowDiscoveryMaster discoveryMaster) {
-        this.discoveryMaster = discoveryMaster;
+    public OpflowRpcObserver() {
+        serviceUpdater = new OpflowDiscoveryMaster.ServiceHealthHook() {
+            @Override
+            public void onChange(Map<String, OpflowRpcRoutingInfo> serviceInfo) {
+                if (serviceInfo != null) {
+                    Set<String> httpRoutingKey = new HashSet<>(httpRoutingMap.keySet());
+                    for (Map.Entry<String, OpflowRpcRoutingInfo> entry : serviceInfo.entrySet()) {
+                        String componentId = entry.getKey();
+                        httpRoutingMap.put(componentId, entry.getValue());
+                        httpRoutingKey.remove(componentId);
+                    }
+                    httpRoutingMap.removeAll(httpRoutingKey);
+                }
+            }
+        };
+    }
+
+    public OpflowDiscoveryMaster.ServiceHealthHook getServiceUpdater() {
+        return serviceUpdater;
     }
     
     public ExecutorService getThreadExecutor() {

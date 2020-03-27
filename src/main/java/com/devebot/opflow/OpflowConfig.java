@@ -207,7 +207,6 @@ public class OpflowConfig {
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
-                OpflowConstant.OPFLOW_COMMON_TARGET_NAME,
             });
             
             // rename the components
