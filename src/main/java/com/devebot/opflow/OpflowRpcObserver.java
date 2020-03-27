@@ -30,6 +30,7 @@ public class OpflowRpcObserver {
     
     private final static long KEEP_ALIVE_TIMEOUT = 20000;
     
+    private final OpflowDiscoveryMaster discoveryMaster;
     private final OpflowConcurrentMap<String, OpflowRpcObserver.Manifest> manifests = new OpflowConcurrentMap<>();
     private final OpflowRevolvingMap.ChangeListener changeListener = new OpflowRevolvingMap.ChangeListener<String, OpflowRpcRoutingInfo>() {
         @Override
@@ -49,6 +50,10 @@ public class OpflowRpcObserver {
     
     private final Object threadExecutorLock = new Object();
     private ExecutorService threadExecutor = null;
+
+    public OpflowRpcObserver(OpflowDiscoveryMaster discoveryMaster) {
+        this.discoveryMaster = discoveryMaster;
+    }
     
     public ExecutorService getThreadExecutor() {
         if (threadExecutor == null) {

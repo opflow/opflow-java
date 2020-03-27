@@ -84,7 +84,7 @@ public class OpflowBuilder {
     }
     
     public static OpflowRpcAmqpMaster createAmqpMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        return new OpflowRpcAmqpMaster((new OpflowConfig.LoaderImplRpcMaster(config, configFile, useDefaultFile)).loadConfiguration());
+        return new OpflowRpcAmqpMaster((new OpflowConfig.LoaderImplRpcAmqpMaster(config, configFile, useDefaultFile)).loadConfiguration());
     }
     
     public static OpflowRpcAmqpWorker createAmqpWorker() throws OpflowBootstrapException {
@@ -100,7 +100,7 @@ public class OpflowBuilder {
     }
     
     public static OpflowRpcAmqpWorker createAmqpWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        return new OpflowRpcAmqpWorker((new OpflowConfig.LoaderImplRpcWorker(config, configFile, useDefaultFile)).loadConfiguration());
+        return new OpflowRpcAmqpWorker((new OpflowConfig.LoaderImplRpcAmqpWorker(config, configFile, useDefaultFile)).loadConfiguration());
     }
     
     public static OpflowPubsubHandler createPubsubHandler() throws OpflowBootstrapException {

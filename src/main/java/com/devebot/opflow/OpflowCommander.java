@@ -68,7 +68,6 @@ public class OpflowCommander implements AutoCloseable {
     
     private final boolean strictMode;
     private final String serviceName;
-    private final String targetName;
     private final String componentId;
     private final OpflowLogTracer logTracer;
     private final OpflowPromMeasurer measurer;
@@ -116,7 +115,6 @@ public class OpflowCommander implements AutoCloseable {
         strictMode = OpflowObjectTree.getOptionValue(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.class, Boolean.FALSE);
         
         serviceName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_SERVICE_NAME);
-        targetName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_TARGET_NAME);
         componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", componentId);
         
@@ -159,7 +157,7 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> discoveryClientCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_DISCOVERY_CLIENT);
         
         if (OpflowUtil.isComponentExplicitEnabled(discoveryClientCfg)) {
-            discoveryMaster = new OpflowDiscoveryMaster(componentId, discoveryClientCfg);
+            discoveryMaster = new OpflowDiscoveryMaster(componentId, serviceName, discoveryClientCfg);
         } else {
             discoveryMaster = null;
         }
@@ -197,7 +195,7 @@ public class OpflowCommander implements AutoCloseable {
                 reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
             }
 
-            rpcObserver = new OpflowRpcObserver();
+            rpcObserver = new OpflowRpcObserver(discoveryMaster);
 
             if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
                 amqpMaster = new OpflowRpcAmqpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
@@ -251,7 +249,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
-                    discoveryMaster, rpcObserver, rpcWatcher, targetName);
+                    discoveryMaster, rpcObserver, rpcWatcher, serviceName);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter);
 
@@ -306,6 +304,10 @@ public class OpflowCommander implements AutoCloseable {
 
             OpflowUUID.start();
 
+            if (discoveryMaster != null) {
+                discoveryMaster.serve();
+            }
+            
             if (rpcWatcher != null) {
                 rpcWatcher.start();
             }
@@ -357,6 +359,10 @@ public class OpflowCommander implements AutoCloseable {
             if (amqpMaster != null) amqpMaster.close();
             if (httpMaster != null) httpMaster.close();
 
+            if (discoveryMaster != null) {
+                discoveryMaster.close();
+            }
+            
             if (rpcObserver != null) rpcObserver.close();
 
             if (restrictor != null) {
@@ -806,7 +812,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowDiscoveryMaster discoveryMaster;
         private final OpflowRpcObserver rpcObserver;
         private final OpflowRpcWatcher rpcWatcher;
-        private final String targetName;
+        private final String serviceName;
         private final Date startTime;
 
         public OpflowInfoCollectorMaster(String componentId,
@@ -820,7 +826,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowDiscoveryMaster discoveryMaster,
                 OpflowRpcObserver rpcObserver,
                 OpflowRpcWatcher rpcWatcher,
-                String targetName
+                String serviceName
         ) {
             this.componentId = componentId;
             this.measurer = measurer;
@@ -833,7 +839,7 @@ public class OpflowCommander implements AutoCloseable {
             this.discoveryMaster = discoveryMaster;
             this.rpcObserver = rpcObserver;
             this.rpcWatcher = rpcWatcher;
-            this.targetName = targetName;
+            this.serviceName = serviceName;
             this.startTime = new Date();
         }
 
@@ -874,9 +880,9 @@ public class OpflowCommander implements AutoCloseable {
                                 @Override
                                 public void transform(Map<String, Object> opt2) {
                                     opt2.put(CONST.COMPONENT_ID, discoveryMaster.getComponentId());
-                                    opt2.put("targetServiceName", targetName);
-                                    if (targetName != null) {
-                                        opt2.put("services", discoveryMaster.getService(targetName));
+                                    opt2.put("serviceName", serviceName);
+                                    if (serviceName != null) {
+                                        opt2.put("services", discoveryMaster.getService(serviceName));
                                     }
                                 }
                             }).toMap());

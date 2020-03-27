@@ -44,13 +44,13 @@ public class OpflowConfig {
         public Map<String, Object> loadConfiguration() throws OpflowBootstrapException;
     }
     
-    public static class LoaderImplRpcMaster implements OpflowConfig.Loader {
+    public static class LoaderImplRpcAmqpMaster implements OpflowConfig.Loader {
         
         private Map<String, Object> config;
         private final String configFile;
         private final boolean useDefaultFile;
         
-        public LoaderImplRpcMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+        public LoaderImplRpcAmqpMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) {
             this.config = config;
             this.configFile = configFile;
             this.useDefaultFile = useDefaultFile;
@@ -89,13 +89,13 @@ public class OpflowConfig {
         }
     }
     
-    public static class LoaderImplRpcWorker implements OpflowConfig.Loader {
+    public static class LoaderImplRpcAmqpWorker implements OpflowConfig.Loader {
         
         private Map<String, Object> config;
         private final String configFile;
         private final boolean useDefaultFile;
         
-        public LoaderImplRpcWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+        public LoaderImplRpcAmqpWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) {
             this.config = config;
             this.configFile = configFile;
             this.useDefaultFile = useDefaultFile;

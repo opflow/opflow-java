@@ -32,7 +32,7 @@ public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
     private final Object lock = new Object();
     
     private final String serviceName;
-    private final String serviceId;
+    private final String componentId;
     private final long checkInterval;
     private final long checkTTL;
     
@@ -41,11 +41,11 @@ public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
     private String version;
     private String[] tags;
     
-    public OpflowDiscoveryWorker(String serviceName, String serviceId, Map<String, Object> kwargs) throws OpflowBootstrapException {
+    public OpflowDiscoveryWorker(String componentId, String serviceName, Map<String, Object> kwargs) throws OpflowBootstrapException {
         super(kwargs);
         this.serviceName = serviceName;
-        this.serviceId = serviceId;
-        this.logTracer = OpflowLogTracer.ROOT.branch("discoveryWorkerId", serviceId);
+        this.componentId = componentId;
+        this.logTracer = OpflowLogTracer.ROOT.branch("discoveryWorkerId", componentId);
 
         if (logTracer.ready(LOG, Level.INFO)) {
             LOG.info(logTracer
@@ -112,7 +112,7 @@ public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
         this.active = active;
     }
     
-    public synchronized void start() {
+    public synchronized void serve() {
         if (!this.running) {
             if (logTracer.ready(LOG, Level.INFO)) {
                 LOG.info(logTracer
@@ -183,13 +183,13 @@ public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
     }
     
     private void beat() throws NotRegisteredException {
-        getAgentClient().pass(serviceId);
+        getAgentClient().pass(componentId);
     }
     
     private void register() {
-        if (serviceName == null || serviceId == null) return;
+        if (serviceName == null || componentId == null) return;
         ImmutableRegistration.Builder builder = ImmutableRegistration.builder()
-            .id(serviceId)
+            .id(componentId)
             .name(serviceName)
             .check(Registration.RegCheck.ttl(checkTTL));
         
@@ -214,7 +214,7 @@ public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
         if (logTracer.ready(LOG, Level.INFO)) {
             LOG.info(logTracer
                 .put("serviceName", serviceName)
-                .put("serviceId", serviceId)
+                .put("serviceId", componentId)
                 .put("address", address)
                 .put("port", port)
                 .text("DiscoveryWorker[${discoveryWorkerId}] - register the service[${serviceName}][${serviceId}] with the address[${address}:${port}]")
@@ -227,10 +227,10 @@ public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
         if (logTracer.ready(LOG, Level.INFO)) {
             LOG.info(logTracer
                 .put("serviceName", serviceName)
-                .put("serviceId", serviceId)
+                .put("serviceId", componentId)
                 .text("DiscoveryWorker[${discoveryWorkerId}] - deregister the service[${serviceName}][${serviceId}]")
                 .stringify());
         }
-        getAgentClient().deregister(serviceId);
+        getAgentClient().deregister(componentId);
     }
 }
