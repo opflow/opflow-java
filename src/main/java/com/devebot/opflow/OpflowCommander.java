@@ -1022,6 +1022,7 @@ public class OpflowCommander implements AutoCloseable {
                         Date currentTime = new Date();
                         opts.put(OpflowConstant.INFO_SECTION_RUNTIME, OpflowObjectTree.buildMap()
                                 .put(OpflowConstant.OPFLOW_COMMON_THREAD_COUNT, Thread.activeCount())
+                                .add(OpflowSysInfo.getHeapInfo().toMap())
                                 .put(OpflowConstant.OPFLOW_COMMON_START_TIMESTAMP, startTime)
                                 .put(OpflowConstant.OPFLOW_COMMON_CURRENT_TIMESTAMP, currentTime)
                                 .put(OpflowConstant.OPFLOW_COMMON_UPTIME, OpflowDateTime.printElapsedTime(startTime, currentTime))
