@@ -1,6 +1,6 @@
 package com.devebot.opflow.supports;
 
-import at.favre.lib.crypto.bcrypt.BCrypt;
+import at.favre.lib.nostro.crypto.bcrypt.BCrypt;
 
 
 /**

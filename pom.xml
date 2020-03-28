@@ -105,8 +105,8 @@
             <version>${undertow.version}</version>
         </dependency>
         <dependency>
-            <groupId>at.favre.lib</groupId>
-            <artifactId>bcrypt</artifactId>
+            <groupId>com.devebot.opflow</groupId>
+            <artifactId>opflow-shade-bcrypt</artifactId>
             <version>${bcrypt.version}</version>
         </dependency>
         <dependency>
