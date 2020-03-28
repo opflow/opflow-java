@@ -94,7 +94,9 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_CREDENTIALS = "credentials";
     public final static String OPFLOW_COMMON_CONGESTIVE = "congestive";
     public final static String OPFLOW_COMMON_PROTOCOL = "protocol";
+    public final static String OPFLOW_COMMON_PID = "pid";
     public final static String OPFLOW_COMMON_THREAD_COUNT = "threadCount";
+    public final static String OPFLOW_COMMON_MEMORY_USAGE = "memoryUsage";
     public final static String OPFLOW_COMMON_FREE_HEAP_SIZE = "freeHeapSize";
     public final static String OPFLOW_COMMON_USED_HEAP_SIZE = "usedHeapSize";
     public final static String OPFLOW_COMMON_CURRENT_HEAP_SIZE = "currentHeapSize";

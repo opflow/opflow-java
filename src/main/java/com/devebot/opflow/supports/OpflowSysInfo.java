@@ -1,6 +1,7 @@
 package com.devebot.opflow.supports;
 
 import com.devebot.opflow.OpflowConstant;
+import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,6 +15,16 @@ public class OpflowSysInfo {
     
     public static int getNumberOfProcessors() {
         return Runtime.getRuntime().availableProcessors();
+    }
+    
+    public static Long getPid() {
+        try {
+            String processName = ManagementFactory.getRuntimeMXBean().getName();
+            return Long.parseLong(processName.split("@")[0]);
+        }
+        catch (Exception e) {
+            return null;
+        }
     }
 
     public static Map<String, Object> getGitInfo() {
