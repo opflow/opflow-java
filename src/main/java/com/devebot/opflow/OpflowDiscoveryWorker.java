@@ -2,9 +2,9 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
-import com.orbitz.consul.NotRegisteredException;
-import com.orbitz.consul.model.agent.ImmutableRegistration;
-import com.orbitz.consul.model.agent.Registration;
+import com.orbitz.consul.nostro.NotRegisteredException;
+import com.orbitz.consul.nostro.model.agent.ImmutableRegistration;
+import com.orbitz.consul.nostro.model.agent.Registration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;

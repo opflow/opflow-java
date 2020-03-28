@@ -70,14 +70,9 @@
             <version>${amqp-client.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.orbitz.consul</groupId>
-            <artifactId>consul-client</artifactId>
+            <groupId>com.devebot.opflow</groupId>
+            <artifactId>opflow-shade-consul-client</artifactId>
             <version>${consul-client.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
         </dependency>
         <dependency>
             <groupId>com.devebot.opflow</groupId>

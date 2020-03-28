@@ -1,10 +1,10 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
-import com.google.common.net.HostAndPort;
-import com.orbitz.consul.AgentClient;
-import com.orbitz.consul.Consul;
-import com.orbitz.consul.HealthClient;
+import com.orbitz.consul.nostro.AgentClient;
+import com.orbitz.consul.nostro.Consul;
+import com.orbitz.consul.nostro.HealthClient;
+import com.orbitz.consul.vostro.com.google.common.net.HostAndPort;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
