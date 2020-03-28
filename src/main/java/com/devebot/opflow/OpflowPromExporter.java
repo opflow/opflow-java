@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
  * @author topops
  */
 public class OpflowPromExporter extends OpflowPromMeasurer {
-    
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPromExporter.class);
     
     private final String host;
@@ -124,5 +123,9 @@ public class OpflowPromExporter extends OpflowPromMeasurer {
     @Override
     public Map<String, Object> resetRpcInvocationCounter() {
         throw new UnsupportedOperationException("Not supported yet.");
+    }
+    
+    public static void hook() {
+        OpflowPromMeasurer.PromExporter = OpflowPromExporter.class;
     }
 }

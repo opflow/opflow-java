@@ -1,12 +1,16 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowMathUtil;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.client.ConnectionFactory;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -14,6 +18,8 @@ import java.util.Map;
  */
 public abstract class OpflowPromMeasurer {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+    private final static Logger LOG = LoggerFactory.getLogger(OpflowPromMeasurer.class);
+    private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
     public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
     public static final String LABEL_RPC_PUBLISHER = "rpcOverPublisher";
@@ -35,6 +41,8 @@ public abstract class OpflowPromMeasurer {
     
     private static PipeMeasurer instance = new PipeMeasurer();
     
+    public static Class<? extends OpflowPromMeasurer> PromExporter;
+    
     public static OpflowPromMeasurer getInstance() throws OpflowOperationException {
         return instance;
     }
@@ -44,7 +52,29 @@ public abstract class OpflowPromMeasurer {
             if (!instance.hasShadow()) {
                 synchronized (OpflowPromMeasurer.class) {
                     if (!instance.hasShadow()) {
-                        instance.setShadow(new OpflowPromExporter(kwargs));
+                        if (PromExporter != null) {
+                            try {
+                                instance.setShadow((OpflowPromMeasurer) PromExporter.getDeclaredConstructor(Map.class).newInstance(kwargs));
+                                if (LOG_TRACER.ready(LOG, Level.DEBUG)) LOG.debug(LOG_TRACER
+                                        .put("className", PromExporter.getName())
+                                        .text("Measurer[${instanceId}].getInstance() - create an object [${className}] and assign it to the measurer")
+                                        .stringify());
+                            }
+                            catch (NoSuchMethodException | SecurityException ex) {
+                                if (LOG_TRACER.ready(LOG, Level.ERROR)) LOG.error(LOG_TRACER
+                                        .put("className", ex.getClass().getName())
+                                        .put("message", ex.getMessage())
+                                        .text("Measurer[${instanceId}].getInstance() - getDeclaredConstructor() - exception[${className}]: ${message}")
+                                        .stringify());
+                            }
+                            catch (IllegalAccessException | IllegalArgumentException | InstantiationException | InvocationTargetException ex) {
+                                if (LOG_TRACER.ready(LOG, Level.ERROR)) LOG.error(LOG_TRACER
+                                        .put("className", ex.getClass().getName())
+                                        .put("message", ex.getMessage())
+                                        .text("Measurer[${instanceId}].getInstance() - newInstance() - exception[${className}]: ${message}")
+                                        .stringify());
+                            }
+                        }
                     }
                 }
             }
