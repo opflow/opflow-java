@@ -5,7 +5,7 @@ import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowMathUtil;
 import com.devebot.opflow.supports.OpflowObjectTree;
-import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.nostro.client.ConnectionFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.Map;
@@ -31,7 +31,7 @@ public abstract class OpflowPromMeasurer {
     
     public abstract void updateComponentInstance(String componentType, String componentId, GaugeAction action);
     
-    public abstract void updateEngineConnection(ConnectionFactory factory, String connectionOwner, String connectionType, GaugeAction action);
+    public abstract void updateEngineConnection(String connectionOwner, String connectionType, GaugeAction action);
     
     public abstract void countRpcInvocation(String componentType, String eventName, String routineSignature, String status);
     
@@ -406,9 +406,9 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void updateEngineConnection(ConnectionFactory factory, String connectionOwner, String connectionType, GaugeAction action) {
+        public void updateEngineConnection(String connectionOwner, String connectionType, GaugeAction action) {
             if (shadow != null) {
-                shadow.updateEngineConnection(factory, connectionOwner, connectionType, action);
+                shadow.updateEngineConnection(connectionOwner, connectionType, action);
             }
         }
 
@@ -487,7 +487,7 @@ public abstract class OpflowPromMeasurer {
         }
 
         @Override
-        public void updateEngineConnection(ConnectionFactory factory, String connectionOwner, String connectionType, GaugeAction action) {
+        public void updateEngineConnection(String connectionOwner, String connectionType, GaugeAction action) {
         }
 
         @Override

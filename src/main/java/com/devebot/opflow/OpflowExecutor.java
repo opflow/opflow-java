@@ -2,8 +2,8 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.Channel;
+import com.rabbitmq.nostro.client.AMQP;
+import com.rabbitmq.nostro.client.Channel;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;

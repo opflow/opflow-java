@@ -65,8 +65,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.rabbitmq</groupId>
-            <artifactId>amqp-client</artifactId>
+            <groupId>com.devebot.opflow</groupId>
+            <artifactId>opflow-shade-amqp-client</artifactId>
             <version>${amqp-client.version}</version>
         </dependency>
         <dependency>

@@ -10,16 +10,16 @@ import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowKeytool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSysInfo;
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.BlockedListener;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.Consumer;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.ShutdownListener;
-import com.rabbitmq.client.ShutdownSignalException;
+import com.rabbitmq.nostro.client.AMQP;
+import com.rabbitmq.nostro.client.BlockedListener;
+import com.rabbitmq.nostro.client.Channel;
+import com.rabbitmq.nostro.client.Connection;
+import com.rabbitmq.nostro.client.ConnectionFactory;
+import com.rabbitmq.nostro.client.Consumer;
+import com.rabbitmq.nostro.client.DefaultConsumer;
+import com.rabbitmq.nostro.client.Envelope;
+import com.rabbitmq.nostro.client.ShutdownListener;
+import com.rabbitmq.nostro.client.ShutdownSignalException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -1109,7 +1109,7 @@ public class OpflowEngine implements AutoCloseable {
                             .put("connectionId", producingConnectionId)
                             .text("Engine[${engineId}]shared producingConnection[${connectionId}] is created")
                             .stringify(true));
-                    measurer.updateEngineConnection(factory, owner, "producing", OpflowPromMeasurer.GaugeAction.INC);
+                    measurer.updateEngineConnection(owner, "producing", OpflowPromMeasurer.GaugeAction.INC);
                 }
             }
         }
@@ -1212,7 +1212,7 @@ public class OpflowEngine implements AutoCloseable {
                             .put("connectionId", consumingConnectionId)
                             .text("Engine[${engineId}] shared consumingConnection[${connectionId}] is created")
                             .stringify(true));
-                    measurer.updateEngineConnection(factory, owner, "consuming", OpflowPromMeasurer.GaugeAction.INC);
+                    measurer.updateEngineConnection(owner, "consuming", OpflowPromMeasurer.GaugeAction.INC);
                 }
             }
         }
