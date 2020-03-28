@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-import org.joda.time.Interval;
-import org.joda.time.Period;
+import org.joda.time.nostro.Interval;
+import org.joda.time.nostro.Period;
 
 /**
  *

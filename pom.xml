@@ -80,8 +80,8 @@
             <version>${gson.version}</version>
         </dependency>
         <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
+            <groupId>com.devebot.opflow</groupId>
+            <artifactId>opflow-shade-joda-time</artifactId>
             <version>${joda-time.version}</version>
         </dependency>
         <dependency>
