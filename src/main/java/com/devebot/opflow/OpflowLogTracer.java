@@ -4,7 +4,7 @@ import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSysInfo;
 import com.devebot.opflow.supports.OpflowTextFormat;
-import com.devebot.shaded.com.google.gson.Gson;
+import com.google.gson.nostro.Gson;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;

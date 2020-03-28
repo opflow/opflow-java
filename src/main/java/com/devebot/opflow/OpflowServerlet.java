@@ -10,7 +10,7 @@ import com.devebot.opflow.exception.OpflowTargetNotFoundException;
 import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSysInfo;
-import com.devebot.shaded.com.google.gson.JsonSyntaxException;
+import com.google.gson.nostro.JsonSyntaxException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

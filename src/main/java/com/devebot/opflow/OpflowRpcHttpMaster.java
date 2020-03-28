@@ -11,12 +11,12 @@ import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import com.devebot.opflow.okhttp3.Call;
-import com.devebot.opflow.okhttp3.MediaType;
-import com.devebot.opflow.okhttp3.OkHttpClient;
-import com.devebot.opflow.okhttp3.Request;
-import com.devebot.opflow.okhttp3.RequestBody;
-import com.devebot.opflow.okhttp3.Response;
+import com.squareup.nostro.okhttp3.Call;
+import com.squareup.nostro.okhttp3.MediaType;
+import com.squareup.nostro.okhttp3.OkHttpClient;
+import com.squareup.nostro.okhttp3.Request;
+import com.squareup.nostro.okhttp3.RequestBody;
+import com.squareup.nostro.okhttp3.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
