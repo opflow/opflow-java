@@ -59,6 +59,21 @@ public abstract class OpflowDiscoveryClient {
         return healthClient;
     }
     
+    protected void resetConnection() {
+        synchronized (connectionLock) {
+            if (connection != null) {
+                connection.destroy();
+                connection = null;
+            }
+        }
+        synchronized (healthClientLock) {
+            healthClient = null;
+        }
+        synchronized (agentClientLock) {
+            agentClient = null;
+        }
+    }
+    
     protected Consul getConnection() {
         if (connection == null) {
             synchronized (connectionLock) {

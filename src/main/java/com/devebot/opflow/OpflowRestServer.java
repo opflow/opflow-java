@@ -330,6 +330,10 @@ public class OpflowRestServer implements AutoCloseable {
                         case "reset-counter":
                             result = taskSubmitter.resetRpcInvocationCounter();
                             break;
+                            
+                        case "reset-discovery-client":
+                            result = taskSubmitter.resetDiscoveryClient();
+                            break;
 
                         default:
                             break;

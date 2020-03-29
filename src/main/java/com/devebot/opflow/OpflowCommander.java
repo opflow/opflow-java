@@ -260,7 +260,8 @@ public class OpflowCommander implements AutoCloseable {
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
                     discoveryMaster, rpcObserver, rpcWatcher, serviceName);
 
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter);
+            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
+                    discoveryMaster);
 
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
                     .put(CONST.COMPONENT_ID, componentId)
@@ -663,6 +664,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowPubsubHandler publisher;
         private final Map<String, RpcInvocationHandler> handlers;
         private final OpflowThroughput.Meter speedMeter;
+        private final OpflowDiscoveryMaster discoveryMaster;
         
         public OpflowTaskSubmitterMaster(String componentId,
                 OpflowPromMeasurer measurer,
@@ -671,7 +673,8 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowRpcHttpMaster httpMaster,
                 OpflowPubsubHandler publisher,
                 Map<String, RpcInvocationHandler> mappings,
-                OpflowThroughput.Meter speedMeter
+                OpflowThroughput.Meter speedMeter,
+                OpflowDiscoveryMaster discoveryMaster
         ) {
             this.componentId = componentId;
             this.measurer = measurer;
@@ -681,6 +684,7 @@ public class OpflowCommander implements AutoCloseable {
             this.publisher = publisher;
             this.handlers = mappings;
             this.speedMeter = speedMeter;
+            this.discoveryMaster = discoveryMaster;
             this.logTracer = OpflowLogTracer.ROOT.branch("taskSubmitterId", componentId);
         }
         
@@ -734,6 +738,23 @@ public class OpflowCommander implements AutoCloseable {
                 amqpMaster.resetCallbackQueueCounter();
             }
             return OpflowObjectTree.buildMap().put("acknowledged", true).toMap();
+        }
+        
+        @Override
+        public Map<String, Object> resetDiscoveryClient() {
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                    .text("OpflowTaskSubmitter[${taskSubmitterId}].resetDiscoveryClient() is invoked")
+                    .stringify());
+            if (discoveryMaster != null) {
+                try {
+                    discoveryMaster.reset();
+                    return OpflowObjectTree.buildMap().put("result", "ok").toMap();
+                }
+                catch (Exception e) {
+                    return OpflowObjectTree.buildMap().put("result", "failed").toMap();
+                }
+            }
+            return OpflowObjectTree.buildMap().put("result", "unsupported").toMap();
         }
         
         @Override

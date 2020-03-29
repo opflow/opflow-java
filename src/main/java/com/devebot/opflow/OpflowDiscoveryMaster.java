@@ -82,6 +82,12 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
         }
     }
     
+    public void reset() {
+        close();
+        resetConnection();
+        serve();
+    }
+    
     public void subscribe(ServiceHealthHook subscriber) {
         this.subscriber = subscriber;
     }

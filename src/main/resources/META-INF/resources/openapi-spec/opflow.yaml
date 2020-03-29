@@ -185,6 +185,17 @@ paths:
       responses:
         200:
           description: "Ok"
+  /exec/reset-discovery-client:
+    get:
+      tags:
+      - "Operation"
+      summary: "Reset the Discovery Client Connection"
+      description: "Reset the Discovery Client Connection"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Ok"
   /exec/reset:
     get:
       tags:

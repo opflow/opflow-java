@@ -15,4 +15,5 @@ public interface OpflowTaskSubmitter {
     Map<String, Object> activateRemoteAMQPWorker(boolean state, Map<String, Object> opts);
     Map<String, Object> activateRemoteHTTPWorker(boolean state, Map<String, Object> opts);
     Map<String, Object> resetRpcInvocationCounter();
+    Map<String, Object> resetDiscoveryClient();
 }
