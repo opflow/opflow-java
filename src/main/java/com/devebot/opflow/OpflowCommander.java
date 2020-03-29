@@ -14,7 +14,6 @@ import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
 import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowSystemInfo;
-import io.undertow.server.RoutingHandler;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -284,22 +283,11 @@ public class OpflowCommander implements AutoCloseable {
                 .stringify());
     }
     
-    public RoutingHandler getDefaultHandlers() {
-        if (restServer != null) {
-            return restServer.getDefaultHandlers();
-        }
-        return null;
-    }
-    
     public void ping(String query) throws Throwable {
         rpcChecker.send(new OpflowRpcChecker.Ping(query));
     }
     
     public final void serve() {
-        serve(null);
-    }
-    
-    public final void serve(RoutingHandler httpHandlers) {
         synchronized (runningLock) {
             if (!runningActive) {
                 runningActive = true;
@@ -321,11 +309,7 @@ public class OpflowCommander implements AutoCloseable {
                 rpcWatcher.start();
             }
             if (restServer != null) {
-                if (httpHandlers == null) {
-                    restServer.serve();
-                } else {
-                    restServer.serve(httpHandlers);
-                }
+                restServer.serve();
             }
             if (restrictor != null) {
                 restrictor.unblock();

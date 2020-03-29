@@ -71,6 +71,11 @@
         </dependency>
         <dependency>
             <groupId>com.devebot.opflow</groupId>
+            <artifactId>opflow-shade-bcrypt</artifactId>
+            <version>${bcrypt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.devebot.opflow</groupId>
             <artifactId>opflow-shade-consul-client</artifactId>
             <version>${consul-client.version}</version>
         </dependency>
@@ -86,18 +91,13 @@
         </dependency>
         <dependency>
             <groupId>com.devebot.opflow</groupId>
-            <artifactId>opflow-shade-snakeyaml</artifactId>
-            <version>${snakeyaml.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
+            <artifactId>opflow-shade-okhttp</artifactId>
+            <version>${okhttp3.version}</version>
         </dependency>
         <dependency>
             <groupId>com.devebot.opflow</groupId>
-            <artifactId>opflow-shade-okhttp</artifactId>
-            <version>${okhttp3.version}</version>
+            <artifactId>opflow-shade-snakeyaml</artifactId>
+            <version>${snakeyaml.version}</version>
         </dependency>
         <dependency>
             <groupId>io.undertow</groupId>
@@ -105,9 +105,9 @@
             <version>${undertow.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.devebot.opflow</groupId>
-            <artifactId>opflow-shade-bcrypt</artifactId>
-            <version>${bcrypt.version}</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

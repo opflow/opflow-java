@@ -1,6 +1,7 @@
 package com.devebot.opflow.supports;
 
 import com.devebot.opflow.annotation.OpflowFieldExclude;
+import com.devebot.opflow.exception.OpflowJsonSyntaxException;
 import com.devebot.opflow.exception.OpflowJsonTransformationException;
 import com.google.gson.nostro.ExclusionStrategy;
 import com.google.gson.nostro.FieldAttributes;
@@ -87,27 +88,39 @@ public class OpflowJsonTool {
     }
     
     public static <T> T toObject(String json, Class<T> type) {
-        return GSON.fromJson(json, type);
+        try {
+            return GSON.fromJson(json, type);
+        }
+        catch (JsonSyntaxException e) {
+            throw new OpflowJsonSyntaxException(e);
+        }
     }
     
     public static <T> T toObject(InputStream inputStream, Class<T> type) {
         try {
             return toObject(new InputStreamReader(inputStream, "UTF-8"), type);
-        } catch (UnsupportedEncodingException exception) {
+        }
+        catch (UnsupportedEncodingException exception) {
             throw new OpflowJsonTransformationException(exception);
         }
     }
     
     public static <T> T toObject(Reader reader, Class<T> type) {
-        return GSON.fromJson(new JsonReader(reader), type);
+        try {
+            return GSON.fromJson(new JsonReader(reader), type);
+        }
+        catch (JsonSyntaxException e) {
+            throw new OpflowJsonSyntaxException(e);
+        }
     }
     
     public static Map<String, Object> toObjectMap(String json) {
         try {
             Map<String,Object> map = GSON.fromJson(json, Map.class);
             return map;
-        } catch (JsonSyntaxException e) {
-            throw new OpflowJsonTransformationException(e);
+        }
+        catch (JsonSyntaxException e) {
+            throw new OpflowJsonSyntaxException(e);
         }
     }
     
@@ -115,26 +128,39 @@ public class OpflowJsonTool {
         try {
             Map<String,Object> map = GSON.fromJson(new InputStreamReader(inputStream, "UTF-8"), Map.class);
             return map;
-        } catch (JsonSyntaxException | UnsupportedEncodingException e) {
+        }
+        catch (JsonSyntaxException e) {
+            throw new OpflowJsonSyntaxException(e);
+        }
+        catch (UnsupportedEncodingException e) {
             throw new OpflowJsonTransformationException(e);
         }
     }
     
     public static Object[] toObjectArray(String arrayString, Class[] types) {
-        if (arrayString == null) return new Object[0];
-        JsonArray array = JsonParser.parseString(arrayString).getAsJsonArray();
-        Object[] args = new Object[types.length];
-        for(int i=0; i<types.length; i++) {
-            args[i] = GSON.fromJson(array.get(i), types[i]);
+        try {
+            if (arrayString == null) return new Object[0];
+            JsonArray array = JsonParser.parseString(arrayString).getAsJsonArray();
+            Object[] args = new Object[types.length];
+            for(int i=0; i<types.length; i++) {
+                args[i] = GSON.fromJson(array.get(i), types[i]);
+            }
+            return args;
         }
-        return args;
+        catch (JsonSyntaxException e) {
+            throw new OpflowJsonSyntaxException(e);
+        }
     }
     
     public static <T> T extractField(String json, String fieldName, Class<T> type) {
         try {
             JsonObject jsonObject = (JsonObject)JsonParser.parseString(json);
             return type.cast(jsonObject.get(fieldName));
-        } catch (ClassCastException | JsonSyntaxException e) {
+        }
+        catch (JsonSyntaxException e) {
+            throw new OpflowJsonSyntaxException(e);
+        }
+        catch (ClassCastException e) {
             throw new OpflowJsonTransformationException(e);
         }
     }
@@ -143,8 +169,9 @@ public class OpflowJsonTool {
         try {
             JsonObject jsonObject = (JsonObject)JsonParser.parseString(json);
             return jsonObject.get(fieldName).getAsInt();
-        } catch (JsonSyntaxException e) {
-            throw new OpflowJsonTransformationException(e);
+        }
+        catch (JsonSyntaxException e) {
+            throw new OpflowJsonSyntaxException(e);
         }
     }
     

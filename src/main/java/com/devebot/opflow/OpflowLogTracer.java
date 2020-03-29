@@ -1,10 +1,10 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowEnvTool;
+import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSystemInfo;
 import com.devebot.opflow.supports.OpflowTextFormat;
-import com.google.gson.nostro.Gson;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowLogTracer {
-    private final static Gson GSON = new Gson();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowLogTracer.class);
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
     private final static String OPFLOW_VERSION = "0.1.x";
@@ -248,7 +247,7 @@ public class OpflowLogTracer {
                 if (IS_TEXT_EMBEDDABLE && text != null) {
                     this.fields.put(TEXT_FIELD_NAME, text);
                 }
-                output = GSON.toJson(fields);
+                output = OpflowJsonTool.toString(fields);
             }
         }
         

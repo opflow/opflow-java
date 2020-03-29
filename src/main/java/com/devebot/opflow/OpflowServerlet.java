@@ -5,12 +5,12 @@ import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.annotation.OpflowTargetRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.devebot.opflow.exception.OpflowJsonSyntaxException;
 import com.devebot.opflow.exception.OpflowMethodNotFoundException;
 import com.devebot.opflow.exception.OpflowTargetNotFoundException;
 import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSystemInfo;
-import com.google.gson.nostro.JsonSyntaxException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -488,7 +488,7 @@ public class OpflowServerlet implements AutoCloseable {
                                 .text("Request[${requestId}][${requestTime}] - Method call has completed")
                                 .stringify());
                         }
-                    } catch (JsonSyntaxException error) {
+                    } catch (OpflowJsonSyntaxException error) {
                         throw error;
                     } catch (IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException | UnsupportedOperationException ex) {
                         throw new IOException(ex);
@@ -574,7 +574,7 @@ public class OpflowServerlet implements AutoCloseable {
                             if (q.equals(getClassNameLabel(UnsupportedOperationException.class))) {
                                 throw new UnsupportedOperationException();
                             }
-                            if (q.equals(getClassNameLabel(JsonSyntaxException.class))) {
+                            if (q.equals(getClassNameLabel(OpflowJsonSyntaxException.class))) {
                                 OpflowJsonTool.toObject("{opflow}", OpflowRpcChecker.Ping.class);
                                 throw new Exception();
                             }
@@ -630,7 +630,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .text("Request[${requestId}][${requestTime}][x-serverlet-rpc-completed] - Method call has completed")
                         .stringify());
                 }
-            } catch (JsonSyntaxException error) {
+            } catch (OpflowJsonSyntaxException error) {
                 error.getStackTrace();
                 output = RoutineOutput.asFailure(OpflowObjectTree.buildMap(false)
                     .put("exceptionClass", error.getClass().getName())
