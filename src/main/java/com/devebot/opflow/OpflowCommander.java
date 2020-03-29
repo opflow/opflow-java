@@ -5,6 +5,7 @@ import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowDiscoveryConnectionException;
 import com.devebot.opflow.exception.OpflowInterceptionException;
 import com.devebot.opflow.exception.OpflowRemoteMasterDisabledException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
@@ -875,7 +876,13 @@ public class OpflowCommander implements AutoCloseable {
                                     opt2.put(CONST.COMPONENT_ID, discoveryMaster.getComponentId());
                                     opt2.put("serviceName", serviceName);
                                     if (serviceName != null) {
-                                        opt2.put("services", discoveryMaster.getService(serviceName));
+                                        try {
+                                            opt2.put("connection", "ok");
+                                            opt2.put("services", discoveryMaster.getService(serviceName));
+                                        }
+                                        catch (OpflowDiscoveryConnectionException e) {
+                                            opt2.put("connection", "failed");
+                                        }
                                     }
                                 }
                             }).toMap());

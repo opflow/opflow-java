@@ -2,7 +2,9 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowDiscoveryConnectionException;
 import com.devebot.opflow.supports.OpflowObjectTree;
+import com.orbitz.consul.nostro.ConsulException;
 import com.orbitz.consul.nostro.cache.ServiceHealthCache;
 import com.orbitz.consul.nostro.cache.ServiceHealthKey;
 import com.orbitz.consul.nostro.model.health.Service;
@@ -89,18 +91,23 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
     }
     
     public List<Map<String, Object>> getService(String workerName) {
-        List<Map<String, Object>> result = new LinkedList<>();
-        List<ServiceHealth> nodes = getHealthClient().getHealthyServiceInstances(workerName).getResponse();
-        for (ServiceHealth node : nodes) {
-            Service service = node.getService();
-            if (service != null) {
-                result.add(OpflowObjectTree.buildMap()
-                    .put("hostname", service.getAddress())
-                    .put("port", service.getPort())
-                    .toMap());
+        try {
+            List<Map<String, Object>> result = new LinkedList<>();
+            List<ServiceHealth> nodes = getHealthClient().getHealthyServiceInstances(workerName).getResponse();
+            for (ServiceHealth node : nodes) {
+                Service service = node.getService();
+                if (service != null) {
+                    result.add(OpflowObjectTree.buildMap()
+                        .put("hostname", service.getAddress())
+                        .put("port", service.getPort())
+                        .toMap());
+                }
             }
+            return result;
         }
-        return result;
+        catch (ConsulException e) {
+            throw new OpflowDiscoveryConnectionException(e);
+        }
     }
     
     public interface ServiceHealthHook {
