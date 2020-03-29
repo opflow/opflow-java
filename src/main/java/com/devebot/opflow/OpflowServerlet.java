@@ -9,7 +9,7 @@ import com.devebot.opflow.exception.OpflowMethodNotFoundException;
 import com.devebot.opflow.exception.OpflowTargetNotFoundException;
 import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowObjectTree;
-import com.devebot.opflow.supports.OpflowSysInfo;
+import com.devebot.opflow.supports.OpflowSystemInfo;
 import com.google.gson.nostro.JsonSyntaxException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -602,7 +602,7 @@ public class OpflowServerlet implements AutoCloseable {
                                 .toMap());
                             opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
                                 .put("server", getGitInfo())
-                                .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
+                                .put(CONST.FRAMEWORK_ID, OpflowSystemInfo.getGitInfo())
                                 .toMap());
                         }
                     }).toMap());
@@ -888,7 +888,7 @@ public class OpflowServerlet implements AutoCloseable {
     }
     
     private static Map<String, Object> getGitInfo() {
-        return OpflowSysInfo.getGitInfo("META-INF/scm/service-worker/git-info.json");
+        return OpflowSystemInfo.getGitInfo("META-INF/scm/service-worker/git-info.json");
     }
     
     @Override

@@ -9,7 +9,7 @@ import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowKeytool;
 import com.devebot.opflow.supports.OpflowObjectTree;
-import com.devebot.opflow.supports.OpflowSysInfo;
+import com.devebot.opflow.supports.OpflowSystemInfo;
 import com.rabbitmq.nostro.client.AMQP;
 import com.rabbitmq.nostro.client.BlockedListener;
 import com.rabbitmq.nostro.client.Channel;
@@ -307,7 +307,7 @@ public class OpflowEngine implements AutoCloseable {
                     threadPoolSize = (Integer)params.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE);
                 }
                 if (threadPoolSize == null || threadPoolSize <= 0) {
-                    threadPoolSize = OpflowSysInfo.getNumberOfProcessors();
+                    threadPoolSize = OpflowSystemInfo.getNumberOfProcessors();
                 }
                 if (threadPoolSize <= 0) {
                     threadPoolSize = 2;

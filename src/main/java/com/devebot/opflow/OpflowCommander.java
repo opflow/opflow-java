@@ -13,7 +13,7 @@ import com.devebot.opflow.exception.OpflowRpcRegistrationException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
 import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowDateTime;
-import com.devebot.opflow.supports.OpflowSysInfo;
+import com.devebot.opflow.supports.OpflowSystemInfo;
 import io.undertow.server.RoutingHandler;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -1021,11 +1021,11 @@ public class OpflowCommander implements AutoCloseable {
                     if (checkOption(flag, SCOPE_INFO)) {
                         Date currentTime = new Date();
                         opts.put(OpflowConstant.INFO_SECTION_RUNTIME, OpflowObjectTree.buildMap()
-                            .put(OpflowConstant.OPFLOW_COMMON_PID, OpflowSysInfo.getPid())
+                            .put(OpflowConstant.OPFLOW_COMMON_PID, OpflowSystemInfo.getPid())
                                 .put(OpflowConstant.OPFLOW_COMMON_THREAD_COUNT, Thread.activeCount())
-                                .put(OpflowConstant.OPFLOW_COMMON_CPU_USAGE, OpflowSysInfo.getCpuUsage())
-                                .put(OpflowConstant.OPFLOW_COMMON_MEMORY_USAGE, OpflowSysInfo.getMemUsage().toMap())
-                                .put(OpflowConstant.OPFLOW_COMMON_OS_INFO, OpflowSysInfo.getOsInfo())
+                                .put(OpflowConstant.OPFLOW_COMMON_CPU_USAGE, OpflowSystemInfo.getCpuUsage())
+                                .put(OpflowConstant.OPFLOW_COMMON_MEMORY_USAGE, OpflowSystemInfo.getMemUsage().toMap())
+                                .put(OpflowConstant.OPFLOW_COMMON_OS_INFO, OpflowSystemInfo.getOsInfo())
                                 .put(OpflowConstant.OPFLOW_COMMON_START_TIMESTAMP, startTime)
                                 .put(OpflowConstant.OPFLOW_COMMON_CURRENT_TIMESTAMP, currentTime)
                                 .put(OpflowConstant.OPFLOW_COMMON_UPTIME, OpflowDateTime.printElapsedTime(startTime, currentTime))
@@ -1035,8 +1035,8 @@ public class OpflowCommander implements AutoCloseable {
                     // git commit information
                     if (checkOption(flag, SCOPE_INFO)) {
                         opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
-                                .put("server", OpflowSysInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
-                                .put(CONST.FRAMEWORK_ID, OpflowSysInfo.getGitInfo())
+                                .put("server", OpflowSystemInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
+                                .put(CONST.FRAMEWORK_ID, OpflowSystemInfo.getGitInfo())
                                 .toMap());
                     }
                 }

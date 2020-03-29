@@ -9,7 +9,7 @@ import java.util.Map;
  *
  * @author pnhung177
  */
-public class OpflowSysInfo {
+public class OpflowSystemInfo {
     
     public static final String GIT_INFO_FILE = "META-INF/scm/com.devebot.opflow/opflow-core/git-info.json";
     
@@ -36,7 +36,7 @@ public class OpflowSysInfo {
             gitInfoFile = GIT_INFO_FILE;
         }
         try {
-            return OpflowJsonTool.toObject(OpflowSysInfo.class.getClassLoader().getResourceAsStream(gitInfoFile), Map.class);
+            return OpflowJsonTool.toObject(OpflowSystemInfo.class.getClassLoader().getResourceAsStream(gitInfoFile), Map.class);
         } catch (Exception ioe) {
             return new HashMap<>();
         }

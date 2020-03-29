@@ -2,7 +2,7 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
-import com.devebot.opflow.supports.OpflowSysInfo;
+import com.devebot.opflow.supports.OpflowSystemInfo;
 import com.devebot.opflow.supports.OpflowTextFormat;
 import com.google.gson.nostro.Gson;
 import java.io.IOException;
@@ -292,7 +292,7 @@ public class OpflowLogTracer {
     
     public static String getLibraryInfo() {
         if (libraryInfo == null) {
-            Map<String, Object> repoInfo = OpflowSysInfo.getGitInfo();
+            Map<String, Object> repoInfo = OpflowSystemInfo.getGitInfo();
             String buildVersion = OpflowObjectTree.getOptionValue(repoInfo, "git.build.version", String.class, OPFLOW_VERSION);
             String commitId = OpflowObjectTree.getOptionValue(repoInfo, "git.commit.id.abbrev", String.class, null);
             libraryInfo = new OpflowLogTracer()
