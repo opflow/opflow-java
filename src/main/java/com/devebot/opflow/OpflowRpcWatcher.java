@@ -2,7 +2,6 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
-import com.devebot.opflow.supports.OpflowConverter;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;

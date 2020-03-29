@@ -30,6 +30,7 @@ public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
     private volatile boolean running = false;
     private volatile boolean active = true;
     private final Object lock = new Object();
+    private final Object registerLock = new Object();
     
     private final String serviceName;
     private final String componentId;
@@ -132,11 +133,7 @@ public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
                     public void run() {
                         if (isActive()) {
                             synchronized (lock) {
-                                try {
-                                    beat();
-                                } catch (NotRegisteredException ex) {
-                                    
-                                }
+                                beat();
                             }
                         }
                     }
@@ -182,55 +179,65 @@ public class OpflowDiscoveryWorker extends OpflowDiscoveryClient {
         }
     }
     
-    private void beat() throws NotRegisteredException {
-        getAgentClient().pass(componentId);
+    private void beat() {
+        try {
+            getAgentClient().pass(componentId);
+        }
+        catch (NotRegisteredException e) {
+            //register();
+        }
     }
     
     private void register() {
-        if (serviceName == null || componentId == null) return;
+        if (getAgentClient().isRegistered(componentId)) return;
         ImmutableRegistration.Builder builder = ImmutableRegistration.builder()
             .id(componentId)
             .name(serviceName)
             .check(Registration.RegCheck.ttl(checkTTL));
-        
+
         if (address != null) {
             builder = builder.address(address);
         }
-        
+
         if (port != null) {
             builder = builder.port(port);
         }
-        
+
         if (version != null) {
             builder = builder.meta(Collections.singletonMap("version", version));
         }
-        
+
         if (tags != null && tags.length > 0) {
             builder = builder.tags(Arrays.asList(tags));
         }
-        
+
         Registration service = builder.build();
-        
-        if (logTracer.ready(LOG, Level.INFO)) {
-            LOG.info(logTracer
-                .put("serviceName", serviceName)
-                .put("serviceId", componentId)
-                .put("address", address)
-                .put("port", port)
-                .text("DiscoveryWorker[${discoveryWorkerId}] - register the service[${serviceName}][${serviceId}] with the address[${address}:${port}]")
-                .stringify());
+
+        synchronized (registerLock) {
+            if (logTracer.ready(LOG, Level.INFO)) {
+                LOG.info(logTracer
+                    .put("serviceName", serviceName)
+                    .put("serviceId", componentId)
+                    .put("address", address)
+                    .put("port", port)
+                    .text("DiscoveryWorker[${discoveryWorkerId}] - register the service[${serviceName}][${serviceId}] with the address[${address}:${port}]")
+                    .stringify());
+            }
+            getAgentClient().register(service);
         }
-        getAgentClient().register(service);
     }
     
     private void deregister() {
-        if (logTracer.ready(LOG, Level.INFO)) {
-            LOG.info(logTracer
-                .put("serviceName", serviceName)
-                .put("serviceId", componentId)
-                .text("DiscoveryWorker[${discoveryWorkerId}] - deregister the service[${serviceName}][${serviceId}]")
-                .stringify());
+        if (!getAgentClient().isRegistered(componentId)) return;
+        synchronized (registerLock) {
+            if (logTracer.ready(LOG, Level.INFO)) {
+                LOG.info(logTracer
+                    .put("serviceName", serviceName)
+                    .put("serviceId", componentId)
+                    .text("DiscoveryWorker[${discoveryWorkerId}] - deregister the service[${serviceName}][${serviceId}]")
+                    .stringify());
+            }
+            getAgentClient().deregister(componentId);
         }
-        getAgentClient().deregister(componentId);
     }
 }
