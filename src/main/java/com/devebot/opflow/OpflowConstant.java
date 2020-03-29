@@ -96,11 +96,9 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_PROTOCOL = "protocol";
     public final static String OPFLOW_COMMON_PID = "pid";
     public final static String OPFLOW_COMMON_THREAD_COUNT = "threadCount";
+    public final static String OPFLOW_COMMON_OS_INFO = "OS";
+    public final static String OPFLOW_COMMON_CPU_USAGE = "cpuUsage";
     public final static String OPFLOW_COMMON_MEMORY_USAGE = "memoryUsage";
-    public final static String OPFLOW_COMMON_FREE_HEAP_SIZE = "freeHeapSize";
-    public final static String OPFLOW_COMMON_USED_HEAP_SIZE = "usedHeapSize";
-    public final static String OPFLOW_COMMON_CURRENT_HEAP_SIZE = "currentHeapSize";
-    public final static String OPFLOW_COMMON_MAXIMUM_HEAP_SIZE = "maximumHeapSize";
     public final static String OPFLOW_COMMON_CURRENT_TIMESTAMP = "currentTime";
     public final static String OPFLOW_COMMON_START_TIMESTAMP = "startTime";
     public final static String OPFLOW_COMMON_END_TIMESTAMP = "endTime";
