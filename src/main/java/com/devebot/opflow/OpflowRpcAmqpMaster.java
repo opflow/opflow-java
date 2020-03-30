@@ -284,7 +284,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         OpflowTimeout.Monitor monitor = null;
         if (monitorEnabled) {
             monitor = new OpflowTimeout.Monitor(tasks, monitorInterval, monitorTimeout, monitorId);
-            monitor.start();
+            monitor.serve();
         }
         return monitor;
     }

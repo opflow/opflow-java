@@ -243,10 +243,15 @@ public class OpflowServerlet implements AutoCloseable {
         });
     }
 
+    @Deprecated
     public final void start() {
+        serve();
+    }
+
+    public final void serve() {
         if (logTracer.ready(LOG, Level.INFO)) {
             LOG.info(logTracer
-                .text("Serverlet[${serverletId}][${instanceId}].start()")
+                .text("Serverlet[${serverletId}][${instanceId}].serve()")
                 .stringify());
         }
         
@@ -277,7 +282,7 @@ public class OpflowServerlet implements AutoCloseable {
 
         if (logTracer.ready(LOG, Level.INFO)) {
             LOG.info(logTracer
-                .text("Serverlet[${serverletId}][${instanceId}].start() end!")
+                .text("Serverlet[${serverletId}][${instanceId}].serve() end!")
                 .stringify());
         }
     }

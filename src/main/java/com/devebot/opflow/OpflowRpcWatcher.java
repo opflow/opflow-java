@@ -104,7 +104,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
         }
         return timerTask.getCount();
     }
-    
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -113,9 +113,9 @@ public class OpflowRpcWatcher implements AutoCloseable {
         return interval;
     }
 
-    public void start() {
+    public void serve() {
         if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
-                .text("Detector[${rpcWatcherId}].start()")
+                .text("Detector[${rpcWatcherId}].serve()")
                 .stringify());
         if (enabled) {
             if (interval > 0) {

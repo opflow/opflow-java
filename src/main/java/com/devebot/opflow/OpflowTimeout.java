@@ -170,9 +170,9 @@ public class OpflowTimeout {
                     .stringify());
         }
         
-        public void start() {
+        public synchronized void serve() {
             if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
-                    .text("Monitor[${monitorId}].start()")
+                    .text("Monitor[${monitorId}].serve()")
                     .stringify());
             if (interval > 0) {
                 timer.scheduleAtFixedRate(timerTask, 0, interval);
@@ -189,7 +189,7 @@ public class OpflowTimeout {
         }
         
         @Override
-        public void close() {
+        public synchronized void close() {
             if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
                     .text("Monitor[${monitorId}].close()")
                     .stringify());

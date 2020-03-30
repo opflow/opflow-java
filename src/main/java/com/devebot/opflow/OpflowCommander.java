@@ -306,14 +306,14 @@ public class OpflowCommander implements AutoCloseable {
                     .text("Commander[${commanderId}].serve() begin")
                     .stringify());
 
-            OpflowUUID.start();
+            OpflowUUID.serve();
 
             if (discoveryMaster != null) {
                 discoveryMaster.serve();
             }
             
             if (rpcWatcher != null) {
-                rpcWatcher.start();
+                rpcWatcher.serve();
             }
             if (restServer != null) {
                 restServer.serve();
@@ -322,7 +322,7 @@ public class OpflowCommander implements AutoCloseable {
                 restrictor.unblock();
             }
             if (speedMeter != null) {
-                speedMeter.start();
+                speedMeter.serve();
             }
 
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -1048,7 +1048,7 @@ public class OpflowCommander implements AutoCloseable {
                         }
                     }
                     
-                    // start-time & uptime
+                    // serve-time & uptime
                     if (checkOption(flag, SCOPE_INFO)) {
                         Date currentTime = new Date();
                         opts.put(OpflowConstant.INFO_SECTION_RUNTIME, OpflowObjectTree.buildMap()

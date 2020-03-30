@@ -50,8 +50,8 @@ public class OpflowUUID {
         return convertUUIDToBase64(UUID.fromString(uuid));
     }
     
-    public static void start() {
-        UUID_GENERATOR.start();
+    public static void serve() {
+        UUID_GENERATOR.serve();
     }
     
     public static void release() {
@@ -88,7 +88,7 @@ public class OpflowUUID {
             this.interval = 2000l;
             this.store = new ConcurrentLinkedQueue<>();
             if (UUID_AUTOSTART_GENERATOR) {
-                this.start();
+                this.serve();
             }
         }
 
@@ -115,7 +115,7 @@ public class OpflowUUID {
             return buff;
         }
 
-        public synchronized void start() {
+        public synchronized void serve() {
             if (!running) {
                 if (this.timer == null) {
                      this.timer = new Timer("Timer-" + extractClassName(), true);

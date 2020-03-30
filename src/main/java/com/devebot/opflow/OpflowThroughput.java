@@ -261,7 +261,7 @@ public class OpflowThroughput {
             }
         }
         
-        public synchronized void start() {
+        public synchronized void serve() {
             if (!this.running) {
                 if (this.timer == null) {
                     this.timer = new Timer("Timer-" + OpflowUtil.extractClassName(Meter.class), true);
