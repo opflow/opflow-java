@@ -49,6 +49,9 @@ public class OpflowEngine implements AutoCloseable {
         OpflowConstant.AMQP_CONARG_VHOST,
         OpflowConstant.AMQP_CONARG_USERNAME,
         OpflowConstant.AMQP_CONARG_PASSWORD,
+        OpflowConstant.AMQP_CONARG_CONNECTION_TIMEOUT,
+        OpflowConstant.AMQP_CONARG_HANDSHAKE_TIMEOUT,
+        OpflowConstant.AMQP_CONARG_SHUTDOWN_TIMEOUT,
         OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX,
         OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX,
         OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT,
@@ -181,25 +184,40 @@ public class OpflowEngine implements AutoCloseable {
                         .stringify());
             }
             
-            Integer channelMax = null;
+            Integer requestedChannelMax = null;
             if (params.get(OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX) instanceof Integer) {
-                factory.setRequestedChannelMax(channelMax = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX));
+                factory.setRequestedChannelMax(requestedChannelMax = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX));
             }
 
-            Integer frameMax = null;
+            Integer requestedFrameMax = null;
             if (params.get(OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX) instanceof Integer) {
-                factory.setRequestedFrameMax(frameMax = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX));
+                factory.setRequestedFrameMax(requestedFrameMax = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX));
             }
 
-            Integer heartbeat;
+            Integer requestedHeartbeat;
             if (params.get(OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT) instanceof Integer) {
-                heartbeat = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT);
-                if (heartbeat < 5) heartbeat = 5;
+                requestedHeartbeat = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT);
+                if (requestedHeartbeat < 5) requestedHeartbeat = 5;
             } else {
-                heartbeat = 20; // default 20 seconds
+                requestedHeartbeat = 20; // default 20 seconds
             }
-            if (heartbeat != null) {
-                factory.setRequestedHeartbeat(heartbeat);
+            if (requestedHeartbeat != null) {
+                factory.setRequestedHeartbeat(requestedHeartbeat);
+            }
+
+            Integer connectionTimeout = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_CONNECTION_TIMEOUT, null);
+            if (connectionTimeout != null) {
+                factory.setConnectionTimeout(connectionTimeout);
+            }
+
+            Integer handshakeTimeout = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_HANDSHAKE_TIMEOUT, null);
+            if (handshakeTimeout != null) {
+                factory.setHandshakeTimeout(handshakeTimeout);
+            }
+            
+            Integer shutdownTimeout = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_SHUTDOWN_TIMEOUT, null);
+            if (shutdownTimeout != null) {
+                factory.setShutdownTimeout(shutdownTimeout);
             }
 
             Boolean automaticRecoveryEnabled = null;
@@ -329,9 +347,9 @@ public class OpflowEngine implements AutoCloseable {
             }
             
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                    .put("channelMax", channelMax)
-                    .put("frameMax", frameMax)
-                    .put("heartbeat", heartbeat)
+                    .put("channelMax", requestedChannelMax)
+                    .put("frameMax", requestedFrameMax)
+                    .put("heartbeat", requestedHeartbeat)
                     .put("automaticRecoveryEnabled", automaticRecoveryEnabled)
                     .put("topologyRecoveryEnabled", topologyRecoveryEnabled)
                     .put("networkRecoveryInterval", networkRecoveryInterval)

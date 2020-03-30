@@ -222,6 +222,9 @@ public class OpflowConstant {
     public final static String AMQP_CONARG_REQUESTED_CHANNEL_MAX = "channelMax";
     public final static String AMQP_CONARG_REQUESTED_FRAME_MAX = "frameMax";
     public final static String AMQP_CONARG_REQUESTED_HEARTBEAT = "heartbeat";
+    public final static String AMQP_CONARG_CONNECTION_TIMEOUT = "connectionTimeout";
+    public final static String AMQP_CONARG_HANDSHAKE_TIMEOUT = "handshakeTimeout";
+    public final static String AMQP_CONARG_SHUTDOWN_TIMEOUT = "shutdownTimeout";
 
     public final static String AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED = "automaticRecoveryEnabled";
     public final static String AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED = "topologyRecoveryEnabled";
