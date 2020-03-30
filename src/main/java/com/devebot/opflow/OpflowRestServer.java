@@ -104,9 +104,9 @@ public class OpflowRestServer implements AutoCloseable {
         TrafficHandler trafficHandler = new TrafficHandler();
         PingHandler pingHandler = new PingHandler();
         
-        defaultHandlers = new RoutingHandler();
-        defaultHandlers.get("/exec/{action}", new BlockingHandler(execHandler))
+        defaultHandlers = new RoutingHandler()
                 .get("/info", infoHandler)
+                .get("/exec/{action}", new BlockingHandler(execHandler))
                 .get("/traffic", trafficHandler)
                 .put("/traffic", new BlockingHandler(trafficHandler))
                 .get("/ping", pingHandler);
@@ -161,7 +161,7 @@ public class OpflowRestServer implements AutoCloseable {
                         .get("/", new RedirectHandler("/api-ui/"))
                         .setFallbackHandler(new PageNotFoundHandler());
 
-                shutdownHandler = new GracefulShutdownHandler(routes);
+                shutdownHandler = new GracefulShutdownHandler(new RequestLoggingHandler(routes));
                 
                 server = Undertow.builder()
                         .addHttpListener(port, host)
@@ -264,6 +264,25 @@ public class OpflowRestServer implements AutoCloseable {
             exchange.setStatusCode(404);
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
             exchange.getResponseSender().send("Page Not Found");
+        }
+    }
+    
+    class RequestLoggingHandler implements HttpHandler {
+        private final HttpHandler next;
+
+        public RequestLoggingHandler(final HttpHandler next) {
+            this.next = next;
+        }
+        
+        @Override
+        public void handleRequest(final HttpServerExchange exchange) throws Exception {
+            if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                    .put("username", identityManager != null ? identityManager.getUsername(exchange) : null)
+                    .put("method", exchange.getRequestMethod())
+                    .put("path", exchange.getRelativePath())
+                    .text("RestServer[${restServerId}] - User[${username}] invokes [${method}] ${path}")
+                    .stringify());
+            next.handleRequest(exchange);
         }
     }
     
@@ -371,11 +390,6 @@ public class OpflowRestServer implements AutoCloseable {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
-                if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                        .put("username", identityManager != null ? identityManager.getUsername(exchange) : null)
-                        .put("method", exchange.getRequestMethod())
-                        .text("RestServer[${restServerId}] - User[${username}] invokes [${method}] /traffic")
-                        .stringify());
                 Map<String, Object> body = null;
                 if (exchange.getRequestMethod().equalToString("PUT")) {
                     body = OpflowJsonTool.toObjectMap(exchange.getInputStream());

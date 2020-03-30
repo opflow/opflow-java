@@ -511,8 +511,25 @@ public class OpflowRestrictor {
             }
         }
 
-        public void close() {
+        public void cancel() {
             getThreadExecutor().shutdownNow();
+        }
+        
+        public void close() {
+            synchronized (threadExecutorLock) {
+                if (threadExecutor != null) {
+                    threadExecutor.shutdown();
+                    try {
+                        if (!threadExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                            threadExecutor.shutdownNow();
+                        }
+                    } catch (InterruptedException ie) {
+                        threadExecutor.shutdownNow();
+                    } finally {
+                        threadExecutor = null;
+                    }
+                }
+            }
         }
     }
 }
