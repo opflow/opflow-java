@@ -183,25 +183,20 @@ public class OpflowEngine implements AutoCloseable {
                         .text("Engine[${engineId}] make connection using parameters")
                         .stringify());
             }
-            
-            Integer requestedChannelMax = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX) instanceof Integer) {
-                factory.setRequestedChannelMax(requestedChannelMax = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX));
+
+            Integer requestedChannelMax = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX, null);
+            if (requestedChannelMax != null) {
+                factory.setRequestedChannelMax(requestedChannelMax);
             }
 
-            Integer requestedFrameMax = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX) instanceof Integer) {
-                factory.setRequestedFrameMax(requestedFrameMax = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX));
+            Integer requestedFrameMax = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX, null);
+            if (requestedFrameMax != null) {
+                factory.setRequestedFrameMax(requestedFrameMax);
             }
 
-            Integer requestedHeartbeat;
-            if (params.get(OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT) instanceof Integer) {
-                requestedHeartbeat = (Integer)params.get(OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT);
-                if (requestedHeartbeat < 5) requestedHeartbeat = 5;
-            } else {
-                requestedHeartbeat = 20; // default 20 seconds
-            }
+            Integer requestedHeartbeat = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT, 20); // 20 seconds
             if (requestedHeartbeat != null) {
+                if (requestedHeartbeat < 5) requestedHeartbeat = 5;
                 factory.setRequestedHeartbeat(requestedHeartbeat);
             }
 
