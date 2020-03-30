@@ -1,13 +1,16 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
+import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRequestPausingException;
 import com.devebot.opflow.exception.OpflowRequestSuspendException;
 import com.devebot.opflow.exception.OpflowRequestWaitingException;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -457,6 +460,59 @@ public class OpflowRestrictor {
             catch (InterruptedException exception) {
                 throw new OpflowRequestWaitingException("semaphore.acquire() is interrupted", exception);
             }
+        }
+    }
+    
+    public static class Cache extends Filter {
+        private boolean threadExecutorActive = true;
+        private final Object threadExecutorLock = new Object();
+        private ExecutorService threadExecutor = null;
+
+        public Cache() {
+        }
+
+        public Cache(boolean activeDefault) {
+            threadExecutorActive = activeDefault;
+        }
+
+        private ExecutorService getThreadExecutor() {
+            if (threadExecutor == null) {
+                synchronized (threadExecutorLock) {
+                    if (threadExecutor == null) {
+                        threadExecutor = Executors.newCachedThreadPool();
+                    }
+                }
+            }
+            return threadExecutor;
+        }
+
+        @Override
+        public <T> T filter(OpflowRestrictable.Action<T> action) throws Throwable {
+            if (!threadExecutorActive) {
+                return action.process();
+            }
+            Callable<T> task = new Callable() {
+                @Override
+                public T call() throws Exception {
+                    try {
+                        return action.process();
+                    } catch (Throwable t) {
+                        if (t instanceof Exception) {
+                            throw (Exception) t;
+                        }
+                        throw new Exception(t);
+                    }
+                }
+            };
+            try {
+                return getThreadExecutor().submit(task).get();
+            } catch (RejectedExecutionException e) {
+                throw new OpflowOperationException(e);
+            }
+        }
+
+        public void close() {
+            getThreadExecutor().shutdownNow();
         }
     }
 }
