@@ -104,6 +104,8 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
                 Service service = node.getService();
                 if (service != null) {
                     result.add(OpflowObjectTree.buildMap()
+                        .put("id", service.getId())
+                        .put("name", service.getService())
                         .put("hostname", service.getAddress())
                         .put("port", service.getPort())
                         .toMap());

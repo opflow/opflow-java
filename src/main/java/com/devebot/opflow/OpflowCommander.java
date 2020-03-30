@@ -128,7 +128,12 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> speedMeterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SPEED_METER);
         
         if (speedMeterCfg == null || OpflowUtil.isComponentEnabled(speedMeterCfg)) {
-            speedMeter = (new OpflowThroughput.Meter(speedMeterCfg));
+            speedMeter = (new OpflowThroughput.Meter(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put(CONST.COMPONENT_ID, componentId);
+                    }
+                }, speedMeterCfg).toMap()));
         } else {
             speedMeter = null;
         }
@@ -433,7 +438,13 @@ public class OpflowCommander implements AutoCloseable {
         }
 
         public void block() {
+            if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
+                    .text("Restrictor[${restrictorId}].block()")
+                    .stringify());
             valveRestrictor.block();
+            if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
+                    .text("Restrictor[${restrictorId}].block() end!")
+                    .stringify());
         }
 
         public void unblock() {

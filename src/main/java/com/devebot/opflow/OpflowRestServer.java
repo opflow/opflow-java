@@ -326,7 +326,7 @@ public class OpflowRestServer implements AutoCloseable {
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
-
+                            
                         case "reset-counter":
                             result = taskSubmitter.resetRpcInvocationCounter();
                             break;
@@ -334,7 +334,7 @@ public class OpflowRestServer implements AutoCloseable {
                         case "reset-discovery-client":
                             result = taskSubmitter.resetDiscoveryClient();
                             break;
-
+                            
                         default:
                             break;
                     }

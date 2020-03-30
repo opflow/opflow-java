@@ -1,5 +1,6 @@
 package com.devebot.opflow;
 
+import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowMathUtil;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Date;
@@ -7,6 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -177,6 +180,9 @@ public class OpflowThroughput {
     }
     
     public static class Meter {
+        private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+        private final static Logger LOG = LoggerFactory.getLogger(Meter.class);
+
         private long interval = INTERVAL_DEFAULT;
         private int length = TAIL_LENGTH_DEFAULT;
         private Timer timer;
@@ -184,11 +190,16 @@ public class OpflowThroughput {
         private volatile boolean running = false;
         private volatile boolean active = false;
 
+        private final String componentId;
+        private final OpflowLogTracer logTracer;
         private final Object lock = new Object();
         private final Map<String, Gauge> gauges = new HashMap<>();
 
         public Meter(Map<String, Object> kwargs) {
             kwargs = OpflowObjectTree.ensureNonNull(kwargs);
+            // initialize the logTracer
+            componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
+            logTracer = OpflowLogTracer.ROOT.branch("speedMeterId", this.componentId);
             // load [active] value from the config, false by default
             active = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_ACTIVE, Boolean.FALSE);
             // updating interval
@@ -276,12 +287,18 @@ public class OpflowThroughput {
 
         public synchronized void close() {
             if (running) {
+                if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
+                        .text("SpeedMeter[${speedMeterId}].close()")
+                        .stringify());
                 timerTask.cancel();
                 timerTask = null;
                 timer.cancel();
                 timer.purge();
                 timer = null;
                 running = false;
+                if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
+                        .text("SpeedMeter[${speedMeterId}].close() end!")
+                        .stringify());
             }
         }
     }
