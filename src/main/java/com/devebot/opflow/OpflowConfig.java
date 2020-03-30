@@ -526,6 +526,9 @@ public class OpflowConfig {
     
     private static final String[] INTEGER_FIELDS = OpflowCollectionUtil.distinct(new String[] {
         OpflowConstant.AMQP_CONARG_PORT,
+        OpflowConstant.AMQP_CONARG_CONNECTION_TIMEOUT,
+        OpflowConstant.AMQP_CONARG_HANDSHAKE_TIMEOUT,
+        OpflowConstant.AMQP_CONARG_SHUTDOWN_TIMEOUT,
         OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX,
         OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX,
         OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT,
