@@ -38,9 +38,11 @@ public abstract class OpflowPromMeasurer {
     
     public abstract Map<String, Object> resetRpcInvocationCounter();
     
-    private static PipeMeasurer instance = new PipeMeasurer();
+    public abstract Map<String, Object> getServiceInfo();
     
     public static Class<? extends OpflowPromMeasurer> PromExporter;
+    
+    private static PipeMeasurer instance = new PipeMeasurer();
     
     public static OpflowPromMeasurer getInstance() throws OpflowOperationException {
         return instance;
@@ -466,7 +468,7 @@ public abstract class OpflowPromMeasurer {
                 }
             }
         }
-        
+
         @Override
         public RpcInvocationCounter getRpcInvocationCounter(String componentType) {
             return counter;
@@ -476,6 +478,14 @@ public abstract class OpflowPromMeasurer {
         public Map<String, Object> resetRpcInvocationCounter() {
             counter.reset();
             return counter.toMap();
+        }
+
+        @Override
+        public Map<String, Object> getServiceInfo() {
+            if (shadow != null) {
+                return shadow.getServiceInfo();
+            }
+            return null;
         }
     }
     
@@ -492,7 +502,7 @@ public abstract class OpflowPromMeasurer {
         @Override
         public void countRpcInvocation(String moduleName, String eventName, String routineSignature, String status) {
         }
-        
+
         @Override
         public RpcInvocationCounter getRpcInvocationCounter(String moduleName) {
             return null;
@@ -500,6 +510,11 @@ public abstract class OpflowPromMeasurer {
 
         @Override
         public Map<String, Object> resetRpcInvocationCounter() {
+            return null;
+        }
+
+        @Override
+        public Map<String, Object> getServiceInfo() {
             return null;
         }
     }

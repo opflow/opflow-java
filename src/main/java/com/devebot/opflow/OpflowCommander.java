@@ -1029,7 +1029,7 @@ public class OpflowCommander implements AutoCloseable {
                         }
                     }
                     
-                    // RpcWatcher information
+                    // rpcWatcher information
                     if (checkOption(flag, SCOPE_INFO)) {
                         if (rpcWatcher != null) {
                             opts.put(OpflowConstant.COMP_RPC_WATCHER, OpflowObjectTree.buildMap()
@@ -1037,6 +1037,14 @@ public class OpflowCommander implements AutoCloseable {
                                     .put(OpflowConstant.OPFLOW_COMMON_INTERVAL, rpcWatcher.getInterval())
                                     .put(OpflowConstant.OPFLOW_COMMON_COUNT, rpcWatcher.getCount())
                                     .toMap());
+                        }
+                    }
+                    
+                    // promExporter information
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        Map<String, Object> info = measurer.getServiceInfo();
+                        if (info != null) {
+                            opts.put(OpflowConstant.COMP_PROM_EXPORTER, info);
                         }
                     }
                     
