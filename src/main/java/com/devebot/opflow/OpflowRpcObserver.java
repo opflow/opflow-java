@@ -140,20 +140,18 @@ public class OpflowRpcObserver {
     }
     
     public void touch(final OpflowConstant.Protocol protocol, final Map<String, Object> headers) {
-        String componentId = null;
+        String _componentId = null;
         String httpAddress = null;
         String amqpPattern = null;
         Date currentTimestamp = new Date();
-        Date latestTimestamp = null;
-        long diffTime = 0;
+        boolean accepted = false;
         switch (protocol) {
             case AMQP:
-                componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID, new String[] {CONST.AMQP_HEADER_CONSUMER_ID});
-                if (componentId != null) {
-                    OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
-                    latestTimestamp = manifest.updatedTimestamp;
-                    diffTime = OpflowDateTime.diffMilliseconds(latestTimestamp, currentTimestamp);
-                    if (latestTimestamp == null || diffTime >= 2000) {
+                _componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID, new String[] {CONST.AMQP_HEADER_CONSUMER_ID});
+                if (_componentId != null) {
+                    OpflowRpcObserver.Manifest manifest = assertManifest(_componentId);
+                    accepted = updatingAccepted(manifest.updatedTimestamp, currentTimestamp);
+                    if (accepted) {
                         // update the timestamp
                         manifest.updatedTimestamp = manifest.updatedAMQPTimestamp = currentTimestamp;
                         // update the http address
@@ -173,12 +171,11 @@ public class OpflowRpcObserver {
                 }
                 break;
             case HTTP:
-                componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID);
-                if (componentId != null) {
-                    OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
-                    latestTimestamp = manifest.updatedTimestamp;
-                    diffTime = OpflowDateTime.diffSeconds(latestTimestamp, currentTimestamp);
-                    if (latestTimestamp == null || diffTime >= 2000) {
+                _componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID);
+                if (_componentId != null) {
+                    OpflowRpcObserver.Manifest manifest = assertManifest(_componentId);
+                    accepted = updatingAccepted(manifest.updatedTimestamp, currentTimestamp);
+                    if (accepted) {
                         // update the timestamp
                         manifest.updatedTimestamp = manifest.updatedHTTPTimestamp = currentTimestamp;
                     }
@@ -186,14 +183,22 @@ public class OpflowRpcObserver {
                 break;
         }
         // update the routingMap
-        if (componentId != null && (latestTimestamp == null || diffTime >= 2000)) {
+        if (_componentId != null && accepted) {
             if (amqpPattern != null) {
-                amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowConstant.Protocol.AMQP, componentId, amqpPattern));
+                amqpRoutingMap.put(_componentId, new OpflowRpcRoutingInfo(OpflowConstant.Protocol.AMQP, _componentId, amqpPattern));
             }
             if (httpAddress != null) {
-                httpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowConstant.Protocol.HTTP, componentId, httpAddress));
+                httpRoutingMap.put(_componentId, new OpflowRpcRoutingInfo(OpflowConstant.Protocol.HTTP, _componentId, httpAddress));
             }
         }
+    }
+    
+    private boolean updatingAccepted(Date latestTime, Date currentTime) {
+        if (latestTime == null) {
+            return true;
+        }
+        long diffTime = OpflowDateTime.diffMilliseconds(latestTime, currentTime);
+        return diffTime >= 2000;
     }
     
     public boolean isCongestive() {
