@@ -31,6 +31,12 @@ public class OpflowConstant {
     public final static String ROUTINE_SIGNATURE = "routineSignature";
     public final static String ROUTINE_SCOPE = "routineScope";
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ COMMON
+    
+    public final static String THREAD_POOL_TYPE_CACHED = "cached";
+    public final static String THREAD_POOL_TYPE_FIXED = "fixed";
+    public final static String THREAD_POOL_TYPE_SINGLE = "single";
+    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW COMPONENTS
 
     public final static String COMP_ENGINE = "engine";
@@ -75,6 +81,7 @@ public class OpflowConstant {
     public final static String PARAM_NATIVE_WORKER_ENABLED = "nativeWorkerEnabled";
 
     // engine - rabbitMQ
+    public final static String OPFLOW_COMMON_PROTO_VERSION = "protocolVersion";
     public final static String OPFLOW_COMMON_APP_ID = "applicationId";
     public final static String OPFLOW_COMMON_INSTANCE_OWNER = "mode";
     public final static String OPFLOW_COMMON_ACTIVE = "active";
@@ -265,7 +272,6 @@ public class OpflowConstant {
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW/AMQP PROTOCOL
 
-    public final String AMQP_PROTOCOL_VERSION;
     public final String AMQP_HEADER_ROUTINE_ID;
     public final String AMQP_HEADER_ROUTINE_TIMESTAMP;
     public final String AMQP_HEADER_ROUTINE_SIGNATURE;
@@ -290,9 +296,11 @@ public class OpflowConstant {
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONSTRUCTORS
 
+    public final String OPFLOW_PROTOCOL_VERSION;
+
     private OpflowConstant() {
-        AMQP_PROTOCOL_VERSION = ENVTOOL.getEnvironVariable("OPFLOW_AMQP_PROTOCOL_VERSION", "1");
-        switch (AMQP_PROTOCOL_VERSION) {
+        OPFLOW_PROTOCOL_VERSION = ENVTOOL.getEnvironVariable("OPFLOW_PROTOCOL_VERSION", "1");
+        switch (OPFLOW_PROTOCOL_VERSION) {
             case "1":
                 AMQP_HEADER_ROUTINE_ID = OPFLOW_REQ_HEADER_ROUTINE_ID;
                 AMQP_HEADER_ROUTINE_TIMESTAMP = OPFLOW_REQ_HEADER_ROUTINE_TIMESTAMP;
@@ -314,13 +322,12 @@ public class OpflowConstant {
         AMQP_HEADER_RETURN_STATUS = "status";
         // Legacy supports for header names and pingpong routine signature
         LEGACY_HEADER_ENABLED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_SUPPORTED", null));
-        LEGACY_HEADER_APPLIED = LEGACY_HEADER_ENABLED && !"0".equals(AMQP_PROTOCOL_VERSION);
+        LEGACY_HEADER_APPLIED = LEGACY_HEADER_ENABLED && !"0".equals(OPFLOW_PROTOCOL_VERSION);
         LEGACY_ROUTINE_PINGPONG_APPLIED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_PINGPONG", null));
     }
 
     public Map<String, String> getAMQPHeaderInfo() {
         Map<String, String> info = new LinkedHashMap<>();
-        info.put("AMQP_PROTOCOL_VERSION", AMQP_PROTOCOL_VERSION);
         info.put("AMQP_HEADER_ROUTINE_ID", AMQP_HEADER_ROUTINE_ID);
         info.put("AMQP_HEADER_ROUTINE_TIMESTAMP", AMQP_HEADER_ROUTINE_TIMESTAMP);
         info.put("AMQP_HEADER_ROUTINE_SIGNATURE", AMQP_HEADER_ROUTINE_SIGNATURE);

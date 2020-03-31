@@ -952,7 +952,7 @@ public class OpflowCommander implements AutoCloseable {
                             @Override
                             public void transform(Map<String, Object> opt2) {
                                 OpflowEngine engine = amqpMaster.getEngine();
-                                
+
                                 opt2.put(CONST.COMPONENT_ID, amqpMaster.getComponentId());
                                 opt2.put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId());
 
@@ -971,6 +971,7 @@ public class OpflowCommander implements AutoCloseable {
                                 }
 
                                 opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
+                                        .put(OpflowConstant.OPFLOW_COMMON_PROTO_VERSION, CONST.OPFLOW_PROTOCOL_VERSION)
                                         .put(OpflowConstant.AMQP_PARAM_MESSAGE_TTL, amqpMaster.getExpiration())
                                         .put("headers", CONST.getAMQPHeaderInfo(), checkOption(flag, SCOPE_INFO))
                                         .toMap());
@@ -985,6 +986,7 @@ public class OpflowCommander implements AutoCloseable {
                             public void transform(Map<String, Object> opt2) {
                                 opt2.put(CONST.COMPONENT_ID, httpMaster.getComponentId());
                                 opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
+                                        .put(OpflowConstant.OPFLOW_COMMON_PROTO_VERSION, CONST.OPFLOW_PROTOCOL_VERSION)
                                         .put(OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, httpMaster.getCallTimeout())
                                         .put(OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, httpMaster.getWriteTimeout())
                                         .put(OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, httpMaster.getReadTimeout())

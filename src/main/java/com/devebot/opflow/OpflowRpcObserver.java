@@ -71,7 +71,7 @@ public class OpflowRpcObserver {
                 .stringify());
         
         threadPoolEnabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_ENABLED, Boolean.TRUE);
-        threadPoolType = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_TYPE, "single");
+        threadPoolType = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_TYPE, OpflowConstant.THREAD_POOL_TYPE_SINGLE);
         threadPoolSize = OpflowUtil.getIntegerField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_SIZE, 4);
         
         trimmingEnabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_ENABLED, Boolean.TRUE);
@@ -146,10 +146,10 @@ public class OpflowRpcObserver {
             synchronized (threadExecutorLock) {
                 if (threadExecutor == null) {
                     switch (threadPoolType) {
-                        case "cached":
+                        case OpflowConstant.THREAD_POOL_TYPE_CACHED:
                             threadExecutor = Executors.newCachedThreadPool();
                             break;
-                        case "fixed":
+                        case OpflowConstant.THREAD_POOL_TYPE_FIXED:
                             threadExecutor = Executors.newFixedThreadPool(threadPoolSize);
                             break;
                         default:
@@ -221,7 +221,7 @@ public class OpflowRpcObserver {
                         }
                         // update the protocol version
                         String version = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_PROTO_VERSION);
-                        manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
+                        manifest.information.put(OpflowConstant.OPFLOW_COMMON_PROTO_VERSION, version != null ? version : "0");
                     }
                 }
                 break;
@@ -442,9 +442,9 @@ public class OpflowRpcObserver {
             this.losingTouchTime = OpflowDateTime.printElapsedTime(this.losingTouchDuration);
             // update the compatible field
             if (compatible == null) {
-                Object version = information.get("AMQP_PROTOCOL_VERSION");
+                Object version = information.get(OpflowConstant.OPFLOW_COMMON_PROTO_VERSION);
                 if (version != null) {
-                    if (version.equals(CONST.AMQP_PROTOCOL_VERSION)) {
+                    if (version.equals(CONST.OPFLOW_PROTOCOL_VERSION)) {
                         this.compatible = true;
                     } else {
                         if (version.equals("0")) {

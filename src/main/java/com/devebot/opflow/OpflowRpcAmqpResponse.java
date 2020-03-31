@@ -211,7 +211,7 @@ public class OpflowRpcAmqpResponse {
         }
         if (finished) {
             headers.put(CONST.AMQP_HEADER_CONSUMER_TAG, this.consumerTag);
-            headers.put(OpflowConstant.OPFLOW_RES_HEADER_PROTO_VERSION, CONST.AMQP_PROTOCOL_VERSION);
+            headers.put(OpflowConstant.OPFLOW_RES_HEADER_PROTO_VERSION, CONST.OPFLOW_PROTOCOL_VERSION);
             if (httpAddress != null) {
                 headers.put(OpflowConstant.OPFLOW_RES_HEADER_HTTP_ADDRESS, httpAddress);
             }

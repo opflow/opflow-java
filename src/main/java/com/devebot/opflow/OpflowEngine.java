@@ -124,7 +124,7 @@ public class OpflowEngine implements AutoCloseable {
                 .stringify());
         
         if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
-                .put("protoVersion", CONST.AMQP_PROTOCOL_VERSION)
+                .put("protocolVersion", CONST.OPFLOW_PROTOCOL_VERSION)
                 .put("headers", OpflowJsonTool.toString(new String[] {
                         CONST.AMQP_HEADER_ROUTINE_ID,
                         CONST.AMQP_HEADER_ROUTINE_TIMESTAMP,
@@ -132,7 +132,7 @@ public class OpflowEngine implements AutoCloseable {
                         CONST.AMQP_HEADER_ROUTINE_SIGNATURE,
                         CONST.AMQP_HEADER_ROUTINE_TAGS
                 }))
-                .text("Engine[${engineId}][${instanceId}] - apply the protocol version [${protoVersion}] with AMQP headers: [${headers}]")
+                .text("Engine[${engineId}][${instanceId}] - apply the protocol version [${protocolVersion}] with AMQP headers: [${headers}]")
                 .stringify());
         
         owner = OpflowConstant.COMP_ENGINE;

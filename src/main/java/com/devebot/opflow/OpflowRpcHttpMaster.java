@@ -143,6 +143,7 @@ public class OpflowRpcHttpMaster {
         OkHttpClient client = assertHttpClient();
         
         Request.Builder reqBuilder = new Request.Builder()
+            .header(OpflowConstant.OPFLOW_REQ_HEADER_PROTO_VERSION, CONST.OPFLOW_PROTOCOL_VERSION)
             .header(OpflowConstant.HTTP_HEADER_ROUTINE_ID, params.getRoutineId())
             .header(OpflowConstant.HTTP_HEADER_ROUTINE_TIMESTAMP, params.getRoutineTimestamp())
             .header(OpflowConstant.HTTP_HEADER_ROUTINE_SIGNATURE, params.getRoutineSignature());
