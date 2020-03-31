@@ -195,16 +195,27 @@ public class OpflowConstant {
     public final static String OPFLOW_OUTGOING_EXCHANGE_DURABLE = "outgoingExchangeDurable";
     public final static String OPFLOW_OUTGOING_ROUTING_KEY = "outgoingRoutingKey";
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW COMMON HEADERS
+    
+    public final static String OPFLOW_REQ_HEADER_PROTO_VERSION = "oxVersion";
+    public final static String OPFLOW_REQ_HEADER_ROUTINE_ID = "oxId";
+    public final static String OPFLOW_REQ_HEADER_ROUTINE_TIMESTAMP = "oxTimestamp";
+    public final static String OPFLOW_REQ_HEADER_ROUTINE_SCOPE = "oxScope";
+    public final static String OPFLOW_REQ_HEADER_ROUTINE_SIGNATURE = "oxSignature";
+    public final static String OPFLOW_REQ_HEADER_ROUTINE_TAGS = "oxTags";
+    
+    public final static String OPFLOW_RES_HEADER_PROTO_VERSION = "o-Version";
     public final static String OPFLOW_RES_HEADER_SERVERLET_ID = "o-serverletId";
     public final static String OPFLOW_RES_HEADER_HTTP_ADDRESS = "o-httpAddress";
     public final static String OPFLOW_RES_HEADER_AMQP_PATTERN = "o-bindingKey";
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RPC HTTP HEADERS
 
-    public final static String HTTP_HEADER_ROUTINE_ID = "x-oxId";
-    public final static String HTTP_HEADER_ROUTINE_TIMESTAMP = "x-oxTimestamp";
-    public final static String HTTP_HEADER_ROUTINE_SCOPE = "x-oxScope";
-    public final static String HTTP_HEADER_ROUTINE_SIGNATURE = "x-oxSignature";
+    public final static String HTTP_HEADER_ROUTINE_ID = OPFLOW_REQ_HEADER_ROUTINE_ID;
+    public final static String HTTP_HEADER_ROUTINE_TIMESTAMP = OPFLOW_REQ_HEADER_ROUTINE_TIMESTAMP;
+    public final static String HTTP_HEADER_ROUTINE_SIGNATURE = OPFLOW_REQ_HEADER_ROUTINE_SIGNATURE;
+    public final static String HTTP_HEADER_ROUTINE_SCOPE = OPFLOW_REQ_HEADER_ROUTINE_SCOPE;
+    public final static String HTTP_HEADER_ROUTINE_TAGS = OPFLOW_REQ_HEADER_ROUTINE_TAGS;
 
     public final static String HTTP_MASTER_PARAM_PULL_TIMEOUT = "readTimeout";
     public final static String HTTP_MASTER_PARAM_PUSH_TIMEOUT = "writeTimeout";
@@ -247,7 +258,6 @@ public class OpflowConstant {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW/AMQP PROTOCOL
 
     public final String AMQP_PROTOCOL_VERSION;
-    public final String AMQP_HEADER_PROTOCOL_VERSION;
     public final String AMQP_HEADER_ROUTINE_ID;
     public final String AMQP_HEADER_ROUTINE_TIMESTAMP;
     public final String AMQP_HEADER_ROUTINE_SIGNATURE;
@@ -274,14 +284,13 @@ public class OpflowConstant {
 
     private OpflowConstant() {
         AMQP_PROTOCOL_VERSION = ENVTOOL.getEnvironVariable("OPFLOW_AMQP_PROTOCOL_VERSION", "1");
-        AMQP_HEADER_PROTOCOL_VERSION = "oxVersion";
         switch (AMQP_PROTOCOL_VERSION) {
             case "1":
-                AMQP_HEADER_ROUTINE_ID = "oxId";
-                AMQP_HEADER_ROUTINE_TIMESTAMP = "oxTimestamp";
-                AMQP_HEADER_ROUTINE_SIGNATURE = "oxSignature";
-                AMQP_HEADER_ROUTINE_SCOPE = "oxScope";
-                AMQP_HEADER_ROUTINE_TAGS = "oxTags";
+                AMQP_HEADER_ROUTINE_ID = OPFLOW_REQ_HEADER_ROUTINE_ID;
+                AMQP_HEADER_ROUTINE_TIMESTAMP = OPFLOW_REQ_HEADER_ROUTINE_TIMESTAMP;
+                AMQP_HEADER_ROUTINE_SIGNATURE = OPFLOW_REQ_HEADER_ROUTINE_SIGNATURE;
+                AMQP_HEADER_ROUTINE_SCOPE = OPFLOW_REQ_HEADER_ROUTINE_SCOPE;
+                AMQP_HEADER_ROUTINE_TAGS = OPFLOW_REQ_HEADER_ROUTINE_TAGS;
                 break;
             default:
                 AMQP_HEADER_ROUTINE_ID = LEGACY_HEADER_ROUTINE_ID;

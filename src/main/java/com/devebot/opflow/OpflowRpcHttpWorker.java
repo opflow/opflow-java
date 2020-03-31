@@ -279,8 +279,9 @@ public class OpflowRpcHttpWorker {
                 
                 String routineId = reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_ID);
                 String routineTimestamp = reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_TIMESTAMP);
-                String routineScope = reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_SCOPE);
                 String routineSignature = reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_SIGNATURE);
+                String routineScope = reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_SCOPE);
+                String[] routineTags = OpflowStringUtil.splitByComma(reqHeaders.getFirst(OpflowConstant.HTTP_HEADER_ROUTINE_TAGS));
                 
                 OpflowLogTracer reqTracer = null;
                 if (logTracer.ready(LOG, Level.INFO)) {

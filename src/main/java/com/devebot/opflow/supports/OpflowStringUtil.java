@@ -19,15 +19,21 @@ public class OpflowStringUtil {
     private static final String INT_ARRAY_DELIMITER = ",";
     private static final String INT_ARRAY_PATTERN_STRING = "[\\d]{1,}\\s*(\\s*,\\s*[\\d]{1,}){0,}";
     
+    public static String joinWithComma(String ... parts) {
+        return String.join(",", parts);
+    }
+    
     public static String join(String delimiter, String ... parts) {
         return String.join(delimiter, parts);
     }
     
     public static String[] splitByComma(String source) {
-        return splitByComma(source, String.class);
+        if (source == null) return null;
+        return splitByDelimiter(source, String.class, ",");
     }
     
     public static <T> T[] splitByComma(String source, Class<T> type) {
+        if (source == null) return null;
         return splitByDelimiter(source, type, ",");
     }
     

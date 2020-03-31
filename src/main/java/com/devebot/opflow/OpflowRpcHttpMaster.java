@@ -5,6 +5,7 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowRestrictionException;
 import com.devebot.opflow.supports.OpflowObjectTree;
+import com.devebot.opflow.supports.OpflowStringUtil;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.SocketTimeoutException;
@@ -148,6 +149,10 @@ public class OpflowRpcHttpMaster {
         
         if (params.getRoutineScope() != null) {
             reqBuilder = reqBuilder.header(OpflowConstant.HTTP_HEADER_ROUTINE_SCOPE, params.getRoutineScope());
+        }
+        
+        if (params.getRoutineTags() != null && params.getRoutineTags().length > 0) {
+            reqBuilder = reqBuilder.header(OpflowConstant.HTTP_HEADER_ROUTINE_TAGS, OpflowStringUtil.joinWithComma(params.getRoutineTags()));
         }
         
         String url = extractUrl(location);
