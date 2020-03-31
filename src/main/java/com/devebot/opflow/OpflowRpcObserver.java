@@ -109,10 +109,38 @@ public class OpflowRpcObserver {
                 .stringify());
     }
 
+    public boolean isTrimmingEnabled() {
+        return trimmingEnabled;
+    }
+
+    public long getTrimmingTimeDelay() {
+        return trimmingTimeDelay;
+    }
+
+    public boolean isThreadPoolEnabled() {
+        return threadPoolEnabled;
+    }
+
+    public String getThreadPoolType() {
+        return threadPoolType;
+    }
+
+    public int getThreadPoolSize() {
+        return threadPoolSize;
+    }
+
+    public boolean isThreadPoolUsed() {
+        return threadExecutor != null;
+    }
+
+    public long getKeepAliveTimeout() {
+        return keepAliveTimeout;
+    }
+
     public OpflowDiscoveryMaster.ServiceHealthHook getServiceUpdater() {
         return serviceUpdater;
     }
-    
+
     public ExecutorService getThreadExecutor() {
         if (threadExecutor == null) {
             synchronized (threadExecutorLock) {

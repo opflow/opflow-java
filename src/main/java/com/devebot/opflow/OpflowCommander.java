@@ -57,7 +57,7 @@ public class OpflowCommander implements AutoCloseable {
         OpflowConstant.COMP_REST_SERVER,
     });
     
-    public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
+    public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.<String>mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
     
     public final static boolean KEEP_LOGIC_CLEARLY = false;
     
@@ -1025,6 +1025,21 @@ public class OpflowCommander implements AutoCloseable {
                         } else {
                             opts.put(OpflowConstant.COMP_RESTRICTOR, OpflowObjectTree.buildMap()
                                     .put(OpflowConstant.OPFLOW_COMMON_ENABLED, false)
+                                    .toMap());
+                        }
+                    }
+                    
+                    // rpcObserver information
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        if (rpcObserver != null) {
+                            opts.put(OpflowConstant.COMP_RPC_OBSERVER, OpflowObjectTree.buildMap()
+                                    .put(OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_ENABLED, rpcObserver.isThreadPoolEnabled())
+                                    .put(OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_TYPE, rpcObserver.getThreadPoolType())
+                                    .put(OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_SIZE, rpcObserver.getThreadPoolSize(), "fixed".equals(rpcObserver.getThreadPoolType()))
+                                    .put(OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_USED, rpcObserver.isThreadPoolUsed())
+                                    .put(OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_ENABLED, rpcObserver.isTrimmingEnabled())
+                                    .put(OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_TIME_DELAY, rpcObserver.getTrimmingTimeDelay())
+                                    .put(OpflowConstant.OPFLOW_COUNSELOR_KEEP_ALIVE_TIMEOUT, rpcObserver.getKeepAliveTimeout())
                                     .toMap());
                         }
                     }

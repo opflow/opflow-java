@@ -44,7 +44,7 @@ public class OpflowServerlet implements AutoCloseable {
         OpflowConstant.COMP_RPC_HTTP_WORKER,
     });
 
-    public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
+    public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.<String>mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
 
     private final static Logger LOG = LoggerFactory.getLogger(OpflowServerlet.class);
 
