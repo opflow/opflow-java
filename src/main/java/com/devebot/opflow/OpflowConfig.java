@@ -289,6 +289,15 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
                         });
                         break;
+                    case OpflowConstant.COMP_RPC_OBSERVER:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_ENABLED,
+                            OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_TYPE,
+                            OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_SIZE,
+                            OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_ENABLED,
+                            OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_TIME_DELAY,
+                        });
+                        break;
                     case OpflowConstant.COMP_RPC_WATCHER:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
@@ -491,6 +500,8 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_COMMON_ENABLED,
         OpflowConstant.OPFLOW_COMMON_VERBOSE,
         OpflowConstant.OPFLOW_COMMON_STRICT,
+        OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_ENABLED,
+        OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_ENABLED,
         OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED,
         OpflowConstant.OPFLOW_RESTRICT_PAUSE_ENABLED,
         OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_ENABLED,
@@ -534,6 +545,7 @@ public class OpflowConfig {
         OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT,
         OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL,
         OpflowConstant.OPFLOW_COMMON_LENGTH,
+        OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_SIZE,
         OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL,
         OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_PERMITS,
         OpflowConstant.OPFLOW_CONSUMING_PREFETCH_COUNT,
@@ -551,6 +563,7 @@ public class OpflowConfig {
     private static final String[] LONGINT_FIELDS = OpflowCollectionUtil.distinct(new String[] {
         OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
         OpflowConstant.OPFLOW_COMMON_INTERVAL,
+        OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_TIME_DELAY,
         OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT,
         OpflowConstant.OPFLOW_RESTRICT_PAUSE_TIMEOUT,
         OpflowConstant.OPFLOW_RESTRICT_SEMAPHORE_TIMEOUT,

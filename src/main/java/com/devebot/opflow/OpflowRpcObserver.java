@@ -52,9 +52,15 @@ public class OpflowRpcObserver {
     private boolean congestiveAMQP = false;
     private boolean congestiveHTTP = false;
     
+    private final boolean trimmingEnabled;
+    private final long trimmingTimeDelay;
+    
+    private final boolean threadPoolEnabled;
+    private final String threadPoolType;
+    private final int threadPoolSize;
     private final Object threadExecutorLock = new Object();
     private ExecutorService threadExecutor = null;
-
+    
     public OpflowRpcObserver(Map<String, Object> kwargs) {
         componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
         
@@ -63,6 +69,13 @@ public class OpflowRpcObserver {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("RpcCounselor[${rpcCounselorId}][${instanceId}].new()")
                 .stringify());
+        
+        threadPoolEnabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_ENABLED, Boolean.TRUE);
+        threadPoolType = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_TYPE, "single");
+        threadPoolSize = OpflowUtil.getIntegerField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_THREAD_POOL_SIZE, 4);
+        
+        trimmingEnabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_ENABLED, Boolean.TRUE);
+        trimmingTimeDelay = OpflowUtil.getLongField(kwargs, OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_TIME_DELAY, KEEP_ALIVE_TIMEOUT / 10);
         
         serviceUpdater = new OpflowDiscoveryMaster.ServiceHealthHook() {
             @Override
@@ -104,7 +117,17 @@ public class OpflowRpcObserver {
         if (threadExecutor == null) {
             synchronized (threadExecutorLock) {
                 if (threadExecutor == null) {
-                    threadExecutor = Executors.newCachedThreadPool();
+                    switch (threadPoolType) {
+                        case "cached":
+                            threadExecutor = Executors.newCachedThreadPool();
+                            break;
+                        case "fixed":
+                            threadExecutor = Executors.newFixedThreadPool(threadPoolSize);
+                            break;
+                        default:
+                            threadExecutor = Executors.newSingleThreadExecutor();
+                            break;
+                    }
                 }
             }
         }
@@ -130,6 +153,10 @@ public class OpflowRpcObserver {
     }
     
     public void check(final OpflowConstant.Protocol protocol, final Map<String, Object> headers) {
+        if (!threadPoolEnabled) {
+            touch(protocol, headers);
+            return;
+        }
         getThreadExecutor().submit(new Callable() {
             @Override
             public Object call() throws Exception {
@@ -194,11 +221,14 @@ public class OpflowRpcObserver {
     }
     
     private boolean updatingAccepted(Date latestTime, Date currentTime) {
+        if (!trimmingEnabled) {
+            return true;
+        }
         if (latestTime == null) {
             return true;
         }
         long diffTime = OpflowDateTime.diffMilliseconds(latestTime, currentTime);
-        return diffTime >= 2000;
+        return diffTime >= trimmingTimeDelay;
     }
     
     public boolean isCongestive() {

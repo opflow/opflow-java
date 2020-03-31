@@ -110,11 +110,17 @@ public class OpflowConstant {
     public final static String OPFLOW_DISCOVERY_CLIENT_AGENT_HOSTS = "hostAndPorts";
     public final static String OPFLOW_DISCOVERY_CLIENT_CHECK_INTERVAL = "checkInterval";
     public final static String OPFLOW_DISCOVERY_CLIENT_CHECK_TTL = "checkTTL";
-    
+
     public final static String OPFLOW_REQ_EXTRACTOR_CLASS_NAME = "getRequestIdClassName";
     public final static String OPFLOW_REQ_EXTRACTOR_METHOD_NAME = "getRequestIdMethodName";
     public final static String OPFLOW_REQ_EXTRACTOR_AUTO_UUID = "uuidIfNotFound";
-    
+
+    public final static String OPFLOW_COUNSELOR_THREAD_POOL_ENABLED = "threadPoolEnabled";
+    public final static String OPFLOW_COUNSELOR_THREAD_POOL_TYPE = "threadPoolType";
+    public final static String OPFLOW_COUNSELOR_THREAD_POOL_SIZE = "threadPoolSize";
+    public final static String OPFLOW_COUNSELOR_TRIMMING_ENABLED = "trimmingEnabled";
+    public final static String OPFLOW_COUNSELOR_TRIMMING_TIME_DELAY = "trimmingTimeDelay";
+
     public final static String OPFLOW_RPC_MONITOR_ID = "monitorId";
     public final static String OPFLOW_RPC_MONITOR_ENABLED = "monitorEnabled";
     public final static String OPFLOW_RPC_MONITOR_INTERVAL = "monitorInterval";
