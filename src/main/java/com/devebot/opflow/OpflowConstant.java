@@ -204,7 +204,7 @@ public class OpflowConstant {
     public final static String OPFLOW_REQ_HEADER_ROUTINE_SIGNATURE = "oxSignature";
     public final static String OPFLOW_REQ_HEADER_ROUTINE_TAGS = "oxTags";
     
-    public final static String OPFLOW_RES_HEADER_PROTO_VERSION = "o-Version";
+    public final static String OPFLOW_RES_HEADER_PROTO_VERSION = "o-version";
     public final static String OPFLOW_RES_HEADER_SERVERLET_ID = "o-serverletId";
     public final static String OPFLOW_RES_HEADER_HTTP_ADDRESS = "o-httpAddress";
     public final static String OPFLOW_RES_HEADER_AMQP_PATTERN = "o-bindingKey";
@@ -217,10 +217,10 @@ public class OpflowConstant {
     public final static String HTTP_HEADER_ROUTINE_SCOPE = OPFLOW_REQ_HEADER_ROUTINE_SCOPE;
     public final static String HTTP_HEADER_ROUTINE_TAGS = OPFLOW_REQ_HEADER_ROUTINE_TAGS;
 
-    public final static String HTTP_MASTER_PARAM_PULL_TIMEOUT = "readTimeout";
-    public final static String HTTP_MASTER_PARAM_PUSH_TIMEOUT = "writeTimeout";
     public final static String HTTP_MASTER_PARAM_CALL_TIMEOUT = "callTimeout";
-    
+    public final static String HTTP_MASTER_PARAM_PUSH_TIMEOUT = "writeTimeout";
+    public final static String HTTP_MASTER_PARAM_PULL_TIMEOUT = "readTimeout";
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AMQP PARAMETERS
 
     public final static String AMQP_CONARG_URI = "uri";
@@ -333,6 +333,7 @@ public class OpflowConstant {
         info.put("HTTP_HEADER_ROUTINE_TIMESTAMP", HTTP_HEADER_ROUTINE_TIMESTAMP);
         info.put("HTTP_HEADER_ROUTINE_SIGNATURE", HTTP_HEADER_ROUTINE_SIGNATURE);
         info.put("HTTP_HEADER_ROUTINE_SCOPE", HTTP_HEADER_ROUTINE_SCOPE);
+        info.put("HTTP_HEADER_ROUTINE_TAGS", HTTP_HEADER_ROUTINE_TAGS);
         return info;
     }
 

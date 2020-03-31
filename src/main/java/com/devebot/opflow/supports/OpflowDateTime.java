@@ -23,6 +23,21 @@ public class OpflowDateTime {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
     
+    public static long diffMilliseconds(Date d1, Date d2) {
+        if (d1 == null || d2 == null) {
+            return -1;
+        }
+        return d2.getTime() - d1.getTime();
+    }
+    
+    public static long diffSeconds(Date d1, Date d2) {
+        if (d1 == null || d2 == null) {
+            return -1;
+        }
+        long diff = d2.getTime() - d1.getTime();
+        return diff / 1000;
+    }
+    
     public static String toISO8601UTC(Date date) {
         return DATE_FORMAT.format(date);
     }

@@ -244,6 +244,10 @@ public class OpflowUtil {
         return getStringField(options, fieldName, null, null, false, false);
     }
     
+    public static String getStringField(Map<String, Object> options, String fieldName, String[] otherNames) {
+        return getStringField(options, fieldName, otherNames, null, false, false);
+    }
+    
     public static String getStringField(Map<String, Object> options, String fieldName, String defValue) {
         return getStringField(options, fieldName, null, defValue, false, false);
     }

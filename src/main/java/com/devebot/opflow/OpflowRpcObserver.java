@@ -143,38 +143,50 @@ public class OpflowRpcObserver {
         String componentId = null;
         String httpAddress = null;
         String amqpPattern = null;
+        Date currentTimestamp = new Date();
+        Date latestTimestamp = null;
+        long diffTime = 0;
         switch (protocol) {
             case AMQP:
-                componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID, new String[] {CONST.AMQP_HEADER_CONSUMER_ID}, null, false, false);
+                componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID, new String[] {CONST.AMQP_HEADER_CONSUMER_ID});
                 if (componentId != null) {
-                    // inform the manifest status
                     OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
-                    manifest.updatedTimestamp = manifest.updatedAMQPTimestamp = new Date();
-                    // update the http address
-                    httpAddress = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_HTTP_ADDRESS);
-                    if (httpAddress != null) {
-                        manifest.httpAddress = httpAddress;
+                    latestTimestamp = manifest.updatedTimestamp;
+                    diffTime = OpflowDateTime.diffMilliseconds(latestTimestamp, currentTimestamp);
+                    if (latestTimestamp == null || diffTime >= 2000) {
+                        // update the timestamp
+                        manifest.updatedTimestamp = manifest.updatedAMQPTimestamp = currentTimestamp;
+                        // update the http address
+                        httpAddress = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_HTTP_ADDRESS);
+                        if (httpAddress != null) {
+                            manifest.httpAddress = httpAddress;
+                        }
+                        // update the AMQP bindingKey pattern
+                        amqpPattern = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_AMQP_PATTERN);
+                        if (amqpPattern != null) {
+                            manifest.amqpPattern = amqpPattern;
+                        }
+                        // update the protocol version
+                        String version = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_PROTO_VERSION);
+                        manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
                     }
-                    // update the AMQP bindingKey pattern
-                    amqpPattern = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_AMQP_PATTERN);
-                    if (amqpPattern != null) {
-                        manifest.amqpPattern = amqpPattern;
-                    }
-                    // update the protocol version
-                    String version = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_PROTO_VERSION);
-                    manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
                 }
                 break;
             case HTTP:
                 componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID);
                 if (componentId != null) {
                     OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
-                    manifest.updatedTimestamp = manifest.updatedHTTPTimestamp = new Date();
+                    latestTimestamp = manifest.updatedTimestamp;
+                    diffTime = OpflowDateTime.diffSeconds(latestTimestamp, currentTimestamp);
+                    if (latestTimestamp == null || diffTime >= 2000) {
+                        // update the timestamp
+                        manifest.updatedTimestamp = manifest.updatedHTTPTimestamp = currentTimestamp;
+                    }
                 }
                 break;
         }
         // update the routingMap
-        if (componentId != null) {
+        if (componentId != null && (latestTimestamp == null || diffTime >= 2000)) {
             if (amqpPattern != null) {
                 amqpRoutingMap.put(componentId, new OpflowRpcRoutingInfo(OpflowConstant.Protocol.AMQP, componentId, amqpPattern));
             }
