@@ -309,7 +309,7 @@ public class OpflowRpcHttpWorker {
                 }
                 
                 // rendering the output
-                exchange.getResponseHeaders().put(new HttpString(OpflowConstant.OPFLOW_RES_HEADER_WORKER_ID), componentId);
+                exchange.getResponseHeaders().put(new HttpString(OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID), componentId);
                 
                 if (output != null) {
                     if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer

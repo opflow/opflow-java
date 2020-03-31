@@ -145,28 +145,28 @@ public class OpflowRpcObserver {
         String amqpPattern = null;
         switch (protocol) {
             case AMQP:
-                componentId = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_CONSUMER_ID, false, true);
+                componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID, new String[] {CONST.AMQP_HEADER_CONSUMER_ID}, null, false, false);
                 if (componentId != null) {
                     // inform the manifest status
                     OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
                     manifest.updatedTimestamp = manifest.updatedAMQPTimestamp = new Date();
                     // update the http address
-                    httpAddress = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_HTTP_ADDRESS, false, true);
+                    httpAddress = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_HTTP_ADDRESS, false, false);
                     if (httpAddress != null) {
                         manifest.httpAddress = httpAddress;
                     }
                     // update the AMQP bindingKey pattern
-                    amqpPattern = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_AMQP_PATTERN, false, true);
+                    amqpPattern = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_AMQP_PATTERN, false, false);
                     if (amqpPattern != null) {
                         manifest.amqpPattern = amqpPattern;
                     }
                     // update the protocol version
-                    String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, true);
+                    String version = OpflowUtil.getStringField(headers, CONST.AMQP_HEADER_PROTOCOL_VERSION, false, false);
                     manifest.information.put("AMQP_PROTOCOL_VERSION", version != null ? version : "0");
                 }
                 break;
             case HTTP:
-                componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_WORKER_ID, false, true);
+                componentId = OpflowUtil.getStringField(headers, OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID, false, false);
                 if (componentId != null) {
                     OpflowRpcObserver.Manifest manifest = assertManifest(componentId);
                     manifest.updatedTimestamp = manifest.updatedHTTPTimestamp = new Date();

@@ -198,7 +198,7 @@ public class OpflowRpcAmqpResponse {
         Map<String, Object> headers = new HashMap<>();
         headers.put(CONST.AMQP_HEADER_RETURN_STATUS, status);
         if (this.componentId != null) {
-            headers.put(CONST.AMQP_HEADER_CONSUMER_ID, this.componentId);
+            headers.put(OpflowConstant.OPFLOW_RES_HEADER_SERVERLET_ID, this.componentId);
         }
         if (this.routineId != null) {
             OpflowUtil.setRoutineId(headers, this.routineId);

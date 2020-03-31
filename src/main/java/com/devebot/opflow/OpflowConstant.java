@@ -195,10 +195,10 @@ public class OpflowConstant {
     public final static String OPFLOW_OUTGOING_EXCHANGE_DURABLE = "outgoingExchangeDurable";
     public final static String OPFLOW_OUTGOING_ROUTING_KEY = "outgoingRoutingKey";
 
-    public final static String OPFLOW_RES_HEADER_WORKER_ID = "o-rpcWorkerId";
+    public final static String OPFLOW_RES_HEADER_SERVERLET_ID = "o-serverletId";
     public final static String OPFLOW_RES_HEADER_HTTP_ADDRESS = "o-httpAddress";
     public final static String OPFLOW_RES_HEADER_AMQP_PATTERN = "o-bindingKey";
-
+    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RPC HTTP HEADERS
 
     public final static String HTTP_HEADER_ROUTINE_ID = "x-oxId";
