@@ -53,6 +53,24 @@ paths:
           description: "Ok"
           schema:
             $ref: "#/definitions/PingResult"
+  /exec/gc:
+    get:
+      tags:
+      - "Operation"
+      summary: "Garbage collection"
+      description: "Invoke the garbage collector to perform cleanup processing"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "pretty"
+        in: "query"
+        description: "Print sizes in powers of 1024"
+        required: false
+        type: "boolean"
+        default: false
+      responses:
+        200:
+          description: "Ok"
   /exec/pause:
     get:
       tags:

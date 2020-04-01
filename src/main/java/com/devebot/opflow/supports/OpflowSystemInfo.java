@@ -150,6 +150,23 @@ public class OpflowSystemInfo {
                 .toMap();
         }
         
+        public Map<String, Object> toMap(boolean humanReadable) {
+            if (humanReadable) {
+                return OpflowObjectTree.buildMap()
+                    .put(USED_HEAP_SIZE, formatSize(usedMemory))
+                    .put(FREE_HEAP_SIZE, formatSize(freeMemory))
+                    .put(CURRENT_HEAP_SIZE, formatSize(currentMemory))
+                    .put(MAXIMUM_HEAP_SIZE, formatSize(maximumMemory))
+                    .toMap();
+            }
+            return OpflowObjectTree.buildMap()
+                .put(USED_HEAP_SIZE, usedMemory)
+                .put(FREE_HEAP_SIZE, freeMemory)
+                .put(CURRENT_HEAP_SIZE, currentMemory)
+                .put(MAXIMUM_HEAP_SIZE, maximumMemory)
+                .toMap();
+        }
+        
         private String formatSize(long sizeInBytes) {
             long sizeMB = 0;
             long sizeKB = sizeInBytes / SIZE_RATE;

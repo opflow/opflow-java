@@ -5,6 +5,7 @@ import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowObjectTree;
+import com.devebot.opflow.supports.OpflowSystemInfo;
 import io.undertow.Undertow;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMode;
@@ -295,6 +296,10 @@ public class OpflowRestServer implements AutoCloseable {
                 String action = pathMatch.getParameters().get("action");
                 if (action != null && action.length() > 0) {
                     switch(action) {
+                        case "gc":
+                            Runtime.getRuntime().gc();
+                            result = OpflowSystemInfo.getMemUsage().toMap(getPrettyParam(exchange));
+                            break;
                         case "pause":
                             Long period = getQueryParam(exchange, "period", Long.class, null);
                             if (period == null) {
