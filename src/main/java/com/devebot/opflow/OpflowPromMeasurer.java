@@ -21,6 +21,8 @@ public abstract class OpflowPromMeasurer {
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
     public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
+    public static final String LABEL_RPC_INVOCATION_ACCEPTED = "rpcInvocationAccepted";
+    public static final String LABEL_RPC_INVOCATION_REJECTED = "rpcInvocationRejected";
     public static final String LABEL_RPC_PUBLISHER = "rpcOverPublisher";
     public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverNativeWorker";
     public static final String LABEL_RPC_REMOTE_AMQP_WORKER = "rpcOverRemoteAMQPWorkers";
@@ -86,6 +88,9 @@ public abstract class OpflowPromMeasurer {
     public static class RpcInvocationCounter {
         private Date startTime = new Date();
         private volatile long total = 0;
+        // Restrictor
+        private volatile long acceptedRpcTotal = 0;
+        private volatile long rejectedRpcTotal = 0;
         // Publisher
         private volatile long publishingTotal = 0;
         // Native worker
@@ -111,55 +116,69 @@ public abstract class OpflowPromMeasurer {
         public RpcInvocationCounter() {
         }
 
+        public synchronized void incRejectedRpc() {
+            this.total++;
+            this.rejectedRpcTotal++;
+        }
+        
         public synchronized void incPublishingOk() {
             this.total++;
+            this.acceptedRpcTotal++;
             this.publishingTotal++;
         }
         
         public synchronized void incDirectRescue() {
             this.total++;
+            this.acceptedRpcTotal++;
             this.direct++;
             this.directRescue++;
         }
         
         public synchronized void incDirectRetain() {
             this.total++;
+            this.acceptedRpcTotal++;
             this.direct++;
             this.directRetain++;
         }
 
         public synchronized void incRemoteAMQPSuccess() {
             this.total++;
+            this.acceptedRpcTotal++;
             this.remoteAMQPTotal++;
             this.remoteAMQPSuccess++;
         }
 
         public synchronized void incRemoteAMQPFailure() {
             this.total++;
+            this.acceptedRpcTotal++;
             this.remoteAMQPTotal++;
             this.remoteAMQPFailure++;
         }
 
         public synchronized void incRemoteAMQPTimeout() {
             this.total++;
+            this.acceptedRpcTotal++;
             this.remoteAMQPTotal++;
             this.remoteAMQPTimeout++;
         }
         
         public synchronized void incRemoteHTTPSuccess() {
             this.total++;
+            this.acceptedRpcTotal++;
             this.remoteHTTPTotal++;
             this.remoteHTTPSuccess++;
         }
 
         public synchronized void incRemoteHTTPFailure() {
             this.total++;
+            this.acceptedRpcTotal++;
             this.remoteHTTPTotal++;
             this.remoteHTTPFailure++;
         }
 
         public synchronized void incRemoteHTTPTimeout() {
             this.total++;
+            this.acceptedRpcTotal++;
             this.remoteHTTPTotal++;
             this.remoteHTTPTimeout++;
         }
@@ -168,6 +187,9 @@ public abstract class OpflowPromMeasurer {
             RpcInvocationCounter that = new RpcInvocationCounter();
             that.startTime = this.startTime;
             that.total = this.total;
+            // Restrictor
+            that.acceptedRpcTotal = this.acceptedRpcTotal;
+            that.rejectedRpcTotal = this.rejectedRpcTotal;
             // Publisher
             that.publishingTotal = this.publishingTotal;
             // Native worker
@@ -190,6 +212,9 @@ public abstract class OpflowPromMeasurer {
         public synchronized void reset() {
             this.startTime = new Date();
             this.total = 0;
+            // Restrictor
+            this.acceptedRpcTotal = 0;
+            this.rejectedRpcTotal = 0;
             // Publisher
             this.publishingTotal = 0;
             // Native worker
@@ -234,7 +259,9 @@ public abstract class OpflowPromMeasurer {
             final long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
             
             OpflowObjectTree.Builder builder = OpflowObjectTree.buildMap()
-                    .put(LABEL_RPC_INVOCATION_TOTAL, that.total);
+                    .put(LABEL_RPC_INVOCATION_TOTAL, that.total)
+                    .put(LABEL_RPC_INVOCATION_ACCEPTED, that.acceptedRpcTotal)
+                    .put(LABEL_RPC_INVOCATION_REJECTED, that.rejectedRpcTotal);
             
             if (publisherEnabled) {
                 builder.put(LABEL_RPC_PUBLISHER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
@@ -420,6 +447,13 @@ public abstract class OpflowPromMeasurer {
             }
             if (OpflowConstant.COMP_COMMANDER.equals(componentType)) {
                 switch (eventName) {
+                    case OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR:
+                        switch (status) {
+                            case "rejected":
+                                counter.incRejectedRpc();
+                                break;
+                        }
+                        break;
                     case OpflowConstant.METHOD_INVOCATION_FLOW_PUBSUB:
                         switch (status) {
                             case "begin":

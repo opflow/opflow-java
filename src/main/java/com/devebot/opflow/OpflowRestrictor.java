@@ -29,8 +29,14 @@ public class OpflowRestrictor {
     public interface Action<T> extends OpflowRestrictable.Action<T> {}
 
     public static abstract class Filter extends OpflowRestrictable.Filter {
+        protected OpflowPromMeasurer measurer = null;
         protected OpflowLogTracer logTracer = OpflowLogTracer.ROOT.copy();
-
+        
+        public Filter setMeasurer(OpflowPromMeasurer measurer) {
+            this.measurer = measurer;
+            return this;
+        }
+        
         public Filter setLogTracer(OpflowLogTracer logTracer) {
             this.logTracer = logTracer;
             return this;
@@ -102,6 +108,12 @@ public class OpflowRestrictor {
             if (rl.tryLock()) {
                 try {
                     return this.execute(action);
+                }
+                catch(Throwable t) {
+                    if (measurer != null) {
+                        measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, "rejected");
+                    }
+                    throw t;
                 }
                 finally {
                     rl.unlock();

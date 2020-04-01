@@ -143,6 +143,7 @@ public class OpflowCommander implements AutoCloseable {
         if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
             restrictor = new OpflowRestrictorMaster(OpflowObjectTree.buildMap(restrictorCfg)
                     .put(CONST.COMPONENT_ID, componentId)
+                    .put(OpflowConstant.COMP_MEASURER, measurer)
                     .toMap());
         }
         
@@ -386,6 +387,7 @@ public class OpflowCommander implements AutoCloseable {
 
         protected final String componentId;
         protected final OpflowLogTracer logTracer;
+        protected final OpflowPromMeasurer measurer;
 
         private final OpflowRestrictor.OnOff onoffRestrictor;
         private final OpflowRestrictor.Valve valveRestrictor;
@@ -396,6 +398,7 @@ public class OpflowCommander implements AutoCloseable {
             options = OpflowObjectTree.ensureNonNull(options);
 
             componentId = OpflowUtil.getStringField(options, CONST.COMPONENT_ID, true);
+            measurer = (OpflowPromMeasurer) options.get(OpflowConstant.COMP_MEASURER);
             logTracer = OpflowLogTracer.ROOT.branch("restrictorId", componentId);
 
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -408,7 +411,7 @@ public class OpflowCommander implements AutoCloseable {
             limitRestrictor = new OpflowRestrictor.Limit(options);
 
             super.append(onoffRestrictor.setLogTracer(logTracer));
-            super.append(valveRestrictor.setLogTracer(logTracer));
+            super.append(valveRestrictor.setLogTracer(logTracer).setMeasurer(measurer));
             super.append(pauseRestrictor.setLogTracer(logTracer));
             super.append(limitRestrictor.setLogTracer(logTracer));
 

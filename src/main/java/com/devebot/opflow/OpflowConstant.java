@@ -71,6 +71,7 @@ public class OpflowConstant {
     public final static String INFO_SECTION_RUNTIME = "miscellaneous";
     public final static String INFO_SECTION_SOURCE_CODE = "source-code-info";
 
+    public final static String METHOD_INVOCATION_FLOW_RESTRICTOR = "restrictor";
     public final static String METHOD_INVOCATION_FLOW_NATIVE = "native";
     public final static String METHOD_INVOCATION_FLOW_PUBSUB = "pubsub";
     public final static String METHOD_INVOCATION_FLOW_RPC = "rpc";

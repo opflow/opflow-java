@@ -300,6 +300,7 @@ public class OpflowRestServer implements AutoCloseable {
                             Runtime.getRuntime().gc();
                             result = OpflowSystemInfo.getMemUsage().toMap(getPrettyParam(exchange));
                             break;
+
                         case "pause":
                             Long period = getQueryParam(exchange, "period", Long.class, null);
                             if (period == null) {
