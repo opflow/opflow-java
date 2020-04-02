@@ -55,9 +55,9 @@ public class OpflowRpcHttpMaster {
         serviceLocator = (Locator) OpflowUtil.getOptionField(params, OpflowConstant.COMP_SERVICE_LOCATOR, null);
         restrictor = new OpflowRestrictor.Valve();
         
-        readTimeout = OpflowObjectTree.getOptionValue(params, OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, Long.class, 20000l);
-        writeTimeout = OpflowObjectTree.getOptionValue(params, OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, Long.class, 20000l);
-        callTimeout = OpflowObjectTree.getOptionValue(params, OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, Long.class, 180000l);
+        readTimeout = OpflowUtil.getLongField(params, OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, 20000l);
+        writeTimeout = OpflowUtil.getLongField(params, OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, 20000l);
+        callTimeout = OpflowUtil.getLongField(params, OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, 180000l);
         
         logTracer = OpflowLogTracer.ROOT.branch("httpMasterId", componentId);
         

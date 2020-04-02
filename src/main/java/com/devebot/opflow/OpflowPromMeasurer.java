@@ -21,8 +21,8 @@ public abstract class OpflowPromMeasurer {
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
     public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
-    public static final String LABEL_RPC_INVOCATION_ACCEPTED = "rpcInvocationAccepted";
-    public static final String LABEL_RPC_INVOCATION_REJECTED = "rpcInvocationRejected";
+    public static final String LABEL_RPC_ACCEPTED_INVOCATION_TOTAL = "rpcInvocationAccepted";
+    public static final String LABEL_RPC_REJECTED_INVOCATION_TOTAL = "rpcInvocationRejected";
     public static final String LABEL_RPC_PUBLISHER = "rpcOverPublisher";
     public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverNativeWorker";
     public static final String LABEL_RPC_REMOTE_AMQP_WORKER = "rpcOverRemoteAMQPWorkers";
@@ -260,8 +260,8 @@ public abstract class OpflowPromMeasurer {
             
             OpflowObjectTree.Builder builder = OpflowObjectTree.buildMap()
                     .put(LABEL_RPC_INVOCATION_TOTAL, that.total)
-                    .put(LABEL_RPC_INVOCATION_ACCEPTED, that.acceptedRpcTotal)
-                    .put(LABEL_RPC_INVOCATION_REJECTED, that.rejectedRpcTotal);
+                    .put(LABEL_RPC_ACCEPTED_INVOCATION_TOTAL, that.acceptedRpcTotal)
+                    .put(LABEL_RPC_REJECTED_INVOCATION_TOTAL, that.rejectedRpcTotal);
             
             if (publisherEnabled) {
                 builder.put(LABEL_RPC_PUBLISHER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {

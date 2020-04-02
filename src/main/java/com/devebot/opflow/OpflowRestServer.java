@@ -76,7 +76,7 @@ public class OpflowRestServer implements AutoCloseable {
         });
         credentials = OpflowUtil.getStringArray(kwargs, OpflowConstant.OPFLOW_COMMON_CREDENTIALS, null);
         
-        shutdownTimeout = OpflowObjectTree.getOptionValue(kwargs, "shutdownTimeout", Long.class, 1000l);
+        shutdownTimeout = OpflowUtil.getLongField(kwargs, "shutdownTimeout", 1000l);
         
         autoShutdown = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_AUTO_SHUTDOWN, Boolean.FALSE);
         

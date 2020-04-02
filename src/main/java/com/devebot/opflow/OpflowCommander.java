@@ -112,7 +112,7 @@ public class OpflowCommander implements AutoCloseable {
         
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
-        strictMode = OpflowObjectTree.getOptionValue(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.class, Boolean.FALSE);
+        strictMode = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.FALSE);
         
         serviceName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_SERVICE_NAME);
         componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
