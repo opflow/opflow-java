@@ -312,15 +312,14 @@ public class OpflowCommander implements AutoCloseable {
             if (discoveryMaster != null) {
                 discoveryMaster.serve();
             }
-            
-            if (rpcWatcher != null) {
-                rpcWatcher.serve();
-            }
             if (restServer != null) {
                 restServer.serve();
             }
             if (restrictor != null) {
                 restrictor.unblock();
+            }
+            if (rpcWatcher != null) {
+                rpcWatcher.serve();
             }
             if (speedMeter != null) {
                 speedMeter.serve();

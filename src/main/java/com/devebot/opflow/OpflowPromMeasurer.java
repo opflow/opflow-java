@@ -302,7 +302,7 @@ public abstract class OpflowPromMeasurer {
             OpflowObjectTree.Builder builder = OpflowObjectTree.buildMap()
                     .put(LABEL_RPC_INVOCATION_TOTAL, that.total);
             
-            if (that.acceptedRpcTotal < that.total) {
+            if (that.rejectedRpcTotal > 0) {
                 builder = builder.put(LABEL_RPC_ACCEPTED_INVOCATION_TOTAL, that.acceptedRpcTotal)
                     .put(LABEL_RPC_REJECTED_INVOCATION_TOTAL, that.rejectedRpcTotal)
                     .put(LABEL_RPC_REJECTED_INVOCATION_DETAILS, OpflowObjectTree.buildMap()
@@ -499,6 +499,18 @@ public abstract class OpflowPromMeasurer {
                 switch (eventName) {
                     case OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR:
                         switch (status) {
+                            case OpflowConstant.METHOD_INVOCATION_STATUS_CANCELLATION:
+                                counter.incCancellationRpc();
+                                break;
+                            case OpflowConstant.METHOD_INVOCATION_STATUS_SERVICE_NOT_READY:
+                                counter.incServiceNotReadyRpc();
+                                break;
+                            case OpflowConstant.METHOD_INVOCATION_STATUS_PAUSING_TIMEOUT:
+                                counter.incPausingTimeoutRpc();
+                                break;
+                            case OpflowConstant.METHOD_INVOCATION_STATUS_SEMAPHORE_TIMEOUT:
+                                counter.incSemaphoreTimeoutRpc();
+                                break;
                             case OpflowConstant.METHOD_INVOCATION_STATUS_REJECTED:
                                 counter.incRejectedRpc();
                                 break;

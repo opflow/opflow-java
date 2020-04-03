@@ -29,7 +29,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcAmqpMaster.class);
 
-    private final static long DELAY_TIMEOUT = 1000;
+    private final static long TIMEOUT_DELAY = 1000;
     private final static int PREFETCH_NUM = 1;
     private final static int CONSUMER_MAX = 1;
     
@@ -343,13 +343,13 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         
         long _expiration = 0;
         if (params.getRoutineTTL() != null) {
-            _expiration = params.getRoutineTTL() - DELAY_TIMEOUT;
+            _expiration = params.getRoutineTTL() - TIMEOUT_DELAY;
         }
         if (_expiration <= 0) {
             _expiration = expiration;
         }
         if (_expiration > 0) {
-            params.setRoutineTTL(_expiration + DELAY_TIMEOUT);
+            params.setRoutineTTL(_expiration + TIMEOUT_DELAY);
         }
         
         final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRoutineTimestamp())
@@ -495,7 +495,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                             .stringify());
                     cancelCallbackConsumer();
                 }
-            }, (DELAY_TIMEOUT));
+            }, (TIMEOUT_DELAY));
             // clear the callback request list
             timer.schedule(new TimerTask() {
                 @Override
@@ -512,7 +512,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                         closeLock.unlock();
                     }
                 }
-            }, (DELAY_TIMEOUT + DELAY_TIMEOUT));
+            }, (TIMEOUT_DELAY + TIMEOUT_DELAY));
         } else {
             if (localLog.ready(LOG, Level.TRACE)) LOG.trace(localLog
                     .text("amqpMaster[${amqpMasterId}].close() - request callback list is empty")
