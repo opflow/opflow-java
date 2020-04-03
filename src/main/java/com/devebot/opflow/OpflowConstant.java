@@ -83,6 +83,10 @@ public class OpflowConstant {
     public final static String METHOD_INVOCATION_STATUS_FAILED = "failed";
     public final static String METHOD_INVOCATION_STATUS_TIMEOUT = "timeout";
     public final static String METHOD_INVOCATION_STATUS_REJECTED = "rejected";
+    public final static String METHOD_INVOCATION_STATUS_CANCELLATION = "cancellation";
+    public final static String METHOD_INVOCATION_STATUS_SERVICE_NOT_READY = "service-not-ready";
+    public final static String METHOD_INVOCATION_STATUS_PAUSING_TIMEOUT = "pausing-timeout";
+    public final static String METHOD_INVOCATION_STATUS_SEMAPHORE_TIMEOUT = "semaphore-timeout";
     public final static String METHOD_INVOCATION_STATUS_ENTER = "begin";
     public final static String METHOD_INVOCATION_STATUS_RESCUE = "rescue";
     public final static String METHOD_INVOCATION_STATUS_NORMAL = "retain";

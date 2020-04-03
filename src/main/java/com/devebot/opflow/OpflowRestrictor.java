@@ -112,6 +112,30 @@ public class OpflowRestrictor {
                 try {
                     return this.execute(action);
                 }
+                catch(OpflowCancellationException e) {
+                    if (measurer != null) {
+                        measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, OpflowConstant.METHOD_INVOCATION_STATUS_CANCELLATION);
+                    }
+                    throw e;
+                }
+                catch(OpflowServiceNotReadyException e) {
+                    if (measurer != null) {
+                        measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, OpflowConstant.METHOD_INVOCATION_STATUS_SERVICE_NOT_READY);
+                    }
+                    throw e;
+                }
+                catch(OpflowPausingTimeoutException e) {
+                    if (measurer != null) {
+                        measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, OpflowConstant.METHOD_INVOCATION_STATUS_PAUSING_TIMEOUT);
+                    }
+                    throw e;
+                }
+                catch(OpflowSemaphoreTimeoutException e) {
+                    if (measurer != null) {
+                        measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, OpflowConstant.METHOD_INVOCATION_STATUS_SEMAPHORE_TIMEOUT);
+                    }
+                    throw e;
+                }
                 catch(OpflowRestrictionException e) {
                     if (measurer != null) {
                         measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, OpflowConstant.METHOD_INVOCATION_STATUS_REJECTED);
@@ -126,7 +150,7 @@ public class OpflowRestrictor {
                         .text("Restrictor[${restrictorId}].filter() is not ready yet")
                         .stringify());
                 if (measurer != null) {
-                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, OpflowConstant.METHOD_INVOCATION_STATUS_REJECTED);
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, OpflowConstant.METHOD_INVOCATION_STATUS_SERVICE_NOT_READY);
                 }
                 throw new OpflowServiceNotReadyException("The valve restrictor is not ready yet");
             }

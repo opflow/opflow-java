@@ -23,6 +23,11 @@ public abstract class OpflowPromMeasurer {
     public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
     public static final String LABEL_RPC_ACCEPTED_INVOCATION_TOTAL = "rpcProcessingTotal";
     public static final String LABEL_RPC_REJECTED_INVOCATION_TOTAL = "rpcRejectedTotal";
+    public static final String LABEL_RPC_REJECTED_INVOCATION_DETAILS = "rpcRejectedDetails";
+    public static final String LABEL_RPC_CANCELLATION_TOTAL = "rpcCancellationTotal";
+    public static final String LABEL_RPC_SERVICE_NOT_READY_TOTAL = "rpcServiceNotReadyTotal";
+    public static final String LABEL_RPC_PAUSING_TIMEOUT_TOTAL = "rpcPausingTimeoutTotal";
+    public static final String LABEL_RPC_SEMAPHORE_TIMEOUT_TOTAL = "rpcSemaphoreTimeoutTotal";
     public static final String LABEL_RPC_PUBLISHER = "rpcOverPublisher";
     public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverNativeWorker";
     public static final String LABEL_RPC_REMOTE_AMQP_WORKER = "rpcOverRemoteAMQPWorkers";
@@ -91,6 +96,10 @@ public abstract class OpflowPromMeasurer {
         // Restrictor
         private volatile long acceptedRpcTotal = 0;
         private volatile long rejectedRpcTotal = 0;
+        private volatile long cancellationRpcTotal = 0;
+        private volatile long serviceNotReadyRpcTotal = 0;
+        private volatile long pausingTimeoutRpcTotal = 0;
+        private volatile long semaphoreTimeoutRpcTotal = 0;
         // Publisher
         private volatile long publishingTotal = 0;
         // Native worker
@@ -119,6 +128,30 @@ public abstract class OpflowPromMeasurer {
         public synchronized void incRejectedRpc() {
             this.total++;
             this.rejectedRpcTotal++;
+        }
+        
+        public synchronized void incCancellationRpc() {
+            this.total++;
+            this.rejectedRpcTotal++;
+            this.cancellationRpcTotal++;
+        }
+        
+        public synchronized void incServiceNotReadyRpc() {
+            this.total++;
+            this.rejectedRpcTotal++;
+            this.serviceNotReadyRpcTotal++;
+        }
+        
+        public synchronized void incPausingTimeoutRpc() {
+            this.total++;
+            this.rejectedRpcTotal++;
+            this.pausingTimeoutRpcTotal++;
+        }
+        
+        public synchronized void incSemaphoreTimeoutRpc() {
+            this.total++;
+            this.rejectedRpcTotal++;
+            this.semaphoreTimeoutRpcTotal++;
         }
         
         public synchronized void incPublishingOk() {
@@ -190,6 +223,10 @@ public abstract class OpflowPromMeasurer {
             // Restrictor
             that.acceptedRpcTotal = this.acceptedRpcTotal;
             that.rejectedRpcTotal = this.rejectedRpcTotal;
+            that.cancellationRpcTotal = this.cancellationRpcTotal;
+            that.serviceNotReadyRpcTotal = this.serviceNotReadyRpcTotal;
+            that.pausingTimeoutRpcTotal = this.pausingTimeoutRpcTotal;
+            that.semaphoreTimeoutRpcTotal = this.semaphoreTimeoutRpcTotal;
             // Publisher
             that.publishingTotal = this.publishingTotal;
             // Native worker
@@ -215,6 +252,10 @@ public abstract class OpflowPromMeasurer {
             // Restrictor
             this.acceptedRpcTotal = 0;
             this.rejectedRpcTotal = 0;
+            this.cancellationRpcTotal = 0;
+            this.serviceNotReadyRpcTotal = 0;
+            this.pausingTimeoutRpcTotal = 0;
+            this.semaphoreTimeoutRpcTotal = 0;
             // Publisher
             this.publishingTotal = 0;
             // Native worker
@@ -259,9 +300,18 @@ public abstract class OpflowPromMeasurer {
             final long elapsedTime = (currentTime.getTime() - that.startTime.getTime());
             
             OpflowObjectTree.Builder builder = OpflowObjectTree.buildMap()
-                    .put(LABEL_RPC_INVOCATION_TOTAL, that.total)
-                    .put(LABEL_RPC_ACCEPTED_INVOCATION_TOTAL, that.acceptedRpcTotal)
-                    .put(LABEL_RPC_REJECTED_INVOCATION_TOTAL, that.rejectedRpcTotal);
+                    .put(LABEL_RPC_INVOCATION_TOTAL, that.total);
+            
+            if (that.acceptedRpcTotal < that.total) {
+                builder = builder.put(LABEL_RPC_ACCEPTED_INVOCATION_TOTAL, that.acceptedRpcTotal)
+                    .put(LABEL_RPC_REJECTED_INVOCATION_TOTAL, that.rejectedRpcTotal)
+                    .put(LABEL_RPC_REJECTED_INVOCATION_DETAILS, OpflowObjectTree.buildMap()
+                        .put(LABEL_RPC_CANCELLATION_TOTAL, that.cancellationRpcTotal, that.cancellationRpcTotal > 0)
+                        .put(LABEL_RPC_SERVICE_NOT_READY_TOTAL, that.serviceNotReadyRpcTotal, that.serviceNotReadyRpcTotal > 0)
+                        .put(LABEL_RPC_PAUSING_TIMEOUT_TOTAL, that.pausingTimeoutRpcTotal, that.pausingTimeoutRpcTotal > 0)
+                        .put(LABEL_RPC_SEMAPHORE_TIMEOUT_TOTAL, that.semaphoreTimeoutRpcTotal, that.semaphoreTimeoutRpcTotal > 0)
+                        .toMap());
+            }
             
             if (publisherEnabled) {
                 builder.put(LABEL_RPC_PUBLISHER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
