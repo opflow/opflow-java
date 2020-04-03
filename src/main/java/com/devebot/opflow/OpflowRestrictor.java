@@ -3,6 +3,7 @@ package com.devebot.opflow;
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowPausingTimeoutException;
+import com.devebot.opflow.exception.OpflowRestrictionException;
 import com.devebot.opflow.exception.OpflowServiceNotReadyException;
 import com.devebot.opflow.exception.OpflowSemaphoreTimeoutException;
 import com.devebot.opflow.supports.OpflowObjectTree;
@@ -109,11 +110,11 @@ public class OpflowRestrictor {
                 try {
                     return this.execute(action);
                 }
-                catch(Throwable t) {
+                catch(OpflowRestrictionException e) {
                     if (measurer != null) {
                         measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, "rejected");
                     }
-                    throw t;
+                    throw e;
                 }
                 finally {
                     rl.unlock();
@@ -122,6 +123,9 @@ public class OpflowRestrictor {
                 if (logTracer.ready(LOG, Level.WARN)) LOG.warn(logTracer
                         .text("Restrictor[${restrictorId}].filter() is not ready yet")
                         .stringify());
+                if (measurer != null) {
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, "rejected");
+                }
                 throw new OpflowServiceNotReadyException("The valve restrictor is not ready yet");
             }
         }
