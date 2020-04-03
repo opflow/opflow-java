@@ -341,8 +341,15 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             params.setRoutineSignature(routineSignature);
         }
         
-        if (expiration > 0) {
-            params.setRoutineTTL(expiration + DELAY_TIMEOUT);
+        long _expiration = 0;
+        if (params.getRoutineTTL() != null) {
+            _expiration = params.getRoutineTTL() - DELAY_TIMEOUT;
+        }
+        if (_expiration <= 0) {
+            _expiration = expiration;
+        }
+        if (_expiration > 0) {
+            params.setRoutineTTL(_expiration + DELAY_TIMEOUT);
         }
         
         final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRoutineTimestamp())
@@ -439,8 +446,8 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                 .stringify());
         builder.replyTo(consumerInfo.getQueueName());
 
-        if (expiration > 0) {
-            builder.expiration(String.valueOf(expiration));
+        if (_expiration > 0) {
+            builder.expiration(String.valueOf(_expiration));
         }
         
         measurer.countRpcInvocation(OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.METHOD_INVOCATION_REMOTE_AMQP_WORKER, routineSignature, "produce");
