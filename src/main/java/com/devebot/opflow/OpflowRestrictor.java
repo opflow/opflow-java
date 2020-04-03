@@ -1,7 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
-import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.exception.OpflowCancellationException;
 import com.devebot.opflow.exception.OpflowPausingTimeoutException;
 import com.devebot.opflow.exception.OpflowRestrictionException;
 import com.devebot.opflow.exception.OpflowServiceNotReadyException;
@@ -9,6 +9,8 @@ import com.devebot.opflow.exception.OpflowSemaphoreTimeoutException;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -522,8 +524,8 @@ public class OpflowRestrictor {
             };
             try {
                 return getThreadExecutor().submit(task).get();
-            } catch (RejectedExecutionException e) {
-                throw new OpflowOperationException(e);
+            } catch (CancellationException | ExecutionException | InterruptedException | RejectedExecutionException e) {
+                throw new OpflowCancellationException(e);
             }
         }
 
