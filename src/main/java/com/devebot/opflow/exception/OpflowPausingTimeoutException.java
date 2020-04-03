@@ -4,7 +4,7 @@ package com.devebot.opflow.exception;
  *
  * @author drupalex
  */
-public class OpflowPausingTimeoutException extends OpflowOperationException {
+public class OpflowPausingTimeoutException extends OpflowRestrictionException {
 
     public OpflowPausingTimeoutException() {
     }

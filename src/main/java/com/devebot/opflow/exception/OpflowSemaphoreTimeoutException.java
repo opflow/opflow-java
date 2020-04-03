@@ -4,7 +4,7 @@ package com.devebot.opflow.exception;
  *
  * @author drupalex
  */
-public class OpflowSemaphoreTimeoutException extends OpflowOperationException {
+public class OpflowSemaphoreTimeoutException extends OpflowRestrictionException {
 
     public OpflowSemaphoreTimeoutException() {
     }

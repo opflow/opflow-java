@@ -4,7 +4,7 @@ package com.devebot.opflow.exception;
  *
  * @author drupalex
  */
-public class OpflowServiceNotReadyException extends OpflowOperationException {
+public class OpflowServiceNotReadyException extends OpflowRestrictionException {
 
     public OpflowServiceNotReadyException() {
     }

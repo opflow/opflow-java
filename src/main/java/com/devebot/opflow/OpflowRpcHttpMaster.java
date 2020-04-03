@@ -2,8 +2,9 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
-import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.exception.OpflowNonOperatingException;
+import com.devebot.opflow.exception.OpflowOperationException;
+import com.devebot.opflow.exception.OpflowRestrictionException;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowStringUtil;
 import java.io.IOException;
@@ -116,7 +117,7 @@ public class OpflowRpcHttpMaster {
                 }
             });
         }
-        catch (OpflowOperationException opflowException) {
+        catch (OpflowOperationException | OpflowRestrictionException opflowException) {
             throw opflowException;
         }
         catch (Throwable e) {
