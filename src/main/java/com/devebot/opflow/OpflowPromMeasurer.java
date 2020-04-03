@@ -21,8 +21,8 @@ public abstract class OpflowPromMeasurer {
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
     public static final String LABEL_RPC_INVOCATION_TOTAL = "rpcInvocationTotal";
-    public static final String LABEL_RPC_ACCEPTED_INVOCATION_TOTAL = "rpcInvocationAccepted";
-    public static final String LABEL_RPC_REJECTED_INVOCATION_TOTAL = "rpcInvocationRejected";
+    public static final String LABEL_RPC_ACCEPTED_INVOCATION_TOTAL = "rpcProcessingTotal";
+    public static final String LABEL_RPC_REJECTED_INVOCATION_TOTAL = "rpcRejectedTotal";
     public static final String LABEL_RPC_PUBLISHER = "rpcOverPublisher";
     public static final String LABEL_RPC_DIRECT_WORKER = "rpcOverNativeWorker";
     public static final String LABEL_RPC_REMOTE_AMQP_WORKER = "rpcOverRemoteAMQPWorkers";
@@ -449,24 +449,24 @@ public abstract class OpflowPromMeasurer {
                 switch (eventName) {
                     case OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR:
                         switch (status) {
-                            case "rejected":
+                            case OpflowConstant.METHOD_INVOCATION_STATUS_REJECTED:
                                 counter.incRejectedRpc();
                                 break;
                         }
                         break;
                     case OpflowConstant.METHOD_INVOCATION_FLOW_PUBSUB:
                         switch (status) {
-                            case "begin":
+                            case OpflowConstant.METHOD_INVOCATION_STATUS_ENTER:
                                 counter.incPublishingOk();
                                 break;
                         }
                         break;
                     case OpflowConstant.METHOD_INVOCATION_NATIVE_WORKER:
                         switch (status) {
-                            case "rescue":
+                            case OpflowConstant.METHOD_INVOCATION_STATUS_RESCUE:
                                 counter.incDirectRescue();
                                 break;
-                            case "retain":
+                            case OpflowConstant.METHOD_INVOCATION_STATUS_NORMAL:
                                 counter.incDirectRetain();
                                 break;
                         }

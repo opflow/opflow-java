@@ -1406,7 +1406,7 @@ public class OpflowCommander implements AutoCloseable {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-publish-method] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                         .stringify());
-                measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_PUBSUB, routineSignature, "begin");
+                measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_PUBSUB, routineSignature, OpflowConstant.METHOD_INVOCATION_STATUS_ENTER);
                 this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                         .put(CONST.AMQP_HEADER_ROUTINE_ID, routineId)
                         .put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, routineTimestamp)
@@ -1417,7 +1417,7 @@ public class OpflowCommander implements AutoCloseable {
                 if (reqTracer.ready(LOG, Level.DEBUG)) LOG.debug(reqTracer
                         .text("Request[${requestId}][${requestTime}][x-commander-dispatch-method] - RpcInvocationHandler.invoke() dispatch the call to the RPC Master")
                         .stringify());
-                measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RPC, routineSignature, "begin");
+                measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RPC, routineSignature, OpflowConstant.METHOD_INVOCATION_STATUS_ENTER);
             }
             
             if (!isNativeWorkerAvailable() && !isRemoteAMQPWorkerActive() && !isRemoteHTTPWorkerActive()) {
@@ -1524,12 +1524,12 @@ public class OpflowCommander implements AutoCloseable {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-native-worker-rescue] - RpcInvocationHandler.invoke() rescues by the nativeWorker")
                             .stringify());
-                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_NATIVE_WORKER, routineSignature, "rescue");
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_NATIVE_WORKER, routineSignature, OpflowConstant.METHOD_INVOCATION_STATUS_RESCUE);
                 } else {
                     if (reqTracer.ready(LOG, Level.DEBUG)) LOG.trace(reqTracer
                             .text("Request[${requestId}][${requestTime}][x-commander-native-worker-retain] - RpcInvocationHandler.invoke() retains the nativeWorker")
                             .stringify());
-                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_NATIVE_WORKER, routineSignature, "retain");
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_NATIVE_WORKER, routineSignature, OpflowConstant.METHOD_INVOCATION_STATUS_NORMAL);
                 }
                 return method.invoke(this.nativeWorker, args);
             } else {

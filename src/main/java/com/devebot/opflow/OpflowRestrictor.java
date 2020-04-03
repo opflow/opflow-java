@@ -112,7 +112,7 @@ public class OpflowRestrictor {
                 }
                 catch(OpflowRestrictionException e) {
                     if (measurer != null) {
-                        measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, "rejected");
+                        measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, OpflowConstant.METHOD_INVOCATION_STATUS_REJECTED);
                     }
                     throw e;
                 }
@@ -124,7 +124,7 @@ public class OpflowRestrictor {
                         .text("Restrictor[${restrictorId}].filter() is not ready yet")
                         .stringify());
                 if (measurer != null) {
-                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, "rejected");
+                    measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_RESTRICTOR, null, OpflowConstant.METHOD_INVOCATION_STATUS_REJECTED);
                 }
                 throw new OpflowServiceNotReadyException("The valve restrictor is not ready yet");
             }

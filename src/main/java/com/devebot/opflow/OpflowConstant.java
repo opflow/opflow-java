@@ -78,6 +78,14 @@ public class OpflowConstant {
     public final static String METHOD_INVOCATION_REMOTE_HTTP_WORKER = "remote_http";
     public final static String METHOD_INVOCATION_REMOTE_AMQP_WORKER = "remote_amqp";
     public final static String METHOD_INVOCATION_NATIVE_WORKER = "backup_method";
+    
+    public final static String METHOD_INVOCATION_STATUS_OK = "ok";
+    public final static String METHOD_INVOCATION_STATUS_FAILED = "failed";
+    public final static String METHOD_INVOCATION_STATUS_TIMEOUT = "timeout";
+    public final static String METHOD_INVOCATION_STATUS_REJECTED = "rejected";
+    public final static String METHOD_INVOCATION_STATUS_ENTER = "begin";
+    public final static String METHOD_INVOCATION_STATUS_RESCUE = "rescue";
+    public final static String METHOD_INVOCATION_STATUS_NORMAL = "retain";
 
     public final static String PARAM_NATIVE_WORKER_ENABLED = "nativeWorkerEnabled";
 
