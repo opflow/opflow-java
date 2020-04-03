@@ -6,8 +6,8 @@ import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowDiscoveryConnectionException;
-import com.devebot.opflow.exception.OpflowInterceptionException;
-import com.devebot.opflow.exception.OpflowRemoteMasterDisabledException;
+import com.devebot.opflow.exception.OpflowInstantiationException;
+import com.devebot.opflow.exception.OpflowRpcMasterDisabledException;
 import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcRegistrationException;
@@ -599,7 +599,7 @@ public class OpflowCommander implements AutoCloseable {
         
         private Pong send_over_amqp(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
             if (amqpMaster == null) {
-                throw new OpflowRemoteMasterDisabledException("The AMQP Master is disabled");
+                throw new OpflowRpcMasterDisabledException("The AMQP Master is disabled");
             }
             try {
                 OpflowRpcAmqpRequest rpcRequest = amqpMaster.request(routineSignature, body, (new OpflowRpcParameter(routineId, routineTimestamp))
@@ -628,7 +628,7 @@ public class OpflowCommander implements AutoCloseable {
         
         private Pong send_over_http(String routineId, String routineTimestamp, String routineSignature, String body) throws Throwable {
             if (httpMaster == null) {
-                throw new OpflowRemoteMasterDisabledException("The HTTP Master is disabled");
+                throw new OpflowRpcMasterDisabledException("The HTTP Master is disabled");
             }
             OpflowRpcRoutingInfo routingInfo = rpcObserver.getRoutingInfo(OpflowConstant.Protocol.HTTP, false);
             if (routingInfo == null) {
@@ -1256,7 +1256,7 @@ public class OpflowCommander implements AutoCloseable {
                 if (routine != null && routine.alias() != null && routine.alias().length() > 0) {
                     String alias = routine.alias();
                     if (aliasOfMethod.containsValue(alias)) {
-                        throw new OpflowInterceptionException("Alias[" + alias + "]/methodSignature[" + methodSignature + "] is duplicated");
+                        throw new OpflowInstantiationException("Alias[" + alias + "]/methodSignature[" + methodSignature + "] is duplicated");
                     }
                     aliasOfMethod.put(methodSignature, alias);
                     if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
@@ -1592,7 +1592,7 @@ public class OpflowCommander implements AutoCloseable {
             }
         }
         if (!ok) {
-            throw new OpflowInterceptionException("Generic type/method is unsupported");
+            throw new OpflowInstantiationException("Generic type/method is unsupported");
         }
         return ok;
     }
@@ -1603,10 +1603,10 @@ public class OpflowCommander implements AutoCloseable {
 
     public <T> T registerType(Class<T> type, T bean) {
         if (type == null) {
-            throw new OpflowInterceptionException("The [type] parameter must not be null");
+            throw new OpflowInstantiationException("The [type] parameter must not be null");
         }
         if (OpflowRpcChecker.class.equals(type)) {
-            throw new OpflowInterceptionException("Can not register the OpflowRpcChecker type");
+            throw new OpflowInstantiationException("Can not register the OpflowRpcChecker type");
         }
         try {
             if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
@@ -1626,7 +1626,7 @@ public class OpflowCommander implements AutoCloseable {
                     .put("exceptionMessage", exception.getMessage())
                     .text("newProxyInstance() has failed")
                     .stringify());
-            throw new OpflowInterceptionException(exception);
+            throw new OpflowInstantiationException(exception);
         }
     }
 

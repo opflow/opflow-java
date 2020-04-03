@@ -4,7 +4,7 @@ package com.devebot.opflow.exception;
  *
  * @author drupalex
  */
-public class OpflowMethodNotFoundException extends OpflowOperationException {
+public class OpflowMethodNotFoundException extends OpflowConstructionException {
 
     public OpflowMethodNotFoundException() {
     }

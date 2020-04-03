@@ -4,7 +4,7 @@ package com.devebot.opflow.exception;
  *
  * @author drupalex
  */
-public class OpflowTargetNotFoundException extends OpflowOperationException {
+public class OpflowTargetNotFoundException extends OpflowConstructionException {
 
     public OpflowTargetNotFoundException() {
     }

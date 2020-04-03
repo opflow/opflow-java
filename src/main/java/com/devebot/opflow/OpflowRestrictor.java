@@ -2,9 +2,9 @@ package com.devebot.opflow;
 
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowOperationException;
-import com.devebot.opflow.exception.OpflowRequestPausingException;
-import com.devebot.opflow.exception.OpflowRequestSuspendException;
-import com.devebot.opflow.exception.OpflowRequestWaitingException;
+import com.devebot.opflow.exception.OpflowPausingTimeoutException;
+import com.devebot.opflow.exception.OpflowServiceNotReadyException;
+import com.devebot.opflow.exception.OpflowSemaphoreTimeoutException;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -122,7 +122,7 @@ public class OpflowRestrictor {
                 if (logTracer.ready(LOG, Level.WARN)) LOG.warn(logTracer
                         .text("Restrictor[${restrictorId}].filter() is not ready yet")
                         .stringify());
-                throw new OpflowRequestSuspendException("The valve restrictor is not ready yet");
+                throw new OpflowServiceNotReadyException("The valve restrictor is not ready yet");
             }
         }
     }
@@ -331,14 +331,14 @@ public class OpflowRestrictor {
                         if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                                 .text("Restrictor[${restrictorId}].filter() tryLock() is timeout")
                                 .stringify());
-                        throw new OpflowRequestPausingException("tryLock() return false - the lock is not available");
+                        throw new OpflowPausingTimeoutException("tryLock() return false - the lock is not available");
                     }
                 }
                 catch (InterruptedException exception) {
                     if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                             .text("Restrictor[${restrictorId}].filter() tryLock() is interrupted")
                             .stringify());
-                    throw new OpflowRequestPausingException("tryLock() is interrupted", exception);
+                    throw new OpflowPausingTimeoutException("tryLock() is interrupted", exception);
                 }
             } else {
                 if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
@@ -457,7 +457,7 @@ public class OpflowRestrictor {
                             semaphore.release();
                         }
                     } else {
-                        throw new OpflowRequestWaitingException("There are no permits available");
+                        throw new OpflowSemaphoreTimeoutException("There are no permits available");
                     }
                 } else {
                     semaphore.acquire();
@@ -470,7 +470,7 @@ public class OpflowRestrictor {
                 }
             }
             catch (InterruptedException exception) {
-                throw new OpflowRequestWaitingException("semaphore.acquire() is interrupted", exception);
+                throw new OpflowSemaphoreTimeoutException("semaphore.acquire() is interrupted", exception);
             }
         }
     }

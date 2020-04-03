@@ -4,7 +4,7 @@ import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.annotation.OpflowTargetRoutine;
 import com.devebot.opflow.exception.OpflowBootstrapException;
-import com.devebot.opflow.exception.OpflowInterceptionException;
+import com.devebot.opflow.exception.OpflowInstantiationException;
 import com.devebot.opflow.exception.OpflowJsonSyntaxException;
 import com.devebot.opflow.exception.OpflowMethodNotFoundException;
 import com.devebot.opflow.exception.OpflowTargetNotFoundException;
@@ -739,7 +739,7 @@ public class OpflowServerlet implements AutoCloseable {
         
         public void instantiateType(Class type, Object target) {
             if (type == null) {
-                throw new OpflowInterceptionException("The [type] parameter must not be null");
+                throw new OpflowInstantiationException("The [type] parameter must not be null");
             }
             if (Modifier.isAbstract(type.getModifiers()) && target == null) {
                 if (logTracer.ready(LOG, Level.ERROR)) {
@@ -747,7 +747,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .text("Class should not be an abstract type")
                         .stringify());
                 }
-                throw new OpflowInterceptionException("Class should not be an abstract type");
+                throw new OpflowInstantiationException("Class should not be an abstract type");
             }
             try {
                 if (target == null) {
@@ -767,7 +767,7 @@ public class OpflowServerlet implements AutoCloseable {
                         }
                         for (String alias : aliases) {
                             if (methodOfAlias.containsKey(alias)) {
-                                throw new OpflowInterceptionException("Alias[" + alias + "]/methodSignature[" + methodSignature + "]"
+                                throw new OpflowInstantiationException("Alias[" + alias + "]/methodSignature[" + methodSignature + "]"
                                     + " is conflicted with alias of routineSignature[" + methodOfAlias.get(alias) + "]");
                             }
                             methodOfAlias.put(alias, methodSignature);
@@ -796,7 +796,7 @@ public class OpflowServerlet implements AutoCloseable {
                                 .stringify());
                         }
                         if (!routineSignatures.add(methodSignature) && !method.equals(methodRef.get(methodSignature))) {
-                            throw new OpflowInterceptionException("methodSignature[" + methodSignature + "] is conflicted");
+                            throw new OpflowInstantiationException("methodSignature[" + methodSignature + "] is conflicted");
                         }
                         methodRef.put(methodSignature, method);
                         targetRef.put(methodSignature, target);
@@ -810,7 +810,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .text("Could not instantiate the class")
                         .stringify());
                 }
-                throw new OpflowInterceptionException("Could not instantiate the class", except);
+                throw new OpflowInstantiationException("Could not instantiate the class", except);
             } catch (IllegalAccessException except) {
                 if (logTracer.ready(LOG, Level.ERROR)) {
                     LOG.error(logTracer
@@ -819,7 +819,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .text("Constructor is not accessible")
                         .stringify());
                 }
-                throw new OpflowInterceptionException("Constructor is not accessible", except);
+                throw new OpflowInstantiationException("Constructor is not accessible", except);
             } catch (SecurityException except) {
                 if (logTracer.ready(LOG, Level.ERROR)) {
                     LOG.error(logTracer
@@ -828,7 +828,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .text("Class loaders is not the same or denies access")
                         .stringify());
                 }
-                throw new OpflowInterceptionException("Class loaders is not the same or denies access", except);
+                throw new OpflowInstantiationException("Class loaders is not the same or denies access", except);
             } catch (Exception except) {
                 if (logTracer.ready(LOG, Level.ERROR)) {
                     LOG.error(logTracer
@@ -837,7 +837,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .text("Unknown exception")
                         .stringify());
                 }
-                throw new OpflowInterceptionException("Unknown exception", except);
+                throw new OpflowInstantiationException("Unknown exception", except);
             }
             process();
         }

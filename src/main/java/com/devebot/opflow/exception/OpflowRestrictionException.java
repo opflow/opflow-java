@@ -1,12 +1,8 @@
 package com.devebot.opflow.exception;
 
-/**
- *
- * @author drupalex
- */
-public class OpflowRestrictionException extends OpflowOperationException {
-
+public class OpflowRestrictionException extends RuntimeException {
     public OpflowRestrictionException() {
+        super();
     }
 
     public OpflowRestrictionException(String message) {
@@ -14,7 +10,7 @@ public class OpflowRestrictionException extends OpflowOperationException {
     }
 
     public OpflowRestrictionException(String message, Throwable cause) {
-        super(message, cause);
+    	super(message, cause);
     }
 
     public OpflowRestrictionException(Throwable cause) {

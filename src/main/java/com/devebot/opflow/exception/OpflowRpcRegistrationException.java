@@ -4,7 +4,7 @@ package com.devebot.opflow.exception;
  *
  * @author drupalex
  */
-public class OpflowRpcRegistrationException extends OpflowOperationException {
+public class OpflowRpcRegistrationException extends OpflowConstructionException {
 
     public OpflowRpcRegistrationException() {
     }

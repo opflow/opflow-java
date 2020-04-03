@@ -3,7 +3,7 @@ package com.devebot.opflow;
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowOperationException;
-import com.devebot.opflow.exception.OpflowRestrictionException;
+import com.devebot.opflow.exception.OpflowNonOperatingException;
 import com.devebot.opflow.supports.OpflowConcurrentMap;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.rabbitmq.nostro.client.AMQP;
@@ -329,7 +329,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             throw opflowException;
         }
         catch (Throwable e) {
-            throw new OpflowRestrictionException(e);
+            throw new OpflowNonOperatingException(e);
         }
     }
     
