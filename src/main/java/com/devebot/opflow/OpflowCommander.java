@@ -52,6 +52,7 @@ public class OpflowCommander implements AutoCloseable {
         OpflowConstant.COMP_RESTRICTOR,
         OpflowConstant.COMP_RPC_HTTP_MASTER,
         OpflowConstant.COMP_RPC_WATCHER,
+        OpflowConstant.COMP_GARBAGE_COLLECTOR,
         OpflowConstant.COMP_SPEED_METER,
         OpflowConstant.COMP_PROM_EXPORTER,
         OpflowConstant.COMP_REST_SERVER,
@@ -84,7 +85,7 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowRpcChecker rpcChecker;
     private OpflowRpcWatcher rpcWatcher;
     private OpflowRpcObserver rpcObserver;
-    
+    private OpflowGarbageCollector garbageCollector;
     private OpflowRestServer restServer;
     private OpflowReqExtractor reqExtractor;
 
@@ -174,6 +175,7 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> publisherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PUBLISHER);
         Map<String, Object> rpcObserverCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_OBSERVER);
         Map<String, Object> rpcWatcherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_WATCHER);
+        Map<String, Object> garbageCollectorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_GARBAGE_COLLECTOR);
         Map<String, Object> restServerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REST_SERVER);
 
         HashSet<String> checkExchange = new HashSet<>();
@@ -256,8 +258,14 @@ public class OpflowCommander implements AutoCloseable {
 
             rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcObserver, amqpMaster, httpMaster);
 
+            if (OpflowUtil.isComponentEnabled(garbageCollectorCfg)) {
+                garbageCollector = new OpflowGarbageCollector(OpflowObjectTree.buildMap(garbageCollectorCfg)
+                        .put(CONST.COMPONENT_ID, componentId)
+                        .toMap());
+            }
+
             if (isRemoteRpcAvailable()) {
-                rpcWatcher = new OpflowRpcWatcher(rpcChecker, OpflowObjectTree.buildMap(rpcWatcherCfg)
+                rpcWatcher = new OpflowRpcWatcher(rpcChecker, garbageCollector, OpflowObjectTree.buildMap(rpcWatcherCfg)
                         .put(CONST.COMPONENT_ID, componentId)
                         .toMap());
                 rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());

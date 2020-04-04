@@ -23,6 +23,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
     private final OpflowLogTracer logTracer;
     
     private final OpflowRpcChecker rpcChecker;
+    private final OpflowGarbageCollector garbageCollector;
     private final boolean enabled;
     private final long interval;
     private final Timer timer = new Timer("Timer-" + OpflowRpcWatcher.class.getSimpleName(), true);
@@ -32,7 +33,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
 
         private boolean active = true;
         private long count = 0;
-
+        
         public MyTimerTask() {
             super();
         }
@@ -74,6 +75,9 @@ public class OpflowRpcWatcher implements AutoCloseable {
                             .text("Detector[${rpcWatcherId}].run(), the queue is congested")
                             .stringify());
                 }
+                if (garbageCollector != null) {
+                    garbageCollector.clean();
+                }
             }
         }
     }
@@ -83,6 +87,10 @@ public class OpflowRpcWatcher implements AutoCloseable {
     }
     
     public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker, Map<String, Object> kwargs) {
+        this(_rpcChecker, null, kwargs);
+    }
+    
+    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker, OpflowGarbageCollector _garbageCollector, Map<String, Object> kwargs) {
         if (kwargs == null) {
             componentId = OpflowUUID.getBase64ID();
             enabled = true;
@@ -95,6 +103,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", componentId);
         rpcChecker = _rpcChecker;
+        garbageCollector = _garbageCollector;
         timerTask = new MyTimerTask();
     }
 

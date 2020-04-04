@@ -298,6 +298,12 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_COUNSELOR_TRIMMING_TIME_DELAY,
                         });
                         break;
+                    case OpflowConstant.COMP_GARBAGE_COLLECTOR:
+                        OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
+                            OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.OPFLOW_COMMON_INTERVAL
+                        });
+                        break;
                     case OpflowConstant.COMP_RPC_WATCHER:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
