@@ -113,4 +113,17 @@ public class OpflowStringUtil {
             return null;
         }
     }
+    
+    public static int countDigit(long bound) {
+        int count = 0;
+        while (bound > 0) {
+            bound = bound / 10;
+            count++;
+        }
+        return count;
+    }
+    
+    public static String pad(int number, int digits) {
+        return String.format("%0" + digits + "d", number);
+    }
 }
