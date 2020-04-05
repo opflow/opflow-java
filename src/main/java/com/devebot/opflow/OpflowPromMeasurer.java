@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
  * @author acegik
  */
 public abstract class OpflowPromMeasurer {
-    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPromMeasurer.class);
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     

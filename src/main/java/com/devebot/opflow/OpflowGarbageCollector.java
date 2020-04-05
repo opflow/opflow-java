@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
  * @author acegik
  */
 public class OpflowGarbageCollector {
-    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowGarbageCollector.class);
     
     private final static long DEFAULT_PERIOD = 5L * 60L * 1000L;
@@ -22,7 +21,7 @@ public class OpflowGarbageCollector {
     private long milestone;
 
     public OpflowGarbageCollector(Map<String, Object> kwargs) {
-        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("garbageCollectorId", componentId);
         
         Long _period = OpflowUtil.getLongField(kwargs, OpflowConstant.OPFLOW_COMMON_INTERVAL, null);

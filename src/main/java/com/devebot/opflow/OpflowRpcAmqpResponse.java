@@ -53,8 +53,8 @@ public class OpflowRpcAmqpResponse {
         this.routineSignature = routineSignature;
         this.httpAddress = httpAddress;
         
-        logTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
-                .branch(CONST.REQUEST_ID, this.routineId, new OpflowUtil.OmitInternalOplogs(this.routineScope));
+        logTracer = OpflowLogTracer.ROOT.branch(OpflowConstant.REQUEST_TIME, this.routineTimestamp)
+                .branch(OpflowConstant.REQUEST_ID, this.routineId, new OpflowUtil.OmitInternalOplogs(this.routineScope));
         
         if (properties.getReplyTo() != null) {
             this.replyQueueName = properties.getReplyTo();

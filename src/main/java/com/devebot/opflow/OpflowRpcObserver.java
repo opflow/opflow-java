@@ -62,7 +62,7 @@ public class OpflowRpcObserver {
     private ExecutorService threadExecutor = null;
     
     public OpflowRpcObserver(Map<String, Object> kwargs) {
-        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcCounselorId", componentId);
         

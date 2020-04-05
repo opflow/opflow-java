@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory;
  * @author acegik
  */
 public class OpflowRpcWatcher implements AutoCloseable {
-    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-    
     public final static long RPC_DETECTION_INTERVAL = 30000;
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcWatcher.class);
@@ -96,7 +94,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
             enabled = true;
             interval = RPC_DETECTION_INTERVAL;
         } else {
-            componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
+            componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
             enabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_ENABLED, Boolean.TRUE);
             interval = OpflowUtil.getLongField(kwargs, OpflowConstant.OPFLOW_COMMON_INTERVAL, RPC_DETECTION_INTERVAL);
         }

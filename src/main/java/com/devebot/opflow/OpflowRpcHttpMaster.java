@@ -50,7 +50,7 @@ public class OpflowRpcHttpMaster {
     public OpflowRpcHttpMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
-        componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
         serviceLocator = (Locator) OpflowUtil.getOptionField(params, OpflowConstant.COMP_SERVICE_LOCATOR, null);
@@ -132,8 +132,8 @@ public class OpflowRpcHttpMaster {
             params.setRoutineSignature(routineSignature);
         }
         
-        final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRoutineTimestamp())
-                .branch(CONST.REQUEST_ID, params.getRoutineId(), params);
+        final OpflowLogTracer reqTracer = logTracer.branch(OpflowConstant.REQUEST_TIME, params.getRoutineTimestamp())
+                .branch(OpflowConstant.REQUEST_ID, params.getRoutineId(), params);
         
         if (reqTracer != null && reqTracer.ready(LOG, Level.DEBUG)) {
             LOG.debug(reqTracer

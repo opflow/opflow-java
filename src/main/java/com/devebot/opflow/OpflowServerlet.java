@@ -31,8 +31,6 @@ import org.slf4j.LoggerFactory;
  */
 public class OpflowServerlet implements AutoCloseable {
 
-    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-
     public final static List<String> SERVICE_BEAN_NAMES = Arrays.asList(new String[]{
         OpflowConstant.COMP_RPC_AMQP_WORKER,
         OpflowConstant.COMP_SUBSCRIBER
@@ -86,7 +84,7 @@ public class OpflowServerlet implements AutoCloseable {
         strictMode = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.FALSE);
 
         serviceName = getServiceName(kwargs);
-        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("serverletId", componentId);
 
         if (logTracer.ready(LOG, Level.INFO)) {
@@ -156,7 +154,7 @@ public class OpflowServerlet implements AutoCloseable {
         try {
             if (OpflowUtil.isComponentEnabled(amqpWorkerCfg)) {
                 String amqpWorkerId = OpflowUUID.getBase64ID();
-                amqpWorkerCfg.put(CONST.COMPONENT_ID, amqpWorkerId);
+                amqpWorkerCfg.put(OpflowConstant.COMPONENT_ID, amqpWorkerId);
                 if (logTracer.ready(LOG, Level.INFO)) {
                     LOG.info(logTracer
                         .put("amqpWorkerId", amqpWorkerId)
@@ -166,7 +164,7 @@ public class OpflowServerlet implements AutoCloseable {
                 amqpWorker = new OpflowRpcAmqpWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
+                        opts.put(OpflowConstant.COMPONENT_ID, componentId);
                         opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, amqpWorkerCfg).toMap());
@@ -174,7 +172,7 @@ public class OpflowServerlet implements AutoCloseable {
             
             if (OpflowUtil.isComponentEnabled(httpWorkerCfg)) {
                 String httpWorkerId = OpflowUUID.getBase64ID();
-                httpWorkerCfg.put(CONST.COMPONENT_ID, httpWorkerId);
+                httpWorkerCfg.put(OpflowConstant.COMPONENT_ID, httpWorkerId);
                 if (logTracer.ready(LOG, Level.INFO)) {
                     LOG.info(logTracer
                         .put("httpWorkerId", httpWorkerId)
@@ -184,7 +182,7 @@ public class OpflowServerlet implements AutoCloseable {
                 httpWorker = new OpflowRpcHttpWorker(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
+                        opts.put(OpflowConstant.COMPONENT_ID, componentId);
                         opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, httpWorkerCfg).toMap());
@@ -211,7 +209,7 @@ public class OpflowServerlet implements AutoCloseable {
                 subscriber = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
+                        opts.put(OpflowConstant.COMPONENT_ID, componentId);
                         opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, subscriberCfg).toMap());
@@ -219,7 +217,7 @@ public class OpflowServerlet implements AutoCloseable {
             
             if (amqpWorker != null || httpWorker != null || subscriber != null) {
                 instantiator = new Instantiator(amqpWorker, httpWorker, subscriber, OpflowObjectTree.buildMap(false)
-                    .put(CONST.COMPONENT_ID, componentId)
+                    .put(OpflowConstant.COMPONENT_ID, componentId)
                     .toMap());
             }
         } catch (OpflowBootstrapException exception) {
@@ -415,7 +413,7 @@ public class OpflowServerlet implements AutoCloseable {
                 throw new OpflowBootstrapException("Both of amqpWorker and subscriber must not be null");
             }
             options = OpflowObjectTree.ensureNonNull(options);
-            final String componentId = OpflowUtil.getStringField(options, CONST.COMPONENT_ID, true);
+            final String componentId = OpflowUtil.getStringField(options, OpflowConstant.COMPONENT_ID, true);
             this.logTracer = OpflowLogTracer.ROOT.branch("instantiatorId", componentId);
             
             this.amqpWorker = amqpWorker;
@@ -458,8 +456,8 @@ public class OpflowServerlet implements AutoCloseable {
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
                     final String routineSignature = OpflowUtil.getRoutineSignature(headers);
                     final String methodSignature = methodOfAlias.getOrDefault(routineSignature, routineSignature);
-                    final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
-                        .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
+                    final OpflowLogTracer reqTracer = logTracer.branch(OpflowConstant.REQUEST_TIME, routineTimestamp)
+                        .branch(OpflowConstant.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
                     if (reqTracer.ready(LOG, Level.INFO)) {
                         LOG.info(reqTracer
                             .put("routineSignature", routineSignature)
@@ -522,8 +520,8 @@ public class OpflowServerlet implements AutoCloseable {
         ) {
             RoutineOutput output = null;
             final String methodSignature = methodOfAlias.getOrDefault(routineSignature, routineSignature);
-            final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
-                .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
+            final OpflowLogTracer reqTracer = logTracer.branch(OpflowConstant.REQUEST_TIME, routineTimestamp)
+                .branch(OpflowConstant.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
             if (reqTracer.ready(LOG, Level.INFO)) {
                 LOG.info(reqTracer
                     .put("methodSignature", methodSignature)
@@ -594,20 +592,20 @@ public class OpflowServerlet implements AutoCloseable {
                                     .add(extra)
                                     .toMap();
                             OpflowEngine engine = amqpWorker.getEngine();
-                            opts.put(CONST.COMPONENT_ID, componentId);
+                            opts.put(OpflowConstant.COMPONENT_ID, componentId);
                             opts.put(OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowObjectTree.buildMap()
-                                .put(CONST.COMPONENT_ID, amqpWorker.getComponentId())
+                                .put(OpflowConstant.COMPONENT_ID, amqpWorker.getComponentId())
                                 .put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId())
                                 .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, amqpWorker.getIncomingQueueName())
                                 .put("request", requestInfo, protocol == OpflowConstant.Protocol.AMQP)
                                 .toMap());
                             opts.put(OpflowConstant.COMP_RPC_HTTP_WORKER, OpflowObjectTree.buildMap()
-                                .put(CONST.COMPONENT_ID, httpWorker.getComponentId())
+                                .put(OpflowConstant.COMPONENT_ID, httpWorker.getComponentId())
                                 .put("request", requestInfo, protocol == OpflowConstant.Protocol.HTTP)
                                 .toMap());
                             opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
                                 .put("server", getGitInfo())
-                                .put(CONST.FRAMEWORK_ID, OpflowSystemInfo.getGitInfo())
+                                .put(OpflowConstant.FRAMEWORK_ID, OpflowSystemInfo.getGitInfo())
                                 .toMap());
                         }
                     }).toMap());

@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowPubsubHandler implements AutoCloseable {
-    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowPubsubHandler.class);
 
     private final String componentId;
@@ -47,7 +46,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
     public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
-        componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", componentId);
         
         restrictor = new OpflowRestrictor.Valve();
@@ -60,7 +59,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         
-        brokerParams.put(CONST.COMPONENT_ID, componentId);
+        brokerParams.put(OpflowConstant.COMPONENT_ID, componentId);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "pubsub");
         
         brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME));
@@ -185,7 +184,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         OpflowLogTracer logPublish = null;
         if (logTracer.ready(LOG, Level.INFO)) {
-            logPublish = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp).branch(CONST.REQUEST_ID, routineId);
+            logPublish = logTracer.branch(OpflowConstant.REQUEST_TIME, routineTimestamp).branch(OpflowConstant.REQUEST_ID, routineId);
         }
         
         Map<String, Object> override = new HashMap<>();
@@ -243,7 +242,7 @@ public class OpflowPubsubHandler implements AutoCloseable {
                 String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
                 OpflowLogTracer reqTracer = null;
                 if (logSubscribe.ready(LOG, Level.INFO)) {
-                    reqTracer = logSubscribe.branch(CONST.REQUEST_TIME, routineTimestamp).branch(CONST.REQUEST_ID, routineId);
+                    reqTracer = logSubscribe.branch(OpflowConstant.REQUEST_TIME, routineTimestamp).branch(OpflowConstant.REQUEST_ID, routineId);
                 }
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
                         .text("Request[${requestId}][${requestTime}] - Consumer[${consumerId}].subscribe() receives a new request")

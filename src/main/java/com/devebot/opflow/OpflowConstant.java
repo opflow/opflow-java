@@ -15,16 +15,13 @@ public class OpflowConstant {
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ OPFLOW
 
-    public final String FRAMEWORK_ID = "opflow";
+    public final static String FRAMEWORK_ID = "opflow";
+    public final static String INSTANCE_ID = "instanceId";
+    public final static String COMPONENT_ID = "componentId";
+    public final static String COMPONENT_TYPE = "componentType";
 
-    public final String INSTANCE_ID = "instanceId";
-    public final String COMPONENT_ID = "componentId";
-    public final String COMPONENT_TYPE = "componentType";
-    public final String RPC_MASTER_ID = "rpcMasterId";
-    public final String RPC_WORKER_ID = "rpcWorkerId";
-
-    public final String REQUEST_ID = "requestId";
-    public final String REQUEST_TIME = "requestTime";
+    public final static String REQUEST_ID = "requestId";
+    public final static String REQUEST_TIME = "requestTime";
 
     public final static String ROUTINE_ID = "routineId";
     public final static String ROUTINE_TIMESTAMP = "routineTimestamp";
@@ -50,6 +47,7 @@ public class OpflowConstant {
     public final static String COMP_REQ_EXTRACTOR = "reqExtractor";
     public final static String COMP_SPEED_METER = "speedMeter";
 
+    // Deprecated
     public final static String COMP_CFG_AMQP_MASTER = "rpcMaster";
     public final static String COMP_CFG_AMQP_WORKER = "rpcWorker";
 
@@ -101,6 +99,7 @@ public class OpflowConstant {
     public final static String OPFLOW_COMMON_ACTIVE = "active";
     public final static String OPFLOW_COMMON_AUTORUN = "autorun";
     public final static String OPFLOW_COMMON_AUTO_SHUTDOWN = "autoShutdown";
+    public final static String OPFLOW_COMMON_SHUTDOWN_TIMEOUT = "shutdownTimeout";
     public final static String OPFLOW_COMMON_ENABLED = "enabled";
     public final static String OPFLOW_COMMON_VERBOSE = "verbose";
     public final static String OPFLOW_COMMON_INTERVAL = "interval";

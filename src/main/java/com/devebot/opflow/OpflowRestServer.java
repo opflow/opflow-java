@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
  * @author acegik
  */
 public class OpflowRestServer implements AutoCloseable {
-    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRestServer.class);
 
     private final String componentId;
@@ -68,7 +67,7 @@ public class OpflowRestServer implements AutoCloseable {
             Map<String, Object> kwargs) throws OpflowBootstrapException {
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
-        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
         enabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_ENABLED, null);
         host = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_HOST, "0.0.0.0");
         port = OpflowUtil.detectFreePort(kwargs, OpflowConstant.OPFLOW_COMMON_PORTS, new Integer[] {
@@ -76,7 +75,7 @@ public class OpflowRestServer implements AutoCloseable {
         });
         credentials = OpflowUtil.getStringArray(kwargs, OpflowConstant.OPFLOW_COMMON_CREDENTIALS, null);
         
-        shutdownTimeout = OpflowUtil.getLongField(kwargs, "shutdownTimeout", 1000l);
+        shutdownTimeout = OpflowUtil.getLongField(kwargs, OpflowConstant.OPFLOW_COMMON_SHUTDOWN_TIMEOUT, 1000l);
         
         autoShutdown = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_AUTO_SHUTDOWN, Boolean.FALSE);
         

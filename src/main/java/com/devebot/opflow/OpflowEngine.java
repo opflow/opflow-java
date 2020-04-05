@@ -114,7 +114,7 @@ public class OpflowEngine implements AutoCloseable {
     public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
-        componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("engineId", componentId);
@@ -489,8 +489,8 @@ public class OpflowEngine implements AutoCloseable {
             if (reqTracer == null && logTracer.ready(LOG, Level.INFO)) {
                 String routineId = OpflowUtil.getRoutineId(headers);
                 String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers);
-                reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp)
-                        .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
+                reqTracer = logTracer.branch(OpflowConstant.REQUEST_TIME, routineTimestamp)
+                        .branch(OpflowConstant.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(headers));
             }
             
             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) {
@@ -642,8 +642,8 @@ public class OpflowEngine implements AutoCloseable {
                     final String routineTimestamp = OpflowUtil.getRoutineTimestamp(headers, false);
                     final String routineScope = OpflowUtil.getRoutineScope(headers);
 
-                    final OpflowLogTracer reqTracer = logConsume.branch(CONST.REQUEST_TIME, routineTimestamp)
-                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
+                    final OpflowLogTracer reqTracer = logConsume.branch(OpflowConstant.REQUEST_TIME, routineTimestamp)
+                            .branch(OpflowConstant.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
 
                     try {
                         if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer

@@ -180,7 +180,6 @@ public class OpflowThroughput {
     }
     
     public static class Meter {
-        private final static OpflowConstant CONST = OpflowConstant.CURRENT();
         private final static Logger LOG = LoggerFactory.getLogger(Meter.class);
 
         private long interval = INTERVAL_DEFAULT;
@@ -198,7 +197,7 @@ public class OpflowThroughput {
         public Meter(Map<String, Object> kwargs) {
             kwargs = OpflowObjectTree.ensureNonNull(kwargs);
             // initialize the logTracer
-            componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
+            componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
             logTracer = OpflowLogTracer.ROOT.branch("speedMeterId", this.componentId);
             // load [active] value from the config, false by default
             active = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_ACTIVE, Boolean.FALSE);

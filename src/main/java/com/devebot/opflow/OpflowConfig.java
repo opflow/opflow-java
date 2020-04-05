@@ -61,7 +61,7 @@ public class OpflowConfig {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
             Map<String, Object> params = new HashMap<>();
 
-            String[] handlerPath = new String[] {CONST.FRAMEWORK_ID, "master"};
+            String[] handlerPath = new String[] {OpflowConstant.FRAMEWORK_ID, "master"};
             extractEngineParameters(params, config, handlerPath);
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
 
@@ -106,10 +106,10 @@ public class OpflowConfig {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
             Map<String, Object> params = new HashMap<>();
 
-            String[] handlerPath = new String[] {CONST.FRAMEWORK_ID, "worker"};
+            String[] handlerPath = new String[] {OpflowConstant.FRAMEWORK_ID, "worker"};
             extractEngineParameters(params, config, handlerPath);
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
-            Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID});
+            Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID});
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
                 OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
@@ -157,10 +157,10 @@ public class OpflowConfig {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
             Map<String, Object> params = new HashMap<>();
 
-            String[] handlerPath = new String[] {CONST.FRAMEWORK_ID, "pubsub"};
+            String[] handlerPath = new String[] {OpflowConstant.FRAMEWORK_ID, "pubsub"};
             extractEngineParameters(params, config, handlerPath);
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
-            Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID});
+            Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID});
 
             OpflowUtil.copyParameters(params, handlerNode, new String[] {
                 OpflowConstant.OPFLOW_COMMON_AUTORUN,
@@ -203,7 +203,7 @@ public class OpflowConfig {
             Map<String, Object> params = new HashMap<>();
 
             // extract the top-level configuration
-            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER});
+            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER});
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
@@ -213,7 +213,7 @@ public class OpflowConfig {
             renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_MASTER, OpflowConstant.COMP_RPC_AMQP_MASTER);
 
             // extract the child-level configuration
-            String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
+            String[] componentPath = new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
             for(String componentName : OpflowCommander.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
@@ -359,7 +359,7 @@ public class OpflowConfig {
             Map<String, Object> params = new HashMap<>();
 
             // extract the top-level configuration
-            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET});
+            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET});
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
@@ -369,7 +369,7 @@ public class OpflowConfig {
             renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
             
             // extract the child-level configuration
-            String[] componentPath = new String[] {CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET, ""};
+            String[] componentPath = new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET, ""};
             for(String componentName : OpflowServerlet.ALL_BEAN_NAMES) {
                 componentPath[2] = componentName;
                 Map<String, Object> componentCfg = new HashMap<>();
@@ -680,14 +680,14 @@ public class OpflowConfig {
                     }
                     // merge the system properties to the configuration
                     mergeConfiguration(config, filterProperties(System.getProperties(), new String[] {
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_PUBLISHER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_SUBSCRIBER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_RPC_AMQP_MASTER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_RPC_AMQP_WORKER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_MASTER),
-                        OpflowStringUtil.join(".", CONST.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_WORKER),
+                        OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER),
+                        OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET),
+                        OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_PUBLISHER),
+                        OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_SUBSCRIBER),
+                        OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_RPC_AMQP_MASTER),
+                        OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_RPC_AMQP_WORKER),
+                        OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_MASTER),
+                        OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_WORKER),
                     }));
                 } else {
                     configFile = (configFile != null) ? configFile : DEFAULT_CONFIGURATION_FILE;

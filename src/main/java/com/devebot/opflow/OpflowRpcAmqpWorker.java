@@ -47,7 +47,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
     public OpflowRpcAmqpWorker(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
-        componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("amqpWorkerId", componentId);
@@ -60,7 +60,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
 
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
 
-        brokerParams.put(CONST.COMPONENT_ID, componentId);
+        brokerParams.put(OpflowConstant.COMPONENT_ID, componentId);
         brokerParams.put(OpflowConstant.COMP_MEASURER, measurer);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, OpflowConstant.COMP_RPC_AMQP_WORKER);
 
@@ -193,8 +193,8 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
                 
                 OpflowLogTracer reqTracer = null;
                 if (logProcess.ready(LOG, Level.INFO)) {
-                    reqTracer = logProcess.branch(CONST.REQUEST_TIME, routineTimestamp)
-                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
+                    reqTracer = logProcess.branch(OpflowConstant.REQUEST_TIME, routineTimestamp)
+                            .branch(OpflowConstant.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
                 }
                 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer

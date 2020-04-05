@@ -116,7 +116,7 @@ public class OpflowCommander implements AutoCloseable {
         strictMode = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.FALSE);
         
         serviceName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_COMMON_SERVICE_NAME);
-        componentId = OpflowUtil.getStringField(kwargs, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("commanderId", componentId);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -132,7 +132,7 @@ public class OpflowCommander implements AutoCloseable {
             speedMeter = (new OpflowThroughput.Meter(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
+                        opts.put(OpflowConstant.COMPONENT_ID, componentId);
                     }
                 }, speedMeterCfg).toMap()));
         } else {
@@ -143,7 +143,7 @@ public class OpflowCommander implements AutoCloseable {
         
         if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
             restrictor = new OpflowRestrictorMaster(OpflowObjectTree.buildMap(restrictorCfg)
-                    .put(CONST.COMPONENT_ID, componentId)
+                    .put(OpflowConstant.COMPONENT_ID, componentId)
                     .put(OpflowConstant.COMP_MEASURER, measurer)
                     .toMap());
         }
@@ -206,7 +206,7 @@ public class OpflowCommander implements AutoCloseable {
             rpcObserver = new OpflowRpcObserver(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
-                    opts.put(CONST.COMPONENT_ID, componentId);
+                    opts.put(OpflowConstant.COMPONENT_ID, componentId);
                 }
             }, rpcObserverCfg).toMap());
             
@@ -218,7 +218,7 @@ public class OpflowCommander implements AutoCloseable {
                 amqpMaster = new OpflowRpcAmqpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
+                        opts.put(OpflowConstant.COMPONENT_ID, componentId);
                         opts.put(OpflowConstant.COMP_MEASURER, measurer);
                         opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
                     }
@@ -232,7 +232,7 @@ public class OpflowCommander implements AutoCloseable {
                 httpMaster = new OpflowRpcHttpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
+                        opts.put(OpflowConstant.COMPONENT_ID, componentId);
                         opts.put(OpflowConstant.COMP_MEASURER, measurer);
                         opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
                     }
@@ -246,7 +246,7 @@ public class OpflowCommander implements AutoCloseable {
                 publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
-                        opts.put(CONST.COMPONENT_ID, componentId);
+                        opts.put(OpflowConstant.COMPONENT_ID, componentId);
                         opts.put(OpflowConstant.COMP_MEASURER, measurer);
                     }
                 }, publisherCfg).toMap());
@@ -260,13 +260,13 @@ public class OpflowCommander implements AutoCloseable {
 
             if (OpflowUtil.isComponentEnabled(garbageCollectorCfg)) {
                 garbageCollector = new OpflowGarbageCollector(OpflowObjectTree.buildMap(garbageCollectorCfg)
-                        .put(CONST.COMPONENT_ID, componentId)
+                        .put(OpflowConstant.COMPONENT_ID, componentId)
                         .toMap());
             }
 
             if (isRemoteRpcAvailable()) {
                 rpcWatcher = new OpflowRpcWatcher(rpcChecker, garbageCollector, OpflowObjectTree.buildMap(rpcWatcherCfg)
-                        .put(CONST.COMPONENT_ID, componentId)
+                        .put(OpflowConstant.COMPONENT_ID, componentId)
                         .toMap());
                 rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
             }
@@ -278,7 +278,7 @@ public class OpflowCommander implements AutoCloseable {
                     discoveryMaster);
 
             restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
-                    .put(CONST.COMPONENT_ID, componentId)
+                    .put(OpflowConstant.COMPONENT_ID, componentId)
                     .toMap());
         } catch(OpflowBootstrapException exception) {
             this.close();
@@ -404,7 +404,7 @@ public class OpflowCommander implements AutoCloseable {
         public OpflowRestrictorMaster(Map<String, Object> options) {
             options = OpflowObjectTree.ensureNonNull(options);
 
-            componentId = OpflowUtil.getStringField(options, CONST.COMPONENT_ID, true);
+            componentId = OpflowUtil.getStringField(options, OpflowConstant.COMPONENT_ID, true);
             measurer = (OpflowPromMeasurer) options.get(OpflowConstant.COMP_MEASURER);
             logTracer = OpflowLogTracer.ROOT.branch("restrictorId", componentId);
 
@@ -584,7 +584,7 @@ public class OpflowCommander implements AutoCloseable {
             if (rpcObserver != null) {
                 Map<String, Object> serverletInfo = pong.getAccumulator();
                 if (serverletInfo != null) {
-                    String componentId = serverletInfo.getOrDefault(CONST.COMPONENT_ID, "").toString();
+                    String componentId = serverletInfo.getOrDefault(OpflowConstant.COMPONENT_ID, "").toString();
                     if (!componentId.isEmpty()) {
                         if (!rpcObserver.containsInfo(componentId, OpflowConstant.INFO_SECTION_SOURCE_CODE)) {
                             Object serverletCodeRef = serverletInfo.get(OpflowConstant.INFO_SECTION_SOURCE_CODE);
@@ -902,12 +902,12 @@ public class OpflowCommander implements AutoCloseable {
             
             OpflowObjectTree.Builder root = OpflowObjectTree.buildMap();
             
-            root.put(CONST.INSTANCE_ID, OpflowLogTracer.getInstanceId());
+            root.put(OpflowConstant.INSTANCE_ID, OpflowLogTracer.getInstanceId());
             
             root.put(OpflowConstant.COMP_COMMANDER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
-                    opts.put(CONST.COMPONENT_ID, componentId);
+                    opts.put(OpflowConstant.COMPONENT_ID, componentId);
                     
                     // DiscoveryClient information
                     if (checkOption(flag, SCOPE_INFO)) {
@@ -915,7 +915,7 @@ public class OpflowCommander implements AutoCloseable {
                             opts.put(OpflowConstant.COMP_DISCOVERY_CLIENT, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                                 @Override
                                 public void transform(Map<String, Object> opt2) {
-                                    opt2.put(CONST.COMPONENT_ID, discoveryMaster.getComponentId());
+                                    opt2.put(OpflowConstant.COMPONENT_ID, discoveryMaster.getComponentId());
                                     opt2.put("serviceName", serviceName);
                                     if (serviceName != null) {
                                         try {
@@ -942,7 +942,7 @@ public class OpflowCommander implements AutoCloseable {
                                 @Override
                                 public void transform(Map<String, Object> opt2) {
                                     OpflowEngine engine = publisher.getEngine();
-                                    opt2.put(CONST.COMPONENT_ID, publisher.getComponentId());
+                                    opt2.put(OpflowConstant.COMPONENT_ID, publisher.getComponentId());
                                     opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME, engine.getExchangeName());
                                     opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE, engine.getExchangeType());
                                     opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE, engine.getExchangeDurable());
@@ -963,7 +963,7 @@ public class OpflowCommander implements AutoCloseable {
                             public void transform(Map<String, Object> opt2) {
                                 OpflowEngine engine = amqpMaster.getEngine();
 
-                                opt2.put(CONST.COMPONENT_ID, amqpMaster.getComponentId());
+                                opt2.put(OpflowConstant.COMPONENT_ID, amqpMaster.getComponentId());
                                 opt2.put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId());
 
                                 opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, engine.getExchangeName());
@@ -994,7 +994,7 @@ public class OpflowCommander implements AutoCloseable {
                         opts.put(OpflowConstant.COMP_RPC_HTTP_MASTER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                             @Override
                             public void transform(Map<String, Object> opt2) {
-                                opt2.put(CONST.COMPONENT_ID, httpMaster.getComponentId());
+                                opt2.put(OpflowConstant.COMPONENT_ID, httpMaster.getComponentId());
                                 opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
                                         .put(OpflowConstant.OPFLOW_COMMON_PROTO_VERSION, CONST.OPFLOW_PROTOCOL_VERSION)
                                         .put(OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, httpMaster.getCallTimeout())
@@ -1094,7 +1094,7 @@ public class OpflowCommander implements AutoCloseable {
                     if (checkOption(flag, SCOPE_INFO)) {
                         opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
                                 .put("server", OpflowSystemInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
-                                .put(CONST.FRAMEWORK_ID, OpflowSystemInfo.getGitInfo())
+                                .put(OpflowConstant.FRAMEWORK_ID, OpflowSystemInfo.getGitInfo())
                                 .toMap());
                     }
                 }
@@ -1372,7 +1372,7 @@ public class OpflowCommander implements AutoCloseable {
             final String routineTimestamp = OpflowDateTime.getCurrentTimeString();
 
             // create the logTracer
-            final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, routineTimestamp).branch(CONST.REQUEST_ID, routineId);
+            final OpflowLogTracer reqTracer = logTracer.branch(OpflowConstant.REQUEST_TIME, routineTimestamp).branch(OpflowConstant.REQUEST_ID, routineId);
 
             // get the method signature
             String methodSignature = OpflowUtil.getMethodSignature(method);

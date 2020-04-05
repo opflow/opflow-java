@@ -65,7 +65,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
     public OpflowRpcAmqpMaster(Map<String, Object> params) throws OpflowBootstrapException {
         params = OpflowObjectTree.ensureNonNull(params);
         
-        componentId = OpflowUtil.getStringField(params, CONST.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
         measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
         restrictor = new OpflowRestrictor.Valve();
@@ -79,7 +79,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         Map<String, Object> brokerParams = new HashMap<>();
         OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
         
-        brokerParams.put(CONST.COMPONENT_ID, componentId);
+        brokerParams.put(OpflowConstant.COMPONENT_ID, componentId);
         brokerParams.put(OpflowConstant.COMP_MEASURER, measurer);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, OpflowConstant.COMP_RPC_AMQP_MASTER);
         
@@ -221,8 +221,8 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                 
                 OpflowLogTracer reqTracer = null;
                 if (logSession.ready(LOG, Level.INFO)) {
-                    reqTracer = logSession.branch(CONST.REQUEST_TIME, routineTimestamp)
-                            .branch(CONST.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
+                    reqTracer = logSession.branch(OpflowConstant.REQUEST_TIME, routineTimestamp)
+                            .branch(OpflowConstant.REQUEST_ID, routineId, new OpflowUtil.OmitInternalOplogs(routineScope));
                 }
                 
                 if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
@@ -352,8 +352,8 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             params.setRoutineTTL(_expiration + TIMEOUT_DELAY);
         }
         
-        final OpflowLogTracer reqTracer = logTracer.branch(CONST.REQUEST_TIME, params.getRoutineTimestamp())
-                .branch(CONST.REQUEST_ID, params.getRoutineId(), params);
+        final OpflowLogTracer reqTracer = logTracer.branch(OpflowConstant.REQUEST_TIME, params.getRoutineTimestamp())
+                .branch(OpflowConstant.REQUEST_ID, params.getRoutineId(), params);
         
         if (timeoutMonitor == null) {
             synchronized (timeoutMonitorLock) {

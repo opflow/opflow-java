@@ -40,8 +40,8 @@ public class OpflowRpcAmqpRequest implements Iterator, OpflowTimeout.Timeoutable
             this.timeout = params.getRoutineTTL();
         }
         
-        reqTracer = OpflowLogTracer.ROOT.branch(CONST.REQUEST_TIME, this.routineTimestamp)
-                .branch(CONST.REQUEST_ID, this.routineId, params);
+        reqTracer = OpflowLogTracer.ROOT.branch(OpflowConstant.REQUEST_TIME, this.routineTimestamp)
+                .branch(OpflowConstant.REQUEST_ID, this.routineId, params);
         
         this.completeListener = completeListener;
         
