@@ -28,7 +28,15 @@ public class OpflowBuilder {
     
     public static OpflowCommander createCommander(Map<String, Object> config,
             String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        return new OpflowCommander(new OpflowConfig.LoaderImplCommander(config, configFile, useDefaultFile));
+        try {
+            return new OpflowCommander(new OpflowConfig.LoaderImplCommander(config, configFile, useDefaultFile));
+        }
+        catch (OpflowBootstrapException exception) {
+            if (OpflowUtil.exitOnError()) {
+                OpflowUtil.exit(exception);
+            }
+            throw exception;
+        }
     }
     
     public static OpflowServerlet createServerlet()
@@ -68,7 +76,15 @@ public class OpflowBuilder {
     
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        return new OpflowServerlet(listeners, new OpflowConfig.LoaderImplServerlet(config, configFile, useDefaultFile));
+        try {
+            return new OpflowServerlet(listeners, new OpflowConfig.LoaderImplServerlet(config, configFile, useDefaultFile));
+        }
+        catch (OpflowBootstrapException exception) {
+            if (OpflowUtil.exitOnError()) {
+                OpflowUtil.exit(exception);
+            }
+            throw exception;
+        }
     }
     
     public static OpflowRpcAmqpMaster createAmqpMaster() throws OpflowBootstrapException {

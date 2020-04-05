@@ -30,9 +30,11 @@ public class OpflowUtil {
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
     
     private final static boolean IS_PING_LOGGING_OMITTED;
+        private final static boolean IS_EXIT_ON_ERROR;
     
     static {
         IS_PING_LOGGING_OMITTED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_OMIT_PING_LOGS", null));
+        IS_EXIT_ON_ERROR = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_EXIT_ON_ERROR", null));
     }
     
     public static class OmitInternalOplogs implements OpflowLogTracer.Customizer {
@@ -581,5 +583,17 @@ public class OpflowUtil {
         try {
             Thread.sleep(duration);
         } catch (InterruptedException ex) {}
+    }
+    
+    public static boolean exitOnError() {
+        return IS_EXIT_ON_ERROR;
+    }
+    
+    public static void exit(Throwable t) {
+        System.err.println("[!] There is a serious error and the service cannot be started.");
+        if (t != null) {
+            t.printStackTrace();
+        }
+        Runtime.getRuntime().exit(-1);
     }
 }
