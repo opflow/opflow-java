@@ -179,6 +179,55 @@ public class OpflowThroughput {
         }
     }
     
+    public static class Tuple {
+        private final Object lock = new Object();
+        private final Map<String, Gauge> gauges = new HashMap<>();
+        
+        private int length = TAIL_LENGTH_DEFAULT;
+
+        public Tuple() {
+        }
+        
+        public Tuple(int length) {
+            this.length = length;
+        }
+        
+        public Tuple register(String label, Source reader) {
+            gauges.put(label, new Gauge(length, reader));
+            return this;
+        }
+        
+        public void update() {
+            synchronized (lock) {
+                for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                    entry.getValue().update();
+                }
+            }
+        }
+        
+        public void reset() {
+            synchronized (lock) {
+                for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                    entry.getValue().reset();
+                }
+            }
+        }
+        
+        public Map<String, Object> export() {
+            return export(length);
+        }
+        
+        public Map<String, Object> export(int len) {
+            Map<String, Object> result = new HashMap<>();
+            for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                result.put(entry.getKey(), OpflowObjectTree.buildMap()
+                        .put("throughput", entry.getValue().export(len))
+                        .toMap());
+            }
+            return result;
+        }
+    }
+    
     public static class Meter {
         private final static Logger LOG = LoggerFactory.getLogger(Meter.class);
 
@@ -192,7 +241,7 @@ public class OpflowThroughput {
         private final String componentId;
         private final OpflowLogTracer logTracer;
         private final Object lock = new Object();
-        private final Map<String, Gauge> gauges = new HashMap<>();
+        private final Map<String, Tuple> tuples = new HashMap<>();
 
         public Meter(Map<String, Object> kwargs) {
             kwargs = OpflowObjectTree.ensureNonNull(kwargs);
@@ -237,29 +286,31 @@ public class OpflowThroughput {
 
         public Map<String, Object> export(int len) {
             Map<String, Object> result = new HashMap<>();
-            for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
-                result.put(entry.getKey(), OpflowObjectTree.buildMap()
-                        .put("throughput", entry.getValue().export(len))
-                        .toMap());
+            for (Map.Entry<String, Tuple> entry : tuples.entrySet()) {
+                result.put(entry.getKey(), entry.getValue().export(len));
             }
             return result;
         }
 
-        public Meter register(String label, Source reader) {
-            gauges.put(label, new Gauge(length, reader));
-            return this;
+        public Tuple register(String connectorName) {
+            Tuple tuple = tuples.get(connectorName);
+            if (tuple == null) {
+                tuple = new Tuple(length);
+                tuples.put(connectorName, tuple);
+            }
+            return tuple;
         }
 
         public void reset() {
             if (isActive()) {
                 synchronized (lock) {
-                    for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                    for (Map.Entry<String, Tuple> entry : tuples.entrySet()) {
                         entry.getValue().reset();
                     }
                 }
             }
         }
-        
+
         public synchronized void serve() {
             if (!this.running) {
                 if (this.timer == null) {
@@ -271,7 +322,7 @@ public class OpflowThroughput {
                         public void run() {
                             if (isActive()) {
                                 synchronized (lock) {
-                                    for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
+                                    for (Map.Entry<String, Tuple> entry : tuples.entrySet()) {
                                         entry.getValue().update();
                                     }
                                 }
