@@ -20,7 +20,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
     private final String componentId;
     private final OpflowLogTracer logTracer;
     
-    private final OpflowRpcChecker rpcChecker;
+    private final Map<String, OpflowConnector> connectors;
     private final OpflowGarbageCollector garbageCollector;
     private final boolean enabled;
     private final long interval;
@@ -50,28 +50,32 @@ public class OpflowRpcWatcher implements AutoCloseable {
 
         @Override
         public void run() {
-            if (active) {
+            if (active && connectors != null) {
                 count++;
                 OpflowLogTracer logTask = logTracer.copy();
                 if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
                         .put("threadCount", Thread.activeCount())
                         .text("Detector[${rpcWatcherId}].run(), threads: ${threadCount}")
                         .stringify());
-                try {
-                    OpflowRpcChecker.Pong result = rpcChecker.send(null);
-                    if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
-                            .text("Detector[${rpcWatcherId}].run(), the queue is drained")
-                            .stringify());
-                }
-                catch (OpflowServiceNotReadyException e) {
-                    if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
-                            .text("Detector[${rpcWatcherId}].run(), the valve is suspended")
-                            .stringify());
-                }
-                catch (Throwable exception) {
-                    if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
-                            .text("Detector[${rpcWatcherId}].run(), the queue is congested")
-                            .stringify());
+                for (Map.Entry<String, OpflowConnector> entry : connectors.entrySet()) {
+                    try {
+                        OpflowConnector connector = entry.getValue();
+                        OpflowRpcChecker rpcChecker = connector.getRpcChecker();
+                        OpflowRpcChecker.Pong result = rpcChecker.send(null);
+                        if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
+                                .text("Detector[${rpcWatcherId}].run(), the queue is drained")
+                                .stringify());
+                    }
+                    catch (OpflowServiceNotReadyException e) {
+                        if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
+                                .text("Detector[${rpcWatcherId}].run(), the valve is suspended")
+                                .stringify());
+                    }
+                    catch (Throwable exception) {
+                        if (logTask.ready(LOG, Level.DEBUG)) LOG.debug(logTask
+                                .text("Detector[${rpcWatcherId}].run(), the queue is congested")
+                                .stringify());
+                    }
                 }
                 if (garbageCollector != null) {
                     garbageCollector.clean();
@@ -80,15 +84,15 @@ public class OpflowRpcWatcher implements AutoCloseable {
         }
     }
     
-    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker) {
-        this(_rpcChecker, null);
+    public OpflowRpcWatcher(Map<String, OpflowConnector> _connectors) {
+        this(_connectors, null);
     }
     
-    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker, Map<String, Object> kwargs) {
-        this(_rpcChecker, null, kwargs);
+    public OpflowRpcWatcher(Map<String, OpflowConnector> _connectors, Map<String, Object> kwargs) {
+        this(_connectors, null, kwargs);
     }
     
-    public OpflowRpcWatcher(OpflowRpcChecker _rpcChecker, OpflowGarbageCollector _garbageCollector, Map<String, Object> kwargs) {
+    public OpflowRpcWatcher(Map<String, OpflowConnector> _connectors, OpflowGarbageCollector _garbageCollector, Map<String, Object> kwargs) {
         if (kwargs == null) {
             componentId = OpflowUUID.getBase64ID();
             enabled = true;
@@ -100,7 +104,7 @@ public class OpflowRpcWatcher implements AutoCloseable {
         }
         
         logTracer = OpflowLogTracer.ROOT.branch("rpcWatcherId", componentId);
-        rpcChecker = _rpcChecker;
+        connectors = _connectors;
         garbageCollector = _garbageCollector;
         timerTask = new MyTimerTask();
     }

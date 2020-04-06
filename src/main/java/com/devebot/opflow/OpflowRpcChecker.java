@@ -173,4 +173,22 @@ public abstract class OpflowRpcChecker {
             return builder.toString(pretty);
         }
     }
+    
+    public static class Cover {
+        private String name;
+        private Info body;
+
+        public Cover(String name, Info body) {
+            this.name = name;
+            this.body = body;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Info getBody() {
+            return body;
+        }
+    }
 }

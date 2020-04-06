@@ -3,6 +3,7 @@ package com.devebot.opflow;
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowOperationException;
 import com.devebot.opflow.supports.OpflowConverter;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import com.devebot.opflow.supports.OpflowSystemInfo;
@@ -13,7 +14,6 @@ import io.undertow.security.handlers.AuthenticationCallHandler;
 import io.undertow.security.handlers.AuthenticationConstraintHandler;
 import io.undertow.security.handlers.AuthenticationMechanismsHandler;
 import io.undertow.security.handlers.SecurityInitialHandler;
-
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -29,11 +29,17 @@ import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,9 +52,9 @@ public class OpflowRestServer implements AutoCloseable {
 
     private final String componentId;
     private final OpflowLogTracer logTracer;
+    private final Map<String, OpflowConnector> connectors;
     private final OpflowInfoCollector infoCollector;
     private final OpflowTaskSubmitter taskSubmitter;
-    private final OpflowRpcChecker rpcChecker;
     private final RoutingHandler defaultHandlers;
     private final String host;
     private final Integer port;
@@ -61,9 +67,12 @@ public class OpflowRestServer implements AutoCloseable {
     private GracefulShutdownHandler shutdownHandler;
     private OpflowIdentityManager identityManager;
     
-    OpflowRestServer(OpflowInfoCollector _infoCollector,
+    private final Object threadExecutorLock = new Object();
+    private ExecutorService threadExecutor = null;
+    
+    OpflowRestServer(Map<String, OpflowConnector> _connectors,
+            OpflowInfoCollector _infoCollector,
             OpflowTaskSubmitter _taskSubmitter,
-            OpflowRpcChecker _rpcChecker,
             Map<String, Object> kwargs) throws OpflowBootstrapException {
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
@@ -94,9 +103,9 @@ public class OpflowRestServer implements AutoCloseable {
         
         logTracer = OpflowLogTracer.ROOT.branch("restServerId", componentId);
         
+        connectors = _connectors;
         infoCollector = _infoCollector;
         taskSubmitter = _taskSubmitter;
-        rpcChecker = _rpcChecker;
         
         ExecHandler execHandler = new ExecHandler();
         
@@ -183,6 +192,7 @@ public class OpflowRestServer implements AutoCloseable {
     
     @Override
     public synchronized void close() {
+        releaseThreadExecutor();
         if (server != null) {
             if (shutdownHandler != null) {
                 shutdownHandler.shutdown();
@@ -215,6 +225,35 @@ public class OpflowRestServer implements AutoCloseable {
             }
             server.stop();
             server = null;
+        }
+    }
+    
+    private ExecutorService getThreadExecutor() {
+        if (threadExecutor == null) {
+            synchronized (threadExecutorLock) {
+                if (threadExecutor == null) {
+                    threadExecutor = Executors.newCachedThreadPool();
+                }
+            }
+        }
+        return threadExecutor;
+    }
+    
+    private void releaseThreadExecutor() {
+        synchronized (threadExecutorLock) {
+            if (threadExecutor != null) {
+                threadExecutor.shutdown();
+                try {
+                    if (!threadExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                        threadExecutor.shutdownNow();
+                    }
+                } catch (InterruptedException ie) {
+                    threadExecutor.shutdownNow();
+                }
+                finally {
+                    threadExecutor = null;
+                }
+            }
         }
     }
     
@@ -425,25 +464,72 @@ public class OpflowRestServer implements AutoCloseable {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
-                OpflowRpcChecker.Info result = ping();
-                if (!"ok".equals(result.getStatus())) {
+                boolean ok = true;
+                Map<String, OpflowRpcChecker.Info> result = ping();
+                for (Map.Entry<String, OpflowRpcChecker.Info> entry : result.entrySet()) {
+                    OpflowRpcChecker.Info info = entry.getValue();
+                    if (info != null) {
+                        if (!"ok".equals(info.getStatus())) {
+                            ok = false;
+                        }
+                    }
+                }
+                if (!ok) {
                     exchange.setStatusCode(503);
                 }
                 // render the result
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                exchange.getResponseSender().send(result.toString(getPrettyParam(exchange)));
+                exchange.getResponseSender().send(OpflowJsonTool.toString(result, getPrettyParam(exchange)));
             } catch (Exception exception) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());
             }
         }
-        private OpflowRpcChecker.Info ping() {
-            Map<String, Object> me = infoCollector.collect(OpflowInfoCollector.SCOPE_PING);
-            try {
-                return new OpflowRpcChecker.Info(me, rpcChecker.send(null));
-            } catch (Throwable exception) {
-                return new OpflowRpcChecker.Info(me, exception);
+        
+        private Map<String, OpflowRpcChecker.Info> ping() {
+            return send(infoCollector.collect(OpflowInfoCollector.SCOPE_PING));
+        }
+        
+        private Map<String, OpflowRpcChecker.Info> send(final Map<String, Object> me) {
+            Map<String, OpflowRpcChecker.Info> result = OpflowObjectTree.<OpflowRpcChecker.Info>buildMap().toMap();
+            // build the tasks
+            List<Callable<OpflowRpcChecker.Cover>> tasks = new ArrayList<>();
+            for(Map.Entry<String, OpflowConnector> entry : connectors.entrySet()) {
+                final String name = entry.getKey();
+                final OpflowConnector connector = entry.getValue();
+                if (connector == null) continue;
+                final OpflowRpcChecker rpcChecker = connector.getRpcChecker();
+                if (rpcChecker == null) continue;
+                tasks.add(new Callable() {
+                    @Override
+                    public OpflowRpcChecker.Cover call() throws Exception {
+                        try {
+                            return new OpflowRpcChecker.Cover(name, new OpflowRpcChecker.Info(me, rpcChecker.send(null)));
+                        }
+                        catch (Throwable exception) {
+                            return new OpflowRpcChecker.Cover(name, new OpflowRpcChecker.Info(me, exception));
+                        }
+                    }
+                });
             }
+            // invoke the tasks
+            try {
+                List<Future<OpflowRpcChecker.Cover>> futures = getThreadExecutor().invokeAll(tasks);
+                for (Future<OpflowRpcChecker.Cover> future: futures) {
+                    try {
+                        OpflowRpcChecker.Cover cover = future.get();
+                        result.put(cover.getName(), cover.getBody());
+                    }
+                    catch (Exception ee) {
+                        // Skip the exception
+                    }
+                }
+            }
+            catch (InterruptedException ie) {
+                throw new OpflowOperationException(ie);
+            }
+            // return the result
+            return result;
         }
     }
 

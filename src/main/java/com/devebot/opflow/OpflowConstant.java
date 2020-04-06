@@ -47,7 +47,6 @@ public class OpflowConstant {
     public final static String COMP_REQ_EXTRACTOR = "reqExtractor";
     public final static String COMP_SPEED_METER = "speedMeter";
 
-    // Deprecated
     public final static String COMP_CFG_AMQP_MASTER = "rpcMaster";
     public final static String COMP_CFG_AMQP_WORKER = "rpcWorker";
 
