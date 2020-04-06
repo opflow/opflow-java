@@ -47,8 +47,9 @@ public class OpflowConstant {
     public final static String COMP_REQ_EXTRACTOR = "reqExtractor";
     public final static String COMP_SPEED_METER = "speedMeter";
 
-    // Deprecated
+    @Deprecated
     public final static String COMP_CFG_AMQP_MASTER = "rpcMaster";
+    @Deprecated
     public final static String COMP_CFG_AMQP_WORKER = "rpcWorker";
 
     public final static String COMP_RPC_AMQP_MASTER = "amqpMaster";
@@ -298,10 +299,15 @@ public class OpflowConstant {
     public final boolean LEGACY_HEADER_APPLIED;
     public final boolean LEGACY_HEADER_ENABLED;
 
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_TIMESTAMP = "requestTime";
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_SIGNATURE = "routineId";
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_SCOPE = "messageScope";
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_TAGS = "requestTags";
 
     public final boolean LEGACY_ROUTINE_PINGPONG_APPLIED;
