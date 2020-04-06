@@ -11,6 +11,7 @@ import com.devebot.opflow.supports.OpflowCollectionUtil;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,8 +97,12 @@ public class OpflowCommander implements AutoCloseable {
         
         measurer = OpflowPromMeasurer.getInstance(OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PROM_EXPORTER));
         
-        Map<String, Object> restrictorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RESTRICTOR);
+        Map<String, Object> reqExtractorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR);
+        if (reqExtractorCfg == null || OpflowUtil.isComponentEnabled(reqExtractorCfg)) {
+            reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
+        }
         
+        Map<String, Object> restrictorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RESTRICTOR);
         if (restrictorCfg == null || OpflowUtil.isComponentEnabled(restrictorCfg)) {
             restrictor = new OpflowRestrictorMaster(OpflowObjectTree.buildMap(restrictorCfg)
                     .put(OpflowConstant.COMPONENT_ID, componentId)
@@ -109,25 +114,15 @@ public class OpflowCommander implements AutoCloseable {
             restrictor.block();
         }
         
-        Map<String, Object> discoveryClientCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_DISCOVERY_CLIENT);
-        
-        if (OpflowUtil.isComponentExplicitEnabled(discoveryClientCfg)) {
-            discoveryMaster = new OpflowDiscoveryMaster(componentId, serviceName, discoveryClientCfg);
-        } else {
-            discoveryMaster = null;
-        }
-        
-        Map<String, Object> reqExtractorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR);
-        Map<String, Object> rpcObserverCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_OBSERVER);
-        Map<String, Object> rpcWatcherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_WATCHER);
-        Map<String, Object> garbageCollectorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_GARBAGE_COLLECTOR);
-        Map<String, Object> restServerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REST_SERVER);
-        
         try {
-            if (reqExtractorCfg == null || OpflowUtil.isComponentEnabled(reqExtractorCfg)) {
-                reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
+            Map<String, Object> discoveryClientCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_DISCOVERY_CLIENT);
+            if (OpflowUtil.isComponentExplicitEnabled(discoveryClientCfg)) {
+                discoveryMaster = new OpflowDiscoveryMaster(componentId, serviceName, discoveryClientCfg);
+            } else {
+                discoveryMaster = null;
             }
             
+            Map<String, Object> rpcObserverCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_OBSERVER);
             rpcObserver = new OpflowRpcObserver(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
@@ -138,7 +133,7 @@ public class OpflowCommander implements AutoCloseable {
             if (discoveryMaster != null) {
                 discoveryMaster.subscribe(rpcObserver.getServiceUpdater());
             }
-
+            
             Map<String, Object> speedMeterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SPEED_METER);
             if (speedMeterCfg == null || OpflowUtil.isComponentEnabled(speedMeterCfg)) {
                 speedMeter = (new OpflowThroughput.Meter(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
@@ -151,12 +146,13 @@ public class OpflowCommander implements AutoCloseable {
                 speedMeter = null;
             }
             
+            Map<String, Object> garbageCollectorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_GARBAGE_COLLECTOR);
             if (OpflowUtil.isComponentEnabled(garbageCollectorCfg)) {
                 garbageCollector = new OpflowGarbageCollector(OpflowObjectTree.buildMap(garbageCollectorCfg)
                         .put(OpflowConstant.COMPONENT_ID, componentId)
                         .toMap());
             }
-
+            
             String connectorName = OpflowConnector.DEFAULT_CONNECTOR_NAME;
             Map<String, Object> connectorCfg = kwargs;
             OpflowThroughput.Tuple connectorMeter = speedMeter.register(connectorName);
@@ -178,18 +174,20 @@ public class OpflowCommander implements AutoCloseable {
                     .put(connectorName, connector)
                     .toMap();
             
+            Map<String, Object> rpcWatcherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_WATCHER);
             rpcWatcher = new OpflowRpcWatcher(connectors, garbageCollector, OpflowObjectTree.buildMap(rpcWatcherCfg)
                     .put(OpflowConstant.COMPONENT_ID, componentId)
                     .toMap());
             
             rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
-
+            
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, connectors, speedMeter,
                     discoveryMaster, rpcObserver, rpcWatcher, serviceName);
-
+            
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, connectors, speedMeter,
                     discoveryMaster);
-
+            
+            Map<String, Object> restServerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REST_SERVER);
             restServer = new OpflowRestServer(connectors, infoCollector, taskSubmitter, OpflowObjectTree.buildMap(restServerCfg)
                     .put(OpflowConstant.COMPONENT_ID, componentId)
                     .toMap());
@@ -236,10 +234,10 @@ public class OpflowCommander implements AutoCloseable {
                 restrictor.unblock();
             }
             if (rpcWatcher != null) {
-                rpcWatcher.serve();
+                rpcWatcher.serve(); // Timer should be run after the unblock() call
             }
             if (speedMeter != null) {
-                speedMeter.serve();
+                speedMeter.serve(); // Timer should be run after the unblock() call
             }
             
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -272,6 +270,14 @@ public class OpflowCommander implements AutoCloseable {
             if (restServer != null) restServer.close();
             if (rpcWatcher != null) rpcWatcher.close();
 
+            OpflowConnector.applyConnectors(connectors, (OpflowConnector connector) -> {
+                boolean ok = true;
+                ok = ok && muteCloseException(connector.getPublisher());
+                ok = ok && muteCloseException(connector.getAmqpMaster());
+                ok = ok && muteCloseException(connector.getHttpMaster());
+                return ok;
+            });
+            
             if (discoveryMaster != null) {
                 discoveryMaster.close();
             }
@@ -308,6 +314,17 @@ public class OpflowCommander implements AutoCloseable {
             throw new OpflowConnectorNotFoundException("Connector[" + OpflowConnector.DEFAULT_CONNECTOR_NAME + "] not found");
         }
         return connector;
+    }
+    
+    private boolean muteCloseException(AutoCloseable closeable) {
+        if (closeable != null) {
+            try {
+                closeable.close();
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return true;
     }
     
     @Override

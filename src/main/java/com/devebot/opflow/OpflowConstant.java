@@ -38,6 +38,7 @@ public class OpflowConstant {
 
     public final static String COMP_ENGINE = "engine";
     public final static String COMP_COMMANDER = "commander";
+    public final static String COMP_CONNECTOR = "connector";
     public final static String COMP_SERVERLET = "serverlet";
     public final static String COMP_PUBLISHER = "publisher";
     public final static String COMP_SUBSCRIBER = "subscriber";
