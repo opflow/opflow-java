@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author acegik
  */
-public class OpflowRpcHttpMaster {
+public class OpflowRpcHttpMaster implements AutoCloseable {
     private final static OpflowConstant CONST = OpflowConstant.CURRENT();
     private final static Logger LOG = LoggerFactory.getLogger(OpflowRpcHttpMaster.class);
     private final static MediaType JSON = MediaType.parse("application/json; charset=utf-8");
@@ -97,7 +97,8 @@ public class OpflowRpcHttpMaster {
     public final void serve() {
     }
     
-    public void close() {
+    @Override
+    public final void close() {
     }
     
     public void reset() {

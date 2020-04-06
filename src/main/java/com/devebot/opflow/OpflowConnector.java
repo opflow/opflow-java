@@ -12,6 +12,8 @@ import java.lang.reflect.Proxy;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -278,5 +280,12 @@ public class OpflowConnector {
 
     public void resetRpcInvocationCounter() {
         measurer.resetRpcInvocationCounter();
+    }
+    
+    public static Map<String, Boolean> applyConnectors(Map<String, OpflowConnector> connectors, final Function<OpflowConnector, Boolean> action) {
+        return connectors.entrySet().stream().collect(Collectors.toMap(
+            e -> e.getKey(),
+            e -> action.apply(e.getValue())
+        ));
     }
 }
