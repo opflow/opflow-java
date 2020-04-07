@@ -327,21 +327,25 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
 
     @Override
     public Map<String, Object> traffic(Map<String, Boolean> options) {
+        final Map<String, Boolean> flag = (options != null) ? options : new HashMap<String, Boolean>();
+        
         Map<String, Object> info = OpflowObjectTree.buildMap().toMap();
         for (String connectorName : connectors.keySet()) {
-            info.put(connectorName, traffic(connectorName, options));
+            info.put(connectorName, traffic(connectorName, flag));
         }
-        return info;
+        
+        return OpflowObjectTree.buildMap()
+                .put("metrics", info)
+                .put("metadata", speedMeter.getMetadata())
+                .toMap();
     }
     
-    public Map<String, Object> traffic(String connectorName, Map<String, Boolean> options) {
+    private Map<String, Object> traffic(final String connectorName, final Map<String, Boolean> flag) {
         final OpflowConnector connector = connectors.get(connectorName);
         if (connector == null) {
             throw new OpflowConnectorNotFoundException("Connector[" + connectorName + "] not found");
         }
         
-        final Map<String, Boolean> flag = (options != null) ? options : new HashMap<String, Boolean>();
-
         Map<String, Object> metrics = OpflowObjectTree.buildMap().toMap();
 
         // update the RPC invocation counters
@@ -390,11 +394,7 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
                         .toMap());
             }
         }
-
-        return OpflowObjectTree.buildMap()
-                .put("metrics", metrics)
-                .put("metadata", speedMeter.getMetadata())
-                .toMap();
+        return metrics;
     }
 
     protected static List<Map<String, Object>> renderRpcInvocationHandlers(Map<String, OpflowRpcInvocationHandler> handlers) {
