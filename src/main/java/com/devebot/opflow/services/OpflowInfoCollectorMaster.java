@@ -87,19 +87,6 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
 
     @Override
     public Map<String, Object> collect(Map<String, Boolean> options) {
-        Map<String, Object> info = OpflowObjectTree.buildMap().toMap();
-        for (String connectorName : connectors.keySet()) {
-            info.put(connectorName, collect(connectorName, options));
-        }
-        return info;
-    }
-    
-    public Map<String, Object> collect(String connectorName, Map<String, Boolean> options) {
-        final OpflowConnector connector = connectors.get(connectorName);
-        if (connector == null) {
-            throw new OpflowConnectorNotFoundException("Connector[" + connectorName + "] not found");
-        }
-        
         final Map<String, Boolean> flag = (options != null) ? options : new HashMap<String, Boolean>();
 
         OpflowObjectTree.Builder root = OpflowObjectTree.buildMap();
@@ -137,86 +124,13 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
                     }
                 }
 
-                // Publisher information
-                final OpflowPubsubHandler publisher = connector.getPublisher();
-                if (checkOption(flag, SCOPE_INFO)) {
-                    if (publisher != null) {
-                        opts.put(OpflowConstant.COMP_PUBLISHER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                            @Override
-                            public void transform(Map<String, Object> opt2) {
-                                OpflowEngine engine = publisher.getEngine();
-                                opt2.put(OpflowConstant.COMPONENT_ID, publisher.getComponentId());
-                                opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME, engine.getExchangeName());
-                                opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE, engine.getExchangeType());
-                                opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE, engine.getExchangeDurable());
-                                opt2.put(OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY, engine.getRoutingKey());
-                            }
-                        }).toMap());
-                    } else {
-                        opts.put(OpflowConstant.COMP_PUBLISHER, OpflowObjectTree.buildMap()
-                                .put(OpflowConstant.OPFLOW_COMMON_ENABLED, false)
-                                .toMap());
-                    }
+                // connectors information
+                Map<String, Object> collectorMap = OpflowObjectTree.buildMap().toMap();
+                for (String connectorName : connectors.keySet()) {
+                    collectorMap.put(connectorName, collect(connectorName, connectors.get(connectorName), flag));
                 }
-
-                // RPC AMQP Master information
-                final OpflowRpcAmqpMaster amqpMaster = connector.getAmqpMaster();
-                if (amqpMaster != null) {
-                    opts.put(OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                        @Override
-                        public void transform(Map<String, Object> opt2) {
-                            OpflowEngine engine = amqpMaster.getEngine();
-
-                            opt2.put(OpflowConstant.COMPONENT_ID, amqpMaster.getComponentId());
-                            opt2.put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId());
-
-                            opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, engine.getExchangeName());
-                            if (checkOption(flag, SCOPE_INFO)) {
-                                opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE, engine.getExchangeType());
-                                opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE, engine.getExchangeDurable());
-                            }
-                            opt2.put(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY, engine.getRoutingKey());
-
-                            opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME, amqpMaster.getResponseQueueName());
-                            if (checkOption(flag, SCOPE_INFO)) {
-                                opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE, amqpMaster.getResponseQueueDurable());
-                                opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE, amqpMaster.getResponseQueueExclusive());
-                                opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE, amqpMaster.getResponseQueueAutoDelete());
-                            }
-
-                            opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
-                                    .put(OpflowConstant.OPFLOW_COMMON_PROTO_VERSION, CONST.OPFLOW_PROTOCOL_VERSION)
-                                    .put(OpflowConstant.AMQP_PARAM_MESSAGE_TTL, amqpMaster.getExpiration())
-                                    .put("headers", CONST.getAMQPHeaderInfo(), checkOption(flag, SCOPE_INFO))
-                                    .toMap());
-                        }
-                    }).toMap());
-                }
-
-                // RPC HTTP Master information
-                final OpflowRpcHttpMaster httpMaster = connector.getHttpMaster();
-                if (httpMaster != null) {
-                    opts.put(OpflowConstant.COMP_RPC_HTTP_MASTER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                        @Override
-                        public void transform(Map<String, Object> opt2) {
-                            opt2.put(OpflowConstant.COMPONENT_ID, httpMaster.getComponentId());
-                            opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
-                                    .put(OpflowConstant.OPFLOW_COMMON_PROTO_VERSION, CONST.OPFLOW_PROTOCOL_VERSION)
-                                    .put(OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, httpMaster.getCallTimeout())
-                                    .put(OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, httpMaster.getWriteTimeout())
-                                    .put(OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, httpMaster.getReadTimeout())
-                                    .put("headers", CONST.getHTTPHeaderInfo(), checkOption(flag, SCOPE_INFO))
-                                    .toMap());
-                        }
-                    }).toMap());
-                }
-
-                // RPC mappings
-                Map<String, OpflowRpcInvocationHandler> handlers = connector.getMappings();
-                if (checkOption(flag, SCOPE_INFO)) {
-                    opts.put("mappings", renderRpcInvocationHandlers(handlers));
-                }
-
+                opts.put(OpflowConstant.COMP_CONNECTOR, collectorMap);
+                
                 // restrictor information
                 if (checkOption(flag, SCOPE_INFO)) {
                     if (restrictor != null) {
@@ -308,7 +222,7 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
 
         // current serverlets
         if (checkOption(flag, SCOPE_INFO)) {
-            if (rpcObserver != null && (connector.getAmqpMaster() != null || connector.getHttpMaster() != null)) {
+            if (rpcObserver != null) {
                 Collection<OpflowRpcObserver.Manifest> serverlets = rpcObserver.summary();
                 root.put(OpflowConstant.COMP_SERVERLET, OpflowObjectTree.buildMap()
                         .put(OpflowConstant.OPFLOW_COMMON_CONGESTIVE, rpcObserver.isCongestive())
@@ -319,6 +233,96 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
         }
 
         return root.toMap();
+    }
+    
+    private Map<String, Object> collect(String connectorName, OpflowConnector connector, Map<String, Boolean> flag) {
+        if (connector == null) {
+            throw new OpflowConnectorNotFoundException("Connector[" + connectorName + "] not found");
+        }
+        
+        OpflowObjectTree.Builder opts = OpflowObjectTree.buildMap();
+        
+        // Publisher information
+        final OpflowPubsubHandler publisher = connector.getPublisher();
+        if (checkOption(flag, SCOPE_INFO)) {
+            if (publisher != null) {
+                opts.put(OpflowConstant.COMP_PUBLISHER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    @Override
+                    public void transform(Map<String, Object> opt2) {
+                        OpflowEngine engine = publisher.getEngine();
+                        opt2.put(OpflowConstant.COMPONENT_ID, publisher.getComponentId());
+                        opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME, engine.getExchangeName());
+                        opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE, engine.getExchangeType());
+                        opt2.put(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE, engine.getExchangeDurable());
+                        opt2.put(OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY, engine.getRoutingKey());
+                    }
+                }).toMap());
+            } else {
+                opts.put(OpflowConstant.COMP_PUBLISHER, OpflowObjectTree.buildMap()
+                        .put(OpflowConstant.OPFLOW_COMMON_ENABLED, false)
+                        .toMap());
+            }
+        }
+
+        // RPC AMQP Master information
+        final OpflowRpcAmqpMaster amqpMaster = connector.getAmqpMaster();
+        if (amqpMaster != null) {
+            opts.put(OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                @Override
+                public void transform(Map<String, Object> opt2) {
+                    OpflowEngine engine = amqpMaster.getEngine();
+
+                    opt2.put(OpflowConstant.COMPONENT_ID, amqpMaster.getComponentId());
+                    opt2.put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId());
+
+                    opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, engine.getExchangeName());
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE, engine.getExchangeType());
+                        opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE, engine.getExchangeDurable());
+                    }
+                    opt2.put(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY, engine.getRoutingKey());
+
+                    opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME, amqpMaster.getResponseQueueName());
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE, amqpMaster.getResponseQueueDurable());
+                        opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE, amqpMaster.getResponseQueueExclusive());
+                        opt2.put(OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE, amqpMaster.getResponseQueueAutoDelete());
+                    }
+
+                    opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
+                            .put(OpflowConstant.OPFLOW_COMMON_PROTO_VERSION, CONST.OPFLOW_PROTOCOL_VERSION)
+                            .put(OpflowConstant.AMQP_PARAM_MESSAGE_TTL, amqpMaster.getExpiration())
+                            .put("headers", CONST.getAMQPHeaderInfo(), checkOption(flag, SCOPE_INFO))
+                            .toMap());
+                }
+            }).toMap());
+        }
+
+        // RPC HTTP Master information
+        final OpflowRpcHttpMaster httpMaster = connector.getHttpMaster();
+        if (httpMaster != null) {
+            opts.put(OpflowConstant.COMP_RPC_HTTP_MASTER, OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                @Override
+                public void transform(Map<String, Object> opt2) {
+                    opt2.put(OpflowConstant.COMPONENT_ID, httpMaster.getComponentId());
+                    opt2.put(OpflowConstant.OPFLOW_COMMON_CHANNEL, OpflowObjectTree.buildMap()
+                            .put(OpflowConstant.OPFLOW_COMMON_PROTO_VERSION, CONST.OPFLOW_PROTOCOL_VERSION)
+                            .put(OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, httpMaster.getCallTimeout())
+                            .put(OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, httpMaster.getWriteTimeout())
+                            .put(OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, httpMaster.getReadTimeout())
+                            .put("headers", CONST.getHTTPHeaderInfo(), checkOption(flag, SCOPE_INFO))
+                            .toMap());
+                }
+            }).toMap());
+        }
+
+        // RPC mappings
+        Map<String, OpflowRpcInvocationHandler> handlers = connector.getMappings();
+        if (checkOption(flag, SCOPE_INFO)) {
+            opts.put("mappings", renderRpcInvocationHandlers(handlers));
+        }
+        
+        return opts.toMap();
     }
 
     @Override

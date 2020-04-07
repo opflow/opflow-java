@@ -66,10 +66,10 @@ public class OpflowConnector {
                 speedMeter.register(OpflowRpcInvocationCounter.LABEL_RPC_DIRECT_WORKER, counter.getNativeWorkerInfoSource());
             }
         }
-        
+
+        Map<String, Object> publisherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PUBLISHER);
         Map<String, Object> amqpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.COMP_CFG_AMQP_MASTER);
         Map<String, Object> httpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_MASTER);
-        Map<String, Object> publisherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PUBLISHER);
 
         HashSet<String> checkExchange = new HashSet<>();
 
@@ -91,6 +91,19 @@ public class OpflowConnector {
             }
         }
 
+        if (OpflowUtil.isComponentEnabled(publisherCfg)) {
+            publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                @Override
+                public void transform(Map<String, Object> opts) {
+                    opts.put(OpflowConstant.COMPONENT_ID, componentId);
+                    opts.put(OpflowConstant.COMP_MEASURER, measurer);
+                }
+            }, publisherCfg).toMap());
+            counter.setPublisherEnabled(true);
+            if (speedMeter != null) {
+                speedMeter.register(OpflowRpcInvocationCounter.LABEL_RPC_PUBLISHER, counter.getPublisherInfoSource());
+            }
+        }
         if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
             amqpMaster = new OpflowRpcAmqpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
@@ -119,20 +132,7 @@ public class OpflowConnector {
                 speedMeter.register(OpflowRpcInvocationCounter.LABEL_RPC_REMOTE_HTTP_WORKER, counter.getRemoteHTTPWorkerInfoSource());
             }
         }
-        if (OpflowUtil.isComponentEnabled(publisherCfg)) {
-            publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                @Override
-                public void transform(Map<String, Object> opts) {
-                    opts.put(OpflowConstant.COMPONENT_ID, componentId);
-                    opts.put(OpflowConstant.COMP_MEASURER, measurer);
-                }
-            }, publisherCfg).toMap());
-            counter.setPublisherEnabled(true);
-            if (speedMeter != null) {
-                speedMeter.register(OpflowRpcInvocationCounter.LABEL_RPC_PUBLISHER, counter.getPublisherInfoSource());
-            }
-        }
-        
+
         // create a RpcChecker instance after the amqpMaster, httpMaster has already created
         rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcObserver, amqpMaster, httpMaster);
         
