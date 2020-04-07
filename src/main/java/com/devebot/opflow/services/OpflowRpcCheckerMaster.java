@@ -37,7 +37,12 @@ public class OpflowRpcCheckerMaster extends OpflowRpcChecker {
 
     private OpflowConstant.Protocol protocol = OpflowConstant.Protocol.AMQP;
 
-    public OpflowRpcCheckerMaster(OpflowRestrictor.Valve restrictor, OpflowRpcObserver rpcObserver, OpflowRpcAmqpMaster amqpMaster, OpflowRpcHttpMaster httpMaster) throws OpflowBootstrapException {
+    public OpflowRpcCheckerMaster(
+        OpflowRestrictor.Valve restrictor,
+        OpflowRpcObserver rpcObserver,
+        OpflowRpcAmqpMaster amqpMaster,
+        OpflowRpcHttpMaster httpMaster
+    ) throws OpflowBootstrapException {
         this.restrictor = restrictor;
         this.rpcObserver = rpcObserver;
         this.amqpMaster = amqpMaster;

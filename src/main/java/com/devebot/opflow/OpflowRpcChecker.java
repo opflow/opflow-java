@@ -1,6 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
+import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
@@ -118,12 +119,7 @@ public abstract class OpflowRpcChecker {
             return status;
         }
         
-        @Override
-        public String toString() {
-            return toString(false);
-        }
-        
-        public String toString(boolean pretty) {
+        public Map<String, Object> toMap() {
             OpflowObjectTree.Builder builder = OpflowObjectTree.buildMap().put("status", status);
             
             Map<String, Object> commanderInfo = (Map<String, Object>)commanderMap.get(OpflowConstant.COMP_COMMANDER);
@@ -170,13 +166,14 @@ public abstract class OpflowRpcChecker {
                     builder.put("summary", "Unknown error");
                     break;
             }
-            return builder.toString(pretty);
+            
+            return builder.toMap();
         }
     }
     
     public static class Cover {
-        private String name;
-        private Info body;
+        private final String name;
+        private final Info body;
 
         public Cover(String name, Info body) {
             this.name = name;

@@ -460,18 +460,24 @@ public class OpflowRestServer implements AutoCloseable {
         }
     }
     
+    private final static Map<String, Boolean> PING_FLAG = OpflowObjectTree.<Boolean>buildMap()
+            .put(OpflowInfoCollector.SCOPE_PING, true)
+            .toMap();
+    
     class PingHandler implements HttpHandler {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             try {
                 boolean ok = true;
                 Map<String, OpflowRpcChecker.Info> result = ping();
+                Map<String, Object> output = OpflowObjectTree.buildMap().toMap();
                 for (Map.Entry<String, OpflowRpcChecker.Info> entry : result.entrySet()) {
                     OpflowRpcChecker.Info info = entry.getValue();
                     if (info != null) {
                         if (!"ok".equals(info.getStatus())) {
                             ok = false;
                         }
+                        output.put(entry.getKey(), info.toMap());
                     }
                 }
                 if (!ok) {
@@ -479,7 +485,7 @@ public class OpflowRestServer implements AutoCloseable {
                 }
                 // render the result
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-                exchange.getResponseSender().send(OpflowJsonTool.toString(result, getPrettyParam(exchange)));
+                exchange.getResponseSender().send(OpflowJsonTool.toString(output, getPrettyParam(exchange)));
             } catch (Exception exception) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());
@@ -487,15 +493,12 @@ public class OpflowRestServer implements AutoCloseable {
         }
         
         private Map<String, OpflowRpcChecker.Info> ping() {
-            return send(infoCollector.collect(OpflowInfoCollector.SCOPE_PING));
-        }
-        
-        private Map<String, OpflowRpcChecker.Info> send(final Map<String, Object> me) {
             Map<String, OpflowRpcChecker.Info> result = OpflowObjectTree.<OpflowRpcChecker.Info>buildMap().toMap();
             // build the tasks
             List<Callable<OpflowRpcChecker.Cover>> tasks = new ArrayList<>();
             for(Map.Entry<String, OpflowConnector> entry : connectors.entrySet()) {
                 final String name = entry.getKey();
+                final Map<String, Object> me = infoCollector.collect(name, PING_FLAG);
                 final OpflowConnector connector = entry.getValue();
                 if (connector == null) continue;
                 final OpflowRpcChecker rpcChecker = connector.getRpcChecker();

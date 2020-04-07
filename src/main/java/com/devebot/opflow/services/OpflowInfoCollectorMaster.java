@@ -74,19 +74,12 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
     }
 
     @Override
-    public Map<String, Object> collect(String scope) {
-        return collect(OpflowObjectTree.<Boolean>buildMap()
-                .put((scope == null) ? SCOPE_PING : scope, true)
-                .toMap());
-    }
-
-    private boolean checkOption(Map<String, Boolean> options, String optionName) {
-        Boolean opt = options.get(optionName);
-        return opt != null && opt;
-    }
-
-    @Override
     public Map<String, Object> collect(Map<String, Boolean> options) {
+        return collect(null, options);
+    }
+    
+    @Override
+    public Map<String, Object> collect(String connectorName, Map<String, Boolean> options) {
         final Map<String, Boolean> flag = (options != null) ? options : new HashMap<String, Boolean>();
 
         OpflowObjectTree.Builder root = OpflowObjectTree.buildMap();
@@ -125,12 +118,16 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
                 }
 
                 // connectors information
-                Map<String, Object> collectorMap = OpflowObjectTree.buildMap().toMap();
-                for (String connectorName : connectors.keySet()) {
-                    collectorMap.put(connectorName, collect(connectorName, connectors.get(connectorName), flag));
+                if (connectorName == null) {
+                    Map<String, Object> collectorMap = OpflowObjectTree.buildMap().toMap();
+                    for (String connectorName : connectors.keySet()) {
+                        collectorMap.put(connectorName, getConnectorInfo(connectorName, flag));
+                    }
+                    opts.put(OpflowConstant.COMP_CONNECTORS, collectorMap);
+                } else {
+                    opts.put(OpflowConstant.COMP_CONNECTOR, getConnectorInfo(connectorName, flag));
                 }
-                opts.put(OpflowConstant.COMP_CONNECTOR, collectorMap);
-                
+
                 // restrictor information
                 if (checkOption(flag, SCOPE_INFO)) {
                     if (restrictor != null) {
@@ -235,7 +232,8 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
         return root.toMap();
     }
     
-    private Map<String, Object> collect(String connectorName, OpflowConnector connector, Map<String, Boolean> flag) {
+    private Map<String, Object> getConnectorInfo(String connectorName, Map<String, Boolean> flag) {
+        final OpflowConnector connector = connectors.get(connectorName);
         if (connector == null) {
             throw new OpflowConnectorNotFoundException("Connector[" + connectorName + "] not found");
         }
@@ -397,6 +395,11 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
         return metrics;
     }
 
+    private boolean checkOption(Map<String, Boolean> options, String optionName) {
+        Boolean opt = options.get(optionName);
+        return opt != null && opt;
+    }
+    
     protected static List<Map<String, Object>> renderRpcInvocationHandlers(Map<String, OpflowRpcInvocationHandler> handlers) {
         List<Map<String, Object>> mappingInfos = new ArrayList<>();
         for(final Map.Entry<String, OpflowRpcInvocationHandler> entry : handlers.entrySet()) {
