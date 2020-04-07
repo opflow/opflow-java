@@ -256,8 +256,6 @@ public class OpflowCommander implements AutoCloseable {
                 }
             }
 
-            rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcObserver, amqpMaster, httpMaster);
-
             if (OpflowUtil.isComponentEnabled(garbageCollectorCfg)) {
                 garbageCollector = new OpflowGarbageCollector(OpflowObjectTree.buildMap(garbageCollectorCfg)
                         .put(OpflowConstant.COMPONENT_ID, componentId)
@@ -265,6 +263,8 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             if (isRemoteRpcAvailable()) {
+                rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcObserver, amqpMaster, httpMaster);
+                
                 rpcWatcher = new OpflowRpcWatcher(rpcChecker, garbageCollector, OpflowObjectTree.buildMap(rpcWatcherCfg)
                         .put(OpflowConstant.COMPONENT_ID, componentId)
                         .toMap());
@@ -294,9 +294,27 @@ public class OpflowCommander implements AutoCloseable {
             }
         });
         
+        if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
+            .put("measurer", measurer)
+            .put("restrictor", restrictor)
+            .put("reqExtractor", reqExtractor)
+            .put("discoveryMaster", discoveryMaster)
+            .put("publisher", publisher)
+            .put("amqpMaster", amqpMaster)
+            .put("httpMaster", httpMaster)
+            .put("speedMeter", speedMeter)
+            .put("garbageCollector", garbageCollector)
+            .put("rpcChecker", rpcChecker)
+            .put("rpcWatcher", rpcWatcher)
+            .put("rpcObserver", rpcObserver)
+            .put("restServer", restServer)
+            .tags(OpflowCommander.class.getCanonicalName(), "export-beans")
+            .text("Commander[${commanderId}][${instanceId}].new() for unit testing")
+            .stringify());
+        
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}][${instanceId}].new() end!")
-                .stringify());
+            .text("Commander[${commanderId}][${instanceId}].new() end!")
+            .stringify());
     }
     
     public void ping(String query) throws Throwable {
