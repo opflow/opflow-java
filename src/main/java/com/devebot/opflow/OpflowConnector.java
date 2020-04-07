@@ -50,7 +50,7 @@ public class OpflowConnector {
                 .stringify());
 
         strictMode = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.FALSE);
-        measurer = OpflowPromMeasurer.getInstance(OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PROM_EXPORTER));
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         OpflowRpcInvocationCounter counter = measurer.getRpcInvocationCounter(OpflowConstant.COMP_COMMANDER);
 
         reqExtractor = (OpflowReqExtractor)OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR, null);

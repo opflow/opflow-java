@@ -152,26 +152,25 @@ public class OpflowCommander implements AutoCloseable {
                         .toMap());
             }
             
-            String connectorName = OpflowConnector.DEFAULT_CONNECTOR_NAME;
-            Map<String, Object> connectorCfg = kwargs;
-            OpflowThroughput.Tuple connectorMeter = speedMeter.register(connectorName);
-            OpflowPromMeasurer connectorMeasurer = new OpflowPromMeasurer.PipeMeasurer(measurer);
+            // initialize the connectors list
+            connectors = OpflowObjectTree.<OpflowConnector>buildMap().toMap();
             
-            OpflowConnector connector = new OpflowConnector(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                @Override
-                public void transform(Map<String, Object> opts) {
-                    opts.put(OpflowConstant.COMPONENT_ID, componentId);
-                    opts.put(OpflowConstant.COMP_REQ_EXTRACTOR, reqExtractor);
-                    opts.put(OpflowConstant.COMP_RESTRICTOR, restrictor);
-                    opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
-                    opts.put(OpflowConstant.COMP_MEASURER, connectorMeasurer);
-                    opts.put(OpflowConstant.COMP_SPEED_METER, connectorMeter);
+            // instantiate the default connector
+            if (isDefaultConnectorAvailable(kwargs)) {
+                createConnector(OpflowConnector.DEFAULT_CONNECTOR_NAME, kwargs);
+            }
+            
+            // instantiate the connectors
+            Map<String, Object> connectorCfgMap = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CONNECTOR);
+            if (connectorCfgMap != null) {
+                for (String connectorName : connectorCfgMap.keySet()) {
+                    Map<String, Object> connectorCfg = OpflowUtil.getChildMap(connectorCfgMap, connectorName);
+                    if (connectorCfg == null) {
+                        throw new OpflowBootstrapException("Invalid configuration for the connector[" + connectorName + "]");
+                    }
+                    createConnector(connectorName, connectorCfg);
                 }
-            }, connectorCfg).toMap());
-            
-            connectors = OpflowObjectTree.<OpflowConnector>buildMap()
-                    .put(connectorName, connector)
-                    .toMap();
+            }
             
             Map<String, Object> rpcWatcherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_WATCHER);
             rpcWatcher = new OpflowRpcWatcher(connectors, garbageCollector, OpflowObjectTree.buildMap(rpcWatcherCfg)
@@ -295,23 +294,95 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
     
+    @Deprecated
     public void ping(String query) throws Throwable {
-        getDefaultConnector().getRpcChecker().send(new OpflowRpcChecker.Ping(query));
+        pingWithDefault(query);
     }
     
-    public <T> T registerType(Class<T> type) {
-        return registerType(type, null);
+    public void pingWithDefault(String query) throws Throwable {
+        ping(OpflowConnector.DEFAULT_CONNECTOR_NAME, query);
     }
-
+    
+    public void ping(String connectorName, String query) throws Throwable {
+        getConnectorByName(connectorName).getRpcChecker().send(new OpflowRpcChecker.Ping(query));
+    }
+    
+    @Deprecated
+    public <T> T registerType(Class<T> type) {
+        return registerTypeWithDefault(type);
+    }
+    
+    @Deprecated
     public <T> T registerType(Class<T> type, T bean) {
-        return getDefaultConnector().registerType(type, bean);
+        return registerTypeWithDefault(type, bean);
+    }
+    
+    public <T> T registerTypeWithDefault(Class<T> type) {
+        return registerType(OpflowConnector.DEFAULT_CONNECTOR_NAME, type, null);
+    }
+    
+    public <T> T registerTypeWithDefault(Class<T> type, T bean) {
+        return registerType(OpflowConnector.DEFAULT_CONNECTOR_NAME, type, bean);
+    }
+    
+    public <T> T registerType(String connectorName, Class<T> type) {
+        return registerType(connectorName, type, null);
+    }
+    
+    public <T> T registerType(String connectorName, Class<T> type, T bean) {
+        return getConnectorByName(connectorName).registerType(type, bean);
     }
     
     private OpflowConnector getDefaultConnector() {
-        OpflowConnector connector = connectors.get(OpflowConnector.DEFAULT_CONNECTOR_NAME);
+        return getConnectorByName(OpflowConnector.DEFAULT_CONNECTOR_NAME);
+    }
+    
+    private OpflowConnector getConnectorByName(String connectorName) {
+        OpflowConnector connector = connectors.get(connectorName);
         if (connector == null) {
-            throw new OpflowConnectorNotFoundException("Connector[" + OpflowConnector.DEFAULT_CONNECTOR_NAME + "] not found");
+            throw new OpflowConnectorNotFoundException("Connector[" + connectorName + "] not found");
         }
+        return connector;
+    }
+    
+    private boolean isDefaultConnectorAvailable(Map<String, Object> kwargs) {
+        Map<String, Object> publisherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PUBLISHER);
+        Map<String, Object> amqpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.COMP_CFG_AMQP_MASTER);
+        Map<String, Object> httpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_MASTER);
+        
+        if (OpflowUtil.isComponentEnabled(publisherCfg)) {
+            return true;
+        }
+        
+        if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
+            return true;
+        }
+        
+        if (OpflowUtil.isComponentEnabled(httpMasterCfg)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    private OpflowConnector createConnector(String connectorName, Map<String, Object> connectorCfg) throws OpflowBootstrapException {
+        OpflowThroughput.Tuple connectorMeter = speedMeter.register(connectorName);
+        OpflowPromMeasurer connectorMeasurer = new OpflowPromMeasurer.PipeMeasurer(measurer);
+        
+        OpflowConnector connector = new OpflowConnector(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+            @Override
+            public void transform(Map<String, Object> opts) {
+                opts.put(OpflowConstant.COMPONENT_ID, componentId);
+                opts.put(OpflowConstant.COMP_REQ_EXTRACTOR, reqExtractor);
+                opts.put(OpflowConstant.COMP_RESTRICTOR, restrictor);
+                opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);
+                opts.put(OpflowConstant.COMP_MEASURER, connectorMeasurer);
+                opts.put(OpflowConstant.COMP_SPEED_METER, connectorMeter);
+            }
+        }, connectorCfg).toMap());
+        
+        connectors.put(connectorName, connector);
+        
         return connector;
     }
     
