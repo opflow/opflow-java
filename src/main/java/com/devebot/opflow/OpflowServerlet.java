@@ -272,11 +272,16 @@ public class OpflowServerlet implements AutoCloseable {
             subscriber.subscribe(listenerMap.getSubscriber());
         }
 
+        this.instantiateType(OpflowRpcCheckerWorker.class);
+        
+        if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
+                .put("pingSignature", OpflowRpcCheckerWorker.getPingSignature())
+                .text("Serverlet[${serverletId}][${instanceId}].serve() uses the pingSignature: [${pingSignature}]")
+                .stringify());
+
         if (instantiator != null) {
             instantiator.process();
         }
-
-        this.instantiateType(OpflowRpcCheckerWorker.class);
 
         if (logTracer.ready(LOG, Level.INFO)) {
             LOG.info(logTracer

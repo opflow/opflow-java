@@ -341,9 +341,9 @@ public class OpflowConstant {
         AMQP_HEADER_CONSUMER_TAG = "consumerTag";
         AMQP_HEADER_RETURN_STATUS = "status";
         // Legacy supports for header names and pingpong routine signature
-        LEGACY_HEADER_ENABLED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_SUPPORTED", null));
+        LEGACY_HEADER_ENABLED = "true".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_SUPPORTED", null));
         LEGACY_HEADER_APPLIED = LEGACY_HEADER_ENABLED && !"0".equals(OPFLOW_PROTOCOL_VERSION);
-        LEGACY_ROUTINE_PINGPONG_APPLIED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_PINGPONG", null));
+        LEGACY_ROUTINE_PINGPONG_APPLIED = "true".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_PINGPONG", null));
     }
 
     public Map<String, String> getAMQPHeaderInfo() {
