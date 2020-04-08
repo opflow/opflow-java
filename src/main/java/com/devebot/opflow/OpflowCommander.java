@@ -178,7 +178,7 @@ public class OpflowCommander implements AutoCloseable {
             rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
             
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, connectors, speedMeter, discoveryMaster,
-                    rpcObserver, rpcWatcher, serviceName);
+                    rpcObserver, rpcWatcher, reqExtractor, serviceName);
             
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, connectors, speedMeter, discoveryMaster);
             
@@ -200,9 +200,23 @@ public class OpflowCommander implements AutoCloseable {
             }
         });
         
+        if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
+            .put("measurer", measurer)
+            .put("restrictor", restrictor)
+            .put("reqExtractor", reqExtractor)
+            .put("discoveryMaster", discoveryMaster)
+            .put("speedMeter", speedMeter)
+            .put("garbageCollector", garbageCollector)
+            .put("rpcWatcher", rpcWatcher)
+            .put("rpcObserver", rpcObserver)
+            .put("restServer", restServer)
+            .tags(OpflowCommander.class.getCanonicalName(), "constructor")
+            .text("Commander[${commanderId}][${instanceId}].new() for unit testing")
+            .stringify());
+        
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                .text("Commander[${commanderId}][${instanceId}].new() end!")
-                .stringify());
+            .text("Commander[${commanderId}][${instanceId}].new() end!")
+            .stringify());
     }
     
     public final void serve() {

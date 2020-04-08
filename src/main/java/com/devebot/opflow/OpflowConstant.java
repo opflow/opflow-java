@@ -49,7 +49,9 @@ public class OpflowConstant {
     public final static String COMP_REQ_EXTRACTOR = "reqExtractor";
     public final static String COMP_SPEED_METER = "speedMeter";
 
+    @Deprecated
     public final static String COMP_CFG_AMQP_MASTER = "rpcMaster";
+    @Deprecated
     public final static String COMP_CFG_AMQP_WORKER = "rpcWorker";
 
     public final static String COMP_RPC_AMQP_MASTER = "amqpMaster";
@@ -134,6 +136,7 @@ public class OpflowConstant {
 
     public final static String OPFLOW_REQ_EXTRACTOR_CLASS_NAME = "getRequestIdClassName";
     public final static String OPFLOW_REQ_EXTRACTOR_METHOD_NAME = "getRequestIdMethodName";
+    public final static String OPFLOW_REQ_EXTRACTOR_SIGNATURE = "getRequestIdSignature";
     public final static String OPFLOW_REQ_EXTRACTOR_AUTO_UUID = "uuidIfNotFound";
 
     public final static String OPFLOW_COUNSELOR_THREAD_POOL_ENABLED = "threadPoolEnabled";
@@ -299,10 +302,15 @@ public class OpflowConstant {
     public final boolean LEGACY_HEADER_APPLIED;
     public final boolean LEGACY_HEADER_ENABLED;
 
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_ID = "requestId";
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_TIMESTAMP = "requestTime";
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_SIGNATURE = "routineId";
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_SCOPE = "messageScope";
+    @Deprecated
     public final static String LEGACY_HEADER_ROUTINE_TAGS = "requestTags";
 
     public final boolean LEGACY_ROUTINE_PINGPONG_APPLIED;
@@ -335,9 +343,9 @@ public class OpflowConstant {
         AMQP_HEADER_CONSUMER_TAG = "consumerTag";
         AMQP_HEADER_RETURN_STATUS = "status";
         // Legacy supports for header names and pingpong routine signature
-        LEGACY_HEADER_ENABLED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_SUPPORTED", null));
+        LEGACY_HEADER_ENABLED = "true".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_SUPPORTED", null));
         LEGACY_HEADER_APPLIED = LEGACY_HEADER_ENABLED && !"0".equals(OPFLOW_PROTOCOL_VERSION);
-        LEGACY_ROUTINE_PINGPONG_APPLIED = !"false".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_PINGPONG", null));
+        LEGACY_ROUTINE_PINGPONG_APPLIED = "true".equals(ENVTOOL.getEnvironVariable("OPFLOW_LEGACY_PINGPONG", null));
     }
 
     public Map<String, String> getAMQPHeaderInfo() {

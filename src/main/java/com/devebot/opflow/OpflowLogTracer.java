@@ -194,7 +194,7 @@ public class OpflowLogTracer {
         return this;
     }
     
-    public OpflowLogTracer tags(String[] ts) {
+    public OpflowLogTracer tags(String ... ts) {
         this.tags.addAll(Arrays.asList(ts));
         return this;
     }

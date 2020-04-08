@@ -529,6 +529,10 @@ public class OpflowUtil {
         return cfg != null && !Boolean.FALSE.equals(cfg.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
     }
     
+    public static boolean isComponentImplicitEnabled(Map<String, Object> cfg) {
+        return cfg == null || !Boolean.FALSE.equals(cfg.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
+    }
+    
     public static boolean isComponentExplicitEnabled(Map<String, Object> cfg) {
         return cfg != null && Boolean.TRUE.equals(cfg.get(OpflowConstant.OPFLOW_COMMON_ENABLED));
     }

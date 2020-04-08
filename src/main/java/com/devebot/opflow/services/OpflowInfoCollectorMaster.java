@@ -10,6 +10,7 @@ import com.devebot.opflow.OpflowInfoCollector;
 import com.devebot.opflow.OpflowLogTracer;
 import com.devebot.opflow.OpflowPromMeasurer;
 import com.devebot.opflow.OpflowPubsubHandler;
+import com.devebot.opflow.OpflowReqExtractor;
 import com.devebot.opflow.OpflowRpcAmqpMaster;
 import com.devebot.opflow.OpflowRpcHttpMaster;
 import com.devebot.opflow.OpflowRpcInvocationCounter;
@@ -43,6 +44,7 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
     private final OpflowDiscoveryMaster discoveryMaster;
     private final OpflowRpcObserver rpcObserver;
     private final OpflowRpcWatcher rpcWatcher;
+    private final OpflowReqExtractor reqExtractor;
     private final String serviceName;
     private final Date startTime;
 
@@ -54,6 +56,7 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
             OpflowDiscoveryMaster discoveryMaster,
             OpflowRpcObserver rpcObserver,
             OpflowRpcWatcher rpcWatcher,
+            OpflowReqExtractor reqExtractor,
             String serviceName
     ) {
         this.componentId = componentId;
@@ -64,6 +67,7 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
         this.discoveryMaster = discoveryMaster;
         this.rpcObserver = rpcObserver;
         this.rpcWatcher = rpcWatcher;
+        this.reqExtractor = reqExtractor;
         this.serviceName = serviceName;
         this.startTime = new Date();
     }
@@ -126,6 +130,20 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
                     opts.put(OpflowConstant.COMP_CONNECTORS, collectorMap);
                 } else {
                     opts.put(OpflowConstant.COMP_CONNECTOR, getConnectorInfo(connectorName, flag));
+                }
+
+                // reqExtractor information
+                if (checkOption(flag, SCOPE_INFO)) {
+                    if (reqExtractor != null) {
+                        opts.put(OpflowConstant.COMP_REQ_EXTRACTOR, OpflowObjectTree.buildMap()
+                                .put(OpflowConstant.OPFLOW_COMMON_ENABLED, true)
+                                .put(OpflowConstant.OPFLOW_REQ_EXTRACTOR_SIGNATURE, reqExtractor.getGetRequestIdSignature())
+                                .toMap());
+                    } else {
+                        opts.put(OpflowConstant.COMP_REQ_EXTRACTOR, OpflowObjectTree.buildMap()
+                                .put(OpflowConstant.OPFLOW_COMMON_ENABLED, false)
+                                .toMap());
+                    }
                 }
 
                 // restrictor information

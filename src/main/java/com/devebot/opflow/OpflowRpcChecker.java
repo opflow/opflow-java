@@ -1,7 +1,7 @@
 package com.devebot.opflow;
 
 import com.devebot.opflow.annotation.OpflowSourceRoutine;
-import com.devebot.opflow.supports.OpflowJsonTool;
+import com.devebot.opflow.exception.OpflowMethodNotFoundException;
 import com.devebot.opflow.supports.OpflowObjectTree;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
@@ -46,6 +46,14 @@ public abstract class OpflowRpcChecker {
             }
         }
         return sendMethodName;
+    }
+    
+    public static String getPingSignature() {
+        try {
+            return getSendMethodName();
+        } catch (NoSuchMethodException exception) {
+            throw new OpflowMethodNotFoundException(exception);
+        }
     }
     
     public static class Ping {

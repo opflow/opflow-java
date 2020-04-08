@@ -66,7 +66,7 @@ public class OpflowRpcHttpWorker {
                 .text("httpWorker[${httpWorkerId}][${instanceId}] - open the HTTP server on [${host}:${port}] with hostname[${hostname}]")
                 .stringify());
         
-        shutdownTimeout = OpflowUtil.getLongField(kwargs, "shutdownTimeout", 1000l);
+        shutdownTimeout = OpflowUtil.getLongField(kwargs, OpflowConstant.OPFLOW_COMMON_SHUTDOWN_TIMEOUT, 1000l);
         
         shutdownHook = new Thread() {
             @Override
