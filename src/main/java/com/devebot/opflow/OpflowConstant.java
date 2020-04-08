@@ -134,6 +134,7 @@ public class OpflowConstant {
 
     public final static String OPFLOW_REQ_EXTRACTOR_CLASS_NAME = "getRequestIdClassName";
     public final static String OPFLOW_REQ_EXTRACTOR_METHOD_NAME = "getRequestIdMethodName";
+    public final static String OPFLOW_REQ_EXTRACTOR_SIGNATURE = "getRequestIdSignature";
     public final static String OPFLOW_REQ_EXTRACTOR_AUTO_UUID = "uuidIfNotFound";
 
     public final static String OPFLOW_COUNSELOR_THREAD_POOL_ENABLED = "threadPoolEnabled";

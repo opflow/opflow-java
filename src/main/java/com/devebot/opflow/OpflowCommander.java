@@ -272,7 +272,7 @@ public class OpflowCommander implements AutoCloseable {
             }
 
             OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
-                    discoveryMaster, rpcObserver, rpcWatcher, serviceName);
+                    discoveryMaster, rpcObserver, rpcWatcher, reqExtractor, serviceName);
 
             OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
                     discoveryMaster);
@@ -308,7 +308,7 @@ public class OpflowCommander implements AutoCloseable {
             .put("rpcWatcher", rpcWatcher)
             .put("rpcObserver", rpcObserver)
             .put("restServer", restServer)
-            .tags(OpflowCommander.class.getCanonicalName(), "export-beans")
+            .tags(OpflowCommander.class.getCanonicalName(), "constructor")
             .text("Commander[${commanderId}][${instanceId}].new() for unit testing")
             .stringify());
         
@@ -866,6 +866,7 @@ public class OpflowCommander implements AutoCloseable {
         private final OpflowDiscoveryMaster discoveryMaster;
         private final OpflowRpcObserver rpcObserver;
         private final OpflowRpcWatcher rpcWatcher;
+        private final OpflowReqExtractor reqExtractor;
         private final String serviceName;
         private final Date startTime;
 
@@ -880,6 +881,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowDiscoveryMaster discoveryMaster,
                 OpflowRpcObserver rpcObserver,
                 OpflowRpcWatcher rpcWatcher,
+                OpflowReqExtractor reqExtractor,
                 String serviceName
         ) {
             this.componentId = componentId;
@@ -893,6 +895,7 @@ public class OpflowCommander implements AutoCloseable {
             this.discoveryMaster = discoveryMaster;
             this.rpcObserver = rpcObserver;
             this.rpcWatcher = rpcWatcher;
+            this.reqExtractor = reqExtractor;
             this.serviceName = serviceName;
             this.startTime = new Date();
         }
@@ -1027,6 +1030,20 @@ public class OpflowCommander implements AutoCloseable {
                     // RPC mappings
                     if (checkOption(flag, SCOPE_INFO)) {
                         opts.put("mappings", renderRpcInvocationHandlers(handlers));
+                    }
+                    
+                    // reqExtractor information
+                    if (checkOption(flag, SCOPE_INFO)) {
+                        if (reqExtractor != null) {
+                            opts.put(OpflowConstant.COMP_REQ_EXTRACTOR, OpflowObjectTree.buildMap()
+                                    .put(OpflowConstant.OPFLOW_COMMON_ENABLED, true)
+                                    .put(OpflowConstant.OPFLOW_REQ_EXTRACTOR_SIGNATURE, reqExtractor.getGetRequestIdSignature())
+                                    .toMap());
+                        } else {
+                            opts.put(OpflowConstant.COMP_REQ_EXTRACTOR, OpflowObjectTree.buildMap()
+                                    .put(OpflowConstant.OPFLOW_COMMON_ENABLED, false)
+                                    .toMap());
+                        }
                     }
                     
                     // restrictor information
