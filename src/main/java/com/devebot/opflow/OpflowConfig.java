@@ -337,6 +337,38 @@ public class OpflowConfig {
                 transformParameters(componentCfg);
                 params.put(componentName, componentCfg);
             }
+            
+            // connector hashMap
+            Map<String, Object> connectorHash = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_CONNECTOR}, false);
+            
+            // validate the connector names and connector config fields
+            if (connectorHash != null) {
+                for (String connectorName : connectorHash.keySet()) {
+                    Map<String, Object> connectorCfg = OpflowUtil.getChildMap(connectorHash, connectorName);
+                    if (connectorCfg != null) {
+                        for (String amqpCompName : OpflowCommander.SERVICE_BEAN_NAMES) {
+                            Map<String, Object> componentCfg = OpflowUtil.getChildMap(connectorCfg, amqpCompName);
+                            if (componentCfg != null) {
+                                OpflowUtil.copyParameters(componentCfg,  getChildMapByPath(config, new String[] {
+                                    OpflowConstant.FRAMEWORK_ID,
+                                    OpflowConstant.COMP_COMMANDER
+                                }), OpflowEngine.SHARED_PARAMETERS, false);
+                                
+                                OpflowUtil.copyParameters(componentCfg, getChildMapByPath(config, new String[] {
+                                    OpflowConstant.FRAMEWORK_ID
+                                }), OpflowEngine.SHARED_PARAMETERS, false);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // assign the connector hash map to the params
+            params.put(OpflowConstant.COMP_CONNECTOR, connectorHash);
+            
+            // System.out.println("CONFIG: " + OpflowJsonTool.toString(params, true));
+            
+            // return the connection parameters
             return params;
         }
     }

@@ -156,9 +156,7 @@ public class OpflowCommander implements AutoCloseable {
             connectors = OpflowObjectTree.<OpflowConnector>buildMap().toMap();
             
             // instantiate the default connector
-            if (isDefaultConnectorAvailable(kwargs)) {
-                createConnector(OpflowConnector.DEFAULT_CONNECTOR_NAME, kwargs);
-            }
+            createConnector(OpflowConnector.DEFAULT_CONNECTOR_NAME, kwargs);
             
             // instantiate the connectors
             Map<String, Object> connectorCfgMap = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_CONNECTOR);

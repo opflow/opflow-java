@@ -87,12 +87,18 @@ public class OpflowUtil {
     }
     
     public static void copyParameters(Map<String, Object> target, Map<String, Object> source, String[] keys) {
+        copyParameters(target, source, keys, true);
+    }
+    
+    public static void copyParameters(Map<String, Object> target, Map<String, Object> source, String[] keys, boolean overridden) {
         if (source == null || keys == null) {
             return;
         }
         for(String field: keys) {
             if (source.containsKey(field)) {
-                target.put(field, source.get(field));
+                if (overridden || !target.containsKey(field)) {
+                    target.put(field, source.get(field));
+                }
             }
         }
     }
