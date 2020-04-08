@@ -92,7 +92,7 @@ public class OpflowCommander implements AutoCloseable {
     public OpflowCommander() throws OpflowBootstrapException {
         this(null, null);
     }
-    
+
     public OpflowCommander(OpflowConfig.Loader loader) throws OpflowBootstrapException {
         this(loader, null);
     }
@@ -178,9 +178,13 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> garbageCollectorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_GARBAGE_COLLECTOR);
         Map<String, Object> restServerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REST_SERVER);
 
+        final boolean _isPublisherEnabled = OpflowUtil.isComponentEnabled(publisherCfg);
+        final boolean _isAmqpMasterEnabled = OpflowUtil.isComponentEnabled(amqpMasterCfg);
+        final boolean _isHttpMasterEnabled = OpflowUtil.isComponentEnabled(httpMasterCfg);
+        
         HashSet<String> checkExchange = new HashSet<>();
 
-        if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
+        if (_isAmqpMasterEnabled) {
             if (OpflowUtil.isAMQPEntrypointNull(amqpMasterCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY)) {
                 throw new OpflowBootstrapException("Invalid RpcMaster connection parameters");
             }
@@ -189,7 +193,7 @@ public class OpflowCommander implements AutoCloseable {
             }
         }
 
-        if (OpflowUtil.isComponentEnabled(publisherCfg)) {
+        if (_isPublisherEnabled) {
             if (OpflowUtil.isAMQPEntrypointNull(publisherCfg)) {
                 throw new OpflowBootstrapException("Invalid Publisher connection parameters");
             }
@@ -203,18 +207,22 @@ public class OpflowCommander implements AutoCloseable {
                 reqExtractor = new OpflowReqExtractor(reqExtractorCfg);
             }
             
-            rpcObserver = new OpflowRpcObserver(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-                @Override
-                public void transform(Map<String, Object> opts) {
-                    opts.put(OpflowConstant.COMPONENT_ID, componentId);
-                }
-            }, rpcObserverCfg).toMap());
+            if (_isAmqpMasterEnabled || _isHttpMasterEnabled) {
+                rpcObserver = new OpflowRpcObserver(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                    @Override
+                    public void transform(Map<String, Object> opts) {
+                        opts.put(OpflowConstant.COMPONENT_ID, componentId);
+                    }
+                }, rpcObserverCfg).toMap());
+            } else {
+                rpcObserver = null;
+            }
             
-            if (discoveryMaster != null) {
+            if (discoveryMaster != null && rpcObserver != null) {
                 discoveryMaster.subscribe(rpcObserver.getServiceUpdater());
             }
             
-            if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
+            if (_isAmqpMasterEnabled) {
                 amqpMaster = new OpflowRpcAmqpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
@@ -228,7 +236,7 @@ public class OpflowCommander implements AutoCloseable {
                     speedMeter.register(OpflowPromMeasurer.LABEL_RPC_REMOTE_AMQP_WORKER, counter.getRemoteAMQPWorkerInfoSource());
                 }
             }
-            if (OpflowUtil.isComponentEnabled(httpMasterCfg)) {
+            if (_isHttpMasterEnabled) {
                 httpMaster = new OpflowRpcHttpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
@@ -242,7 +250,7 @@ public class OpflowCommander implements AutoCloseable {
                     speedMeter.register(OpflowPromMeasurer.LABEL_RPC_REMOTE_HTTP_WORKER, counter.getRemoteHTTPWorkerInfoSource());
                 }
             }
-            if (OpflowUtil.isComponentEnabled(publisherCfg)) {
+            if (_isPublisherEnabled) {
                 publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                     @Override
                     public void transform(Map<String, Object> opts) {
@@ -268,18 +276,23 @@ public class OpflowCommander implements AutoCloseable {
                 rpcWatcher = new OpflowRpcWatcher(rpcChecker, garbageCollector, OpflowObjectTree.buildMap(rpcWatcherCfg)
                         .put(OpflowConstant.COMPONENT_ID, componentId)
                         .toMap());
-                rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
+                
+                if (rpcObserver != null) {
+                    rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
+                }
             }
 
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
-                    discoveryMaster, rpcObserver, rpcWatcher, reqExtractor, serviceName);
+            if (OpflowUtil.isComponentImplicitEnabled(restServerCfg)) {
+                OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
+                        discoveryMaster, rpcObserver, rpcWatcher, reqExtractor, serviceName);
 
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
-                    discoveryMaster);
+                OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, amqpMaster, httpMaster, publisher, handlers, speedMeter,
+                        discoveryMaster);
 
-            restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
-                    .put(OpflowConstant.COMPONENT_ID, componentId)
-                    .toMap());
+                restServer = new OpflowRestServer(infoCollector, taskSubmitter, rpcChecker, OpflowObjectTree.buildMap(restServerCfg)
+                        .put(OpflowConstant.COMPONENT_ID, componentId)
+                        .toMap());
+            }
         } catch(OpflowBootstrapException exception) {
             this.close();
             throw exception;
@@ -1371,7 +1384,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         public boolean isRemoteAMQPWorkerAvailable() {
-            return amqpMaster != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.AMQP) && isRemoteAMQPWorkerActive();
+            return amqpMaster != null && rpcObserver != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.AMQP) && isRemoteAMQPWorkerActive();
         }
         
         public boolean isRemoteHTTPWorkerActive() {
@@ -1383,7 +1396,7 @@ public class OpflowCommander implements AutoCloseable {
         }
         
         public boolean isRemoteHTTPWorkerAvailable() {
-            return httpMaster != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.HTTP) && isRemoteHTTPWorkerActive();
+            return httpMaster != null && rpcObserver != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.HTTP) && isRemoteHTTPWorkerActive();
         }
         
         @Override
@@ -1507,12 +1520,17 @@ public class OpflowCommander implements AutoCloseable {
                         }
 
                         unfinished = true;
-                        rpcObserver.setCongestive(OpflowConstant.Protocol.AMQP, true);
+                        if (rpcObserver != null) {
+                            rpcObserver.setCongestive(OpflowConstant.Protocol.AMQP, true);
+                        }
                     }
                 }
 
                 if (flag == FLAG_HTTP) {
-                    OpflowRpcRoutingInfo routingInfo = rpcObserver.getRoutingInfo(OpflowConstant.Protocol.HTTP);
+                    OpflowRpcRoutingInfo routingInfo = null;
+                    if (rpcObserver != null) {
+                        rpcObserver.getRoutingInfo(OpflowConstant.Protocol.HTTP);
+                    }
                     if (isRemoteHTTPWorkerAvailable() && routingInfo != null) {
                         unfinished = false;
 
@@ -1556,7 +1574,9 @@ public class OpflowCommander implements AutoCloseable {
                         }
 
                         unfinished = true;
-                        rpcObserver.setCongestive(OpflowConstant.Protocol.HTTP, true, routingInfo.getComponentId());
+                        if (rpcObserver != null) {
+                            rpcObserver.setCongestive(OpflowConstant.Protocol.HTTP, true, routingInfo.getComponentId());
+                        }
                     }
                 }
             }
