@@ -59,7 +59,7 @@ public class OpflowConnector {
         speedMeter = (OpflowThroughput.Tuple)OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_SPEED_METER, null);
 
         nativeWorkerEnabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.PARAM_NATIVE_WORKER_ENABLED, Boolean.TRUE);
-        
+
         if (nativeWorkerEnabled) {
             counter.setNativeWorkerEnabled(true);
             if (speedMeter != null) {

@@ -177,11 +177,10 @@ public class OpflowCommander implements AutoCloseable {
             
             rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
             
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, connectors, speedMeter,
-                    discoveryMaster, rpcObserver, rpcWatcher, serviceName);
+            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, connectors, speedMeter, discoveryMaster,
+                    rpcObserver, rpcWatcher, serviceName);
             
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, connectors, speedMeter,
-                    discoveryMaster);
+            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, connectors, speedMeter, discoveryMaster);
             
             Map<String, Object> restServerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REST_SERVER);
             restServer = new OpflowRestServer(connectors, infoCollector, taskSubmitter, OpflowObjectTree.buildMap(restServerCfg)
@@ -292,6 +291,10 @@ public class OpflowCommander implements AutoCloseable {
         }
     }
     
+    public boolean isConnectorAvailable(String connectorName) {
+        return connectors.get(connectorName) != null;
+    }
+    
     @Deprecated
     public void ping(String query) throws Throwable {
         pingWithDefault(query);
@@ -323,6 +326,10 @@ public class OpflowCommander implements AutoCloseable {
         return registerType(OpflowConnector.DEFAULT_CONNECTOR_NAME, type, bean);
     }
     
+    public <T> void unregisterTypeWithDefault(Class<T> type) {
+        unregisterType(OpflowConnector.DEFAULT_CONNECTOR_NAME, type);
+    }
+    
     public <T> T registerType(String connectorName, Class<T> type) {
         return registerType(connectorName, type, null);
     }
@@ -331,8 +338,8 @@ public class OpflowCommander implements AutoCloseable {
         return getConnectorByName(connectorName).registerType(type, bean);
     }
     
-    private OpflowConnector getDefaultConnector() {
-        return getConnectorByName(OpflowConnector.DEFAULT_CONNECTOR_NAME);
+    public <T> void unregisterType(String connectorName, Class<T> type) {
+        getConnectorByName(connectorName).unregisterType(type);
     }
     
     private OpflowConnector getConnectorByName(String connectorName) {
