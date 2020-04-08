@@ -129,7 +129,7 @@ public class OpflowCommander implements AutoCloseable {
                 }
             }, rpcObserverCfg).toMap());
             
-            if (discoveryMaster != null) {
+            if (discoveryMaster != null && rpcObserver != null) {
                 discoveryMaster.subscribe(rpcObserver.getServiceUpdater());
             }
             
@@ -175,17 +175,21 @@ public class OpflowCommander implements AutoCloseable {
                     .put(OpflowConstant.COMPONENT_ID, componentId)
                     .toMap());
             
-            rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
-            
-            OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, connectors, speedMeter, discoveryMaster,
-                    rpcObserver, rpcWatcher, reqExtractor, serviceName);
-            
-            OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, connectors, speedMeter, discoveryMaster);
+            if (rpcObserver != null) {
+                rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
+            }
             
             Map<String, Object> restServerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REST_SERVER);
-            restServer = new OpflowRestServer(connectors, infoCollector, taskSubmitter, OpflowObjectTree.buildMap(restServerCfg)
-                    .put(OpflowConstant.COMPONENT_ID, componentId)
-                    .toMap());
+            if (OpflowUtil.isComponentImplicitEnabled(restServerCfg)) {
+                OpflowInfoCollector infoCollector = new OpflowInfoCollectorMaster(componentId, measurer, restrictor, connectors, speedMeter, discoveryMaster,
+                        rpcObserver, rpcWatcher, reqExtractor, serviceName);
+
+                OpflowTaskSubmitter taskSubmitter = new OpflowTaskSubmitterMaster(componentId, measurer, restrictor, connectors, speedMeter, discoveryMaster);
+
+                restServer = new OpflowRestServer(connectors, infoCollector, taskSubmitter, OpflowObjectTree.buildMap(restServerCfg)
+                        .put(OpflowConstant.COMPONENT_ID, componentId)
+                        .toMap());
+            }
         } catch(OpflowBootstrapException exception) {
             this.close();
             throw exception;

@@ -159,7 +159,7 @@ public class OpflowRpcInvocationHandler implements InvocationHandler {
     }
 
     public boolean isRemoteAMQPWorkerAvailable() {
-        return amqpMaster != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.AMQP) && isRemoteAMQPWorkerActive();
+        return amqpMaster != null && rpcObserver != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.AMQP) && isRemoteAMQPWorkerActive();
     }
 
     public boolean isRemoteHTTPWorkerActive() {
@@ -171,7 +171,7 @@ public class OpflowRpcInvocationHandler implements InvocationHandler {
     }
 
     public boolean isRemoteHTTPWorkerAvailable() {
-        return httpMaster != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.HTTP) && isRemoteHTTPWorkerActive();
+        return httpMaster != null && rpcObserver != null && !rpcObserver.isCongestive(OpflowConstant.Protocol.HTTP) && isRemoteHTTPWorkerActive();
     }
 
     @Override
@@ -295,12 +295,17 @@ public class OpflowRpcInvocationHandler implements InvocationHandler {
                     }
 
                     unfinished = true;
-                    rpcObserver.setCongestive(OpflowConstant.Protocol.AMQP, true);
+                    if (rpcObserver != null) {
+                        rpcObserver.setCongestive(OpflowConstant.Protocol.AMQP, true);
+                    }
                 }
             }
 
             if (flag == FLAG_HTTP) {
-                OpflowRpcRoutingInfo routingInfo = rpcObserver.getRoutingInfo(OpflowConstant.Protocol.HTTP);
+                OpflowRpcRoutingInfo routingInfo = null;
+                if (rpcObserver != null) {
+                    routingInfo = rpcObserver.getRoutingInfo(OpflowConstant.Protocol.HTTP);
+                }
                 if (isRemoteHTTPWorkerAvailable() && routingInfo != null) {
                     unfinished = false;
 
@@ -344,7 +349,9 @@ public class OpflowRpcInvocationHandler implements InvocationHandler {
                     }
 
                     unfinished = true;
-                    rpcObserver.setCongestive(OpflowConstant.Protocol.HTTP, true, routingInfo.getComponentId());
+                    if (rpcObserver != null) {
+                        rpcObserver.setCongestive(OpflowConstant.Protocol.HTTP, true, routingInfo.getComponentId());
+                    }
                 }
             }
         }
