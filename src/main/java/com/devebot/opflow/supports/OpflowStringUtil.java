@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -125,5 +126,24 @@ public class OpflowStringUtil {
     
     public static String pad(int number, int digits) {
         return String.format("%0" + digits + "d", number);
+    }
+    
+    private static final String CAMEL_CASE_REGEXP = "(?=[A-Z]([a-z]|[A-Z]))";
+    private static final Pattern CAMEL_CASE_PATTERN = Pattern.compile(CAMEL_CASE_REGEXP);
+    private static final String LODASH = "_";
+    
+    public static String convertCamelCaseToSnakeCase(String camelCaseStr) {
+        return convertCamelCaseToSnakeCase(camelCaseStr, true);
+    }
+    
+    public static String convertCamelCaseToSnakeCase(String camelCaseStr, boolean allCaps) {
+        if (camelCaseStr == null) {
+            return null;
+        }
+        String result = CAMEL_CASE_PATTERN.matcher(camelCaseStr).replaceAll(LODASH);
+        if (allCaps) {
+            return result.toUpperCase();
+        }
+        return result;
     }
 }
