@@ -17,6 +17,7 @@ import com.devebot.opflow.exception.OpflowRequestFailureException;
 import com.devebot.opflow.exception.OpflowRequestTimeoutException;
 import com.devebot.opflow.exception.OpflowRpcMasterDisabledException;
 import com.devebot.opflow.exception.OpflowWorkerNotFoundException;
+import com.devebot.opflow.supports.OpflowCyclingList;
 import com.devebot.opflow.supports.OpflowDateTime;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import java.util.Date;
@@ -35,7 +36,7 @@ public class OpflowRpcCheckerMaster extends OpflowRpcChecker {
     private final OpflowRpcHttpMaster httpMaster;
     private final OpflowRpcObserver rpcObserver;
 
-    private OpflowConstant.Protocol protocol = OpflowConstant.Protocol.AMQP;
+    private final OpflowCyclingList<OpflowConstant.Protocol> cycler = new OpflowCyclingList<>();
 
     public OpflowRpcCheckerMaster(
         OpflowRestrictor.Valve restrictor,
@@ -46,7 +47,13 @@ public class OpflowRpcCheckerMaster extends OpflowRpcChecker {
         this.restrictor = restrictor;
         this.rpcObserver = rpcObserver;
         this.amqpMaster = amqpMaster;
+        if (amqpMaster != null) {
+            cycler.add(OpflowConstant.Protocol.AMQP);
+        }
         this.httpMaster = httpMaster;
+        if (httpMaster != null) {
+            cycler.add(OpflowConstant.Protocol.HTTP);
+        }
     }
 
     @Override
@@ -62,21 +69,8 @@ public class OpflowRpcCheckerMaster extends OpflowRpcChecker {
         });
     }
 
-    private OpflowConstant.Protocol next() {
-        OpflowConstant.Protocol current = protocol;
-        switch (protocol) {
-            case AMQP:
-                protocol = OpflowConstant.Protocol.HTTP;
-                break;
-            case HTTP:
-                protocol = OpflowConstant.Protocol.AMQP;
-                break;
-        }
-        return current;
-    }
-
     private OpflowRpcChecker.Pong _send_safe(final OpflowRpcChecker.Ping ping) throws Throwable {
-        OpflowConstant.Protocol proto = next();
+        OpflowConstant.Protocol proto = cycler.next();
         Date startTime = new Date();
 
         String body = (ping == null) ? DEFAULT_BALL_JSON : OpflowJsonTool.toString(new Object[] { ping });
