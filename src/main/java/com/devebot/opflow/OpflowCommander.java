@@ -9,9 +9,9 @@ import com.devebot.opflow.services.OpflowRestrictorMaster;
 import com.devebot.opflow.services.OpflowTaskSubmitterMaster;
 import com.devebot.opflow.supports.OpflowCollectionUtil;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +49,7 @@ public class OpflowCommander implements AutoCloseable {
     private final String serviceName;
     private final String componentId;
     private final OpflowLogTracer logTracer;
+    private final Boolean strictMode;
     private final OpflowPromMeasurer measurer;
     private final OpflowConfig.Loader configLoader;
     private final OpflowDiscoveryMaster discoveryMaster;
@@ -95,6 +96,8 @@ public class OpflowCommander implements AutoCloseable {
                 .text("Commander[${commanderId}][${instanceId}].new()")
                 .stringify());
         
+        strictMode = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_STRICT, Boolean.FALSE);
+        
         measurer = OpflowPromMeasurer.getInstance(OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_PROM_EXPORTER));
         
         Map<String, Object> reqExtractorCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_REQ_EXTRACTOR);
@@ -113,13 +116,20 @@ public class OpflowCommander implements AutoCloseable {
         Map<String, Object> defaultConnectorCfg = extractDefaultConnectorCfg(kwargs);
         Map<String, Map<String, Object>> connectorCfgMap = extractConnectorCfgMap(kwargs);
         
-        Map<String, Object> rpcObserverCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_OBSERVER);
-        rpcObserver = new OpflowRpcObserver(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
-            @Override
-            public void transform(Map<String, Object> opts) {
-                opts.put(OpflowConstant.COMPONENT_ID, componentId);
-            }
-        }, rpcObserverCfg).toMap());
+        boolean _isDefaultConnectorRemotable = hasAnyRemoteMaster(defaultConnectorCfg);
+        boolean _isAnyConnectorRemotable = hasAnyRemoteMaster(connectorCfgMap.values());
+        
+        if (_isDefaultConnectorRemotable || _isAnyConnectorRemotable) {
+            Map<String, Object> rpcObserverCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_OBSERVER);
+            rpcObserver = new OpflowRpcObserver(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
+                @Override
+                public void transform(Map<String, Object> opts) {
+                    opts.put(OpflowConstant.COMPONENT_ID, componentId);
+                }
+            }, rpcObserverCfg).toMap());
+        } else {
+            rpcObserver = null;
+        }
         
         if (restrictor != null) {
             restrictor.block();
@@ -138,7 +148,7 @@ public class OpflowCommander implements AutoCloseable {
             }
             
             Map<String, Object> speedMeterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SPEED_METER);
-            if (speedMeterCfg == null || OpflowUtil.isComponentEnabled(speedMeterCfg)) {
+            if (OpflowUtil.isComponentImplicitEnabled(speedMeterCfg)) {
                 speedMeter = (new OpflowThroughput.Meter(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                         @Override
                         public void transform(Map<String, Object> opts) {
@@ -164,6 +174,7 @@ public class OpflowCommander implements AutoCloseable {
                 OpflowConnector.DEFAULT_CONNECTOR_NAME,
                 defaultConnectorCfg,
                 componentId,
+                strictMode,
                 measurer,
                 speedMeter,
                 reqExtractor,
@@ -177,6 +188,7 @@ public class OpflowCommander implements AutoCloseable {
                     connectorName,
                     connectorCfgMap.get(connectorName),
                     componentId,
+                    strictMode,
                     measurer,
                     speedMeter,
                     reqExtractor,
@@ -185,12 +197,16 @@ public class OpflowCommander implements AutoCloseable {
                 ));
             }
             
+            if (_isDefaultConnectorRemotable || _isAnyConnectorRemotable || garbageCollector != null) {
             Map<String, Object> rpcWatcherCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_WATCHER);
-            rpcWatcher = new OpflowRpcWatcher(connectors, garbageCollector, OpflowObjectTree.buildMap(rpcWatcherCfg)
-                    .put(OpflowConstant.COMPONENT_ID, componentId)
-                    .toMap());
+                rpcWatcher = new OpflowRpcWatcher(connectors, garbageCollector, OpflowObjectTree.buildMap(rpcWatcherCfg)
+                        .put(OpflowConstant.COMPONENT_ID, componentId)
+                        .toMap());
+            } else {
+                rpcWatcher = null;
+            }
             
-            if (rpcObserver != null) {
+            if (rpcWatcher != null && rpcObserver != null) {
                 rpcObserver.setKeepAliveTimeout(rpcWatcher.getInterval());
             }
             
@@ -398,9 +414,9 @@ public class OpflowCommander implements AutoCloseable {
         return false;
     }
     
-    private static boolean hasAnyRemoteMaster(Set<Map<String, Object>> connectorCfgMap) {
-        if (connectorCfgMap != null) {
-            for (Map<String, Object> connectorCfg : connectorCfgMap) {
+    private static boolean hasAnyRemoteMaster(Collection<Map<String, Object>> connectorCfgList) {
+        if (connectorCfgList != null) {
+            for (Map<String, Object> connectorCfg : connectorCfgList) {
                 if (hasAnyRemoteMaster(connectorCfg)) {
                     return true;
                 }
@@ -412,11 +428,10 @@ public class OpflowCommander implements AutoCloseable {
     private static Map<String, Object> extractDefaultConnectorCfg(Map<String, Object> kwargs) {
         Map<String, Object> target = OpflowObjectTree.buildMap().toMap();
         OpflowUtil.copyParameters(target, kwargs, new String[] {
-            OpflowConstant.OPFLOW_COMMON_STRICT,
-            OpflowConstant.PARAM_NATIVE_WORKER_ENABLED,
             OpflowConstant.COMP_PUBLISHER,
             OpflowConstant.COMP_RPC_AMQP_MASTER,
             OpflowConstant.COMP_RPC_HTTP_MASTER,
+            OpflowConstant.PARAM_NATIVE_WORKER_ENABLED,
         });
         return target;
     }
@@ -440,6 +455,7 @@ public class OpflowCommander implements AutoCloseable {
         String connectorName, Map<String,
         Object> connectorCfg,
         String componentId,
+        Boolean strictMode,
         OpflowPromMeasurer measurer,
         OpflowThroughput.Meter speedMeter,
         OpflowReqExtractor reqExtractor,
@@ -453,6 +469,7 @@ public class OpflowCommander implements AutoCloseable {
             @Override
             public void transform(Map<String, Object> opts) {
                 opts.put(OpflowConstant.COMPONENT_ID, componentId);
+                opts.put(OpflowConstant.OPFLOW_COMMON_STRICT, strictMode);
                 opts.put(OpflowConstant.COMP_REQ_EXTRACTOR, reqExtractor);
                 opts.put(OpflowConstant.COMP_RESTRICTOR, restrictor);
                 opts.put(OpflowConstant.COMP_RPC_OBSERVER, rpcObserver);

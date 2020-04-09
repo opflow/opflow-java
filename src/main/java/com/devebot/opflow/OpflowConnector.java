@@ -27,8 +27,9 @@ public class OpflowConnector {
 
     private final String componentId;
     private final OpflowLogTracer logTracer;
-    
+
     private final boolean strictMode;
+    private final boolean nativeWorkerEnabled;
     private final OpflowPromMeasurer measurer;
     private final OpflowReqExtractor reqExtractor;
     private final OpflowRestrictorMaster restrictor;
@@ -39,8 +40,7 @@ public class OpflowConnector {
     private OpflowPubsubHandler publisher;
     private OpflowRpcAmqpMaster amqpMaster;
     private OpflowRpcHttpMaster httpMaster;
-    private boolean nativeWorkerEnabled;
-    
+
     public OpflowConnector(Map<String, Object> kwargs) throws OpflowBootstrapException {
         componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("componentId", componentId);
@@ -71,9 +71,13 @@ public class OpflowConnector {
         Map<String, Object> amqpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_MASTER, OpflowConstant.COMP_CFG_AMQP_MASTER);
         Map<String, Object> httpMasterCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_MASTER);
 
+        final boolean _isPublisherEnabled = OpflowUtil.isComponentEnabled(publisherCfg);
+        final boolean _isAmqpMasterEnabled = OpflowUtil.isComponentEnabled(amqpMasterCfg);
+        final boolean _isHttpMasterEnabled = OpflowUtil.isComponentEnabled(httpMasterCfg);
+
         HashSet<String> checkExchange = new HashSet<>();
 
-        if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
+        if (_isAmqpMasterEnabled) {
             if (OpflowUtil.isAMQPEntrypointNull(amqpMasterCfg, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY)) {
                 throw new OpflowBootstrapException("Invalid RpcMaster connection parameters");
             }
@@ -82,7 +86,7 @@ public class OpflowConnector {
             }
         }
 
-        if (OpflowUtil.isComponentEnabled(publisherCfg)) {
+        if (_isPublisherEnabled) {
             if (OpflowUtil.isAMQPEntrypointNull(publisherCfg)) {
                 throw new OpflowBootstrapException("Invalid Publisher connection parameters");
             }
@@ -91,7 +95,7 @@ public class OpflowConnector {
             }
         }
 
-        if (OpflowUtil.isComponentEnabled(publisherCfg)) {
+        if (_isPublisherEnabled) {
             publisher = new OpflowPubsubHandler(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
@@ -104,7 +108,7 @@ public class OpflowConnector {
                 speedMeter.register(OpflowRpcInvocationCounter.LABEL_RPC_PUBLISHER, counter.getPublisherInfoSource());
             }
         }
-        if (OpflowUtil.isComponentEnabled(amqpMasterCfg)) {
+        if (_isAmqpMasterEnabled) {
             amqpMaster = new OpflowRpcAmqpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
@@ -118,7 +122,7 @@ public class OpflowConnector {
                 speedMeter.register(OpflowRpcInvocationCounter.LABEL_RPC_REMOTE_AMQP_WORKER, counter.getRemoteAMQPWorkerInfoSource());
             }
         }
-        if (OpflowUtil.isComponentEnabled(httpMasterCfg)) {
+        if (_isHttpMasterEnabled) {
             httpMaster = new OpflowRpcHttpMaster(OpflowObjectTree.buildMap(new OpflowObjectTree.Listener<Object>() {
                 @Override
                 public void transform(Map<String, Object> opts) {
