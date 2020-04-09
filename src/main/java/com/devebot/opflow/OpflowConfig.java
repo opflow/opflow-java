@@ -689,6 +689,8 @@ public class OpflowConfig {
                         OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_MASTER),
                         OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_WORKER),
                     }));
+                    // merge the environment variables to the configuration
+                    mergeEnvironmentVariables(config);
                 } else {
                     configFile = (configFile != null) ? configFile : DEFAULT_CONFIGURATION_FILE;
                     throw new FileNotFoundException("configuration file '" + configFile + "' not found");
@@ -748,6 +750,41 @@ public class OpflowConfig {
         return filename.substring(filename.lastIndexOf(".") + 1);
     }
     
+    public static Map<String, Object> mergeEnvironmentVariables(Map<String, Object> target) {
+        return OpflowObjectTree.traverseTree(target, new OpflowObjectTree.LeafUpdater() {
+            @Override
+            public Object transform(String[] path, Object value) {
+                String varName = OpflowStringUtil.join("_", path).toUpperCase();
+                String envStr = OpflowEnvTool.instance.getEnvironVariable(varName, null);
+                if (envStr != null) {
+                    return envStr;
+                }
+                return value;
+            }
+        });
+    }
+    
+    public static Map<String, Object> mergeConfiguration(Map<String, Object> target, Properties props) {
+        if (target == null) target = new HashMap<>();
+        if (props == null) return target;
+        Set<Object> keys = props.keySet();
+        for(Object keyo:keys) {
+            String key = (String) keyo;
+            String[] path = key.split("\\.");
+            if (path.length > 0) {
+                Map<String, Object> current = target;
+                for(int i=0; i<(path.length - 1); i++) {
+                    if (!current.containsKey(path[i]) || !(current.get(path[i]) instanceof Map)) {
+                        current.put(path[i], new HashMap<String, Object>());
+                    }
+                    current = (Map<String, Object>)current.get(path[i]);
+                }
+                current.put(path[path.length - 1], props.getProperty(key));
+            }
+        }
+        return target;
+    }
+    
     public static Map<String, Object> mergeConfiguration(Map<String, Object> target, Map<String, Object> source) {
         return OpflowObjectTree.merge(target, source);
     }
@@ -774,27 +811,6 @@ public class OpflowConfig {
             }
         }
         return result;
-    }
-    
-    public static Map<String, Object> mergeConfiguration(Map<String, Object> target, Properties props) {
-        if (target == null) target = new HashMap<>();
-        if (props == null) return target;
-        Set<Object> keys = props.keySet();
-        for(Object keyo:keys) {
-            String key = (String) keyo;
-            String[] path = key.split("\\.");
-            if (path.length > 0) {
-                Map<String, Object> current = target;
-                for(int i=0; i<(path.length - 1); i++) {
-                    if (!current.containsKey(path[i]) || !(current.get(path[i]) instanceof Map)) {
-                        current.put(path[i], new HashMap<String, Object>());
-                    }
-                    current = (Map<String, Object>)current.get(path[i]);
-                }
-                current.put(path[path.length - 1], props.getProperty(key));
-            }
-        }
-        return target;
     }
     
     public static Properties loadProperties() throws OpflowBootstrapException {
