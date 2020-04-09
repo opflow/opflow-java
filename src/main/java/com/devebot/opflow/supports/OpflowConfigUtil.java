@@ -7,7 +7,7 @@ package com.devebot.opflow.supports;
 public class OpflowConfigUtil {
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
     
-    public String getConfigValue(String key, String def) {
+    public static String getConfigValue(String key, String def) {
         String str = ENVTOOL.getSystemProperty(key, null);
         if (str == null) {
             str = ENVTOOL.getEnvironVariable(OpflowStringUtil.convertCamelCaseToSnakeCase(key), null);
