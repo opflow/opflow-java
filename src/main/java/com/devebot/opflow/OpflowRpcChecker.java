@@ -134,22 +134,26 @@ public abstract class OpflowRpcChecker {
             if (commanderInfo != null && processorObj != null) {
                 // determines the protocol
                 String protoStr = processorObj.getParameters().getOrDefault(OpflowConstant.OPFLOW_COMMON_PROTOCOL, "NONE").toString();
-                // asserts the rpcMaster Map
-                Map<String, Object> rpcMasterMap = null;
-                if ("AMQP".equals(protoStr)) {
-                    rpcMasterMap = OpflowObjectTree.assertChildMap(commanderInfo, OpflowConstant.COMP_RPC_AMQP_MASTER);
-                }
-                if ("HTTP".equals(protoStr)) {
-                    rpcMasterMap = OpflowObjectTree.assertChildMap(commanderInfo, OpflowConstant.COMP_RPC_HTTP_MASTER);
-                }
-                // asserts the request Map
-                if (rpcMasterMap != null) {
-                    Map<String, Object> requestInfo = OpflowObjectTree.assertChildMap(rpcMasterMap, "request");
-                    // copy the attributes
-                    for (String key : REQUEST_ATTRS) {
-                        Object attr = processorObj.getParameters().get(key);
-                        if (attr != null) {
-                            requestInfo.put(key, attr);
+                // determines the connector section
+                Map<String, Object> connectorInfo = OpflowObjectTree.assertChildMap(commanderInfo, OpflowConstant.COMP_CONNECTOR);
+                if (connectorInfo != null) {
+                    // asserts the rpcMaster Map
+                    Map<String, Object> rpcMasterMap = null;
+                    if ("AMQP".equals(protoStr)) {
+                        rpcMasterMap = OpflowObjectTree.assertChildMap(connectorInfo, OpflowConstant.COMP_RPC_AMQP_MASTER);
+                    }
+                    if ("HTTP".equals(protoStr)) {
+                        rpcMasterMap = OpflowObjectTree.assertChildMap(connectorInfo, OpflowConstant.COMP_RPC_HTTP_MASTER);
+                    }
+                    // asserts the request Map
+                    if (rpcMasterMap != null) {
+                        Map<String, Object> requestInfo = OpflowObjectTree.assertChildMap(rpcMasterMap, "request");
+                        // copy the attributes
+                        for (String key : REQUEST_ATTRS) {
+                            Object attr = processorObj.getParameters().get(key);
+                            if (attr != null) {
+                                requestInfo.put(key, attr);
+                            }
                         }
                     }
                 }
