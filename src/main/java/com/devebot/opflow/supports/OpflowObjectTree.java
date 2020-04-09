@@ -2,6 +2,7 @@ package com.devebot.opflow.supports;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 /**
@@ -173,5 +174,33 @@ public class OpflowObjectTree {
         if (pointer == null) return null;
         Object value = pointer.get(path[path.length - 1]);
         return (value == null) ? defval : value;
+    }
+    
+    public static final String[] EMPTY_ARRAY = new String[0];
+    
+    public interface LeafUpdater {
+        public Object transform(String[] path, Object value);
+    }
+    
+    public static Map<String, Object> traverseTree(Map<String, Object> tree, LeafUpdater updater) {
+        return traverseTree(new LinkedList<>(), tree, updater);
+    }
+    
+    private static Map<String, Object> traverseTree(LinkedList<String> path, Map<String, Object> tree, LeafUpdater updater) {
+        if (tree == null) return null;
+
+        for (String name : tree.keySet()) {
+            path.addLast(name);
+            Object item = tree.get(name);
+            if (item instanceof Map) {
+                traverseTree(path, (Map<String, Object>) item, updater);
+            } else {
+                Object result = updater.transform(path.toArray(EMPTY_ARRAY), item);
+                tree.put(name, result);
+            }
+            path.removeLast();
+        }
+        
+        return tree;
     }
 }
