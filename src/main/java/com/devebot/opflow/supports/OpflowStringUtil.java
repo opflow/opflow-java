@@ -128,7 +128,9 @@ public class OpflowStringUtil {
         return String.format("%0" + digits + "d", number);
     }
     
-    private static final String CAMEL_CASE_REGEXP = "(?=[A-Z]([a-z]|[A-Z]))";
+    //--------------------------------------------------------------------------
+    
+    private static final String CAMEL_CASE_REGEXP = "(?=(?<!^)(?<!_)[A-Z]([A-Z]|[a-z]))";
     private static final Pattern CAMEL_CASE_PATTERN = Pattern.compile(CAMEL_CASE_REGEXP);
     private static final String LODASH = "_";
     
@@ -141,9 +143,18 @@ public class OpflowStringUtil {
             return null;
         }
         String result = CAMEL_CASE_PATTERN.matcher(camelCaseStr).replaceAll(LODASH);
-        if (allCaps) {
+        if (result != null && allCaps) {
             return result.toUpperCase();
         }
         return result;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    public static String convertDottedNameToSnakeCase(String dottedName) {
+        if (dottedName == null) {
+            return dottedName;
+        }
+        return dottedName.replace('.', '_');
     }
 }
