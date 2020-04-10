@@ -36,6 +36,7 @@ public class OpflowConfig {
     public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
 
+    private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
     private final static Logger LOG = LoggerFactory.getLogger(OpflowConfig.class);
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
@@ -743,12 +744,12 @@ public class OpflowConfig {
     
     private static URL getConfigurationUrl(String configFile) {
         URL url;
-        String cfgFromSystem = OpflowEnvTool.instance.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+        String cfgFromSystem = ENVTOOL.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
         if (cfgFromSystem == null) {
             cfgFromSystem = configFile;
         }
         if (cfgFromSystem == null) {
-            cfgFromSystem = OpflowEnvTool.instance.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
+            cfgFromSystem = ENVTOOL.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
         }
         if (LOG_TRACER.ready(LOG, Level.TRACE)) LOG.trace(LOG_TRACER
                 .put("configFile", cfgFromSystem)
@@ -786,7 +787,7 @@ public class OpflowConfig {
             @Override
             public Object transform(String[] path, Object value) {
                 String varName = OpflowStringUtil.join("_", path).toUpperCase();
-                String envStr = OpflowEnvTool.instance.getEnvironVariable(varName, null);
+                String envStr = ENVTOOL.getEnvironVariable(varName, null);
                 if (envStr != null) {
                     return envStr;
                 }
