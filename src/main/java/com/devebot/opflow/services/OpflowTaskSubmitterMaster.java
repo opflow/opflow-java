@@ -147,7 +147,7 @@ public class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
     }
 
     @Override
-    public Map<String, Object> activatePublisher(boolean state, Map<String, Object> opts) {
+    public Map<String, Object> activateAllPublishers(boolean state, Map<String, Object> opts) {
         Map<String, Object> info = OpflowObjectTree.buildMap().toMap();
         for (String name : connectors.keySet()) {
             info.put(name, activatePublisher(name, state, opts));
@@ -155,12 +155,13 @@ public class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
         return info;
     }
     
+    @Override
     public Map<String, Object> activatePublisher(String name, boolean state, Map<String, Object> opts) {
         return activateWorker(name, OpflowConstant.COMP_PUBLISHER, state, opts);
     }
 
     @Override
-    public Map<String, Object> activateRemoteAMQPWorker(boolean state, Map<String, Object> opts) {
+    public Map<String, Object> activateAllRemoteAMQPWorkers(boolean state, Map<String, Object> opts) {
         Map<String, Object> info = OpflowObjectTree.buildMap().toMap();
         for (String name : connectors.keySet()) {
             info.put(name, activateRemoteAMQPWorker(name, state, opts));
@@ -168,12 +169,13 @@ public class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
         return info;
     }
     
+    @Override
     public Map<String, Object> activateRemoteAMQPWorker(String name, boolean state, Map<String, Object> opts) {
         return activateWorker(name, OpflowConstant.COMP_REMOTE_AMQP_WORKER, state, opts);
     }
 
     @Override
-    public Map<String, Object> activateRemoteHTTPWorker(boolean state, Map<String, Object> opts) {
+    public Map<String, Object> activateAllRemoteHTTPWorkers(boolean state, Map<String, Object> opts) {
         Map<String, Object> info = OpflowObjectTree.buildMap().toMap();
         for (String name : connectors.keySet()) {
             info.put(name, activateRemoteHTTPWorker(name, state, opts));
@@ -181,12 +183,13 @@ public class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
         return info;
     }
     
+    @Override
     public Map<String, Object> activateRemoteHTTPWorker(String name, boolean state, Map<String, Object> opts) {
         return activateWorker(name, OpflowConstant.COMP_REMOTE_HTTP_WORKER, state, opts);
     }
 
     @Override
-    public Map<String, Object> activateNativeWorker(boolean state, Map<String, Object> opts) {
+    public Map<String, Object> activateAllNativeWorkers(boolean state, Map<String, Object> opts) {
         Map<String, Object> info = OpflowObjectTree.buildMap().toMap();
         for (String name : connectors.keySet()) {
             info.put(name, activateNativeWorker(name, state, opts));
@@ -194,6 +197,7 @@ public class OpflowTaskSubmitterMaster implements OpflowTaskSubmitter {
         return info;
     }
     
+    @Override
     public Map<String, Object> activateNativeWorker(String name, boolean state, Map<String, Object> opts) {
         return activateWorker(name, OpflowConstant.COMP_NATIVE_WORKER, state, opts);
     }

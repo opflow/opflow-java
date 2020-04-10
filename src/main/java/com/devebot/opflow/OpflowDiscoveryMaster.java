@@ -52,6 +52,11 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
     }
     
     public void serve() {
+        if (logTracer.ready(LOG, Level.DEBUG)) {
+            LOG.debug(logTracer
+                .text("DiscoveryMaster[${discoveryClientId}].serve()")
+                .stringify());
+        }
         synchronized (this) {
             if (svHealth == null) {
                 svHealth = ServiceHealthCache.newCache(getHealthClient(), serviceName);
@@ -60,10 +65,10 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
                         Map<String, OpflowRpcRoutingInfo> serviceInfo = new LinkedHashMap<>();
                         Set<ServiceHealthKey> keys = newValues.keySet();
                         for (ServiceHealthKey key : keys) {
-                            String componentId = key.getServiceId();
+                            String _componentId = key.getServiceId();
                             String hostAndPort = key.getHost() + ":" + key.getPort();
-                            OpflowRpcRoutingInfo routingInfo = new OpflowRpcRoutingInfo(OpflowConstant.Protocol.HTTP, componentId, hostAndPort);
-                            serviceInfo.put(componentId, routingInfo);
+                            OpflowRpcRoutingInfo routingInfo = new OpflowRpcRoutingInfo(OpflowConstant.Protocol.HTTP, _componentId, hostAndPort);
+                            serviceInfo.put(_componentId, routingInfo);
                         }
                         subscriber.onChange(serviceInfo);
                     }
@@ -71,14 +76,29 @@ public class OpflowDiscoveryMaster extends OpflowDiscoveryClient {
             }
         }
         svHealth.start();
+        if (logTracer.ready(LOG, Level.DEBUG)) {
+            LOG.debug(logTracer
+                .text("DiscoveryMaster[${discoveryClientId}].serve() end!")
+                .stringify());
+        }
     }
     
     public void close() {
+        if (logTracer.ready(LOG, Level.DEBUG)) {
+            LOG.debug(logTracer
+                .text("DiscoveryMaster[${discoveryClientId}].close()")
+                .stringify());
+        }
         synchronized (this) {
             if (svHealth != null) {
                 svHealth.stop();
                 svHealth = null;
             }
+        }
+        if (logTracer.ready(LOG, Level.DEBUG)) {
+            LOG.debug(logTracer
+                .text("DiscoveryMaster[${discoveryClientId}].close() end!")
+                .stringify());
         }
     }
     

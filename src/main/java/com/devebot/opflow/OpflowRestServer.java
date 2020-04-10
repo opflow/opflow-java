@@ -358,7 +358,7 @@ public class OpflowRestServer implements AutoCloseable {
 
                         case "activate-publisher":
                             boolean state_ = getQueryParam(exchange, "state", Boolean.class, true);
-                            result = taskSubmitter.activatePublisher(state_, OpflowObjectTree.buildMap(false)
+                            result = taskSubmitter.activateAllPublishers(state_, OpflowObjectTree.buildMap(false)
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
@@ -367,14 +367,14 @@ public class OpflowRestServer implements AutoCloseable {
                         case "activate-detached-worker":
                         case "activate-remote-amqp-worker":
                             boolean state0 = getQueryParam(exchange, "state", Boolean.class, true);
-                            result = taskSubmitter.activateRemoteAMQPWorker(state0, OpflowObjectTree.buildMap(false)
+                            result = taskSubmitter.activateAllRemoteAMQPWorkers(state0, OpflowObjectTree.buildMap(false)
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
 
                         case "activate-remote-http-worker":
                             boolean state1 = getQueryParam(exchange, "state", Boolean.class, true);
-                            result = taskSubmitter.activateRemoteHTTPWorker(state1, OpflowObjectTree.buildMap(false)
+                            result = taskSubmitter.activateAllRemoteHTTPWorkers(state1, OpflowObjectTree.buildMap(false)
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
@@ -385,7 +385,7 @@ public class OpflowRestServer implements AutoCloseable {
                         case "activate-reserved-worker":
                         case "activate-native-worker":
                             boolean state2 = getQueryParam(exchange, "state", Boolean.class, true);
-                            result = taskSubmitter.activateNativeWorker(state2, OpflowObjectTree.buildMap(false)
+                            result = taskSubmitter.activateAllNativeWorkers(state2, OpflowObjectTree.buildMap(false)
                                     .put("class", getQueryParam(exchange, "class"))
                                     .toMap());
                             break;
