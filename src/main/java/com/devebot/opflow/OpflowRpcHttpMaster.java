@@ -38,27 +38,27 @@ public class OpflowRpcHttpMaster implements AutoCloseable {
     private final Locator serviceLocator;
     private final OpflowRestrictor.Valve restrictor;
     
-    private long readTimeout;
-    private long writeTimeout;
     private long callTimeout;
+    private long writeTimeout;
+    private long readTimeout;
     
     private OkHttpClient httpClient = null;
     private final Object httpClientLock = new Object();
     private final boolean autorun;
     private final boolean testException;
     
-    public OpflowRpcHttpMaster(Map<String, Object> params) throws OpflowBootstrapException {
-        params = OpflowObjectTree.ensureNonNull(params);
+    public OpflowRpcHttpMaster(Map<String, Object> kwargs) throws OpflowBootstrapException {
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
-        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
-        rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
-        serviceLocator = (Locator) OpflowUtil.getOptionField(params, OpflowConstant.COMP_SERVICE_LOCATOR, null);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
+        rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_RPC_OBSERVER, null);
+        serviceLocator = (Locator) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_SERVICE_LOCATOR, null);
         restrictor = new OpflowRestrictor.Valve();
         
-        readTimeout = OpflowUtil.getLongField(params, OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, 20000l);
-        writeTimeout = OpflowUtil.getLongField(params, OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, 20000l);
-        callTimeout = OpflowUtil.getLongField(params, OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, 180000l);
+        readTimeout = OpflowUtil.getLongField(kwargs, OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT, 20000l);
+        writeTimeout = OpflowUtil.getLongField(kwargs, OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT, 20000l);
+        callTimeout = OpflowUtil.getLongField(kwargs, OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT, 180000l);
         
         logTracer = OpflowLogTracer.ROOT.branch("httpMasterId", componentId);
         
@@ -66,8 +66,8 @@ public class OpflowRpcHttpMaster implements AutoCloseable {
                 .text("httpMaster[${httpMasterId}][${instanceId}].new()")
                 .stringify());
         
-        autorun = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_COMMON_AUTORUN, Boolean.FALSE);
-        testException = OpflowUtil.getBooleanField(params, "testException", Boolean.FALSE);
+        autorun = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_AUTORUN, Boolean.FALSE);
+        testException = OpflowUtil.getBooleanField(kwargs, "testException", Boolean.FALSE);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("httpMaster[${httpMasterId}][${instanceId}].new() end!")

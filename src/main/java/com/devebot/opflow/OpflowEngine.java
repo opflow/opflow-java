@@ -111,11 +111,11 @@ public class OpflowEngine implements AutoCloseable {
     private String routingKey;
     private String applicationId;
     
-    public OpflowEngine(Map<String, Object> params) throws OpflowBootstrapException {
-        params = OpflowObjectTree.ensureNonNull(params);
+    public OpflowEngine(Map<String, Object> kwargs) throws OpflowBootstrapException {
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
-        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("engineId", componentId);
         
@@ -136,14 +136,14 @@ public class OpflowEngine implements AutoCloseable {
                 .stringify());
         
         owner = OpflowConstant.COMP_ENGINE;
-        if (params.containsKey(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER)) {
-            owner = params.get(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER).toString();
+        if (kwargs.containsKey(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER)) {
+            owner = kwargs.get(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER).toString();
         }
         
         try {
             factory = new ConnectionFactory();
             
-            String uri = (String) params.get(OpflowConstant.AMQP_CONARG_URI);
+            String uri = (String) kwargs.get(OpflowConstant.AMQP_CONARG_URI);
             if (uri != null && uri.length() > 0) {
                 factory.setUri(uri);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -151,27 +151,27 @@ public class OpflowEngine implements AutoCloseable {
                         .text("Engine[${engineId}] make connection using URI: ${uri}")
                         .stringify());
             } else {
-                String host = (String) params.getOrDefault(OpflowConstant.AMQP_CONARG_HOST, "localhost");
+                String host = (String) kwargs.getOrDefault(OpflowConstant.AMQP_CONARG_HOST, "localhost");
                 factory.setHost(host);
                 
                 Integer port = null;
-                if (params.get(OpflowConstant.AMQP_CONARG_PORT) instanceof Integer) {
-                    factory.setPort(port = (Integer)params.get(OpflowConstant.AMQP_CONARG_PORT));
+                if (kwargs.get(OpflowConstant.AMQP_CONARG_PORT) instanceof Integer) {
+                    factory.setPort(port = (Integer)kwargs.get(OpflowConstant.AMQP_CONARG_PORT));
                 }
                 
                 String virtualHost = null;
-                if (params.get(OpflowConstant.AMQP_CONARG_VHOST) instanceof String) {
-                    factory.setVirtualHost(virtualHost = (String) params.get(OpflowConstant.AMQP_CONARG_VHOST));
+                if (kwargs.get(OpflowConstant.AMQP_CONARG_VHOST) instanceof String) {
+                    factory.setVirtualHost(virtualHost = (String) kwargs.get(OpflowConstant.AMQP_CONARG_VHOST));
                 }
                 
                 String username = null;
-                if (params.get(OpflowConstant.AMQP_CONARG_USERNAME) instanceof String) {
-                    factory.setUsername(username = (String) params.get(OpflowConstant.AMQP_CONARG_USERNAME));
+                if (kwargs.get(OpflowConstant.AMQP_CONARG_USERNAME) instanceof String) {
+                    factory.setUsername(username = (String) kwargs.get(OpflowConstant.AMQP_CONARG_USERNAME));
                 }
                 
                 String password = null;
-                if (params.get(OpflowConstant.AMQP_CONARG_PASSWORD) instanceof String) {
-                    factory.setPassword(password = (String) params.get(OpflowConstant.AMQP_CONARG_PASSWORD));
+                if (kwargs.get(OpflowConstant.AMQP_CONARG_PASSWORD) instanceof String) {
+                    factory.setPassword(password = (String) kwargs.get(OpflowConstant.AMQP_CONARG_PASSWORD));
                 }
                 
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
@@ -184,50 +184,50 @@ public class OpflowEngine implements AutoCloseable {
                         .stringify());
             }
 
-            Integer requestedChannelMax = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX, null);
+            Integer requestedChannelMax = OpflowUtil.getIntegerField(kwargs, OpflowConstant.AMQP_CONARG_REQUESTED_CHANNEL_MAX, null);
             if (requestedChannelMax != null) {
                 factory.setRequestedChannelMax(requestedChannelMax);
             }
 
-            Integer requestedFrameMax = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX, null);
+            Integer requestedFrameMax = OpflowUtil.getIntegerField(kwargs, OpflowConstant.AMQP_CONARG_REQUESTED_FRAME_MAX, null);
             if (requestedFrameMax != null) {
                 factory.setRequestedFrameMax(requestedFrameMax);
             }
 
-            Integer requestedHeartbeat = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT, 20); // 20 seconds
+            Integer requestedHeartbeat = OpflowUtil.getIntegerField(kwargs, OpflowConstant.AMQP_CONARG_REQUESTED_HEARTBEAT, 20); // 20 seconds
             if (requestedHeartbeat != null) {
                 if (requestedHeartbeat < 5) requestedHeartbeat = 5;
                 factory.setRequestedHeartbeat(requestedHeartbeat);
             }
 
-            Integer connectionTimeout = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_CONNECTION_TIMEOUT, null);
+            Integer connectionTimeout = OpflowUtil.getIntegerField(kwargs, OpflowConstant.AMQP_CONARG_CONNECTION_TIMEOUT, null);
             if (connectionTimeout != null) {
                 factory.setConnectionTimeout(connectionTimeout);
             }
 
-            Integer handshakeTimeout = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_HANDSHAKE_TIMEOUT, null);
+            Integer handshakeTimeout = OpflowUtil.getIntegerField(kwargs, OpflowConstant.AMQP_CONARG_HANDSHAKE_TIMEOUT, null);
             if (handshakeTimeout != null) {
                 factory.setHandshakeTimeout(handshakeTimeout);
             }
             
-            Integer shutdownTimeout = OpflowUtil.getIntegerField(params, OpflowConstant.AMQP_CONARG_SHUTDOWN_TIMEOUT, null);
+            Integer shutdownTimeout = OpflowUtil.getIntegerField(kwargs, OpflowConstant.AMQP_CONARG_SHUTDOWN_TIMEOUT, null);
             if (shutdownTimeout != null) {
                 factory.setShutdownTimeout(shutdownTimeout);
             }
 
             Boolean automaticRecoveryEnabled = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED) instanceof Boolean) {
-                factory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled = (Boolean)params.get(OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED));
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED) instanceof Boolean) {
+                factory.setAutomaticRecoveryEnabled(automaticRecoveryEnabled = (Boolean)kwargs.get(OpflowConstant.AMQP_CONARG_AUTOMATIC_RECOVERY_ENABLED));
             }
 
             Boolean topologyRecoveryEnabled = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED) instanceof Boolean) {
-                factory.setTopologyRecoveryEnabled(topologyRecoveryEnabled = (Boolean)params.get(OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED));
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED) instanceof Boolean) {
+                factory.setTopologyRecoveryEnabled(topologyRecoveryEnabled = (Boolean)kwargs.get(OpflowConstant.AMQP_CONARG_TOPOLOGY_RECOVERY_ENABLED));
             }
 
             Integer networkRecoveryInterval;
-            if (params.get(OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL) instanceof Integer) {
-                networkRecoveryInterval = (Integer)params.get(OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL);
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL) instanceof Integer) {
+                networkRecoveryInterval = (Integer)kwargs.get(OpflowConstant.AMQP_CONARG_NETWORK_RECOVERY_INTERVAL);
                 if (networkRecoveryInterval <= 0) networkRecoveryInterval = null;
             } else {
                 networkRecoveryInterval = 2500; // change default from 5000 to 2500
@@ -237,8 +237,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String pkcs12File = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_PKCS12_FILE) instanceof String) {
-                pkcs12File = (String) params.get(OpflowConstant.AMQP_CONARG_PKCS12_FILE);
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_PKCS12_FILE) instanceof String) {
+                pkcs12File = (String) kwargs.get(OpflowConstant.AMQP_CONARG_PKCS12_FILE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("pkcs12File", pkcs12File)
                         .text("Engine[${engineId}] - PKCS12 file: ${pkcs12File}")
@@ -246,8 +246,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String pkcs12Passphrase = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_PKCS12_PASSPHRASE) instanceof String) {
-                pkcs12Passphrase = (String) params.get(OpflowConstant.AMQP_CONARG_PKCS12_PASSPHRASE);
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_PKCS12_PASSPHRASE) instanceof String) {
+                pkcs12Passphrase = (String) kwargs.get(OpflowConstant.AMQP_CONARG_PKCS12_PASSPHRASE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("pkcs12Passphrase", OpflowUtil.maskPassword(pkcs12Passphrase))
                         .text("Engine[${engineId}] - PKCS12 passphrase: ${pkcs12Passphrase}")
@@ -255,8 +255,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String caCertFile = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_CA_CERT_FILE) instanceof String) {
-                caCertFile = (String) params.get(OpflowConstant.AMQP_CONARG_CA_CERT_FILE);
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_CA_CERT_FILE) instanceof String) {
+                caCertFile = (String) kwargs.get(OpflowConstant.AMQP_CONARG_CA_CERT_FILE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("caCertFile", caCertFile)
                         .text("Engine[${engineId}] - CA file: ${caCertFile}")
@@ -264,8 +264,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String serverCertFile = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_SERVER_CERT_FILE) instanceof String) {
-                serverCertFile = (String) params.get(OpflowConstant.AMQP_CONARG_SERVER_CERT_FILE);
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_SERVER_CERT_FILE) instanceof String) {
+                serverCertFile = (String) kwargs.get(OpflowConstant.AMQP_CONARG_SERVER_CERT_FILE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("serverCertFile", serverCertFile)
                         .text("Engine[${engineId}] - server certificate file: ${serverCertFile}")
@@ -273,8 +273,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String trustStoreFile = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE) instanceof String) {
-                trustStoreFile = (String) params.get(OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE);
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE) instanceof String) {
+                trustStoreFile = (String) kwargs.get(OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("trustStoreFile", trustStoreFile)
                         .text("Engine[${engineId}] - trust keystore file: ${trustStoreFile}")
@@ -282,8 +282,8 @@ public class OpflowEngine implements AutoCloseable {
             }
 
             String trustPassphrase = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE) instanceof String) {
-                trustPassphrase = (String) params.get(OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE);
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE) instanceof String) {
+                trustPassphrase = (String) kwargs.get(OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE);
                 if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                         .put("trustPassphrase", OpflowUtil.maskPassword(trustPassphrase))
                         .text("Engine[${engineId}] - trust keystore passphrase: ${trustPassphrase}")
@@ -314,10 +314,10 @@ public class OpflowEngine implements AutoCloseable {
 
             threadPoolType = null;
             threadPoolSize = null;
-            if (params.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE) instanceof String) {
-                threadPoolType = (String) params.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE);
-                if (params.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE) instanceof Integer) {
-                    threadPoolSize = (Integer)params.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE);
+            if (kwargs.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE) instanceof String) {
+                threadPoolType = (String) kwargs.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE);
+                if (kwargs.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE) instanceof Integer) {
+                    threadPoolSize = (Integer)kwargs.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE);
                 }
                 if (threadPoolSize == null || threadPoolSize <= 0) {
                     threadPoolSize = OpflowSystemInfo.getNumberOfProcessors();
@@ -368,21 +368,21 @@ public class OpflowEngine implements AutoCloseable {
         }
         
         try {
-            if (params.get(OpflowConstant.OPFLOW_COMMON_APP_ID) instanceof String) {
-                applicationId = (String) params.get(OpflowConstant.OPFLOW_COMMON_APP_ID);
+            if (kwargs.get(OpflowConstant.OPFLOW_COMMON_APP_ID) instanceof String) {
+                applicationId = (String) kwargs.get(OpflowConstant.OPFLOW_COMMON_APP_ID);
             }
             
-            if (params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME) instanceof String) {
-                exchangeName = (String) params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME);
+            if (kwargs.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME) instanceof String) {
+                exchangeName = (String) kwargs.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME);
             }
             
-            if (params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE) instanceof String) {
-                exchangeType = (String) params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE);
+            if (kwargs.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE) instanceof String) {
+                exchangeType = (String) kwargs.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE);
             }
             if (exchangeType == null) exchangeType = "direct";
             
-            if (params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE) instanceof Boolean) {
-                exchangeDurable = (Boolean) params.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE);
+            if (kwargs.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE) instanceof Boolean) {
+                exchangeDurable = (Boolean) kwargs.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE);
             }
             if (exchangeDurable == null) exchangeDurable = true;
             
@@ -390,8 +390,8 @@ public class OpflowEngine implements AutoCloseable {
                 getProducingChannel().exchangeDeclare(exchangeName, exchangeType, exchangeDurable);
             }
             
-            if (params.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY) instanceof String) {
-                routingKey = (String) params.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY);
+            if (kwargs.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY) instanceof String) {
+                routingKey = (String) kwargs.get(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY);
             }
             
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer

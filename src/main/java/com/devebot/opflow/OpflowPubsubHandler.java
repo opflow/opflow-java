@@ -43,10 +43,10 @@ public class OpflowPubsubHandler implements AutoCloseable {
     private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<>();
     private final boolean autorun;
 
-    public OpflowPubsubHandler(Map<String, Object> params) throws OpflowBootstrapException {
-        params = OpflowObjectTree.ensureNonNull(params);
+    public OpflowPubsubHandler(Map<String, Object> kwargs) throws OpflowBootstrapException {
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
-        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
         logTracer = OpflowLogTracer.ROOT.branch("pubsubHandlerId", componentId);
         
         restrictor = new OpflowRestrictor.Valve();
@@ -57,18 +57,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
         
-        OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
+        OpflowUtil.copyParameters(brokerParams, kwargs, OpflowEngine.PARAMETER_NAMES);
         
         brokerParams.put(OpflowConstant.COMPONENT_ID, componentId);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, "pubsub");
         
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.getOrDefault(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE, "direct"));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, params.get(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, kwargs.get(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, kwargs.getOrDefault(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE, "direct"));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, kwargs.get(OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, kwargs.get(OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY));
         
-        subscriberName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME);
-        recyclebinName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME);
+        subscriberName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME);
+        recyclebinName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME);
         
         if (subscriberName != null && recyclebinName != null && subscriberName.equals(recyclebinName)) {
             throw new OpflowBootstrapException("subscriberName should be different with recyclebinName");
@@ -101,18 +101,18 @@ public class OpflowPubsubHandler implements AutoCloseable {
             executor.assertQueue(recyclebinName);
         }
         
-        bindingKeys = OpflowUtil.getStringArray(params, OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS, null);
+        bindingKeys = OpflowUtil.getStringArray(kwargs, OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS, null);
         
-        prefetchCount = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT, 0);
+        prefetchCount = OpflowUtil.getIntegerField(kwargs, OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT, 0);
         if (prefetchCount < 0) prefetchCount = 0;
         
-        subscriberLimit = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT, 0);
+        subscriberLimit = OpflowUtil.getIntegerField(kwargs, OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT, 0);
         if (subscriberLimit < 0) subscriberLimit = 0;
         
-        redeliveredLimit = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT, 0);
+        redeliveredLimit = OpflowUtil.getIntegerField(kwargs, OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT, 0);
         if (redeliveredLimit < 0) redeliveredLimit = 0;
         
-        autorun = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_COMMON_AUTORUN, Boolean.FALSE);
+        autorun = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_AUTORUN, Boolean.FALSE);
         
         if (autorun) {
             this.serve();
