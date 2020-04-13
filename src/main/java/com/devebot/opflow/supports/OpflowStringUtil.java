@@ -154,7 +154,7 @@ public class OpflowStringUtil {
     private static final String RESERVED_CHARS = "[\\.\\-\\s\\[\\]\\(\\)]";
     
     public static String convertReservedCharsToLodash(String str) {
-        if (str == null) {
+        if (str == null || str.length() == 0) {
             return str;
         }
         return str.replaceAll(RESERVED_CHARS, "_");
@@ -179,7 +179,10 @@ public class OpflowStringUtil {
         }
         String fileName = url.substring(url.lastIndexOf('/') + 1, url.length());
         if (withoutExt) {
-            fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+            int extPos = fileName.lastIndexOf('.');
+            if (extPos >= 0) {
+                fileName = fileName.substring(0, extPos);
+            }
         }
         return fileName;
     }
