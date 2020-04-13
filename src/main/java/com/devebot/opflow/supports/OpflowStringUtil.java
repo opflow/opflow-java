@@ -151,10 +151,36 @@ public class OpflowStringUtil {
     
     //--------------------------------------------------------------------------
     
+    private static final String RESERVED_CHARS = "[\\.\\-\\s\\[\\]\\(\\)]";
+    
+    public static String convertReservedCharsToLodash(String str) {
+        if (str == null) {
+            return str;
+        }
+        return str.replaceAll(RESERVED_CHARS, "_");
+    }
+    
     public static String convertDottedNameToSnakeCase(String dottedName) {
         if (dottedName == null) {
             return dottedName;
         }
         return dottedName.replace('.', '_');
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    public static String getFilename(String url) {
+        return getFilename(url, true);
+    }
+    
+    public static String getFilename(String url, boolean withoutExt) {
+        if (url == null) {
+            return null;
+        }
+        String fileName = url.substring(url.lastIndexOf('/') + 1, url.length());
+        if (withoutExt) {
+            fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+        }
+        return fileName;
     }
 }

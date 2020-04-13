@@ -690,7 +690,7 @@ public class OpflowConfig {
                         OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_WORKER),
                     }));
                     // merge the environment variables to the configuration
-                    mergeEnvironmentVariables(config);
+                    mergeEnvironmentVariables(OpflowStringUtil.getFilename(url.getFile(), true), config);
                 } else {
                     configFile = (configFile != null) ? configFile : DEFAULT_CONFIGURATION_FILE;
                     throw new FileNotFoundException("configuration file '" + configFile + "' not found");
@@ -751,9 +751,22 @@ public class OpflowConfig {
     }
     
     public static Map<String, Object> mergeEnvironmentVariables(Map<String, Object> target) {
+        return mergeEnvironmentVariables(null, target);
+    }
+    
+    public static Map<String, Object> mergeEnvironmentVariables(String prefix, Map<String, Object> target) {
+        final String[] prefixes;
+        if (prefix != null && prefix.length() > 0) {
+            prefixes = new String[] { OpflowStringUtil.convertReservedCharsToLodash(prefix) };
+        } else {
+            prefixes = null;
+        }
         return OpflowObjectTree.traverseTree(target, new OpflowObjectTree.LeafUpdater() {
             @Override
             public Object transform(String[] path, Object value) {
+                if (prefixes != null) {
+                    path = OpflowCollectionUtil.mergeArrays(prefixes, path);
+                }
                 String varName = OpflowStringUtil.join("_", path).toUpperCase();
                 String envStr = OpflowEnvTool.instance.getEnvironVariable(varName, null);
                 if (envStr != null) {
