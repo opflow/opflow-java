@@ -187,7 +187,18 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
     private final Object callbackConsumerLock = new Object();
     private volatile OpflowEngine.ConsumerInfo callbackConsumer;
     
-    private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean isTransient) {
+    private OpflowEngine.ConsumerInfo assertCallbackConsumer(final boolean isTransient) {
+        if (callbackConsumer == null) {
+            synchronized (callbackConsumerLock) {
+                if (callbackConsumer == null) {
+                    callbackConsumer = createCallbackConsumer(isTransient);
+                }
+            }
+        }
+        return callbackConsumer;
+    }
+    
+    private OpflowEngine.ConsumerInfo createCallbackConsumer(final boolean isTransient) {
         final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
         if (logSession.ready(LOG, Level.INFO)) LOG.info(logSession
@@ -278,16 +289,36 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         }
     }
     
-    private final Object timeoutMonitorLock = new Object();
-    private OpflowTimeout.Monitor timeoutMonitor = null;
+    private final Object callbackMonitorLock = new Object();
+    private OpflowTimeout.Monitor callbackMonitor = null;
     
-    private OpflowTimeout.Monitor initTimeoutMonitor() {
+    private OpflowTimeout.Monitor assertCallbackMonitor() {
+        if (callbackMonitor == null) {
+            synchronized (callbackMonitorLock) {
+                if (callbackMonitor == null) {
+                    callbackMonitor = createCallbackMonitor();
+                }
+            }
+        }
+        return callbackMonitor;
+    }
+    
+    private OpflowTimeout.Monitor createCallbackMonitor() {
         OpflowTimeout.Monitor monitor = null;
         if (monitorEnabled) {
             monitor = new OpflowTimeout.Monitor(tasks, monitorInterval, monitorTimeout, monitorId);
             monitor.serve();
         }
         return monitor;
+    }
+    
+    private void cancelCallbackMonitor() {
+        synchronized (callbackMonitorLock) {
+            if (callbackMonitor != null) {
+                callbackMonitor.close();
+                callbackMonitor = null;
+            }
+        }
     }
     
     public OpflowRpcAmqpRequest request(String routineSignature, String body) {
@@ -355,26 +386,13 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         final OpflowLogTracer reqTracer = logTracer.branch(OpflowConstant.REQUEST_TIME, params.getRoutineTimestamp())
                 .branch(OpflowConstant.REQUEST_ID, params.getRoutineId(), params);
         
-        if (timeoutMonitor == null) {
-            synchronized (timeoutMonitorLock) {
-                if (timeoutMonitor == null) {
-                    timeoutMonitor = initTimeoutMonitor();
-                }
-            }
-        }
+        assertCallbackMonitor();
         
         final OpflowEngine.ConsumerInfo consumerInfo;
         if (params.getCallbackTransient()) {
-            consumerInfo = initCallbackConsumer(true);
+            consumerInfo = createCallbackConsumer(true);
         } else {
-            if (callbackConsumer == null) {
-                synchronized (callbackConsumerLock) {
-                    if (callbackConsumer == null) {
-                        callbackConsumer = initCallbackConsumer(false);
-                    }
-                }
-            }
-            consumerInfo = callbackConsumer;
+            consumerInfo = assertCallbackConsumer(false);
         }
         
         final String taskId = OpflowUUID.getBase64ID();
@@ -561,12 +579,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                 .text("amqpMaster[${amqpMasterId}].close() - stop timeoutMonitor")
                 .stringify());
 
-            synchronized (timeoutMonitorLock) {
-                if (timeoutMonitor != null) {
-                    timeoutMonitor.close();
-                    timeoutMonitor = null;
-                }
-            }
+            cancelCallbackMonitor();
             
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .text("amqpMaster[${amqpMasterId}].close() - close broker/engine")
