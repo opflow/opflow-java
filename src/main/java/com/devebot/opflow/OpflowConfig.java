@@ -17,6 +17,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -209,6 +210,13 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
             });
             
+            if (componentRoot.containsKey(OpflowConstant.COMP_CFG_AMQP_MASTER) && componentRoot.containsKey(OpflowConstant.COMP_RPC_AMQP_MASTER)) {
+                throw new OpflowBootstrapException(MessageFormat.format("Please convert the section [{0}] to [{1}]", new Object[] {
+                    OpflowConstant.COMP_CFG_AMQP_MASTER,
+                    OpflowConstant.COMP_RPC_AMQP_MASTER,
+                }));
+            }
+            
             // rename the components
             renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_MASTER, OpflowConstant.COMP_RPC_AMQP_MASTER);
 
@@ -396,6 +404,13 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
             });
+            
+            if (componentRoot.containsKey(OpflowConstant.COMP_CFG_AMQP_WORKER) && componentRoot.containsKey(OpflowConstant.COMP_RPC_AMQP_WORKER)) {
+                throw new OpflowBootstrapException(MessageFormat.format("Please convert the section [{0}] to [{1}]", new Object[] {
+                    OpflowConstant.COMP_CFG_AMQP_WORKER,
+                    OpflowConstant.COMP_RPC_AMQP_WORKER,
+                }));
+            }
             
             // rename the components
             renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
