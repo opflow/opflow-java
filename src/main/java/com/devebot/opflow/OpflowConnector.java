@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
  * @author cuoi
  */
 public class OpflowConnector {
+    public final static String GENERAL_CONNECTOR_NAME = "_commons_";
     public final static String DEFAULT_CONNECTOR_NAME = "_default_";
     private final static Logger LOG = LoggerFactory.getLogger(OpflowConnector.class);
 
@@ -35,8 +36,8 @@ public class OpflowConnector {
     private final OpflowRestrictorMaster restrictor;
     private final OpflowRpcObserver rpcObserver;
     private final OpflowThroughput.Tuple speedMeter;
+    private final OpflowRpcChecker rpcChecker;
 
-    private OpflowRpcChecker rpcChecker;
     private OpflowPubsubHandler publisher;
     private OpflowRpcAmqpMaster amqpMaster;
     private OpflowRpcHttpMaster httpMaster;
@@ -137,9 +138,13 @@ public class OpflowConnector {
             }
         }
 
-        // create a RpcChecker instance after the amqpMaster, httpMaster has already created
-        rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcObserver, amqpMaster, httpMaster);
-        
+        // create a RpcChecker instance after the amqpMaster, mqttMaster, httpMaster has already created
+        if (restrictor == null) {
+            rpcChecker = new OpflowRpcCheckerMaster(null, rpcObserver, amqpMaster, httpMaster);
+        } else {
+            rpcChecker = new OpflowRpcCheckerMaster(restrictor.getValveRestrictor(), rpcObserver, amqpMaster, httpMaster);
+        }
+
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("Container[${componentId}][${instanceId}].new() end!")
                 .stringify());
