@@ -44,11 +44,11 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
     
     private String httpAddress = null;
     
-    public OpflowRpcAmqpWorker(Map<String, Object> params) throws OpflowBootstrapException {
-        params = OpflowObjectTree.ensureNonNull(params);
+    public OpflowRpcAmqpWorker(Map<String, Object> kwargs) throws OpflowBootstrapException {
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
-        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
         
         logTracer = OpflowLogTracer.ROOT.branch("amqpWorkerId", componentId);
         
@@ -58,32 +58,32 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
         
         Map<String, Object> brokerParams = new HashMap<>();
 
-        OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
+        OpflowUtil.copyParameters(brokerParams, kwargs, OpflowEngine.PARAMETER_NAMES);
 
         brokerParams.put(OpflowConstant.COMPONENT_ID, componentId);
         brokerParams.put(OpflowConstant.COMP_MEASURER, measurer);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, OpflowConstant.COMP_RPC_AMQP_WORKER);
 
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, params.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, kwargs.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, kwargs.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, kwargs.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, kwargs.get(OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY));
 
         // Use for autoBinding
-        dispatchExchangeName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME);
-        dispatchRoutingKey = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY);
+        dispatchExchangeName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME);
+        dispatchRoutingKey = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY);
         
         // Incoming Queue parameters
-        incomingQueueName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
+        incomingQueueName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
         if (incomingQueueName == null) {
             throw new OpflowBootstrapException("incomingQueueName must not be null");
         }
         
-        incomingQueueDurable = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE, null);
-        incomingQueueExclusive = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE, null);
-        incomingQueueAutoDelete = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE, null);
-        incomingBindingKeys = OpflowUtil.getStringArray(params, OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS, null);
-        incomingPrefetchCount = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT, null);
+        incomingQueueDurable = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE, null);
+        incomingQueueExclusive = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE, null);
+        incomingQueueAutoDelete = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE, null);
+        incomingBindingKeys = OpflowUtil.getStringArray(kwargs, OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS, null);
+        incomingPrefetchCount = OpflowUtil.getIntegerField(kwargs, OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT, null);
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
@@ -93,7 +93,7 @@ public class OpflowRpcAmqpWorker implements AutoCloseable {
         }
         
         // responseQueue - Deprecated
-        responseQueueName = (String) params.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
+        responseQueueName = (String) kwargs.get(OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
         
         if (incomingQueueName != null && responseQueueName != null && incomingQueueName.equals(responseQueueName)) {
             throw new OpflowBootstrapException("incomingQueueName should be different with responseQueueName");

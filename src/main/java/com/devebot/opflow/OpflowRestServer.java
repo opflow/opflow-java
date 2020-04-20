@@ -446,11 +446,11 @@ public class OpflowRestServer implements AutoCloseable {
                 exchange.setStatusCode(500).getResponseSender().send(exception.toString());
             }
         }
-        private Map<String, Object> traffic(Map<String, Object> params) {
+        private Map<String, Object> traffic(Map<String, Object> kwargs) {
             Map<String, Boolean> opts = new HashMap<>();
             opts.put(OpflowInfoCollector.SCOPE_INFO, true);
-            if (params != null) {
-                for (Map.Entry<String, Object> entry : params.entrySet()) {
+            if (kwargs != null) {
+                for (Map.Entry<String, Object> entry : kwargs.entrySet()) {
                     if (entry.getValue() instanceof Boolean) {
                         opts.put(entry.getKey(), (Boolean) entry.getValue());
                     }
