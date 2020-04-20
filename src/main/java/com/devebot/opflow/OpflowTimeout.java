@@ -16,8 +16,6 @@ import org.slf4j.LoggerFactory;
  * @author drupalex
  */
 public class OpflowTimeout {
-    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-    
     public interface Listener {
         public void handleEvent();
     }
