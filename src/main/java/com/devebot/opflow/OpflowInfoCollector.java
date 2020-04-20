@@ -14,7 +14,7 @@ public interface OpflowInfoCollector {
     public static final String SCOPE_MESSAGE_RATE = "MESSAGE_RATE";
 
     Map<String, Object> collect();
-    Map<String, Object> collect(String scope);
     Map<String, Object> collect(Map<String, Boolean> flags);
+    Map<String, Object> collect(String connectorName, Map<String, Boolean> flags);
     Map<String, Object> traffic(Map<String, Boolean> flags);
 }

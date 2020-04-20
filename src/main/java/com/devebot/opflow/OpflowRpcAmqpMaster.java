@@ -62,12 +62,12 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
     
     private final boolean autorun;
     
-    public OpflowRpcAmqpMaster(Map<String, Object> params) throws OpflowBootstrapException {
-        params = OpflowObjectTree.ensureNonNull(params);
+    public OpflowRpcAmqpMaster(Map<String, Object> kwargs) throws OpflowBootstrapException {
+        kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         
-        componentId = OpflowUtil.getStringField(params, OpflowConstant.COMPONENT_ID, true);
-        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(params, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
-        rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(params, OpflowConstant.COMP_RPC_OBSERVER, null);
+        componentId = OpflowUtil.getStringField(kwargs, OpflowConstant.COMPONENT_ID, true);
+        measurer = (OpflowPromMeasurer) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_MEASURER, OpflowPromMeasurer.NULL);
+        rpcObserver = (OpflowRpcObserver) OpflowUtil.getOptionField(kwargs, OpflowConstant.COMP_RPC_OBSERVER, null);
         restrictor = new OpflowRestrictor.Valve();
         
         logTracer = OpflowLogTracer.ROOT.branch("amqpMasterId", componentId);
@@ -77,16 +77,16 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                 .stringify());
         
         Map<String, Object> brokerParams = new HashMap<>();
-        OpflowUtil.copyParameters(brokerParams, params, OpflowEngine.PARAMETER_NAMES);
+        OpflowUtil.copyParameters(brokerParams, kwargs, OpflowEngine.PARAMETER_NAMES);
         
         brokerParams.put(OpflowConstant.COMPONENT_ID, componentId);
         brokerParams.put(OpflowConstant.COMP_MEASURER, measurer);
         brokerParams.put(OpflowConstant.OPFLOW_COMMON_INSTANCE_OWNER, OpflowConstant.COMP_RPC_AMQP_MASTER);
         
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, params.getOrDefault(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE, "direct"));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, params.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE));
-        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, params.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME, kwargs.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE, kwargs.getOrDefault(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE, "direct"));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE, kwargs.get(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE));
+        brokerParams.put(OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY, kwargs.get(OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY));
         
         engine = new OpflowEngine(brokerParams);
         executor = new OpflowExecutor(engine);
@@ -108,10 +108,10 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         });
         
         // Message TTL option
-        expiration = OpflowUtil.getLongField(params, OpflowConstant.AMQP_PARAM_MESSAGE_TTL, 0l);
+        expiration = OpflowUtil.getLongField(kwargs, OpflowConstant.AMQP_PARAM_MESSAGE_TTL, 0l);
         
         // Response queue options
-        String responseQueuePattern = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX);
+        String responseQueuePattern = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX);
         String responseQueueSuffix = null;
         if (responseQueuePattern != null && responseQueuePattern.length() > 0) {
             if (responseQueuePattern.equals("~")) {
@@ -121,40 +121,40 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
             }
         }
         
-        String _responseQueueName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
+        String _responseQueueName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME);
         if (_responseQueueName != null) {
             responseQueueName = responseQueueSuffix != null ? _responseQueueName + '_' + responseQueueSuffix : _responseQueueName;
         } else {
             responseQueueName = null;
         }
         
-        responseQueueDurable = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE, responseQueueSuffix != null ? false : null);
-        responseQueueExclusive = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE, responseQueueSuffix != null ? true : null);
-        responseQueueAutoDelete = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE, responseQueueSuffix != null ? true : null);
-        responsePrefetchCount = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT, PREFETCH_NUM);
+        responseQueueDurable = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE, responseQueueSuffix != null ? false : null);
+        responseQueueExclusive = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE, responseQueueSuffix != null ? true : null);
+        responseQueueAutoDelete = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE, responseQueueSuffix != null ? true : null);
+        responsePrefetchCount = OpflowUtil.getIntegerField(kwargs, OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT, PREFETCH_NUM);
         
         if (responseQueueName != null) {
             executor.assertQueue(responseQueueName, responseQueueDurable, responseQueueExclusive, responseQueueAutoDelete);
         }
         
         // Auto-binding section
-        String _dispatchQueueName = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
+        String _dispatchQueueName = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME);
         if (_dispatchQueueName != null) {
-            Boolean _dispatchQueueDurable = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE, null);
-            Boolean _dispatchQueueExclusive = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE, null);
-            Boolean _dispatchQueueAutoDelete = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE, null);
+            Boolean _dispatchQueueDurable = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE, null);
+            Boolean _dispatchQueueExclusive = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE, null);
+            Boolean _dispatchQueueAutoDelete = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE, null);
             executor.assertQueue(_dispatchQueueName, _dispatchQueueDurable, _dispatchQueueExclusive, _dispatchQueueAutoDelete);
             executor.bindExchange(engine.getExchangeName(), engine.getRoutingKey(), _dispatchQueueName);
         }
         
         // RPC Monitor section
-        monitorEnabled = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED, true);
-        monitorId = OpflowUtil.getStringField(params, OpflowConstant.OPFLOW_RPC_MONITOR_ID, componentId);
-        monitorInterval = OpflowUtil.getIntegerField(params, OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL, 14000); // can run 2-3 times in 30s
-        monitorTimeout = OpflowUtil.getLongField(params, OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT, 0l);
+        monitorEnabled = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_RPC_MONITOR_ENABLED, true);
+        monitorId = OpflowUtil.getStringField(kwargs, OpflowConstant.OPFLOW_RPC_MONITOR_ID, componentId);
+        monitorInterval = OpflowUtil.getIntegerField(kwargs, OpflowConstant.OPFLOW_RPC_MONITOR_INTERVAL, 14000); // can run 2-3 times in 30s
+        monitorTimeout = OpflowUtil.getLongField(kwargs, OpflowConstant.OPFLOW_RPC_MONITOR_TIMEOUT, 0l);
         
         // Autorun section
-        autorun = OpflowUtil.getBooleanField(params, OpflowConstant.OPFLOW_COMMON_AUTORUN, Boolean.FALSE);
+        autorun = OpflowUtil.getBooleanField(kwargs, OpflowConstant.OPFLOW_COMMON_AUTORUN, Boolean.FALSE);
         
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("autorun", autorun)
@@ -187,7 +187,18 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
     private final Object callbackConsumerLock = new Object();
     private volatile OpflowEngine.ConsumerInfo callbackConsumer;
     
-    private OpflowEngine.ConsumerInfo initCallbackConsumer(final boolean isTransient) {
+    private OpflowEngine.ConsumerInfo assertCallbackConsumer(final boolean isTransient) {
+        if (callbackConsumer == null) {
+            synchronized (callbackConsumerLock) {
+                if (callbackConsumer == null) {
+                    callbackConsumer = createCallbackConsumer(isTransient);
+                }
+            }
+        }
+        return callbackConsumer;
+    }
+    
+    private OpflowEngine.ConsumerInfo createCallbackConsumer(final boolean isTransient) {
         final String _consumerId = OpflowUUID.getBase64ID();
         final OpflowLogTracer logSession = logTracer.branch("consumerId", _consumerId);
         if (logSession.ready(LOG, Level.INFO)) LOG.info(logSession
@@ -278,16 +289,36 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         }
     }
     
-    private final Object timeoutMonitorLock = new Object();
-    private OpflowTimeout.Monitor timeoutMonitor = null;
+    private final Object callbackMonitorLock = new Object();
+    private OpflowTimeout.Monitor callbackMonitor = null;
     
-    private OpflowTimeout.Monitor initTimeoutMonitor() {
+    private OpflowTimeout.Monitor assertCallbackMonitor() {
+        if (callbackMonitor == null) {
+            synchronized (callbackMonitorLock) {
+                if (callbackMonitor == null) {
+                    callbackMonitor = createCallbackMonitor();
+                }
+            }
+        }
+        return callbackMonitor;
+    }
+    
+    private OpflowTimeout.Monitor createCallbackMonitor() {
         OpflowTimeout.Monitor monitor = null;
         if (monitorEnabled) {
             monitor = new OpflowTimeout.Monitor(tasks, monitorInterval, monitorTimeout, monitorId);
             monitor.serve();
         }
         return monitor;
+    }
+    
+    private void cancelCallbackMonitor() {
+        synchronized (callbackMonitorLock) {
+            if (callbackMonitor != null) {
+                callbackMonitor.close();
+                callbackMonitor = null;
+            }
+        }
     }
     
     public OpflowRpcAmqpRequest request(String routineSignature, String body) {
@@ -355,26 +386,13 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
         final OpflowLogTracer reqTracer = logTracer.branch(OpflowConstant.REQUEST_TIME, params.getRoutineTimestamp())
                 .branch(OpflowConstant.REQUEST_ID, params.getRoutineId(), params);
         
-        if (timeoutMonitor == null) {
-            synchronized (timeoutMonitorLock) {
-                if (timeoutMonitor == null) {
-                    timeoutMonitor = initTimeoutMonitor();
-                }
-            }
-        }
+        assertCallbackMonitor();
         
         final OpflowEngine.ConsumerInfo consumerInfo;
         if (params.getCallbackTransient()) {
-            consumerInfo = initCallbackConsumer(true);
+            consumerInfo = createCallbackConsumer(true);
         } else {
-            if (callbackConsumer == null) {
-                synchronized (callbackConsumerLock) {
-                    if (callbackConsumer == null) {
-                        callbackConsumer = initCallbackConsumer(false);
-                    }
-                }
-            }
-            consumerInfo = callbackConsumer;
+            consumerInfo = assertCallbackConsumer(false);
         }
         
         final String taskId = OpflowUUID.getBase64ID();
@@ -561,12 +579,7 @@ public class OpflowRpcAmqpMaster implements AutoCloseable {
                 .text("amqpMaster[${amqpMasterId}].close() - stop timeoutMonitor")
                 .stringify());
 
-            synchronized (timeoutMonitorLock) {
-                if (timeoutMonitor != null) {
-                    timeoutMonitor.close();
-                    timeoutMonitor = null;
-                }
-            }
+            cancelCallbackMonitor();
             
             if (logTracer.ready(LOG, Level.TRACE)) LOG.trace(logTracer
                 .text("amqpMaster[${amqpMasterId}].close() - close broker/engine")

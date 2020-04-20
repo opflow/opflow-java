@@ -12,8 +12,6 @@ import java.util.Map;
  */
 public class OpflowRpcParameter implements Customizer {
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
-    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
-
     private final static boolean IS_PING_LOGGING_OMITTED;
 
     static {

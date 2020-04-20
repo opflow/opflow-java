@@ -37,7 +37,7 @@ public class OpflowConfig {
     public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
 
-    private final static OpflowConstant CONST = OpflowConstant.CURRENT();
+    private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
     private final static Logger LOG = LoggerFactory.getLogger(OpflowConfig.class);
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
     
@@ -345,6 +345,38 @@ public class OpflowConfig {
                 transformParameters(componentCfg);
                 params.put(componentName, componentCfg);
             }
+            
+            // connector hashMap
+            Map<String, Object> connectorHash = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_CONNECTOR}, false);
+            
+            // validate the connector names and connector config fields
+            if (connectorHash != null) {
+                for (String connectorName : connectorHash.keySet()) {
+                    Map<String, Object> connectorCfg = OpflowUtil.getChildMap(connectorHash, connectorName);
+                    if (connectorCfg != null) {
+                        for (String amqpCompName : OpflowCommander.SERVICE_BEAN_NAMES) {
+                            Map<String, Object> componentCfg = OpflowUtil.getChildMap(connectorCfg, amqpCompName);
+                            if (componentCfg != null) {
+                                OpflowUtil.copyParameters(componentCfg,  getChildMapByPath(config, new String[] {
+                                    OpflowConstant.FRAMEWORK_ID,
+                                    OpflowConstant.COMP_COMMANDER
+                                }), OpflowEngine.SHARED_PARAMETERS, false);
+                                
+                                OpflowUtil.copyParameters(componentCfg, getChildMapByPath(config, new String[] {
+                                    OpflowConstant.FRAMEWORK_ID
+                                }), OpflowEngine.SHARED_PARAMETERS, false);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // assign the connector hash map to the params
+            params.put(OpflowConstant.COMP_CONNECTOR, connectorHash);
+            
+            // System.out.println("CONFIG: " + OpflowJsonTool.toString(params, true));
+            
+            // return the connection parameters
             return params;
         }
     }
@@ -705,7 +737,7 @@ public class OpflowConfig {
                         OpflowStringUtil.join(".", OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_CFG_AMQP_WORKER),
                     }));
                     // merge the environment variables to the configuration
-                    mergeEnvironmentVariables(OpflowStringUtil.getFilename(url.getFile(), true), config);
+                    mergeEnvironmentVariables(config);
                 } else {
                     configFile = (configFile != null) ? configFile : DEFAULT_CONFIGURATION_FILE;
                     throw new FileNotFoundException("configuration file '" + configFile + "' not found");
@@ -727,12 +759,12 @@ public class OpflowConfig {
     
     private static URL getConfigurationUrl(String configFile) {
         URL url;
-        String cfgFromSystem = OpflowEnvTool.instance.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
+        String cfgFromSystem = ENVTOOL.getSystemProperty(DEFAULT_CONFIGURATION_KEY, null);
         if (cfgFromSystem == null) {
             cfgFromSystem = configFile;
         }
         if (cfgFromSystem == null) {
-            cfgFromSystem = OpflowEnvTool.instance.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
+            cfgFromSystem = ENVTOOL.getEnvironVariable(DEFAULT_CONFIGURATION_ENV, null);
         }
         if (LOG_TRACER.ready(LOG, Level.TRACE)) LOG.trace(LOG_TRACER
                 .put("configFile", cfgFromSystem)
