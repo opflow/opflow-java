@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
  * @author cuoi
  */
 public class OpflowConnector {
-    public final static String GENERAL_CONNECTOR_NAME = "_commons_";
     public final static String DEFAULT_CONNECTOR_NAME = "_default_";
     private final static Logger LOG = LoggerFactory.getLogger(OpflowConnector.class);
 

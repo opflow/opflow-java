@@ -357,13 +357,8 @@ public class OpflowConfig {
                         for (String amqpCompName : OpflowCommander.SERVICE_BEAN_NAMES) {
                             Map<String, Object> componentCfg = OpflowUtil.getChildMap(connectorCfg, amqpCompName);
                             if (componentCfg != null) {
-                                OpflowUtil.copyParameters(componentCfg,  getChildMapByPath(config, new String[] {
-                                    OpflowConstant.FRAMEWORK_ID,
-                                    OpflowConstant.COMP_COMMANDER
-                                }), OpflowEngine.SHARED_PARAMETERS, false);
-                                
-                                OpflowUtil.copyParameters(componentCfg, getChildMapByPath(config, new String[] {
-                                    OpflowConstant.FRAMEWORK_ID
+                                OpflowUtil.copyParameters(componentCfg, getChildMapByPath(params, new String[] {
+                                    amqpCompName
                                 }), OpflowEngine.SHARED_PARAMETERS, false);
                             }
                         }
