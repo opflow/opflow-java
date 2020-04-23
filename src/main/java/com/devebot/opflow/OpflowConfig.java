@@ -66,24 +66,26 @@ public class OpflowConfig {
             extractEngineParameters(params, config, handlerPath);
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
 
-            OpflowUtil.copyParameters(params, handlerNode, new String[] {
-                OpflowConstant.OPFLOW_COMMON_AUTORUN,
-                OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
-                OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE,
-                OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE,
-                OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
-                OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
-                OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
-                OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
-                OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
-                OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
-                OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
-                OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX,
-                OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
-                OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE,
-                OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE,
-                OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
-            });
+            if (handlerNode != null) {
+                OpflowUtil.copyParameters(params, handlerNode, new String[] {
+                    OpflowConstant.OPFLOW_COMMON_AUTORUN,
+                    OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
+                    OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE,
+                    OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_DURABLE,
+                    OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
+                    OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
+                    OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
+                    OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
+                    OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
+                    OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
+                    OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
+                    OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX,
+                    OpflowConstant.OPFLOW_RESPONSE_QUEUE_DURABLE,
+                    OpflowConstant.OPFLOW_RESPONSE_QUEUE_EXCLUSIVE,
+                    OpflowConstant.OPFLOW_RESPONSE_QUEUE_AUTO_DELETE,
+                    OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
+                });
+            }
 
             transformParameters(params);
             return params;
@@ -110,30 +112,33 @@ public class OpflowConfig {
             String[] handlerPath = new String[] {OpflowConstant.FRAMEWORK_ID, "worker"};
             extractEngineParameters(params, config, handlerPath);
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
-            Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID});
 
-            OpflowUtil.copyParameters(params, handlerNode, new String[] {
-                OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
-                OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
-                OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
-                OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
-                OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
-                OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
-                OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
-                OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
-                OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
-                OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME,
-                OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE,
-                OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE,
-                OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY,
-            });
+            if (handlerNode != null) {
+                OpflowUtil.copyParameters(params, handlerNode, new String[] {
+                    OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
+                    OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
+                    OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
+                    OpflowConstant.OPFLOW_INCOMING_BINDING_KEYS,
+                    OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
+                    OpflowConstant.OPFLOW_INCOMING_QUEUE_DURABLE,
+                    OpflowConstant.OPFLOW_INCOMING_QUEUE_EXCLUSIVE,
+                    OpflowConstant.OPFLOW_INCOMING_QUEUE_AUTO_DELETE,
+                    OpflowConstant.OPFLOW_INCOMING_PREFETCH_COUNT,
+                    OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME,
+                    OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE,
+                    OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_DURABLE,
+                    OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY,
+                });
 
-            if (handlerNode.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME) == null) {
-                params.put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
-            }
-            
-            if (handlerNode.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME) == null) {
-                params.put(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME, opflowNode.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME));
+                Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID});
+                if (opflowNode != null) {
+                    if (handlerNode.get(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME) == null) {
+                        params.put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
+                    }
+                    if (handlerNode.get(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME) == null) {
+                        params.put(OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME, opflowNode.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME));
+                    }
+                }
             }
 
             transformParameters(params);
@@ -161,24 +166,26 @@ public class OpflowConfig {
             String[] handlerPath = new String[] {OpflowConstant.FRAMEWORK_ID, "pubsub"};
             extractEngineParameters(params, config, handlerPath);
             Map<String, Object> handlerNode = getChildMapByPath(config, handlerPath);
-            Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID});
 
-            OpflowUtil.copyParameters(params, handlerNode, new String[] {
-                OpflowConstant.OPFLOW_COMMON_AUTORUN,
-                OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
-                OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
-                OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
-                OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
-                OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS,
-                OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
-                OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT,
-                OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT,
-                OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT,
-                OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME,
-            });
+            if (handlerNode != null) {
+                OpflowUtil.copyParameters(params, handlerNode, new String[] {
+                    OpflowConstant.OPFLOW_COMMON_AUTORUN,
+                    OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+                    OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+                    OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
+                    OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
+                    OpflowConstant.OPFLOW_PUBSUB_BINDING_KEYS,
+                    OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
+                    OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT,
+                    OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT,
+                    OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT,
+                    OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME,
+                });
 
-            if (handlerNode.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME) == null) {
-                params.put(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME, opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
+                Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID});
+                if (handlerNode.get(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME) == null) {
+                    params.put(OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME, opflowNode.get(OpflowConstant.OPFLOW_CONSUMING_QUEUE_NAME));
+                }
             }
 
             transformParameters(params);
@@ -204,7 +211,7 @@ public class OpflowConfig {
             Map<String, Object> params = new HashMap<>();
 
             // extract the top-level configuration
-            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER});
+            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER}, true);
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
@@ -232,7 +239,7 @@ public class OpflowConfig {
                 Map<String, Object> componentNode;
                 if (OpflowCommander.SERVICE_BEAN_NAMES.contains(componentName)) {
                     extractEngineParameters(componentCfg, config, componentPath);
-                    componentNode = getChildMapByPath(config, componentPath);
+                    componentNode = getChildMapByPath(config, componentPath, true);
                 } else {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
@@ -365,19 +372,21 @@ public class OpflowConfig {
                         for (String amqpCompName : OpflowCommander.SERVICE_BEAN_NAMES) {
                             Map<String, Object> componentCfg = OpflowUtil.getChildMap(connectorCfg, amqpCompName);
                             if (componentCfg != null) {
-                                OpflowUtil.copyParameters(componentCfg, getChildMapByPath(params, new String[] {
-                                    amqpCompName
-                                }), OpflowEngine.PARAMETER_NAMES, false);
-                                OpflowUtil.copyParameters(componentCfg, getChildMapByPath(params, new String[] {
-                                    amqpCompName
-                                }), OpflowEngine.SHARED_DEFAULT_PARAMS, false);
+                                OpflowUtil.copyParameters(componentCfg,
+                                    getChildMapByPath(params, new String[] { amqpCompName }, true),
+                                    OpflowEngine.PARAMETER_NAMES,
+                                    false);
+                                OpflowUtil.copyParameters(componentCfg,
+                                    getChildMapByPath(params, new String[] { amqpCompName }, true),
+                                    OpflowEngine.SHARED_DEFAULT_PARAMS,
+                                    false);
                             }
                         }
                         // copy the HTTP parameters
                         Map<String, Object> componentCfg = OpflowUtil.getChildMap(connectorCfg, OpflowConstant.COMP_RPC_HTTP_MASTER);
                         if (componentCfg != null) {
                             OpflowUtil.copyParameters(componentCfg,
-                                getChildMapByPath(params,new String[] { OpflowConstant.COMP_RPC_HTTP_MASTER }),
+                                getChildMapByPath(params, new String[] { OpflowConstant.COMP_RPC_HTTP_MASTER }, true),
                                 new String[] {
                                     OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT,
                                     OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT,
@@ -418,7 +427,7 @@ public class OpflowConfig {
             Map<String, Object> params = new HashMap<>();
 
             // extract the top-level configuration
-            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET});
+            Map<String, Object> componentRoot = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET}, true);
             OpflowUtil.copyParameters(params, componentRoot, new String[] {
                 OpflowConstant.OPFLOW_COMMON_STRICT,
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
@@ -446,7 +455,7 @@ public class OpflowConfig {
                 Map<String, Object> componentNode;
                 if (OpflowServerlet.SERVICE_BEAN_NAMES.contains(componentName)) {
                     extractEngineParameters(componentCfg, config, componentPath);
-                    componentNode = getChildMapByPath(config, componentPath);
+                    componentNode = getChildMapByPath(config, componentPath, true);
                 } else {
                     componentNode = getChildMapByPath(config, componentPath, false);
                 }
@@ -516,7 +525,7 @@ public class OpflowConfig {
         if (oldName == null || oldName.isEmpty()) return;
         if (newName == null || newName.isEmpty()) return;
         if (oldName.equals(newName)) return;
-        Map<String, Object> parent = getChildMapByPath(source, path, 0);
+        Map<String, Object> parent = getChildMapByPath(source, path);
         if (parent != null) {
             if (parent.containsKey(oldName)) {
                 if (overridden || !parent.containsKey(newName)) {
@@ -548,18 +557,6 @@ public class OpflowConfig {
     }
     
     private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path) {
-        return getChildMapByPath(source, path, true);
-    }
-    
-    private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path, boolean disableByEmpty) {
-        if (disableByEmpty) {
-            return getChildMapByPath(source, path, 0B11);
-        } else {
-            return getChildMapByPath(source, path, 0B01);
-        }
-    }
-    
-    private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path, int flag) {
         if (path == null || path.length == 0) {
             return source;
         }
@@ -567,14 +564,19 @@ public class OpflowConfig {
         if(sourceObject != null && sourceObject instanceof Map) {
             return (Map<String, Object>) sourceObject;
         }
-        if ((flag & 0B01) == 0B01) {
+        return null;
+    }
+    
+    private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path, boolean disableByEmpty) {
+        Map<String, Object> childMap = getChildMapByPath(source, path);
+        if (childMap == null) {
             Map<String, Object> blank = new HashMap<>();
-            if ((flag & 0B10) == 0B10) {
+            if (disableByEmpty) {
                 blank.put(OpflowConstant.OPFLOW_COMMON_ENABLED, false);
             }
             return blank;
         }
-        return null;
+        return childMap;
     }
     
     private static void extractEngineParameters(Map<String, Object> target, Map<String, Object> source, String[] path) {
