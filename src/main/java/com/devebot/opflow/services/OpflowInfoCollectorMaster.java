@@ -289,7 +289,7 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
                     OpflowEngine engine = amqpMaster.getEngine();
 
                     opt2.put(OpflowConstant.COMPONENT_ID, amqpMaster.getComponentId());
-                    opt2.put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId());
+                    opt2.put(OpflowConstant.AMQP_PARAM_APP_ID, engine.getAppId());
 
                     opt2.put(OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME, engine.getExchangeName());
                     if (checkOption(flag, SCOPE_INFO)) {

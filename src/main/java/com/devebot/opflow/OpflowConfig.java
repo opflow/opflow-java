@@ -359,7 +359,7 @@ public class OpflowConfig {
                             if (componentCfg != null) {
                                 OpflowUtil.copyParameters(componentCfg, getChildMapByPath(params, new String[] {
                                     amqpCompName
-                                }), OpflowEngine.SHARED_PARAMETERS, false);
+                                }), OpflowEngine.PARAMETER_NAMES, false);
                             }
                         }
                     }
@@ -601,7 +601,7 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_RESPONSE_PREFETCH_COUNT,
         OpflowConstant.OPFLOW_PUBSUB_CONSUMER_LIMIT,
         OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT,
-        OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE
+        OpflowConstant.AMQP_PARAM_SHARED_THREAD_POOL_SIZE
     });
     
     private static final String[] INTEGER_ARRAY_FIELDS = new String[] { OpflowConstant.OPFLOW_COMMON_PORTS };

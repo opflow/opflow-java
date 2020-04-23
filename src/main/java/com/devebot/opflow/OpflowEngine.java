@@ -64,9 +64,10 @@ public class OpflowEngine implements AutoCloseable {
         OpflowConstant.AMQP_CONARG_SERVER_CERT_FILE,
         OpflowConstant.AMQP_CONARG_TRUST_STORE_FILE,
         OpflowConstant.AMQP_CONARG_TRUST_PASSPHRASE,
-        OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE,
-        OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE,
-        OpflowConstant.OPFLOW_COMMON_APP_ID,
+        
+        OpflowConstant.AMQP_PARAM_APP_ID,
+        OpflowConstant.AMQP_PARAM_SHARED_THREAD_POOL_TYPE,
+        OpflowConstant.AMQP_PARAM_SHARED_THREAD_POOL_SIZE,
     };
     
     public static final String[] SHARED_PARAMETERS = OpflowCollectionUtil.mergeArrays(PARAMETER_NAMES, new String[] {
@@ -105,11 +106,11 @@ public class OpflowEngine implements AutoCloseable {
     private final Object consumingChannelLock = new Object();
     private final Object consumingBlockedListenerLock = new Object();
     
+    private String appId;
     private String exchangeName;
     private String exchangeType;
     private Boolean exchangeDurable;
     private String routingKey;
-    private String applicationId;
     
     public OpflowEngine(Map<String, Object> kwargs) throws OpflowBootstrapException {
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
@@ -314,10 +315,10 @@ public class OpflowEngine implements AutoCloseable {
 
             threadPoolType = null;
             threadPoolSize = null;
-            if (kwargs.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE) instanceof String) {
-                threadPoolType = (String) kwargs.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_TYPE);
-                if (kwargs.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE) instanceof Integer) {
-                    threadPoolSize = (Integer)kwargs.get(OpflowConstant.AMQP_CONARG_SHARED_THREAD_POOL_SIZE);
+            if (kwargs.get(OpflowConstant.AMQP_PARAM_SHARED_THREAD_POOL_TYPE) instanceof String) {
+                threadPoolType = (String) kwargs.get(OpflowConstant.AMQP_PARAM_SHARED_THREAD_POOL_TYPE);
+                if (kwargs.get(OpflowConstant.AMQP_PARAM_SHARED_THREAD_POOL_SIZE) instanceof Integer) {
+                    threadPoolSize = (Integer)kwargs.get(OpflowConstant.AMQP_PARAM_SHARED_THREAD_POOL_SIZE);
                 }
                 if (threadPoolSize == null || threadPoolSize <= 0) {
                     threadPoolSize = OpflowSystemInfo.getNumberOfProcessors();
@@ -368,8 +369,8 @@ public class OpflowEngine implements AutoCloseable {
         }
         
         try {
-            if (kwargs.get(OpflowConstant.OPFLOW_COMMON_APP_ID) instanceof String) {
-                applicationId = (String) kwargs.get(OpflowConstant.OPFLOW_COMMON_APP_ID);
+            if (kwargs.get(OpflowConstant.AMQP_PARAM_APP_ID) instanceof String) {
+                appId = (String) kwargs.get(OpflowConstant.AMQP_PARAM_APP_ID);
             }
             
             if (kwargs.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME) instanceof String) {
@@ -395,11 +396,11 @@ public class OpflowEngine implements AutoCloseable {
             }
             
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
+                    .put("appId", appId)
                     .put("exchangeName", exchangeName)
                     .put("exchangeType", exchangeType)
                     .put("exchangeDurable", exchangeDurable)
                     .put("routingKey", routingKey)
-                    .put("applicationId", applicationId)
                     .text("Engine[${engineId}] exchangeName: '${exchangeName}' and routingKeys: ${routingKey}")
                     .stringify());
         } catch (IOException exception) {
@@ -441,8 +442,8 @@ public class OpflowEngine implements AutoCloseable {
         return routingKey;
     }
 
-    public String getApplicationId() {
-        return applicationId;
+    public String getAppId() {
+        return appId;
     }
     
     public void produce(final byte[] body, final Map<String, Object> headers) {
@@ -461,13 +462,13 @@ public class OpflowEngine implements AutoCloseable {
         propBuilder = (propBuilder == null) ? new AMQP.BasicProperties.Builder() : propBuilder;
         
         try {
-            String appId = this.applicationId;
+            String appId = this.appId;
             String reqExchangeName = this.exchangeName;
             String reqRoutingKey = this.routingKey;
             
             if (override != null) {
-                if (override.get(OpflowConstant.OPFLOW_COMMON_APP_ID) instanceof String) {
-                    appId = (String) override.get(OpflowConstant.OPFLOW_COMMON_APP_ID);
+                if (override.get(OpflowConstant.AMQP_PARAM_APP_ID) instanceof String) {
+                    appId = (String) override.get(OpflowConstant.AMQP_PARAM_APP_ID);
                 }
                 
                 if (override.get(OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME) instanceof String) {
@@ -654,7 +655,7 @@ public class OpflowEngine implements AutoCloseable {
                             .text("Request[${requestId}][${requestTime}][x-engine-msg-received] - Consumer[${consumerId}] receives a message (${bodyLength} bytes)")
                             .stringify());
 
-                        if (applicationId == null || applicationId.equals(properties.getAppId())) {
+                        if (appId == null || appId.equals(properties.getAppId())) {
                             if (reqTracer != null && reqTracer.ready(LOG, Level.TRACE)) LOG.trace(reqTracer
                                     .text("Request[${requestId}][${requestTime}] invoke listener.processMessage()")
                                     .stringify());
@@ -686,8 +687,8 @@ public class OpflowEngine implements AutoCloseable {
                             invokeAck(envelope, true);
                         } else {
                             if (reqTracer != null && reqTracer.ready(LOG, Level.INFO)) LOG.info(reqTracer
-                                    .put("applicationId", applicationId)
-                                    .text("Request[${requestId}][${requestTime}][x-engine-delivery-rejected] has been rejected, mismatched applicationId")
+                                    .put("appId", appId)
+                                    .text("Request[${requestId}][${requestTime}][x-engine-delivery-rejected] has been rejected, mismatched appId")
                                     .stringify());
                             invokeAck(envelope, false);
                         }

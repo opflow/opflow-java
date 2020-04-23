@@ -97,7 +97,6 @@ public class OpflowConstant {
 
     // engine - rabbitMQ
     public final static String OPFLOW_COMMON_PROTO_VERSION = "protocolVersion";
-    public final static String OPFLOW_COMMON_APP_ID = "applicationId";
     public final static String OPFLOW_COMMON_INSTANCE_OWNER = "mode";
     public final static String OPFLOW_COMMON_ACTIVE = "active";
     public final static String OPFLOW_COMMON_AUTORUN = "autorun";
@@ -280,10 +279,11 @@ public class OpflowConstant {
     public final static String AMQP_CONARG_TRUST_STORE_FILE = "trustStoreFile";
     public final static String AMQP_CONARG_TRUST_PASSPHRASE = "trustPassphrase";
     
-    public final static String AMQP_CONARG_SHARED_THREAD_POOL_TYPE = "threadPoolType";
-    public final static String AMQP_CONARG_SHARED_THREAD_POOL_SIZE = "threadPoolSize";
+    public final static String AMQP_PARAM_APP_ID = "applicationId";
+    public final static String AMQP_PARAM_APPLICATION_ID = "applicationId";
+    public final static String AMQP_PARAM_SHARED_THREAD_POOL_TYPE = "threadPoolType";
+    public final static String AMQP_PARAM_SHARED_THREAD_POOL_SIZE = "threadPoolSize";
 
-    public final static String AMQP_PARAM_APP_ID = "appId";
     public final static String AMQP_PARAM_MESSAGE_TTL = "expiration";
     public final static String AMQP_PARAM_REPLY_TO = "replyTo";
 

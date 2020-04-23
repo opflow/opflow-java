@@ -600,7 +600,7 @@ public class OpflowServerlet implements AutoCloseable {
                             opts.put(OpflowConstant.COMPONENT_ID, componentId);
                             opts.put(OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowObjectTree.buildMap()
                                 .put(OpflowConstant.COMPONENT_ID, amqpWorker.getComponentId())
-                                .put(OpflowConstant.OPFLOW_COMMON_APP_ID, engine.getApplicationId())
+                                .put(OpflowConstant.AMQP_PARAM_APP_ID, engine.getAppId())
                                 .put(OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME, amqpWorker.getIncomingQueueName())
                                 .put("request", requestInfo, protocol == OpflowConstant.Protocol.AMQP)
                                 .toMap());
