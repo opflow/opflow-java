@@ -35,6 +35,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -315,14 +316,24 @@ public class OpflowRestServer implements AutoCloseable {
         
         @Override
         public void handleRequest(final HttpServerExchange exchange) throws Exception {
+            Set<String> roles = OpflowIdentityManager.getRoles(exchange);
+            String relativePath = exchange.getRelativePath();
+            
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                     .put("username", OpflowIdentityManager.getUsername(exchange))
-                    .put("roles", OpflowIdentityManager.getRoles(exchange))
+                    .put("roles", roles)
                     .put("method", exchange.getRequestMethod())
                     .put("path", exchange.getRelativePath())
                     .text("RestServer[${restServerId}] - User[${username}] with roles[${roles}] invokes [${method}] ${path}")
                     .stringify());
-            next.handleRequest(exchange);
+            
+            if (checkPermission(relativePath, roles)) {
+                next.handleRequest(exchange);
+            } else {
+                exchange.setStatusCode(403);
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                exchange.getResponseSender().send("Insufficient permissions");
+            }
         }
     }
     
@@ -551,5 +562,25 @@ public class OpflowRestServer implements AutoCloseable {
             return OpflowConverter.convert(vals.getFirst(), type);
         }
         return defaultVal;
+    }
+    
+    private static boolean checkPermission(String path, Set<String> roles) {
+        if (path == null) {
+            return true;
+        }
+        switch(path) {
+            case "/traffic":
+                if (roles.isEmpty()) {
+                    return true;
+                }
+                return roles.contains("administrator") || roles.contains("monitoring");
+            case "/info":
+            case "/ping":
+                return roles.contains("administrator") || roles.contains("monitoring");
+        }
+        if (path.startsWith("/exec/")) {
+            return roles.contains("administrator");
+        }
+        return true;
     }
 }
