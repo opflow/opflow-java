@@ -229,7 +229,7 @@ public class OpflowConfig {
             }
             
             // rename the deprecated fields
-            renameField(componentRoot, null, OpflowConstant.AMQP_PARAM_APPLICATION_ID, OpflowConstant.AMQP_PARAM_APP_ID, false);
+            OpflowObjectTree.renameChildMapField(componentRoot, null, OpflowConstant.AMQP_PARAM_APPLICATION_ID, OpflowConstant.AMQP_PARAM_APP_ID, false);
             
             // extract the child-level configuration
             String[] componentPath = new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
@@ -445,7 +445,7 @@ public class OpflowConfig {
             }
             
             // rename the deprecated fields
-            renameField(componentRoot, null, OpflowConstant.AMQP_PARAM_APPLICATION_ID, OpflowConstant.AMQP_PARAM_APP_ID, false);
+            OpflowObjectTree.renameChildMapField(componentRoot, null, OpflowConstant.AMQP_PARAM_APPLICATION_ID, OpflowConstant.AMQP_PARAM_APP_ID, false);
             
             // extract the child-level configuration
             String[] componentPath = new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET, ""};
@@ -521,20 +521,6 @@ public class OpflowConfig {
         }
     }
     
-    private static void renameField(Map<String, Object> source, String[] path, String oldName, String newName, boolean overridden) {
-        if (oldName == null || oldName.isEmpty()) return;
-        if (newName == null || newName.isEmpty()) return;
-        if (oldName.equals(newName)) return;
-        Map<String, Object> parent = getChildMapByPath(source, path);
-        if (parent != null) {
-            if (parent.containsKey(oldName)) {
-                if (overridden || !parent.containsKey(newName)) {
-                    parent.put(newName, parent.remove(oldName));
-                }
-            }
-        }
-    }
-    
     private static void renameChildMap(Map<String, Object> source, String oldName, String newName) {
         if (!source.containsKey(oldName)) {
             return;
@@ -545,26 +531,8 @@ public class OpflowConfig {
         source.remove(oldName);
     }
     
-    private static Object traverseMapByPath(Map<String, Object> source, String[] path) {
-        Map<String, Object> point = source;
-        Object value = null;
-        for(String node : path) {
-            if (point == null) return null;
-            value = point.get(node);
-            point = (value instanceof Map) ? (Map<String, Object>) value : null;
-        }
-        return value;
-    }
-    
     private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path) {
-        if (path == null || path.length == 0) {
-            return source;
-        }
-        Object sourceObject = traverseMapByPath(source, path);
-        if(sourceObject != null && sourceObject instanceof Map) {
-            return (Map<String, Object>) sourceObject;
-        }
-        return null;
+        return OpflowObjectTree.getChildMapByPath(source, path);
     }
     
     private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path, boolean disableByEmpty) {

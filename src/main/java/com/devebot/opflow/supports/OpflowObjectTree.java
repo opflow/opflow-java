@@ -176,6 +176,46 @@ public class OpflowObjectTree {
         return (value == null) ? defval : value;
     }
     
+    private static Object traverseMapByPath(Map<String, Object> source, String[] path) {
+        Map<String, Object> point = source;
+        Object value = null;
+        for(String node : path) {
+            if (point == null) return null;
+            value = point.get(node);
+            point = (value instanceof Map) ? (Map<String, Object>) value : null;
+        }
+        return value;
+    }
+    
+    public static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path) {
+        if (path == null || path.length == 0) {
+            return source;
+        }
+        Object sourceObject = getObjectByPath(source, path);
+        if(sourceObject != null && sourceObject instanceof Map) {
+            return (Map<String, Object>) sourceObject;
+        }
+        return null;
+    }
+    
+    public static void renameChildMapField(Map<String, Object> source, String[] path, String oldName, String newName) {
+        renameChildMapField(source, path, oldName, newName, true);
+    }
+    
+    public static void renameChildMapField(Map<String, Object> source, String[] path, String oldName, String newName, boolean overridden) {
+        if (oldName == null || oldName.isEmpty()) return;
+        if (newName == null || newName.isEmpty()) return;
+        if (oldName.equals(newName)) return;
+        Map<String, Object> parent = getChildMapByPath(source, path);
+        if (parent != null) {
+            if (parent.containsKey(oldName)) {
+                if (overridden || !parent.containsKey(newName)) {
+                    parent.put(newName, parent.remove(oldName));
+                }
+            }
+        }
+    }
+    
     public static final String[] EMPTY_ARRAY = new String[0];
     
     public interface LeafUpdater {
