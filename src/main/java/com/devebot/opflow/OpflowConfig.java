@@ -210,16 +210,16 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
             });
             
-            if (componentRoot.containsKey(OpflowConstant.COMP_CFG_AMQP_MASTER) && componentRoot.containsKey(OpflowConstant.COMP_RPC_AMQP_MASTER)) {
-                throw new OpflowBootstrapException(MessageFormat.format("Please convert the section [{0}] to [{1}]", new Object[] {
-                    OpflowConstant.COMP_CFG_AMQP_MASTER,
-                    OpflowConstant.COMP_RPC_AMQP_MASTER,
-                }));
+            if (componentRoot.containsKey(OpflowConstant.COMP_CFG_AMQP_MASTER)) {
+                if (componentRoot.containsKey(OpflowConstant.COMP_RPC_AMQP_MASTER)) {
+                    throw new OpflowBootstrapException(MessageFormat.format("Please convert the section [{0}] to [{1}]", new Object[] {
+                        OpflowConstant.COMP_CFG_AMQP_MASTER,
+                        OpflowConstant.COMP_RPC_AMQP_MASTER,
+                    }));
+                }
+                renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_MASTER, OpflowConstant.COMP_RPC_AMQP_MASTER);
             }
             
-            // rename the components
-            renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_MASTER, OpflowConstant.COMP_RPC_AMQP_MASTER);
-
             // extract the child-level configuration
             String[] componentPath = new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
             for(String componentName : OpflowCommander.ALL_BEAN_NAMES) {
@@ -360,6 +360,9 @@ public class OpflowConfig {
                                 OpflowUtil.copyParameters(componentCfg, getChildMapByPath(params, new String[] {
                                     amqpCompName
                                 }), OpflowEngine.PARAMETER_NAMES, false);
+                                OpflowUtil.copyParameters(componentCfg, getChildMapByPath(params, new String[] {
+                                    amqpCompName
+                                }), OpflowEngine.SHARED_DEFAULT_PARAMS, false);
                             }
                         }
                     }
@@ -400,15 +403,15 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
             });
             
-            if (componentRoot.containsKey(OpflowConstant.COMP_CFG_AMQP_WORKER) && componentRoot.containsKey(OpflowConstant.COMP_RPC_AMQP_WORKER)) {
-                throw new OpflowBootstrapException(MessageFormat.format("Please convert the section [{0}] to [{1}]", new Object[] {
-                    OpflowConstant.COMP_CFG_AMQP_WORKER,
-                    OpflowConstant.COMP_RPC_AMQP_WORKER,
-                }));
+            if (componentRoot.containsKey(OpflowConstant.COMP_CFG_AMQP_WORKER)) {
+                if (componentRoot.containsKey(OpflowConstant.COMP_RPC_AMQP_WORKER)) {
+                    throw new OpflowBootstrapException(MessageFormat.format("Please convert the section [{0}] to [{1}]", new Object[] {
+                        OpflowConstant.COMP_CFG_AMQP_WORKER,
+                        OpflowConstant.COMP_RPC_AMQP_WORKER,
+                    }));
+                }
+                renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
             }
-            
-            // rename the components
-            renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
             
             // extract the child-level configuration
             String[] componentPath = new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET, ""};
@@ -531,7 +534,10 @@ public class OpflowConfig {
                 break;
             }
         }
-        for(String field: OpflowEngine.SHARED_PARAMETERS) {
+        String[] sharedFields = OpflowCollectionUtil.mergeArrays(OpflowEngine.PARAMETER_NAMES,
+                OpflowEngine.SHARED_DEFAULT_PARAMS,
+                OpflowEngine.SHARED_PRODUCING_PARAMS);
+        for(String field: sharedFields) {
             Iterator<Map<String, Object>> iter = maps.iterator();
             while(iter.hasNext() && !target.containsKey(field)) {
                 Map<String, Object> map = iter.next();

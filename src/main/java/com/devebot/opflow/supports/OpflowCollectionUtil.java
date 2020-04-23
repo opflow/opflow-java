@@ -12,20 +12,24 @@ import java.util.Set;
  */
 public class OpflowCollectionUtil {
     
-    public static String[] mergeArrays(final String[] array1, final String[] array2) {
-        int length = array1.length + array2.length;
-
+    public static String[] mergeArrays(final String[] ... arrs) {
+        int length = 0;
+        for(String[] arr : arrs) {
+            if (arr != null) {
+                length += arr.length;
+            }
+        }
+        
         String[] result = new String[length];
         int pos = 0;
         
-        for (String element : array1) {
-            result[pos] = element;
-            pos++;
-        }
-
-        for (String element : array2) {
-            result[pos] = element;
-            pos++;
+        for (String[] arr : arrs) {
+            if (arr != null) {
+                for (String element : arr) {
+                    result[pos] = element;
+                    pos++;
+                }
+            }
         }
         
         return result;

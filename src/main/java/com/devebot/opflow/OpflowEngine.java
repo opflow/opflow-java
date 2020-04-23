@@ -5,7 +5,6 @@ import com.devebot.opflow.exception.OpflowBootstrapException;
 import com.devebot.opflow.exception.OpflowConnectionException;
 import com.devebot.opflow.exception.OpflowConsumerOverLimitException;
 import com.devebot.opflow.exception.OpflowOperationException;
-import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowKeytool;
 import com.devebot.opflow.supports.OpflowObjectTree;
@@ -70,13 +69,17 @@ public class OpflowEngine implements AutoCloseable {
         OpflowConstant.AMQP_PARAM_SHARED_THREAD_POOL_SIZE,
     };
     
-    public static final String[] SHARED_PARAMETERS = OpflowCollectionUtil.mergeArrays(PARAMETER_NAMES, new String[] {
+    public static final String[] SHARED_DEFAULT_PARAMS = new String[] {
+        OpflowConstant.AMQP_PARAM_MESSAGE_TTL,
+    };
+    
+    public static final String[] SHARED_PRODUCING_PARAMS = new String[] {
         OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_NAME,
         OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_TYPE,
         OpflowConstant.OPFLOW_PRODUCING_EXCHANGE_DURABLE,
         OpflowConstant.OPFLOW_PRODUCING_ROUTING_KEY,
         OpflowConstant.OPFLOW_CONSUMING_BINDING_KEYS,
-    });
+    };
     
     private final static Logger LOG = LoggerFactory.getLogger(OpflowEngine.class);
     private final OpflowLogTracer logTracer;
