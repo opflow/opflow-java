@@ -106,7 +106,7 @@ public class OpflowServerlet implements AutoCloseable {
             discoveryWorker = new OpflowDiscoveryWorker(componentId, serviceName, discoveryClientCfg);
         }
         
-        Map<String, Object> amqpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_WORKER, OpflowConstant.COMP_CFG_AMQP_WORKER);
+        Map<String, Object> amqpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_AMQP_WORKER);
         Map<String, Object> httpWorkerCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_RPC_HTTP_WORKER);
         Map<String, Object> subscriberCfg = OpflowUtil.getChildMap(kwargs, OpflowConstant.COMP_SUBSCRIBER);
 
