@@ -23,7 +23,7 @@ public class OpflowObjectTree {
         }
         
         public Builder(Map<String, V> source) {
-            fields = (source == null) ? new HashMap<String, V>() : source;
+            fields = (source == null) ? new HashMap<>() : source;
         }
         
         public Builder put(String key, V value) {
@@ -79,7 +79,7 @@ public class OpflowObjectTree {
     }
     
     public static <V> Builder<V> buildMap(Listener<V> listener, Map<String, V> defaultOpts, boolean orderReserved) {
-        Map<String, V> source = orderReserved ? new LinkedHashMap<String, V>() : new HashMap<String, V>();
+        Map<String, V> source = orderReserved ? new LinkedHashMap<>() : new HashMap<>();
         if (defaultOpts != null) {
             source.putAll(defaultOpts);
         }
@@ -102,7 +102,7 @@ public class OpflowObjectTree {
     }
     
     public static Map<String, Object> ensureNonNull(Map<String, Object> opts) {
-        return (opts == null) ? new HashMap<String, Object>() : opts;
+        return (opts == null) ? new HashMap<>() : opts;
     }
     
     public static Map<String, Object> assertChildMap(Map<String, Object> map, String childName) {

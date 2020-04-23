@@ -222,7 +222,7 @@ public class OpflowConfig {
             }
             
             // rename the deprecated fields
-            
+            renameField(componentRoot, null, OpflowConstant.AMQP_PARAM_APPLICATION_ID, OpflowConstant.AMQP_PARAM_APP_ID, false);
             
             // extract the child-level configuration
             String[] componentPath = new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
@@ -424,6 +424,7 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
             });
             
+            // rename the deprecated childMaps
             if (componentRoot.containsKey(OpflowConstant.COMP_CFG_AMQP_WORKER)) {
                 if (componentRoot.containsKey(OpflowConstant.COMP_RPC_AMQP_WORKER)) {
                     throw new OpflowBootstrapException(MessageFormat.format("Please convert the section [{0}] to [{1}]", new Object[] {
@@ -433,6 +434,9 @@ public class OpflowConfig {
                 }
                 renameChildMap(componentRoot, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
             }
+            
+            // rename the deprecated fields
+            renameField(componentRoot, null, OpflowConstant.AMQP_PARAM_APPLICATION_ID, OpflowConstant.AMQP_PARAM_APP_ID, false);
             
             // extract the child-level configuration
             String[] componentPath = new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_SERVERLET, ""};
@@ -508,6 +512,20 @@ public class OpflowConfig {
         }
     }
     
+    private static void renameField(Map<String, Object> source, String[] path, String oldName, String newName, boolean overridden) {
+        if (oldName == null || oldName.isEmpty()) return;
+        if (newName == null || newName.isEmpty()) return;
+        if (oldName.equals(newName)) return;
+        Map<String, Object> parent = getChildMapByPath(source, path, 0);
+        if (parent != null) {
+            if (parent.containsKey(oldName)) {
+                if (overridden || !parent.containsKey(newName)) {
+                    parent.put(newName, parent.remove(oldName));
+                }
+            }
+        }
+    }
+    
     private static void renameChildMap(Map<String, Object> source, String oldName, String newName) {
         if (!source.containsKey(oldName)) {
             return;
@@ -534,15 +552,29 @@ public class OpflowConfig {
     }
     
     private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path, boolean disableByEmpty) {
+        if (disableByEmpty) {
+            return getChildMapByPath(source, path, 0B11);
+        } else {
+            return getChildMapByPath(source, path, 0B01);
+        }
+    }
+    
+    private static Map<String, Object> getChildMapByPath(Map<String, Object> source, String[] path, int flag) {
+        if (path == null || path.length == 0) {
+            return source;
+        }
         Object sourceObject = traverseMapByPath(source, path);
         if(sourceObject != null && sourceObject instanceof Map) {
             return (Map<String, Object>) sourceObject;
         }
-        Map<String, Object> blank = new HashMap<>();
-        if (disableByEmpty) {
-            blank.put(OpflowConstant.OPFLOW_COMMON_ENABLED, false);
+        if ((flag & 0B01) == 0B01) {
+            Map<String, Object> blank = new HashMap<>();
+            if ((flag & 0B10) == 0B10) {
+                blank.put(OpflowConstant.OPFLOW_COMMON_ENABLED, false);
+            }
+            return blank;
         }
-        return blank;
+        return null;
     }
     
     private static void extractEngineParameters(Map<String, Object> target, Map<String, Object> source, String[] path) {
