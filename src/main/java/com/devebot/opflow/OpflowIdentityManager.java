@@ -24,7 +24,7 @@ public class OpflowIdentityManager implements IdentityManager {
 
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
 
-    private final Map<String, char[]> users;
+    private final Map<String, User> users;
 
     OpflowIdentityManager() {
         this.users = initUserMap((String[]) null);
@@ -38,7 +38,7 @@ public class OpflowIdentityManager implements IdentityManager {
         this.users = initUserMap(userList);
     }
 
-    OpflowIdentityManager(final Map<String, char[]> users) {
+    OpflowIdentityManager(final Map<String, User> users) {
         this.users = applyRootCredentials(users);
     }
 
@@ -81,7 +81,10 @@ public class OpflowIdentityManager implements IdentityManager {
     private boolean verifyCredential(Account account, Credential credential) {
         if (credential instanceof PasswordCredential) {
             char[] password = ((PasswordCredential) credential).getPassword();
-            char[] expectedPassword = users.get(account.getPrincipal().getName());
+            User user = users.get(account.getPrincipal().getName());
+            if (user == null) return false;
+            char[] expectedPassword = user.getPassword();
+            if (expectedPassword == null) return false;
             return OpflowCryptTool.checkPasswd(password, expectedPassword);
         }
         return false;
@@ -112,26 +115,26 @@ public class OpflowIdentityManager implements IdentityManager {
         return null;
     }
     
-    private Map<String, char[]> initUserMap(String[] userList) {
+    private Map<String, User> initUserMap(String[] userList) {
         return applyRootCredentials(toUserMap(userList));
     }
     
-    private Map<String, char[]> applyRootCredentials(Map<String, char[]> userMap) {
+    private Map<String, User> applyRootCredentials(Map<String, User> userMap) {
         return mergeUserMap(userMap, toUserMap(ENVTOOL.getEnvironVariable("OPFLOW_ROOT_CREDENTIALS", "")));
     }
     
-    private Map<String, char[]> toUserMap(String credentials) {
+    private Map<String, User> toUserMap(String credentials) {
         return toUserMap(OpflowStringUtil.splitByComma(credentials));
     }
     
-    private Map<String, char[]> toUserMap(String[] userList) {
-        Map<String, char[]> _users = new HashMap<>();
+    private Map<String, User> toUserMap(String[] userList) {
+        Map<String, User> _users = new HashMap<>();
         if (userList != null) {
             for (String user : userList) {
                 if (user != null) {
                     String[] pair = OpflowStringUtil.splitByDelimiter(user, String.class, ":");
                     if (pair.length == 2) {
-                        _users.put(pair[0], pair[1].toCharArray());
+                        _users.put(pair[0], new User(pair[1].toCharArray()));
                     }
                 }
             }
@@ -139,18 +142,30 @@ public class OpflowIdentityManager implements IdentityManager {
         return _users;
     }
     
-    private Map<String, char[]> mergeUserMap(Map<String, char[]> target, Map<String, char[]>...sources) {
+    private Map<String, User> mergeUserMap(Map<String, User> target, Map<String, User>...sources) {
         if (target == null) {
             target = new HashMap<>();
         }
         if (sources != null) {
-            for(Map<String, char[]> source : sources) {
+            for(Map<String, User> source : sources) {
                 if (source == null) continue;
-                for (Map.Entry<String, char[]> user : source.entrySet()) {
+                for (Map.Entry<String, User> user : source.entrySet()) {
                     target.put(user.getKey(), user.getValue());
                 }
             }
         }
         return target;
+    }
+    
+    private class User {
+        private final char[] password;
+
+        public User(char[] password) {
+            this.password = password;
+        }
+
+        public char[] getPassword() {
+            return password;
+        }
     }
 }
