@@ -316,10 +316,11 @@ public class OpflowRestServer implements AutoCloseable {
         @Override
         public void handleRequest(final HttpServerExchange exchange) throws Exception {
             if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
-                    .put("username", identityManager != null ? identityManager.getUsername(exchange) : null)
+                    .put("username", OpflowIdentityManager.getUsername(exchange))
+                    .put("roles", OpflowIdentityManager.getRoles(exchange))
                     .put("method", exchange.getRequestMethod())
                     .put("path", exchange.getRelativePath())
-                    .text("RestServer[${restServerId}] - User[${username}] invokes [${method}] ${path}")
+                    .text("RestServer[${restServerId}] - User[${username}] with roles[${roles}] invokes [${method}] ${path}")
                     .stringify());
             next.handleRequest(exchange);
         }

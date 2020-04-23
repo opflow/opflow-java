@@ -11,8 +11,11 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -78,6 +81,14 @@ public class OpflowIdentityManager implements IdentityManager {
         return principal.getName();
     }
 
+    public static Set<String> getRoles(HttpServerExchange exchange) {
+        final SecurityContext context = exchange.getSecurityContext();
+        if (context == null) return null;
+        final Account account = context.getAuthenticatedAccount();
+        if (account == null) return null;
+        return account.getRoles();
+    }
+    
     private boolean verifyCredential(Account account, Credential credential) {
         if (credential instanceof PasswordCredential) {
             char[] password = ((PasswordCredential) credential).getPassword();
@@ -93,7 +104,7 @@ public class OpflowIdentityManager implements IdentityManager {
     private Account getAccount(final String id) {
         if (users.containsKey(id)) {
             return new Account() {
-
+                
                 private final Principal principal = new Principal() {
                     @Override
                     public String getName() {
@@ -108,7 +119,7 @@ public class OpflowIdentityManager implements IdentityManager {
 
                 @Override
                 public Set<String> getRoles() {
-                    return Collections.emptySet();
+                    return users.get(id).getRoles();
                 }
             };
         }
@@ -136,6 +147,10 @@ public class OpflowIdentityManager implements IdentityManager {
                     if (pair.length == 2) {
                         _users.put(pair[0], new User(pair[1].toCharArray()));
                     }
+                    if (pair.length == 3) {
+                        String[] roles = OpflowStringUtil.splitByDelimiter(pair[2], String.class, "\\|");
+                        _users.put(pair[0], new User(pair[1].toCharArray(), Arrays.asList(roles)));
+                    }
                 }
             }
         }
@@ -159,13 +174,25 @@ public class OpflowIdentityManager implements IdentityManager {
     
     private class User {
         private final char[] password;
+        private final Set<String> roles;
 
         public User(char[] password) {
             this.password = password;
+            this.roles = Collections.emptySet();
+        }
+
+        public User(char[] password, List<String> roles) {
+            this.password = password;
+            this.roles = new HashSet<>();
+            this.roles.addAll(roles);
         }
 
         public char[] getPassword() {
             return password;
+        }
+        
+        public Set<String> getRoles() {
+            return roles;
         }
     }
 }
