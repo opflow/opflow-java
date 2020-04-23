@@ -210,6 +210,7 @@ public class OpflowConfig {
                 OpflowConstant.OPFLOW_COMMON_SERVICE_NAME,
             });
             
+            // rename the deprecated childMaps
             if (componentRoot.containsKey(OpflowConstant.COMP_CFG_AMQP_MASTER)) {
                 if (componentRoot.containsKey(OpflowConstant.COMP_RPC_AMQP_MASTER)) {
                     throw new OpflowBootstrapException(MessageFormat.format("Please convert the section [{0}] to [{1}]", new Object[] {
@@ -217,8 +218,11 @@ public class OpflowConfig {
                         OpflowConstant.COMP_RPC_AMQP_MASTER,
                     }));
                 }
-                renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_MASTER, OpflowConstant.COMP_RPC_AMQP_MASTER);
+                renameChildMap(componentRoot, OpflowConstant.COMP_CFG_AMQP_MASTER, OpflowConstant.COMP_RPC_AMQP_MASTER);
             }
+            
+            // rename the deprecated fields
+            
             
             // extract the child-level configuration
             String[] componentPath = new String[] {OpflowConstant.FRAMEWORK_ID, OpflowConstant.COMP_COMMANDER, ""};
@@ -295,6 +299,9 @@ public class OpflowConfig {
                     case OpflowConstant.COMP_RPC_HTTP_MASTER:
                         OpflowUtil.copyParameters(componentCfg, componentNode, new String[] {
                             OpflowConstant.OPFLOW_COMMON_ENABLED,
+                            OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT,
+                            OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT,
+                            OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT,
                         });
                         break;
                     case OpflowConstant.COMP_RPC_OBSERVER:
@@ -354,6 +361,7 @@ public class OpflowConfig {
                 for (String connectorName : connectorHash.keySet()) {
                     Map<String, Object> connectorCfg = OpflowUtil.getChildMap(connectorHash, connectorName);
                     if (connectorCfg != null) {
+                        // copy the AMQP parameters
                         for (String amqpCompName : OpflowCommander.SERVICE_BEAN_NAMES) {
                             Map<String, Object> componentCfg = OpflowUtil.getChildMap(connectorCfg, amqpCompName);
                             if (componentCfg != null) {
@@ -364,6 +372,19 @@ public class OpflowConfig {
                                     amqpCompName
                                 }), OpflowEngine.SHARED_DEFAULT_PARAMS, false);
                             }
+                        }
+                        // copy the HTTP parameters
+                        Map<String, Object> componentCfg = OpflowUtil.getChildMap(connectorCfg, OpflowConstant.COMP_RPC_HTTP_MASTER);
+                        if (componentCfg != null) {
+                            OpflowUtil.copyParameters(componentCfg,
+                                getChildMapByPath(params,new String[] { OpflowConstant.COMP_RPC_HTTP_MASTER }),
+                                new String[] {
+                                    OpflowConstant.HTTP_MASTER_PARAM_CALL_TIMEOUT,
+                                    OpflowConstant.HTTP_MASTER_PARAM_PUSH_TIMEOUT,
+                                    OpflowConstant.HTTP_MASTER_PARAM_PULL_TIMEOUT,
+                                },
+                                false
+                            );
                         }
                     }
                 }
@@ -410,7 +431,7 @@ public class OpflowConfig {
                         OpflowConstant.COMP_RPC_AMQP_WORKER,
                     }));
                 }
-                renameField(componentRoot, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
+                renameChildMap(componentRoot, OpflowConstant.COMP_CFG_AMQP_WORKER, OpflowConstant.COMP_RPC_AMQP_WORKER);
             }
             
             // extract the child-level configuration
@@ -487,7 +508,7 @@ public class OpflowConfig {
         }
     }
     
-    private static void renameField(Map<String, Object> source, String oldName, String newName) {
+    private static void renameChildMap(Map<String, Object> source, String oldName, String newName) {
         if (!source.containsKey(oldName)) {
             return;
         }
