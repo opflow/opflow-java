@@ -177,12 +177,14 @@ public class OpflowObjectTree {
     }
     
     private static Object traverseMapByPath(Map<String, Object> source, String[] path) {
-        Map<String, Object> point = source;
+        if (path == null || path.length == 0) return null;
+        Map<String, Object> pointer = source;
         Object value = null;
-        for(String node : path) {
-            if (point == null) return null;
-            value = point.get(node);
-            point = (value instanceof Map) ? (Map<String, Object>) value : null;
+        for(String step : path) {
+            if (step == null || step.isEmpty()) pointer = null;
+            if (pointer == null) return null;
+            value = pointer.get(step);
+            pointer = (value instanceof Map) ? (Map<String, Object>) value : null;
         }
         return value;
     }
