@@ -602,7 +602,38 @@ public class OpflowConfig {
     });
 
     private static final String[] STRING_FIELDS = OpflowCollectionUtil.distinct(new String[] {
-        OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX
+        OpflowConstant.OPFLOW_COMMON_HOST,
+        OpflowConstant.OPFLOW_COMMON_HOSTNAME,
+        
+        OpflowConstant.OPFLOW_REQ_EXTRACTOR_CLASS_NAME,
+        OpflowConstant.OPFLOW_REQ_EXTRACTOR_METHOD_NAME,
+        
+        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_NAME,
+        OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_TYPE,
+        OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
+        OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
+        OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME,
+        
+        OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
+        OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE,
+        OpflowConstant.OPFLOW_DISPATCH_ROUTING_KEY,
+        
+        OpflowConstant.OPFLOW_INCOMING_QUEUE_NAME,
+        
+        OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_NAME,
+        OpflowConstant.OPFLOW_OUTGOING_EXCHANGE_TYPE,
+        OpflowConstant.OPFLOW_OUTGOING_ROUTING_KEY,
+        
+        OpflowConstant.OPFLOW_RESPONSE_QUEUE_NAME,
+        OpflowConstant.OPFLOW_RESPONSE_QUEUE_SUFFIX,
+        
+        OpflowConstant.OPFLOW_RPC_MONITOR_ID,
+        
+        OpflowConstant.AMQP_CONARG_URI,
+        OpflowConstant.AMQP_CONARG_HOST,
+        OpflowConstant.AMQP_CONARG_VHOST,
+        OpflowConstant.AMQP_CONARG_USERNAME,
+        OpflowConstant.AMQP_CONARG_PASSWORD,
     });
     
     private static final String[] STRING_ARRAY_FIELDS = OpflowCollectionUtil.distinct(new String[] {
@@ -650,14 +681,19 @@ public class OpflowConfig {
     
     private static void transformParameters(Map<String, Object> params) {
         for(String key: params.keySet()) {
+            if (OpflowCollectionUtil.arrayContains(STRING_FIELDS, key)) {
+                continue;
+            }
             if (OpflowCollectionUtil.arrayContains(BOOLEAN_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     params.put(key, Boolean.parseBoolean(params.get(key).toString()));
+                    continue;
                 }
             }
             if (OpflowCollectionUtil.arrayContains(STRING_ARRAY_FIELDS, key)) {
                 if (params.get(key) instanceof String) {
                     params.put(key, OpflowStringUtil.splitByComma((String)params.get(key)));
+                    continue;
                 }
             }
             if (OpflowCollectionUtil.arrayContains(INTEGER_FIELDS, key)) {
@@ -671,6 +707,7 @@ public class OpflowConfig {
                                 .stringify());
                         params.put(key, null);
                     }
+                    continue;
                 }
             }
             if (OpflowCollectionUtil.arrayContains(INTEGER_ARRAY_FIELDS, key)) {
@@ -679,6 +716,7 @@ public class OpflowConfig {
                     if (OpflowStringUtil.isIntegerArray(intArrayStr)) {
                         params.put(key, OpflowStringUtil.splitByComma(intArrayStr, Integer.class));
                     }
+                    continue;
                 }
             }
             if (OpflowCollectionUtil.arrayContains(INTEGER_RANGE_FIELDS, key)) {
@@ -690,6 +728,7 @@ public class OpflowConfig {
                             params.put(key, new Integer[] { -1, range[0], range[1] });
                         }
                     }
+                    continue;
                 }
             }
             if (OpflowCollectionUtil.arrayContains(LONGINT_FIELDS, key)) {
@@ -703,6 +742,7 @@ public class OpflowConfig {
                                 .stringify());
                         params.put(key, null);
                     }
+                    continue;
                 }
             }
         }
