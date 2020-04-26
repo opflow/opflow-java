@@ -3,6 +3,7 @@ package com.devebot.opflow;
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.services.OpflowSecretDecryptor;
 import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowObjectTree;
@@ -21,6 +22,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -36,7 +38,7 @@ public class OpflowConfig {
     public final static String DEFAULT_CONFIGURATION_KEY = "opflow.configuration";
     public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
-
+    
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
     private final static Logger LOG = LoggerFactory.getLogger(OpflowConfig.class);
     private final static OpflowLogTracer LOG_TRACER = OpflowLogTracer.ROOT.copy();
@@ -45,20 +47,50 @@ public class OpflowConfig {
         public Map<String, Object> loadConfiguration() throws OpflowBootstrapException;
     }
     
-    public static class LoaderImplRpcAmqpMaster implements OpflowConfig.Loader {
+    public static abstract class AbstractLoader implements Loader {
+        private static final Transformer SERECT_DECRYPTOR = new OpflowSecretDecryptor();
+        
+        private final List<Transformer> postTransformers = new LinkedList<>();
+        
+        protected AbstractLoader() {
+            postTransformers.add(SERECT_DECRYPTOR);
+        }
+        
+        @Override
+        public final Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+            Map<String, Object> config = _loadConfiguration();
+            
+            for (Transformer t : postTransformers) {
+                config = t.transform(config);
+            }
+            
+            return config;
+        }
+        
+        protected abstract Map<String, Object> _loadConfiguration() throws OpflowBootstrapException;
+    }
+    
+    public interface Transformer {
+        public Map<String, Object> transform(Map<String, Object> config) throws OpflowBootstrapException;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    public static class LoaderImplRpcAmqpMaster extends OpflowConfig.AbstractLoader {
         
         private Map<String, Object> config;
         private final String configFile;
         private final boolean useDefaultFile;
         
         public LoaderImplRpcAmqpMaster(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            super();
             this.config = config;
             this.configFile = configFile;
             this.useDefaultFile = useDefaultFile;
         }
         
         @Override
-        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
             Map<String, Object> params = new HashMap<>();
 
@@ -92,20 +124,21 @@ public class OpflowConfig {
         }
     }
     
-    public static class LoaderImplRpcAmqpWorker implements OpflowConfig.Loader {
+    public static class LoaderImplRpcAmqpWorker extends OpflowConfig.AbstractLoader {
         
         private Map<String, Object> config;
         private final String configFile;
         private final boolean useDefaultFile;
         
         public LoaderImplRpcAmqpWorker(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            super();
             this.config = config;
             this.configFile = configFile;
             this.useDefaultFile = useDefaultFile;
         }
         
         @Override
-        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
             Map<String, Object> params = new HashMap<>();
 
@@ -146,20 +179,21 @@ public class OpflowConfig {
         }
     }
     
-    public static class LoaderImplPubsubHandler implements OpflowConfig.Loader {
+    public static class LoaderImplPubsubHandler extends OpflowConfig.AbstractLoader {
         
         private Map<String, Object> config;
         private final String configFile;
         private final boolean useDefaultFile;
         
         public LoaderImplPubsubHandler(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            super();
             this.config = config;
             this.configFile = configFile;
             this.useDefaultFile = useDefaultFile;
         }
         
         @Override
-        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
             Map<String, Object> params = new HashMap<>();
 
@@ -193,20 +227,21 @@ public class OpflowConfig {
         }
     }
     
-    public static class LoaderImplCommander implements OpflowConfig.Loader {
+    public static class LoaderImplCommander extends OpflowConfig.AbstractLoader {
         
         private Map<String, Object> config;
         private final String configFile;
         private final boolean useDefaultFile;
         
         public LoaderImplCommander(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            super();
             this.config = config;
             this.configFile = configFile;
             this.useDefaultFile = useDefaultFile;
         }
         
         @Override
-        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
             Map<String, Object> params = new HashMap<>();
 
@@ -409,20 +444,21 @@ public class OpflowConfig {
         }
     }
     
-    public static class LoaderImplServerlet implements OpflowConfig.Loader {
+    public static class LoaderImplServerlet extends OpflowConfig.AbstractLoader {
         
         private Map<String, Object> config;
         private final String configFile;
         private final boolean useDefaultFile;
         
         public LoaderImplServerlet(Map<String, Object> config, String configFile, boolean useDefaultFile) {
+            super();
             this.config = config;
             this.configFile = configFile;
             this.useDefaultFile = useDefaultFile;
         }
         
         @Override
-        public Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
+        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
             config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
             Map<String, Object> params = new HashMap<>();
 
