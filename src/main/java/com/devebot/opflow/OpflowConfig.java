@@ -50,6 +50,7 @@ public class OpflowConfig {
     public static abstract class AbstractLoader implements Loader {
         private static final Transformer SERECT_DECRYPTOR = new OpflowSecretDecryptor();
         
+        private final List<Transformer> preTransformers = new LinkedList<>();
         private final List<Transformer> postTransformers = new LinkedList<>();
         
         protected AbstractLoader() {
@@ -60,6 +61,12 @@ public class OpflowConfig {
         public final Map<String, Object> loadConfiguration() throws OpflowBootstrapException {
             Map<String, Object> config = _loadConfiguration();
             
+            for (Transformer t : preTransformers) {
+                config = t.transform(config);
+            }
+            
+            config = _transform(config);
+            
             for (Transformer t : postTransformers) {
                 config = t.transform(config);
             }
@@ -68,6 +75,8 @@ public class OpflowConfig {
         }
         
         protected abstract Map<String, Object> _loadConfiguration() throws OpflowBootstrapException;
+        
+        protected abstract Map<String, Object> _transform(Map<String, Object> config) throws OpflowBootstrapException;
     }
     
     public interface Transformer {
@@ -90,8 +99,12 @@ public class OpflowConfig {
         }
         
         @Override
-        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
-            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        protected Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
+            return OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        }
+        
+        @Override
+        protected Map<String, Object> _transform(Map<String, Object> config) throws OpflowBootstrapException {
             Map<String, Object> params = new HashMap<>();
 
             String[] handlerPath = new String[] {OpflowConstant.FRAMEWORK_ID, "master"};
@@ -138,8 +151,12 @@ public class OpflowConfig {
         }
         
         @Override
-        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
-            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        protected Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
+            return OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        }
+        
+        @Override
+        protected Map<String, Object> _transform(Map<String, Object> config) throws OpflowBootstrapException {
             Map<String, Object> params = new HashMap<>();
 
             String[] handlerPath = new String[] {OpflowConstant.FRAMEWORK_ID, "worker"};
@@ -193,8 +210,12 @@ public class OpflowConfig {
         }
         
         @Override
-        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
-            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        protected Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
+            return OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        }
+        
+        @Override
+        protected Map<String, Object> _transform(Map<String, Object> config) throws OpflowBootstrapException {
             Map<String, Object> params = new HashMap<>();
 
             String[] handlerPath = new String[] {OpflowConstant.FRAMEWORK_ID, "pubsub"};
@@ -241,8 +262,12 @@ public class OpflowConfig {
         }
         
         @Override
-        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
-            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        protected Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
+            return OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        }
+        
+        @Override
+        protected Map<String, Object> _transform(Map<String, Object> config) throws OpflowBootstrapException {
             Map<String, Object> params = new HashMap<>();
 
             // extract the top-level configuration
@@ -458,8 +483,12 @@ public class OpflowConfig {
         }
         
         @Override
-        public Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
-            config = OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        protected Map<String, Object> _loadConfiguration() throws OpflowBootstrapException {
+            return OpflowConfig.loadConfiguration(config, configFile, useDefaultFile);
+        }
+        
+        @Override
+        protected Map<String, Object> _transform(Map<String, Object> config) throws OpflowBootstrapException {
             Map<String, Object> params = new HashMap<>();
 
             // extract the top-level configuration
