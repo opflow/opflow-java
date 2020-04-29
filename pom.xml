@@ -100,6 +100,11 @@
             <version>${snakeyaml.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.devebot.jigsaw</groupId>
+            <artifactId>java-secret-vault</artifactId>
+            <version>0.3.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-core</artifactId>
             <version>${undertow.version}</version>
