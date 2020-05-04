@@ -1,7 +1,7 @@
 package com.devebot.opflow.supports;
 
 import at.favre.lib.nostro.crypto.bcrypt.BCrypt;
-import com.devebot.jigsaw.vault.core.VaultHandler;
+import com.devebot.jigsaw.vault.core.VaultCryptor;
 import java.util.Properties;
 
 /**
@@ -26,23 +26,23 @@ public class OpflowCryptTool {
         }
         for(String key: source.stringPropertyNames()) {
             String valueStr = source.getProperty(key);
-            if (getVaultHandler().isVaultBlock(valueStr)) {
-                source.setProperty(key, getVaultHandler().decryptVault(valueStr));
+            if (getVaultCryptor().isVaultBlock(valueStr)) {
+                source.setProperty(key, getVaultCryptor().decryptVault(valueStr));
             }
         }
         return source;
     }
     
-    private static VaultHandler vaultHandler = null;
+    private static VaultCryptor vaultCryptor = null;
     
-    public static VaultHandler getVaultHandler() {
-        if (vaultHandler == null) {
-            synchronized (VaultHandler.class) {
-                if (vaultHandler == null) {
-                    vaultHandler = new VaultHandler();
+    public static VaultCryptor getVaultCryptor() {
+        if (vaultCryptor == null) {
+            synchronized (VaultCryptor.class) {
+                if (vaultCryptor == null) {
+                    vaultCryptor = new VaultCryptor();
                 }
             }
         }
-        return vaultHandler;
+        return vaultCryptor;
     }
 }

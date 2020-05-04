@@ -102,7 +102,7 @@
         <dependency>
             <groupId>com.devebot.jigsaw</groupId>
             <artifactId>java-secret-vault</artifactId>
-            <version>0.3.0</version>
+            <version>0.3.1</version>
         </dependency>
         <dependency>
             <groupId>io.undertow</groupId>
