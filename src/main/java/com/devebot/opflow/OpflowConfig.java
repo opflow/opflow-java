@@ -440,6 +440,7 @@ public class OpflowConfig {
                                     getChildMapByPath(params, new String[] { amqpCompName }, true),
                                     OpflowEngine.SHARED_DEFAULT_PARAMS,
                                     false);
+                                transformParameters(componentCfg);
                             }
                         }
                         // copy the HTTP parameters
@@ -454,6 +455,7 @@ public class OpflowConfig {
                                 },
                                 false
                             );
+                            transformParameters(componentCfg);
                         }
                     }
                 }

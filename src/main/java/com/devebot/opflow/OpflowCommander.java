@@ -452,8 +452,8 @@ public class OpflowCommander implements AutoCloseable {
     }
     
     private static OpflowConnector createConnector(
-        String connectorName, Map<String,
-        Object> connectorCfg,
+        String connectorName,
+        Map<String, Object> connectorCfg,
         String componentId,
         Boolean strictMode,
         OpflowPromMeasurer measurer,
