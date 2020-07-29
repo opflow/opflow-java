@@ -608,6 +608,10 @@ public class OpflowUtil {
         Runtime.getRuntime().exit(-1);
     }
     
+    public static Map<String, Object> getGitInfoFromMaster() {
+        return OpflowSystemInfo.getGitInfo("META-INF/scm/service-master/git-info.json");
+    }
+    
     public static Map<String, Object> getGitInfoFromWorker() {
         return OpflowSystemInfo.getGitInfo("META-INF/scm/service-worker/git-info.json");
     }

@@ -17,6 +17,7 @@ import com.devebot.opflow.OpflowRpcInvocationCounter;
 import com.devebot.opflow.OpflowRpcObserver;
 import com.devebot.opflow.OpflowRpcWatcher;
 import com.devebot.opflow.OpflowThroughput;
+import com.devebot.opflow.OpflowUtil;
 import com.devebot.opflow.exception.OpflowConnectorNotFoundException;
 import com.devebot.opflow.exception.OpflowDiscoveryConnectionException;
 import com.devebot.opflow.supports.OpflowDateTime;
@@ -228,7 +229,7 @@ public class OpflowInfoCollectorMaster implements OpflowInfoCollector {
                 // git commit information
                 if (checkOption(flag, SCOPE_INFO)) {
                     opts.put(OpflowConstant.INFO_SECTION_SOURCE_CODE, OpflowObjectTree.buildMap()
-                            .put("server", OpflowSystemInfo.getGitInfo("META-INF/scm/service-master/git-info.json"))
+                            .put("server", OpflowUtil.getGitInfoFromMaster())
                             .put(OpflowConstant.FRAMEWORK_ID, OpflowSystemInfo.getGitInfo())
                             .toMap());
                 }
