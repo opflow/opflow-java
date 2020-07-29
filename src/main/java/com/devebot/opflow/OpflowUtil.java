@@ -8,6 +8,7 @@ import com.devebot.opflow.supports.OpflowEnvTool;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.supports.OpflowNetTool;
 import com.devebot.opflow.supports.OpflowStringUtil;
+import com.devebot.opflow.supports.OpflowSystemInfo;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -605,5 +606,9 @@ public class OpflowUtil {
             t.printStackTrace();
         }
         Runtime.getRuntime().exit(-1);
+    }
+    
+    public static Map<String, Object> getGitInfoFromWorker() {
+        return OpflowSystemInfo.getGitInfo("META-INF/scm/service-worker/git-info.json");
     }
 }
