@@ -137,7 +137,7 @@ public class OpflowJsonTool {
         }
     }
     
-    public static Object[] toObjectArray(String arrayString, Class[] types) {
+    public static Object[] toObjectArray(String arrayString, Type[] types) {
         try {
             if (arrayString == null) return new Object[0];
             JsonArray array = JsonParser.parseString(arrayString).getAsJsonArray();

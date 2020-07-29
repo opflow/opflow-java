@@ -38,7 +38,7 @@ public abstract class OpflowRpcChecker {
                         alias = routine.alias();
                     }
                     if (CONST.LEGACY_ROUTINE_PINGPONG_APPLIED || alias == null || alias.isEmpty()) {
-                        sendMethodName = method.toString();
+                        sendMethodName = OpflowUtil.getMethodSignature(method);
                     } else {
                         sendMethodName = alias;
                     }

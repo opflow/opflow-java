@@ -40,7 +40,7 @@ public class OpflowReqExtractor {
 
     public String getGetRequestIdSignature() {
         if (getRequestIdMethod == null) return null;
-        return getRequestIdMethod.toString();
+        return OpflowUtil.getMethodSignature(getRequestIdMethod);
     }
 
     public String extractRequestId(Object[] args) {

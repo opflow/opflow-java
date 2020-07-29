@@ -229,16 +229,6 @@ public class OpflowConnector {
                     .text("generic types are unsupported")
                     .stringify());
         }
-        Method[] methods = type.getDeclaredMethods();
-        for(Method method:methods) {
-            if (OpflowUtil.isGenericDeclaration(method.toGenericString())) {
-                ok = false;
-                if (logTracer.ready(LOG, Level.DEBUG)) LOG.debug(logTracer
-                        .put("methodString", method.toGenericString())
-                        .text("generic methods are unsupported")
-                        .stringify());
-            }
-        }
         if (!ok) {
             throw new OpflowInstantiationException("Generic type/method is unsupported");
         }

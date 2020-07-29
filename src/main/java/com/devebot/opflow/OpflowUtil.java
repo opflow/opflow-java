@@ -493,14 +493,14 @@ public class OpflowUtil {
     public static String getMethodSignature(Class clazz, String methodName, Class ... args) {
         try {
             Method method = clazz.getMethod(methodName, args);
-            return method.toString();
+            return method.toGenericString();
         } catch (NoSuchMethodException | SecurityException ex) {
             return null;
         }
     }
     
     public static String getMethodSignature(Method method) {
-        return method.toString();
+        return method.toGenericString();
     }
     
     public static <T> T extractMethodAnnotation(Method method, Class<? extends Annotation> clazz) {

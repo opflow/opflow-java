@@ -550,7 +550,7 @@ public class OpflowServerlet implements AutoCloseable {
                         .text("Request[${requestId}][${requestTime}] - Method arguments in json string")
                         .stringify());
                 }
-                Object[] args = OpflowJsonTool.toObjectArray(body, method.getParameterTypes());
+                Object[] args = OpflowJsonTool.toObjectArray(body, method.getGenericParameterTypes());
                 
                 Object returnValue;
                 
