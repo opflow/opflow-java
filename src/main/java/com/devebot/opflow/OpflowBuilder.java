@@ -58,6 +58,11 @@ public class OpflowBuilder {
         return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, propFile, true);
     }
     
+    public static OpflowServerlet createServerlet(String propFile, OpflowConfig.Validator validator)
+            throws OpflowBootstrapException {
+        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, propFile, true, validator);
+    }
+    
     public static OpflowServerlet createServerlet(Map<String, Object> config)
             throws OpflowBootstrapException {
         return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, config, null, false);
@@ -85,8 +90,13 @@ public class OpflowBuilder {
     
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
+        return createServerlet(listeners, config, configFile, useDefaultFile, null);
+    }
+    
+    public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
+            Map<String, Object> config, String configFile, boolean useDefaultFile, OpflowConfig.Validator validator) throws OpflowBootstrapException {
         try {
-            return new OpflowServerlet(listeners, new OpflowConfig.LoaderImplServerlet(config, configFile, useDefaultFile));
+            return new OpflowServerlet(listeners, new OpflowConfig.LoaderImplServerlet(config, configFile, useDefaultFile), validator);
         }
         catch (OpflowBootstrapException exception) {
             if (OpflowUtil.exitOnError()) {

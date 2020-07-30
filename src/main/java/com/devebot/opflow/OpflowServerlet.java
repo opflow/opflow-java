@@ -53,14 +53,22 @@ public class OpflowServerlet implements AutoCloseable {
     private final ListenerDescriptor listenerMap;
 
     public OpflowServerlet(ListenerDescriptor listeners, OpflowConfig.Loader loader) throws OpflowBootstrapException {
-        this(listeners, loader, null);
+        this(listeners, loader, null, null);
+    }
+
+    public OpflowServerlet(ListenerDescriptor listeners, OpflowConfig.Loader loader, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+        this(listeners, loader, null, validator);
     }
 
     public OpflowServerlet(ListenerDescriptor listeners, Map<String, Object> kwargs) throws OpflowBootstrapException {
-        this(listeners, null, kwargs);
+        this(listeners, null, kwargs, null);
     }
 
-    public OpflowServerlet(ListenerDescriptor listeners, OpflowConfig.Loader loader, Map<String, Object> kwargs) throws OpflowBootstrapException {
+    public OpflowServerlet(ListenerDescriptor listeners, Map<String, Object> kwargs, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+        this(listeners, null, kwargs, validator);
+    }
+
+    public OpflowServerlet(ListenerDescriptor listeners, OpflowConfig.Loader loader, Map<String, Object> kwargs, OpflowConfig.Validator validator) throws OpflowBootstrapException {
         if (loader != null) {
             configLoader = loader;
         } else {
@@ -69,6 +77,8 @@ public class OpflowServerlet implements AutoCloseable {
         if (configLoader != null) {
             kwargs = configLoader.loadConfiguration();
         }
+
+        OpflowConfig.check(kwargs, validator);
 
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
 
