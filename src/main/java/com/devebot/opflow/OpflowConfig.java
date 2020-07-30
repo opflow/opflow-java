@@ -3,6 +3,7 @@ package com.devebot.opflow;
 import com.devebot.opflow.OpflowLogTracer.Level;
 import com.devebot.opflow.supports.OpflowJsonTool;
 import com.devebot.opflow.exception.OpflowBootstrapException;
+import com.devebot.opflow.exception.OpflowConfigValidationException;
 import com.devebot.opflow.services.OpflowSecretDecryptor;
 import com.devebot.opflow.supports.OpflowCollectionUtil;
 import com.devebot.opflow.supports.OpflowEnvTool;
@@ -38,6 +39,8 @@ public class OpflowConfig {
     public final static String DEFAULT_CONFIGURATION_KEY = "opflow.configuration";
     public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
+    
+    public final static String DEFAULT_CHECK_MODE_ENV = "OPFLOW_CONFIG_CHECKMODE";
     
     private final static OpflowEnvTool ENVTOOL = OpflowEnvTool.instance;
     private final static Logger LOG = LoggerFactory.getLogger(OpflowConfig.class);
@@ -81,6 +84,47 @@ public class OpflowConfig {
     
     public interface Transformer {
         public Map<String, Object> transform(Map<String, Object> config) throws OpflowBootstrapException;
+    }
+    
+    public interface Validator {
+        public Object validate(Map<String, Object> configuration) throws OpflowConfigValidationException;
+    }
+    
+    public static void check(Map<String, Object> configuration, Validator validator) throws OpflowConfigValidationException {
+        if (configuration != null && validator != null) {
+            String checkMode = ENVTOOL.getEnvironVariable(DEFAULT_CHECK_MODE_ENV, null);
+            switch (checkMode) {
+                case "dryrun":
+                    Object result = validator.validate(configuration);
+                    if (result != null) {
+                        System.out.println("[!] The validating configuration is failed with reasons:");
+                        if (result instanceof List) {
+                            List infos = (List) result;
+                            for (Object info: infos) {
+                                System.out.print("[-] " + info.toString());
+                            }
+                        }
+                    } else {
+                        System.out.println("[+] The validating configuration is passed");
+                    }
+                    System.exit(0);
+                    return;
+                case "strict":
+                    Object reason = validator.validate(configuration);
+                    if (reason != null) {
+                        OpflowConfigValidationException t = new OpflowConfigValidationException(reason);
+                        if (OpflowUtil.exitOnError()) {
+                            OpflowUtil.exit(t);
+                        } else {
+                            throw t;
+                        }
+                    }
+                    return;
+                default:
+                    System.out.println("[+] The validating configuration is skipped");
+                    return;
+            }
+        }
     }
     
     //--------------------------------------------------------------------------

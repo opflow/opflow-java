@@ -63,20 +63,28 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowGarbageCollector garbageCollector;
     private OpflowRestServer restServer;
     private OpflowReqExtractor reqExtractor;
-
+    
     public OpflowCommander() throws OpflowBootstrapException {
-        this(null, null);
+        this(null, null, null);
     }
     
     public OpflowCommander(OpflowConfig.Loader loader) throws OpflowBootstrapException {
-        this(loader, null);
+        this(loader, null, null);
     }
-
+    
+    public OpflowCommander(OpflowConfig.Loader loader, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+        this(loader, null, validator);
+    }
+    
     public OpflowCommander(Map<String, Object> kwargs) throws OpflowBootstrapException {
-        this(null, kwargs);
+        this(null, kwargs, null);
     }
-
-    private OpflowCommander(OpflowConfig.Loader loader, Map<String, Object> kwargs) throws OpflowBootstrapException {
+    
+    public OpflowCommander(Map<String, Object> kwargs, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+        this(null, kwargs, null);
+    }
+    
+    private OpflowCommander(OpflowConfig.Loader loader, Map<String, Object> kwargs, OpflowConfig.Validator validator) throws OpflowBootstrapException {
         if (loader != null) {
             configLoader = loader;
         } else {
@@ -85,6 +93,8 @@ public class OpflowCommander implements AutoCloseable {
         if (configLoader != null) {
             kwargs = configLoader.loadConfiguration();
         }
+        
+        OpflowConfig.check(kwargs, validator);
         
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
         

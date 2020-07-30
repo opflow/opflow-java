@@ -15,21 +15,30 @@ public class OpflowBuilder {
     }
     
     public static OpflowCommander createCommander() throws OpflowBootstrapException {
-        return createCommander(null, null, true);
+        return createCommander(null, null, true, null);
     }
     
     public static OpflowCommander createCommander(String propFile) throws OpflowBootstrapException {
-        return createCommander(null, propFile, true);
+        return createCommander(null, propFile, true, null);
+    }
+    
+    public static OpflowCommander createCommander(String propFile, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+        return createCommander(null, propFile, true, validator);
     }
     
     public static OpflowCommander createCommander(Map<String, Object> config) throws OpflowBootstrapException {
-        return createCommander(config, null, false);
+        return createCommander(config, null, false, null);
     }
     
     public static OpflowCommander createCommander(Map<String, Object> config,
             String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
+        return createCommander(config, null, false, null);
+    }
+    
+    public static OpflowCommander createCommander(Map<String, Object> config,
+            String configFile, boolean useDefaultFile, OpflowConfig.Validator validator) throws OpflowBootstrapException {
         try {
-            return new OpflowCommander(new OpflowConfig.LoaderImplCommander(config, configFile, useDefaultFile));
+            return new OpflowCommander(new OpflowConfig.LoaderImplCommander(config, configFile, useDefaultFile), validator);
         }
         catch (OpflowBootstrapException exception) {
             if (OpflowUtil.exitOnError()) {
