@@ -92,8 +92,12 @@ public class OpflowConfig {
     
     public static void check(Map<String, Object> configuration, Validator validator) throws OpflowConfigValidationException {
         if (configuration != null && validator != null) {
-            String checkMode = ENVTOOL.getEnvironVariable(DEFAULT_CHECK_MODE_ENV, null);
+            String checkMode = ENVTOOL.getEnvironVariable(DEFAULT_CHECK_MODE_ENV, "skip");
             switch (checkMode) {
+                case "display":
+                    System.out.println(OpflowJsonTool.toString(configuration, true));
+                    System.exit(0);
+                    return;
                 case "dryrun":
                     Object result = validator.validate(configuration);
                     if (result != null) {

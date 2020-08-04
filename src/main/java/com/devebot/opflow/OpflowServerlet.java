@@ -48,7 +48,7 @@ public class OpflowServerlet implements AutoCloseable {
     private OpflowRpcAmqpWorker amqpWorker;
     private OpflowRpcHttpWorker httpWorker;
     private OpflowPubsubHandler subscriber;
-    private Instantiator instantiator;
+    private OpflowMethodInvoker instantiator;
 
     private final ListenerDescriptor listenerMap;
 
@@ -217,7 +217,7 @@ public class OpflowServerlet implements AutoCloseable {
             }
             
             if (amqpWorker != null || httpWorker != null || subscriber != null) {
-                instantiator = new Instantiator(amqpWorker, httpWorker, subscriber, OpflowObjectTree.buildMap(false)
+                instantiator = new OpflowMethodInvoker(amqpWorker, httpWorker, subscriber, OpflowObjectTree.buildMap(false)
                     .put(OpflowConstant.COMPONENT_ID, componentId)
                     .toMap());
             }
@@ -391,16 +391,6 @@ public class OpflowServerlet implements AutoCloseable {
 
         public OpflowPubsubListener getSubscriber() {
             return subscriber;
-        }
-    }
-
-    public static class Instantiator extends OpflowMethodInvoker {
-        public Instantiator(OpflowRpcAmqpWorker amqpWorker, OpflowRpcHttpWorker httpWorker, OpflowPubsubHandler subscriber) throws OpflowBootstrapException {
-            super(amqpWorker, httpWorker, subscriber);
-        }
-
-        public Instantiator(OpflowRpcAmqpWorker amqpWorker, OpflowRpcHttpWorker httpWorker, OpflowPubsubHandler subscriber, Map<String, Object> options) throws OpflowBootstrapException {
-            super(amqpWorker, httpWorker, subscriber, options);
         }
     }
 
