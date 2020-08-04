@@ -230,6 +230,8 @@ public class OpflowCommander implements AutoCloseable {
                 restServer = new OpflowRestServer(connectors, infoCollector, taskSubmitter, OpflowObjectTree.buildMap(restServerCfg)
                         .put(OpflowConstant.COMPONENT_ID, componentId)
                         .toMap());
+                
+                restServer.setConfiguration(kwargs);
             }
         } catch(OpflowBootstrapException exception) {
             this.close();

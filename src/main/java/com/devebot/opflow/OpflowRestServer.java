@@ -71,6 +71,8 @@ public class OpflowRestServer implements AutoCloseable {
     private final Object threadExecutorLock = new Object();
     private ExecutorService threadExecutor = null;
     
+    private final ConfigHandler configHandler;
+    
     OpflowRestServer(Map<String, OpflowConnector> _connectors,
             OpflowInfoCollector _infoCollector,
             OpflowTaskSubmitter _taskSubmitter,
@@ -108,6 +110,7 @@ public class OpflowRestServer implements AutoCloseable {
         infoCollector = _infoCollector;
         taskSubmitter = _taskSubmitter;
         
+        configHandler = new ConfigHandler();
         ExecHandler execHandler = new ExecHandler();
         
         InfoHandler infoHandler = new InfoHandler();
@@ -115,6 +118,7 @@ public class OpflowRestServer implements AutoCloseable {
         PingHandler pingHandler = new PingHandler();
         
         defaultHandlers = new RoutingHandler()
+                .get("/config", configHandler)
                 .get("/info", infoHandler)
                 .get("/exec/{action}", new BlockingHandler(execHandler))
                 .get("/traffic", trafficHandler)
@@ -298,6 +302,34 @@ public class OpflowRestServer implements AutoCloseable {
         return handler;
     }
     
+    public void setConfiguration(Map<String, Object> config) {
+        configHandler.setConfiguration(config);
+    }
+    
+    class ConfigHandler implements HttpHandler {
+        private Map<String, Object> config = null;
+
+        @Override
+        public void handleRequest(HttpServerExchange exchange) throws Exception {
+            if (config == null) {
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                exchange.setStatusCode(404).getResponseSender().send("Configuration is no-show");
+                return;
+            }
+            try {
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+                exchange.getResponseSender().send(OpflowJsonTool.toString(config, getPrettyParam(exchange)));
+            } catch (Exception exception) {
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
+                exchange.setStatusCode(500).getResponseSender().send(exception.toString());
+            }
+        }
+        
+        public void setConfiguration(Map<String, Object> config) {
+            this.config = config;
+        }
+    }
+
     class PageNotFoundHandler implements HttpHandler {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
@@ -569,6 +601,8 @@ public class OpflowRestServer implements AutoCloseable {
             return true;
         }
         switch(path) {
+            case "/config":
+                return roles.contains("administrator");
             case "/traffic":
                 if (roles.isEmpty()) {
                     return true;
