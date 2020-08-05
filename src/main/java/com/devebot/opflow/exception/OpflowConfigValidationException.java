@@ -7,7 +7,11 @@ package com.devebot.opflow.exception;
 public class OpflowConfigValidationException extends OpflowBootstrapException {
 
     private Object reason;
-    
+
+    public Object getReason() {
+        return reason;
+    }
+
     public OpflowConfigValidationException() {
         super();
     }

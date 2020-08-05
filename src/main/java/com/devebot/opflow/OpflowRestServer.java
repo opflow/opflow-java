@@ -329,7 +329,7 @@ public class OpflowRestServer implements AutoCloseable {
             this.config = config;
         }
     }
-
+    
     class PageNotFoundHandler implements HttpHandler {
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {

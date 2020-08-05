@@ -99,13 +99,18 @@ public class OpflowConfig {
                     System.exit(0);
                     return;
                 case "dryrun":
-                    Object result = validator.validate(configuration);
+                    Object result;
+                    try {
+                        result = validator.validate(configuration);
+                    } catch (OpflowConfigValidationException ex) {
+                        result = ex.getReason();
+                    }
                     if (result != null) {
                         System.out.println("[!] The validating configuration is failed with reasons:");
                         if (result instanceof List) {
                             List infos = (List) result;
                             for (Object info: infos) {
-                                System.out.print("[-] " + info.toString());
+                                System.out.println("[-] " + info.toString());
                             }
                         }
                     } else {
@@ -114,7 +119,12 @@ public class OpflowConfig {
                     System.exit(0);
                     return;
                 case "strict":
-                    Object reason = validator.validate(configuration);
+                    Object reason;
+                    try {
+                        reason = validator.validate(configuration);
+                    } catch (OpflowConfigValidationException ex) {
+                        reason = ex.getReason();
+                    }
                     if (reason != null) {
                         OpflowConfigValidationException t = new OpflowConfigValidationException(reason);
                         if (OpflowUtil.exitOnError()) {
