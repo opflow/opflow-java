@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
  * @author acegik
  */
 public class OpflowConfig {
+    public final static OpflowConfig.Validator[] EMPTY_VALIDATORS = new OpflowConfig.Validator[0];
     public final static String DEFAULT_CONFIGURATION_KEY = "opflow.configuration";
     public final static String DEFAULT_CONFIGURATION_ENV = "OPFLOW_CONFIGURATION";
     public final static String DEFAULT_CONFIGURATION_FILE = "opflow.properties";
@@ -90,8 +91,8 @@ public class OpflowConfig {
         public Object validate(Map<String, Object> configuration) throws OpflowConfigValidationException;
     }
     
-    public static void check(Map<String, Object> configuration, Validator validator) throws OpflowConfigValidationException {
-        if (configuration != null && validator != null) {
+    public static void check(Map<String, Object> configuration, Validator ... validators) throws OpflowConfigValidationException {
+        if (configuration != null && validators != null && validators.length > 0) {
             String checkMode = ENVTOOL.getEnvironVariable(DEFAULT_CHECK_MODE_ENV, "skip");
             switch (checkMode) {
                 case "display":
@@ -99,19 +100,26 @@ public class OpflowConfig {
                     System.exit(0);
                     return;
                 case "dryrun":
-                    Object result;
-                    try {
-                        result = validator.validate(configuration);
-                    } catch (OpflowConfigValidationException ex) {
-                        result = ex.getReason();
-                    }
-                    if (result != null) {
-                        System.out.println("[!] The validating configuration is failed with reasons:");
-                        if (result instanceof List) {
-                            List infos = (List) result;
-                            for (Object info: infos) {
-                                System.out.println("[-] " + info.toString());
+                    List results = new LinkedList();
+                    for (Validator validator:validators) {
+                        Object result;
+                        try {
+                            result = validator.validate(configuration);
+                        } catch (OpflowConfigValidationException ex) {
+                            result = ex.getReason();
+                        }
+                        if (result != null) {
+                            if (result instanceof List) {
+                                results.addAll((List)result);
+                            } else {
+                                results.add(result);
                             }
+                        }
+                    }
+                    if (!results.isEmpty()) {
+                        System.out.println("[!] The validating configuration is failed with reasons:");
+                        for (Object info: results) {
+                            System.out.println("[-] " + info.toString());
                         }
                     } else {
                         System.out.println("[+] The validating configuration is passed");
@@ -119,14 +127,24 @@ public class OpflowConfig {
                     System.exit(0);
                     return;
                 case "strict":
-                    Object reason;
-                    try {
-                        reason = validator.validate(configuration);
-                    } catch (OpflowConfigValidationException ex) {
-                        reason = ex.getReason();
+                    List reasons = new LinkedList();
+                    for (Validator validator:validators) {
+                        Object reason;
+                        try {
+                            reason = validator.validate(configuration);
+                        } catch (OpflowConfigValidationException ex) {
+                            reason = ex.getReason();
+                        }
+                        if (reason != null) {
+                            if (reason instanceof List) {
+                                reasons.addAll((List)reason);
+                            } else {
+                                reasons.add(reason);
+                            }
+                        }
                     }
-                    if (reason != null) {
-                        OpflowConfigValidationException t = new OpflowConfigValidationException(reason);
+                    if (!reasons.isEmpty()) {
+                        OpflowConfigValidationException t = new OpflowConfigValidationException(reasons);
                         if (OpflowUtil.exitOnError()) {
                             OpflowUtil.exit(t);
                         } else {

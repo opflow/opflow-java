@@ -55,7 +55,7 @@ public class OpflowCommander implements AutoCloseable {
     private final OpflowDiscoveryMaster discoveryMaster;
     private final OpflowThroughput.Meter speedMeter;
     private OpflowRestrictorMaster restrictor;
-
+    
     private final Map<String, OpflowConnector> connectors;
     
     private OpflowRpcWatcher rpcWatcher;
@@ -65,26 +65,26 @@ public class OpflowCommander implements AutoCloseable {
     private OpflowReqExtractor reqExtractor;
     
     public OpflowCommander() throws OpflowBootstrapException {
-        this(null, null, null);
+        this(null, null, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public OpflowCommander(OpflowConfig.Loader loader) throws OpflowBootstrapException {
-        this(loader, null, null);
+        this(loader, null, OpflowConfig.EMPTY_VALIDATORS);
     }
     
-    public OpflowCommander(OpflowConfig.Loader loader, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+    public OpflowCommander(OpflowConfig.Loader loader, OpflowConfig.Validator ... validator) throws OpflowBootstrapException {
         this(loader, null, validator);
     }
     
     public OpflowCommander(Map<String, Object> kwargs) throws OpflowBootstrapException {
-        this(null, kwargs, null);
+        this(null, kwargs, OpflowConfig.EMPTY_VALIDATORS);
     }
     
-    public OpflowCommander(Map<String, Object> kwargs, OpflowConfig.Validator validator) throws OpflowBootstrapException {
-        this(null, kwargs, null);
+    public OpflowCommander(Map<String, Object> kwargs, OpflowConfig.Validator ... validator) throws OpflowBootstrapException {
+        this(null, kwargs, validator);
     }
     
-    private OpflowCommander(OpflowConfig.Loader loader, Map<String, Object> kwargs, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+    private OpflowCommander(OpflowConfig.Loader loader, Map<String, Object> kwargs, OpflowConfig.Validator ... validator) throws OpflowBootstrapException {
         if (loader != null) {
             configLoader = loader;
         } else {

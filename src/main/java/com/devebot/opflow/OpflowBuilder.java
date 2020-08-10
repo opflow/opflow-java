@@ -15,28 +15,28 @@ public class OpflowBuilder {
     }
     
     public static OpflowCommander createCommander() throws OpflowBootstrapException {
-        return createCommander(null, null, true, null);
+        return createCommander(null, null, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowCommander createCommander(String propFile) throws OpflowBootstrapException {
-        return createCommander(null, propFile, true, null);
+        return createCommander(null, propFile, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
-    public static OpflowCommander createCommander(String propFile, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+    public static OpflowCommander createCommander(String propFile, OpflowConfig.Validator ... validator) throws OpflowBootstrapException {
         return createCommander(null, propFile, true, validator);
     }
     
     public static OpflowCommander createCommander(Map<String, Object> config) throws OpflowBootstrapException {
-        return createCommander(config, null, false, null);
+        return createCommander(config, null, false, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowCommander createCommander(Map<String, Object> config,
             String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        return createCommander(config, null, false, null);
+        return createCommander(config, null, false, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowCommander createCommander(Map<String, Object> config,
-            String configFile, boolean useDefaultFile, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+            String configFile, boolean useDefaultFile, OpflowConfig.Validator ... validator) throws OpflowBootstrapException {
         try {
             return new OpflowCommander(new OpflowConfig.LoaderImplCommander(config, configFile, useDefaultFile), validator);
         }
@@ -50,51 +50,51 @@ public class OpflowBuilder {
     
     public static OpflowServerlet createServerlet()
             throws OpflowBootstrapException {
-        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, null, true);
+        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, null, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowServerlet createServerlet(String propFile)
             throws OpflowBootstrapException {
-        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, propFile, true);
+        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, propFile, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
-    public static OpflowServerlet createServerlet(String propFile, OpflowConfig.Validator validator)
+    public static OpflowServerlet createServerlet(String propFile, OpflowConfig.Validator ... validator)
             throws OpflowBootstrapException {
         return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, propFile, true, validator);
     }
     
     public static OpflowServerlet createServerlet(Map<String, Object> config)
             throws OpflowBootstrapException {
-        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, config, null, false);
+        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, config, null, false, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowServerlet createServerlet(Map<String, Object> config, String configFile, boolean useDefaultFile)
             throws OpflowBootstrapException {
-        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, config, configFile, useDefaultFile);
+        return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, config, configFile, useDefaultFile, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners)
             throws OpflowBootstrapException {
-        return createServerlet(listeners, null, null, true);
+        return createServerlet(listeners, null, null, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             String propFile) throws OpflowBootstrapException {
-        return createServerlet(listeners, null, propFile, true);
+        return createServerlet(listeners, null, propFile, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config) throws OpflowBootstrapException {
-        return createServerlet(listeners, config, null, false);
+        return createServerlet(listeners, config, null, false, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
-        return createServerlet(listeners, config, configFile, useDefaultFile, null);
+        return createServerlet(listeners, config, configFile, useDefaultFile, OpflowConfig.EMPTY_VALIDATORS);
     }
     
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
-            Map<String, Object> config, String configFile, boolean useDefaultFile, OpflowConfig.Validator validator) throws OpflowBootstrapException {
+            Map<String, Object> config, String configFile, boolean useDefaultFile, OpflowConfig.Validator ... validator) throws OpflowBootstrapException {
         try {
             return new OpflowServerlet(listeners, new OpflowConfig.LoaderImplServerlet(config, configFile, useDefaultFile), validator);
         }
