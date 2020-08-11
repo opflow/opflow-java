@@ -96,10 +96,16 @@ public class OpflowConfig {
             String checkMode = ENVTOOL.getEnvironVariable(DEFAULT_CHECK_MODE_ENV, "skip");
             switch (checkMode) {
                 case "display":
+                    if (LOG_TRACER.ready(LOG, Level.DEBUG)) LOG.debug(LOG_TRACER
+                            .text("Configuration[${instanceId}] will be displayed")
+                            .stringify());
                     System.out.println(OpflowJsonTool.toString(configuration, true));
                     System.exit(0);
                     return;
                 case "dryrun":
+                    if (LOG_TRACER.ready(LOG, Level.DEBUG)) LOG.debug(LOG_TRACER
+                            .text("Configuration[${instanceId}] is validated in dry-run mode")
+                            .stringify());
                     List results = new LinkedList();
                     for (Validator validator:validators) {
                         Object result;
@@ -127,6 +133,9 @@ public class OpflowConfig {
                     System.exit(0);
                     return;
                 case "strict":
+                    if (LOG_TRACER.ready(LOG, Level.DEBUG)) LOG.debug(LOG_TRACER
+                            .text("Configuration[${instanceId}] is validated in strict mode")
+                            .stringify());
                     List reasons = new LinkedList();
                     for (Validator validator:validators) {
                         Object reason;
@@ -153,7 +162,9 @@ public class OpflowConfig {
                     }
                     return;
                 default:
-                    System.out.println("[+] The validating configuration is skipped");
+                    if (LOG_TRACER.ready(LOG, Level.DEBUG)) LOG.debug(LOG_TRACER
+                            .text("Configuration[${instanceId}] validating is skipped")
+                            .stringify());
                     return;
             }
         }
@@ -375,6 +386,8 @@ public class OpflowConfig {
                 Map<String, Object> componentNode;
                 if (OpflowCommander.SERVICE_BEAN_NAMES.contains(componentName)) {
                     extractEngineParameters(componentCfg, config, componentPath);
+                }
+                if (OpflowCommander.CHANNEL_BEAN_NAMES.contains(componentName)) {
                     componentNode = getChildMapByPath(config, componentPath, true);
                 } else {
                     componentNode = getChildMapByPath(config, componentPath, false);

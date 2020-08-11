@@ -25,11 +25,14 @@ public class OpflowCommander implements AutoCloseable {
         OpflowConstant.COMP_RPC_AMQP_MASTER,
     });
     
+    public final static List<String> CHANNEL_BEAN_NAMES = OpflowCollectionUtil.<String>mergeLists(SERVICE_BEAN_NAMES, Arrays.asList(new String[] {
+        OpflowConstant.COMP_RPC_HTTP_MASTER,
+    }));
+    
     public final static List<String> SUPPORT_BEAN_NAMES = Arrays.asList(new String[] {
         OpflowConstant.COMP_DISCOVERY_CLIENT,
         OpflowConstant.COMP_REQ_EXTRACTOR,
         OpflowConstant.COMP_RESTRICTOR,
-        OpflowConstant.COMP_RPC_HTTP_MASTER,
         OpflowConstant.COMP_RPC_WATCHER,
         OpflowConstant.COMP_GARBAGE_COLLECTOR,
         OpflowConstant.COMP_SPEED_METER,
@@ -37,7 +40,7 @@ public class OpflowCommander implements AutoCloseable {
         OpflowConstant.COMP_REST_SERVER,
     });
     
-    public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.<String>mergeLists(SERVICE_BEAN_NAMES, SUPPORT_BEAN_NAMES);
+    public final static List<String> ALL_BEAN_NAMES = OpflowCollectionUtil.<String>mergeLists(CHANNEL_BEAN_NAMES, SUPPORT_BEAN_NAMES);
     
     public final static boolean KEEP_LOGIC_CLEARLY = false;
     
