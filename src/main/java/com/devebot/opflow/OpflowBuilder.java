@@ -10,42 +10,49 @@ import java.util.Map;
  */
 public class OpflowBuilder {
     
+    public static OpflowCommander.Builder newCommander() {
+        return new OpflowCommander.Builder();
+    }
+    
     public static OpflowCommander createBroker() throws OpflowBootstrapException {
         return new OpflowCommander(OpflowObjectTree.buildMap().toMap());
     }
     
+    @Deprecated
     public static OpflowCommander createCommander() throws OpflowBootstrapException {
         return createCommander(null, null, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowCommander createCommander(String propFile) throws OpflowBootstrapException {
         return createCommander(null, propFile, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowCommander createCommander(String propFile, OpflowConfig.Validator ... validator) throws OpflowBootstrapException {
         return createCommander(null, propFile, true, validator);
     }
     
+    @Deprecated
     public static OpflowCommander createCommander(Map<String, Object> config) throws OpflowBootstrapException {
         return createCommander(config, null, false, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowCommander createCommander(Map<String, Object> config,
             String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
         return createCommander(config, null, false, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowCommander createCommander(Map<String, Object> config,
             String configFile, boolean useDefaultFile, OpflowConfig.Validator ... validator) throws OpflowBootstrapException {
-        try {
-            return new OpflowCommander(new OpflowConfig.LoaderImplCommander(config, configFile, useDefaultFile), validator);
-        }
-        catch (OpflowBootstrapException exception) {
-            if (OpflowUtil.exitOnError()) {
-                OpflowUtil.exit(exception);
-            }
-            throw exception;
-        }
+        return OpflowBuilder.newCommander()
+                .setConfig(config)
+                .setConfigFile(configFile)
+                .useDefaultFile(useDefaultFile)
+                .addValidator(validator)
+                .build();
     }
     
     public static OpflowServerlet createServerlet()

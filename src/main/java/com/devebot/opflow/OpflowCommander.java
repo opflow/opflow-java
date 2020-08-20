@@ -10,6 +10,7 @@ import com.devebot.opflow.services.OpflowTaskSubmitterMaster;
 import com.devebot.opflow.supports.OpflowCollectionUtil;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -510,5 +511,49 @@ public class OpflowCommander implements AutoCloseable {
     @Override
     protected void finalize() throws Throwable {
         measurer.updateComponentInstance(OpflowConstant.COMP_COMMANDER, componentId, OpflowPromMeasurer.GaugeAction.DEC);
+    }
+    
+    public static class Builder {
+        private Map<String, Object> config = null;
+        private String configFile = null;
+        private boolean useDefaultFile = false;
+        private final List<OpflowConfig.Validator> validators = new LinkedList<>();
+        
+        public Builder setConfig(Map<String, Object> config) {
+            this.config = config;
+            return this;
+        }
+        
+        public Builder setConfigFile(String filePath) {
+            this.configFile = filePath;
+            return this;
+        }
+        
+        public Builder useDefaultFile(boolean useDefaultFile) {
+            this.useDefaultFile = useDefaultFile;
+            return this;
+        }
+        
+        public Builder addValidator(OpflowConfig.Validator ... validator) {
+            for (OpflowConfig.Validator val: validator) {
+                if (validator != null) {
+                    validators.add(val);
+                }
+            }
+            return this;
+        }
+        
+        public OpflowCommander build() throws OpflowBootstrapException {
+            try {
+                return new OpflowCommander(new OpflowConfig.LoaderImplCommander(config, configFile, useDefaultFile),
+                        validators.toArray(OpflowConfig.EMPTY_VALIDATORS));
+            }
+            catch (OpflowBootstrapException exception) {
+                if (OpflowUtil.exitOnError()) {
+                    OpflowUtil.exit(exception);
+                }
+                throw exception;
+            }
+        }
     }
 }
