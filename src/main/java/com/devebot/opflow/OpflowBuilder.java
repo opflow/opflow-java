@@ -14,6 +14,11 @@ public class OpflowBuilder {
         return new OpflowCommander.Builder();
     }
     
+    public static OpflowServerlet.Builder newServerlet() {
+        return new OpflowServerlet.Builder();
+    }
+    
+    @Deprecated
     public static OpflowCommander createBroker() throws OpflowBootstrapException {
         return new OpflowCommander(OpflowObjectTree.buildMap().toMap());
     }
@@ -55,62 +60,70 @@ public class OpflowBuilder {
                 .build();
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet()
             throws OpflowBootstrapException {
         return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, null, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet(String propFile)
             throws OpflowBootstrapException {
         return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, propFile, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet(String propFile, OpflowConfig.Validator ... validator)
             throws OpflowBootstrapException {
         return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, null, propFile, true, validator);
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet(Map<String, Object> config)
             throws OpflowBootstrapException {
         return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, config, null, false, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet(Map<String, Object> config, String configFile, boolean useDefaultFile)
             throws OpflowBootstrapException {
         return createServerlet(OpflowServerlet.ListenerDescriptor.EMPTY, config, configFile, useDefaultFile, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners)
             throws OpflowBootstrapException {
         return createServerlet(listeners, null, null, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             String propFile) throws OpflowBootstrapException {
         return createServerlet(listeners, null, propFile, true, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config) throws OpflowBootstrapException {
         return createServerlet(listeners, config, null, false, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config, String configFile, boolean useDefaultFile) throws OpflowBootstrapException {
         return createServerlet(listeners, config, configFile, useDefaultFile, OpflowConfig.EMPTY_VALIDATORS);
     }
     
+    @Deprecated
     public static OpflowServerlet createServerlet(OpflowServerlet.ListenerDescriptor listeners,
             Map<String, Object> config, String configFile, boolean useDefaultFile, OpflowConfig.Validator ... validator) throws OpflowBootstrapException {
-        try {
-            return new OpflowServerlet(listeners, new OpflowConfig.LoaderImplServerlet(config, configFile, useDefaultFile), validator);
-        }
-        catch (OpflowBootstrapException exception) {
-            if (OpflowUtil.exitOnError()) {
-                OpflowUtil.exit(exception);
-            }
-            throw exception;
-        }
+        return OpflowBuilder.newServerlet()
+                .setListener(listeners)
+                .setConfig(config)
+                .setConfigFile(configFile)
+                .useDefaultFile(useDefaultFile)
+                .addValidator(validator)
+                .build();
     }
     
     public static OpflowRpcAmqpMaster createAmqpMaster() throws OpflowBootstrapException {

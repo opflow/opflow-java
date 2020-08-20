@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -421,5 +422,55 @@ public class OpflowServerlet implements AutoCloseable {
     @Override
     protected void finalize() throws Throwable {
         measurer.updateComponentInstance(OpflowConstant.COMP_SERVERLET, componentId, OpflowPromMeasurer.GaugeAction.DEC);
+    }
+
+    public static class Builder {
+        private OpflowServerlet.ListenerDescriptor listener = null;
+        private Map<String, Object> config = null;
+        private String configFile = null;
+        private boolean useDefaultFile = false;
+        private final List<OpflowConfig.Validator> validators = new LinkedList<>();
+        
+        public Builder setListener(OpflowServerlet.ListenerDescriptor listener) {
+            this.listener = listener;
+            return this;
+        }
+        
+        public Builder setConfig(Map<String, Object> config) {
+            this.config = config;
+            return this;
+        }
+        
+        public Builder setConfigFile(String filePath) {
+            this.configFile = filePath;
+            return this;
+        }
+        
+        public Builder useDefaultFile(boolean useDefaultFile) {
+            this.useDefaultFile = useDefaultFile;
+            return this;
+        }
+        
+        public Builder addValidator(OpflowConfig.Validator ... validator) {
+            for (OpflowConfig.Validator val: validator) {
+                if (validator != null) {
+                    validators.add(val);
+                }
+            }
+            return this;
+        }
+        
+        public OpflowServerlet build() throws OpflowBootstrapException {
+            try {
+                return new OpflowServerlet(listener, new OpflowConfig.LoaderImplServerlet(config, configFile, useDefaultFile),
+                        validators.toArray(OpflowConfig.EMPTY_VALIDATORS));
+            }
+            catch (OpflowBootstrapException exception) {
+                if (OpflowUtil.exitOnError()) {
+                    OpflowUtil.exit(exception);
+                }
+                throw exception;
+            }
+        }
     }
 }
