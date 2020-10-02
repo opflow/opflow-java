@@ -237,6 +237,12 @@ public class OpflowRpcInvocationHandler implements InvocationHandler {
                     .text("Request[${requestId}][${requestTime}][x-commander-publish-method] - RpcInvocationHandler.invoke() dispatch the call to the publisher")
                     .stringify());
             measurer.countRpcInvocation(OpflowConstant.COMP_COMMANDER, OpflowConstant.METHOD_INVOCATION_FLOW_PUBSUB, routineSignature, OpflowConstant.METHOD_INVOCATION_STATUS_ENTER);
+            if (this.publisher.isSingleArgumentMode() && args.length == 1) {
+                if (reqTracer.ready(LOG, OpflowLogTracer.Level.DEBUG)) LOG.debug(reqTracer
+                        .text("Request[${requestId}][${requestTime}][x-single-argument-mode] - apply single argument")
+                        .stringify());
+                body = args[0].toString();
+            }
             this.publisher.publish(body, OpflowObjectTree.buildMap(false)
                     .put(CONST.AMQP_HEADER_ROUTINE_ID, routineId)
                     .put(CONST.AMQP_HEADER_ROUTINE_TIMESTAMP, routineTimestamp)

@@ -15,7 +15,7 @@ public class OpflowBuilder {
     }
     
     public static OpflowServerlet.Builder newServerlet() {
-        return new OpflowServerlet.Builder();
+        return new OpflowServerlet.Builder().setListener(OpflowServerlet.ListenerDescriptor.EMPTY);
     }
     
     @Deprecated

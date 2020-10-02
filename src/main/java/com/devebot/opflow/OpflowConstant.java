@@ -200,6 +200,8 @@ public class OpflowConstant {
     public final static String OPFLOW_PUBSUB_REDELIVERED_LIMIT = "redeliveredLimit";
     public final static String OPFLOW_PUBSUB_TRASH_NAME = "recyclebinName";
 
+    public final static String OPFLOW_PUBSUB_SINGLE_ARGUMENT = "singleArgumentMode";
+
     // producer - master
     public final static String OPFLOW_DISPATCH_EXCHANGE_NAME = "exchangeName";
     public final static String OPFLOW_DISPATCH_EXCHANGE_TYPE = "exchangeType";

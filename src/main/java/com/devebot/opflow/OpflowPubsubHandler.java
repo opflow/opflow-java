@@ -42,6 +42,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
 
     private final List<OpflowEngine.ConsumerInfo> consumerInfos = new LinkedList<>();
     private final boolean autorun;
+    
+    private final boolean singleArgumentMode;
 
     public OpflowPubsubHandler(Map<String, Object> kwargs) throws OpflowBootstrapException {
         kwargs = OpflowObjectTree.ensureNonNull(kwargs);
@@ -118,6 +120,8 @@ public class OpflowPubsubHandler implements AutoCloseable {
             this.serve();
         }
 
+        singleArgumentMode = kwargs.get(OpflowConstant.OPFLOW_PUBSUB_SINGLE_ARGUMENT) != null;
+        
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .put("autorun", autorun)
                 .put("subscriberName", subscriberName)
@@ -132,6 +136,10 @@ public class OpflowPubsubHandler implements AutoCloseable {
         if (logTracer.ready(LOG, Level.INFO)) LOG.info(logTracer
                 .text("PubsubHandler[${pubsubHandlerId}].new() end!")
                 .stringify());
+    }
+
+    public boolean isSingleArgumentMode() {
+        return singleArgumentMode;
     }
 
     public void publish(String body) {

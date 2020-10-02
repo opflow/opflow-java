@@ -322,6 +322,7 @@ public class OpflowConfig {
                     OpflowConstant.OPFLOW_PUBSUB_PREFETCH_COUNT,
                     OpflowConstant.OPFLOW_PUBSUB_REDELIVERED_LIMIT,
                     OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME,
+                    OpflowConstant.OPFLOW_PUBSUB_SINGLE_ARGUMENT,
                 });
 
                 Map<String, Object> opflowNode = getChildMapByPath(config, new String[] {OpflowConstant.FRAMEWORK_ID});
@@ -425,6 +426,7 @@ public class OpflowConfig {
                             OpflowConstant.OPFLOW_PUBSUB_EXCHANGE_DURABLE,
                             OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
                             OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
+                            OpflowConstant.OPFLOW_PUBSUB_SINGLE_ARGUMENT,
                         });
                         break;
                     case OpflowConstant.COMP_RPC_AMQP_MASTER:
@@ -769,6 +771,7 @@ public class OpflowConfig {
         OpflowConstant.OPFLOW_PUBSUB_ROUTING_KEY,
         OpflowConstant.OPFLOW_PUBSUB_QUEUE_NAME,
         OpflowConstant.OPFLOW_PUBSUB_TRASH_NAME,
+        OpflowConstant.OPFLOW_PUBSUB_SINGLE_ARGUMENT,
         
         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_NAME,
         OpflowConstant.OPFLOW_DISPATCH_EXCHANGE_TYPE,
